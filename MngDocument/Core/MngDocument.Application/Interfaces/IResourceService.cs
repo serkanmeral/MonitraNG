@@ -20,12 +20,30 @@ public interface IResourceService
     Task<TreePathDto> GetTreePathAsync(string folderId, CancellationToken ct = default);
 
     /// <summary>Ağaç + kök veya <paramref name="folderId"/> altı içerik (tek permission snapshot).</summary>
-    Task<ResourceBootstrapDto> GetBootstrapAsync(string? folderId = null, CancellationToken ct = default);
+    Task<ResourceBootstrapDto> GetBootstrapAsync(
+        string? folderId = null,
+        int skip = 0,
+        int? limit = null,
+        CancellationToken ct = default);
 
     /// <summary>Klasör gezinme paketi: children + breadcrumb + seçili klasör (tek snapshot).</summary>
-    Task<ResourceBrowseContextDto> GetBrowseContextAsync(string? folderId, CancellationToken ct = default);
+    Task<ResourceBrowseContextDto> GetBrowseContextAsync(
+        string? folderId,
+        int skip = 0,
+        int? limit = null,
+        CancellationToken ct = default);
 
-    Task<ResourceListResult> GetChildrenAsync(string? parentId, CancellationToken ct = default);
+    Task<ResourceListResult> GetChildrenAsync(
+        string? parentId,
+        int skip = 0,
+        int? limit = null,
+        CancellationToken ct = default);
+
+    /// <summary>Taşı/klon picker: görülebilir klasör adı araması.</summary>
+    Task<IReadOnlyList<TreeNodeDto>> SearchTreeFoldersAsync(
+        string query,
+        int limit = 50,
+        CancellationToken ct = default);
 
     Task<ResourceDto> GetByIdAsync(string id, CancellationToken ct = default);
 

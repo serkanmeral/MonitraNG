@@ -20,7 +20,10 @@ public interface IPermissionService
         CancellationToken ct = default,
         PermissionSnapshotScope scope = PermissionSnapshotScope.Lean);
 
-    /// <summary>İstek önbelleğindeki snapshot'ı sıfırlar (izin/klasör yapısı değişiminden sonra).</summary>
+    /// <summary>
+    /// İstek önbelleğindeki snapshot'ı ve domain düzeyindeki permission katalog önbelleğini sıfırlar
+    /// (izin/klasör yapısı değişiminden sonra).
+    /// </summary>
     void InvalidateSnapshotCache();
 
     /// <summary>Bir klasörün yetki yönetim görünümü (miras durumu + grup matrisi + etkin yetki).</summary>

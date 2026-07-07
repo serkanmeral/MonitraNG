@@ -39,6 +39,8 @@ import {
   LayoutSidebarLeftExpandIcon,
 } from 'vue-tabler-icons';
 import {
+  DI_CHILDREN_PAGE_SIZE,
+  DI_CHILDREN_PAGE_SIZE_OPTIONS,
   diGetBootstrap,
   diGetBrowseContext,
   diGetBreadcrumb,
@@ -115,6 +117,13 @@ const treeLoading = ref(false);
 const selectedFolderId = ref<string | null>(null);
 const selectedFolder = ref<DiResource | null>(null);
 const children = ref<DiResource[]>([]);
+const childrenTotal = ref(0);
+const childrenPage = ref(1);
+const childrenPageSize = ref(DI_CHILDREN_PAGE_SIZE);
+const childrenPageSizeOptions = DI_CHILDREN_PAGE_SIZE_OPTIONS.map((v) => ({
+  title: String(v),
+  value: v,
+}));
 const childrenLoading = ref(false);
 const folderPath = ref<DiBreadcrumb[]>([]);
 
@@ -304,6 +313,35 @@ const showDiscovery = computed(
   () => !searchActive.value && mainMode.value === 'browse' && selectedFolderId.value === null
 );
 
+const childrenSkip = computed(() => (childrenPage.value - 1) * childrenPageSize.value);
+
+const childrenPageCount = computed(() =>
+  Math.max(1, Math.ceil(childrenTotal.value / childrenPageSize.value)),
+);
+
+/** Klasör gezinme alt çubuğu: sayaç + sayfa boyutu + sayfalama. */
+const showChildrenListingFooter = computed(
+  () =>
+    !activeTagFilter.value
+    && !searchActive.value
+    && !showDiscovery.value
+    && childrenTotal.value > 0,
+);
+
+const childrenRangeLabel = computed(() => {
+  if (!childrenTotal.value) return '';
+  const from = childrenSkip.value + 1;
+  const to = Math.min(childrenSkip.value + children.value.length, childrenTotal.value);
+  return t('documentIntelligence.childrenRange', { from, to, total: childrenTotal.value });
+});
+
+function resolveChildrenListingOptions(): { skip: number; limit?: number } {
+  if (activeTagFilter.value) {
+    return { skip: 0 };
+  }
+  return { skip: childrenSkip.value, limit: childrenPageSize.value };
+}
+
 const pageTemplateOptions = computed(() =>
   DI_PAGE_TEMPLATE_DEFINITIONS.map((item) => ({
     value: item.id,
@@ -325,6 +363,7 @@ function canManage(resource: DiResource | null): boolean {
 
 function applyBrowseContext(ctx: DiResourceBrowseContext) {
   children.value = ctx.children.items;
+  childrenTotal.value = ctx.children.total;
   folderPath.value = ctx.breadcrumb;
   selectedFolder.value = ctx.selectedFolder;
 }
@@ -347,10 +386,11 @@ function loadTreeChildren(parentId: string) {
 async function refreshWorkspace() {
   treeLoading.value = true;
   childrenLoading.value = true;
+  childrenPage.value = 1;
   try {
     invalidateAll();
     treeExpandedIds.value = [];
-    const boot = await diGetBootstrap(selectedFolderId.value);
+    const boot = await diGetBootstrap(selectedFolderId.value, resolveChildrenListingOptions());
     applyBootstrap(boot);
     if (selectedFolderId.value) {
       await hydrateDeepLinkTree(selectedFolderId.value);
@@ -367,13 +407,26 @@ async function refreshWorkspace() {
 async function refreshListing() {
   childrenLoading.value = true;
   try {
-    applyBrowseContext(await diGetBrowseContext(selectedFolderId.value));
+    applyBrowseContext(await diGetBrowseContext(selectedFolderId.value, resolveChildrenListingOptions()));
   } catch (e) {
     notifyError(e, 'documentIntelligence.errors.childrenLoad');
     children.value = [];
+    childrenTotal.value = 0;
   } finally {
     childrenLoading.value = false;
   }
+}
+
+async function onChildrenPageChange(page: number) {
+  childrenPage.value = page;
+  await refreshListing();
+}
+
+async function onChildrenPageSizeChange(size: number) {
+  if (!size || size === childrenPageSize.value) return;
+  childrenPageSize.value = size;
+  childrenPage.value = 1;
+  await refreshListing();
 }
 
 async function loadFolderPath(folderId: string | null) {
@@ -394,12 +447,14 @@ async function selectFolder(folderId: string | null, options?: { syncUrl?: boole
   mainMode.value = 'browse';
   selectedFolderId.value = folderId;
   openDoc.value = null;
+  childrenPage.value = 1;
   childrenLoading.value = true;
   try {
-    applyBrowseContext(await diGetBrowseContext(folderId));
+    applyBrowseContext(await diGetBrowseContext(folderId, resolveChildrenListingOptions()));
   } catch (e) {
     notifyError(e, 'documentIntelligence.errors.childrenLoad');
     children.value = [];
+    childrenTotal.value = 0;
     folderPath.value = [];
     selectedFolder.value = null;
   } finally {
@@ -982,7 +1037,8 @@ onMounted(async () => {
   try {
     const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
     const initialFolder = folderId === undefined ? null : folderId;
-    const boot = await diGetBootstrap(initialFolder);
+    childrenPage.value = 1;
+    const boot = await diGetBootstrap(initialFolder, { skip: 0, limit: childrenPageSize.value });
     applyBootstrap(boot);
     selectedFolderId.value = initialFolder;
     if (initialFolder) {
@@ -994,6 +1050,12 @@ onMounted(async () => {
     treeLoading.value = false;
     childrenLoading.value = false;
   }
+});
+
+watch(activeTagFilter, async () => {
+  if (searchActive.value || mainMode.value !== 'browse') return;
+  childrenPage.value = 1;
+  await refreshListing();
 });
 
 watch(
@@ -1491,6 +1553,33 @@ watch(
                   </div>
                 </template>
                   </template>
+
+                  <div
+                    v-if="showChildrenListingFooter"
+                    class="di-children-footer d-flex flex-column flex-sm-row align-center justify-space-between gap-3 mt-4 pt-3"
+                  >
+                    <span class="text-caption text-medium-emphasis">{{ childrenRangeLabel }}</span>
+                    <div class="d-flex flex-wrap align-center justify-end gap-3">
+                      <v-select
+                        :model-value="childrenPageSize"
+                        :items="childrenPageSizeOptions"
+                        :label="t('documentIntelligence.childrenPageSize')"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        style="min-width: 120px; max-width: 140px"
+                        @update:model-value="onChildrenPageSizeChange"
+                      />
+                      <v-pagination
+                        v-if="childrenPageCount > 1"
+                        :model-value="childrenPage"
+                        :length="childrenPageCount"
+                        :total-visible="7"
+                        density="compact"
+                        @update:model-value="onChildrenPageChange"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </template>
@@ -1894,6 +1983,9 @@ watch(
 }
 .di-browse-body {
   min-height: 200px;
+}
+.di-children-footer {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 .di-browse-body--loading {
   min-height: 320px;

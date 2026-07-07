@@ -3488,6 +3488,12 @@
     "typeDocument": "Döküman",
     "typeFile": "Dosya",
     "emptyFolder": "Bu klasör boş.",
+    "childrenRange": "{from}–{to} / {total} öğe",
+    "childrenPageSize": "Sayfa boyutu",
+    "folderPicker": {
+      "searchPlaceholder": "Klasör ara…",
+      "searchEmpty": "Eşleşen klasör bulunamadı."
+    },
     "emptyDoc": "Bu sayfa boş. İçerik eklemek için Düzenle'ye tıklayın.",
     "emptyPage": "Bu sayfa boş. İçerik eklemek için Düzenle'ye tıklayın.",
     "discovery": {

@@ -38,4 +38,15 @@ public class ResourceSettings
 
     /// <summary>Tek seferde dönen ağaç/liste için üst sınır (DG sayfalama limiti).</summary>
     public int MaxTreeNodes { get; set; } = 5000;
+
+    /// <summary>Klasör içeriği listesi varsayılan sayfa boyutu (bootstrap/browse/children).</summary>
+    public int DefaultChildrenPageSize { get; set; } = 50;
+
+    /// <summary>Klasör içeriği listesi üst sayfa boyutu.</summary>
+    public int MaxChildrenPageSize { get; set; } = 200;
+
+    /// <summary>
+    /// Domain düzeyinde lean/full permission katalog önbelleği TTL (saniye). 0 = kapalı.
+    /// </summary>
+    public int PermissionSnapshotCacheTtlSeconds { get; set; } = 60;
 }

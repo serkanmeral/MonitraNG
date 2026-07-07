@@ -1,5 +1,8 @@
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MngDocument.Application.Configuration;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Exceptions;
 using MngDocument.Application.Interfaces;
@@ -20,20 +23,28 @@ public sealed class PermissionService : IPermissionService
     };
 
     private const string ListQuery = "limit=1000&expand=false&showHistory=true";
-
-    /// <summary>Yetki snapshot'ı için history gerekmez (payload küçültme).</summary>
-    private const string SnapshotListQuery = "limit=1000&expand=false&showHistory=false";
+    private const int SnapshotPageSize = 500;
+    private const string SnapshotPageQuerySuffix = "expand=false&showHistory=false";
 
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
+    private readonly IMemoryCache _memoryCache;
+    private readonly ResourceSettings _resourceSettings;
     private readonly ILogger<PermissionService> _logger;
     private PermissionSnapshot? _leanSnapshot;
     private PermissionSnapshot? _fullSnapshot;
 
-    public PermissionService(IMngDataGatewayClient dg, IRequestContext ctx, ILogger<PermissionService> logger)
+    public PermissionService(
+        IMngDataGatewayClient dg,
+        IRequestContext ctx,
+        IMemoryCache memoryCache,
+        IOptions<MngDocumentSettings> settings,
+        ILogger<PermissionService> logger)
     {
         _dg = dg;
         _ctx = ctx;
+        _memoryCache = memoryCache;
+        _resourceSettings = settings.Value.Resources;
         _logger = logger;
     }
 
@@ -43,6 +54,13 @@ public sealed class PermissionService : IPermissionService
     {
         _leanSnapshot = null;
         _fullSnapshot = null;
+
+        var domainId = _ctx.DomainId;
+        if (string.IsNullOrWhiteSpace(domainId))
+            return;
+
+        _memoryCache.Remove(CatalogCacheKey(domainId, PermissionSnapshotScope.Lean));
+        _memoryCache.Remove(CatalogCacheKey(domainId, PermissionSnapshotScope.Full));
     }
 
     public async Task<PermissionSnapshot> LoadSnapshotAsync(
@@ -54,42 +72,14 @@ public sealed class PermissionService : IPermissionService
         if (scope == PermissionSnapshotScope.Lean && _leanSnapshot is not null)
             return _leanSnapshot;
 
-        var permPage = await _dg.QueryPageAsync(
-            DmDatasets.ResourcePermissions,
-            new Dictionary<string, object?>(),
-            SnapshotListQuery,
-            Token,
-            ct);
+        var catalog = await LoadCatalogAsync(scope, ct);
+        var snapshot = new PermissionSnapshot(
+            catalog.Folders,
+            catalog.Permissions,
+            _ctx.UserGroups,
+            _ctx.IsAdmin,
+            _ctx.IsManager);
 
-        var perms = permPage.Items.Select(MapPermission).ToList();
-
-        IReadOnlyList<DmResource> folders;
-        if (scope == PermissionSnapshotScope.Full)
-        {
-            var folderPage = await _dg.QueryPageAsync(
-                DmDatasets.Resources,
-                new Dictionary<string, object?> { ["type"] = ResourceType.Folder },
-                SnapshotListQuery,
-                Token,
-                ct);
-            folders = folderPage.Items.Select(MapResource).ToList();
-        }
-        else
-        {
-            var anchorPage = await _dg.QueryPageAsync(
-                DmDatasets.Resources,
-                new Dictionary<string, object?>
-                {
-                    ["type"] = ResourceType.Folder,
-                    ["permissionsBroken"] = true
-                },
-                SnapshotListQuery,
-                Token,
-                ct);
-            folders = anchorPage.Items.Select(MapResource).ToList();
-        }
-
-        var snapshot = new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin, _ctx.IsManager);
         if (scope == PermissionSnapshotScope.Full)
             _fullSnapshot = snapshot;
         else
@@ -209,18 +199,122 @@ public sealed class PermissionService : IPermissionService
     public async Task DeleteFolderPermissionsAsync(string folderId, CancellationToken ct = default)
     {
         var match = new Dictionary<string, object?> { ["resourceId"] = folderId };
-        var page = await _dg.QueryPageAsync(DmDatasets.ResourcePermissions, match, SnapshotListQuery, Token, ct);
-        InvalidateSnapshotCache();
-        foreach (var row in page.Items)
+        var idsToDelete = new List<string>();
+        var skip = 0;
+
+        while (true)
         {
-            if (row.TryGetValue("__dataId", out var idVal) && idVal is not null)
+            var query = $"limit={SnapshotPageSize}&skip={skip}&{SnapshotPageQuerySuffix}";
+            var page = await _dg.QueryPageAsync(DmDatasets.ResourcePermissions, match, query, Token, ct);
+            if (page.Items.Count == 0)
+                break;
+
+            foreach (var row in page.Items)
             {
-                var id = GetString(idVal);
-                if (!string.IsNullOrEmpty(id))
-                    await _dg.DeleteAsync(DmDatasets.ResourcePermissions, id, Token, ct);
+                if (row.TryGetValue("__dataId", out var idVal) && idVal is not null)
+                {
+                    var id = GetString(idVal);
+                    if (!string.IsNullOrEmpty(id))
+                        idsToDelete.Add(id);
+                }
             }
+
+            if (page.Items.Count < SnapshotPageSize)
+                break;
+
+            skip += SnapshotPageSize;
         }
+
+        InvalidateSnapshotCache();
+        foreach (var id in idsToDelete)
+            await _dg.DeleteAsync(DmDatasets.ResourcePermissions, id, Token, ct);
     }
+
+    // ----- catalog cache + pagination -----
+
+    private async Task<PermissionCatalogData> LoadCatalogAsync(PermissionSnapshotScope scope, CancellationToken ct)
+    {
+        var domainId = _ctx.DomainId;
+        var ttlSeconds = _resourceSettings.PermissionSnapshotCacheTtlSeconds;
+
+        if (!string.IsNullOrWhiteSpace(domainId) && ttlSeconds > 0)
+        {
+            var cacheKey = CatalogCacheKey(domainId, scope);
+            if (_memoryCache.TryGetValue(cacheKey, out PermissionCatalogData? cached) && cached is not null)
+                return cached;
+        }
+
+        var perms = await QueryAllPermissionsAsync(ct);
+        var folders = scope == PermissionSnapshotScope.Full
+            ? await QueryAllFoldersAsync(
+                new Dictionary<string, object?> { ["type"] = ResourceType.Folder },
+                ct)
+            : await QueryAllFoldersAsync(
+                new Dictionary<string, object?>
+                {
+                    ["type"] = ResourceType.Folder,
+                    ["permissionsBroken"] = true
+                },
+                ct);
+
+        var catalog = new PermissionCatalogData(folders, perms);
+
+        if (!string.IsNullOrWhiteSpace(domainId) && ttlSeconds > 0)
+        {
+            var ttl = TimeSpan.FromSeconds(Math.Clamp(ttlSeconds, 5, 3600));
+            _memoryCache.Set(CatalogCacheKey(domainId, scope), catalog, ttl);
+        }
+
+        return catalog;
+    }
+
+    private async Task<List<DmResourcePermission>> QueryAllPermissionsAsync(CancellationToken ct)
+    {
+        var all = new List<DmResourcePermission>();
+        var match = new Dictionary<string, object?>();
+        var skip = 0;
+
+        while (true)
+        {
+            var query = $"limit={SnapshotPageSize}&skip={skip}&{SnapshotPageQuerySuffix}";
+            var page = await _dg.QueryPageAsync(DmDatasets.ResourcePermissions, match, query, Token, ct);
+            if (page.Items.Count == 0)
+                break;
+
+            all.AddRange(page.Items.Select(MapPermission));
+            if (page.Items.Count < SnapshotPageSize)
+                break;
+
+            skip += SnapshotPageSize;
+        }
+
+        return all;
+    }
+
+    private async Task<List<DmResource>> QueryAllFoldersAsync(object match, CancellationToken ct)
+    {
+        var all = new List<DmResource>();
+        var skip = 0;
+
+        while (true)
+        {
+            var query = $"limit={SnapshotPageSize}&skip={skip}&{SnapshotPageQuerySuffix}";
+            var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, query, Token, ct);
+            if (page.Items.Count == 0)
+                break;
+
+            all.AddRange(page.Items.Select(MapResource));
+            if (page.Items.Count < SnapshotPageSize)
+                break;
+
+            skip += SnapshotPageSize;
+        }
+
+        return all;
+    }
+
+    private static string CatalogCacheKey(string domainId, PermissionSnapshotScope scope) =>
+        $"mngdoc:perm-catalog:{domainId}:{scope}";
 
     // ----- helpers -----
 

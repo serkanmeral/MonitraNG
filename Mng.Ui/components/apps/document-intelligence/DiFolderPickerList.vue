@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { diSearchTreeFolders } from '@/services/documentIntelligenceService';
 import type { DiTreeNode } from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
@@ -28,6 +29,11 @@ type VisibleRow = {
 const rootNodes = ref<DiTreeNode[]>([]);
 const expandedIds = ref<Set<string>>(new Set());
 const loadingIds = ref<Set<string>>(new Set());
+const searchQuery = ref('');
+const searchResults = ref<DiTreeNode[]>([]);
+const searchLoading = ref(false);
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 function isExcluded(id: string): boolean {
   return Boolean(props.excludeSubtreeId && id === props.excludeSubtreeId);
@@ -76,6 +82,22 @@ const visibleRows = computed(() => {
   return out;
 });
 
+const searchActive = computed(() => searchQuery.value.trim().length >= 2);
+
+const searchRows = computed(() =>
+  searchResults.value
+    .filter((node) => !isExcluded(node.id))
+    .map((node) => ({
+      id: node.id,
+      name: node.name,
+      depth: 0,
+      hasChildren: node.hasChildren,
+      node,
+    })),
+);
+
+const rowsToRender = computed(() => (searchActive.value ? searchRows.value : visibleRows.value));
+
 async function ensureRoots() {
   if (rootNodes.value.length) return;
   if (props.isLoading?.(null) || loadingIds.value.has('__root__')) return;
@@ -87,6 +109,22 @@ async function ensureRoots() {
   }
 }
 
+async function runFolderSearch(q: string) {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) {
+    searchResults.value = [];
+    return;
+  }
+  searchLoading.value = true;
+  try {
+    searchResults.value = await diSearchTreeFolders(trimmed, 50);
+  } catch {
+    searchResults.value = [];
+  } finally {
+    searchLoading.value = false;
+  }
+}
+
 watch(
   () => props.excludeSubtreeId,
   () => {
@@ -95,6 +133,11 @@ watch(
     }
   },
 );
+
+watch(searchQuery, (q) => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => runFolderSearch(q), 300);
+});
 
 defineExpose({ ensureRoots, reload: ensureRoots });
 
@@ -133,47 +176,74 @@ ensureRoots();
 </script>
 
 <template>
-  <v-list density="compact" class="di-folder-picker-list border rounded-lg">
-    <v-list-item
-      :active="modelValue === null"
-      prepend-icon="mdi-folder-home-outline"
-      :title="t('documentIntelligence.allDocuments')"
-      @click="select(null)"
+  <div>
+    <v-text-field
+      v-model="searchQuery"
+      :label="t('documentIntelligence.folderPicker.searchPlaceholder')"
+      variant="outlined"
+      density="compact"
+      hide-details
+      clearable
+      prepend-inner-icon="mdi-magnify"
+      class="mb-2"
     />
 
-    <template v-if="rowLoading(null) && !rootNodes.length">
-      <v-list-item>
-        <v-progress-linear indeterminate color="primary" height="2" />
-      </v-list-item>
-    </template>
+    <v-list density="compact" class="di-folder-picker-list border rounded-lg">
+      <v-list-item
+        :active="modelValue === null"
+        prepend-icon="mdi-folder-home-outline"
+        :title="t('documentIntelligence.allDocuments')"
+        @click="select(null)"
+      />
 
-    <v-list-item
-      v-for="row in visibleRows"
-      :key="row.id"
-      :active="modelValue === row.id"
-      @click="select(row.id)"
-    >
-      <template #prepend>
-        <span :style="{ display: 'inline-block', width: row.depth * 14 + 'px' }" />
-        <v-btn
-          v-if="row.hasChildren"
-          icon
-          size="x-small"
-          variant="text"
-          class="mr-1"
-          :loading="rowLoading(row.id)"
-          @click.stop="toggleExpand(row)"
-        >
-          <v-icon size="16">
-            {{ expandedIds.has(row.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
-          </v-icon>
-        </v-btn>
-        <span v-else class="di-folder-picker-spacer mr-1" />
-        <v-icon size="18" class="mr-2">mdi-folder-outline</v-icon>
+      <template v-if="searchLoading">
+        <v-list-item>
+          <v-progress-linear indeterminate color="primary" height="2" />
+        </v-list-item>
       </template>
-      <v-list-item-title>{{ row.name }}</v-list-item-title>
-    </v-list-item>
-  </v-list>
+
+      <template v-else-if="searchActive && !rowsToRender.length">
+        <v-list-item>
+          <v-list-item-title class="text-caption text-medium-emphasis">
+            {{ t('documentIntelligence.folderPicker.searchEmpty') }}
+          </v-list-item-title>
+        </v-list-item>
+      </template>
+
+      <template v-else-if="!searchActive && rowLoading(null) && !rootNodes.length">
+        <v-list-item>
+          <v-progress-linear indeterminate color="primary" height="2" />
+        </v-list-item>
+      </template>
+
+      <v-list-item
+        v-for="row in rowsToRender"
+        :key="row.id"
+        :active="modelValue === row.id"
+        @click="select(row.id)"
+      >
+        <template #prepend>
+          <span :style="{ display: 'inline-block', width: row.depth * 14 + 'px' }" />
+          <v-btn
+            v-if="!searchActive && row.hasChildren"
+            icon
+            size="x-small"
+            variant="text"
+            class="mr-1"
+            :loading="rowLoading(row.id)"
+            @click.stop="toggleExpand(row)"
+          >
+            <v-icon size="16">
+              {{ expandedIds.has(row.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
+            </v-icon>
+          </v-btn>
+          <span v-else-if="!searchActive" class="di-folder-picker-spacer mr-1" />
+          <v-icon size="18" class="mr-2">mdi-folder-outline</v-icon>
+        </template>
+        <v-list-item-title>{{ row.name }}</v-list-item-title>
+      </v-list-item>
+    </v-list>
+  </div>
 </template>
 
 <style scoped>

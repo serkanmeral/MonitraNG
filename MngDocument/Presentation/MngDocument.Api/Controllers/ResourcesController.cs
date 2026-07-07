@@ -56,23 +56,44 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetTreePath([FromQuery] string folderId, CancellationToken ct) =>
         Ok(await _resources.GetTreePathAsync(folderId, ct));
 
+    /// <summary>Taşı/klon picker: klasör adı araması (yalnızca görülebilir klasörler).</summary>
+    [HttpGet("tree/search")]
+    [ProducesResponseType(typeof(IReadOnlyList<TreeNodeDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchTreeFolders(
+        [FromQuery] string q,
+        [FromQuery] int limit = 50,
+        CancellationToken ct = default) =>
+        Ok(await _resources.SearchTreeFoldersAsync(q, limit, ct));
+
     /// <summary>İlk yükleme / yenileme: ağaç + içerik listesi (tek permission snapshot). folderId verilirse breadcrumb + seçili klasör dahil.</summary>
     [HttpGet("bootstrap")]
     [ProducesResponseType(typeof(ResourceBootstrapDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetBootstrap([FromQuery] string? folderId, CancellationToken ct) =>
-        Ok(await _resources.GetBootstrapAsync(folderId, ct));
+    public async Task<IActionResult> GetBootstrap(
+        [FromQuery] string? folderId,
+        [FromQuery] int skip = 0,
+        [FromQuery] int? limit = null,
+        CancellationToken ct = default) =>
+        Ok(await _resources.GetBootstrapAsync(folderId, skip, limit, ct));
 
     /// <summary>Klasör gezinme: içerik + breadcrumb + seçili klasör (ağaç hariç, tek snapshot).</summary>
     [HttpGet("browse")]
     [ProducesResponseType(typeof(ResourceBrowseContextDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetBrowse([FromQuery] string? folderId, CancellationToken ct) =>
-        Ok(await _resources.GetBrowseContextAsync(folderId, ct));
+    public async Task<IActionResult> GetBrowse(
+        [FromQuery] string? folderId,
+        [FromQuery] int skip = 0,
+        [FromQuery] int? limit = null,
+        CancellationToken ct = default) =>
+        Ok(await _resources.GetBrowseContextAsync(folderId, skip, limit, ct));
 
     /// <summary>Bir klasörün içeriği (klasör + markdown + dosya). parentId boşsa kök.</summary>
     [HttpGet("children")]
     [ProducesResponseType(typeof(ResourceListResult), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetChildren([FromQuery] string? parentId, CancellationToken ct) =>
-        Ok(await _resources.GetChildrenAsync(parentId, ct));
+    public async Task<IActionResult> GetChildren(
+        [FromQuery] string? parentId,
+        [FromQuery] int skip = 0,
+        [FromQuery] int? limit = null,
+        CancellationToken ct = default) =>
+        Ok(await _resources.GetChildrenAsync(parentId, skip, limit, ct));
 
     /// <summary>Full-text arama (DG regex search: ad/başlık/açıklama + markdown içeriği).</summary>
     [HttpGet("search")]

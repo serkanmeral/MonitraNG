@@ -535,7 +535,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         string? parentId = null;
         foreach (var segment in segments)
         {
-            var children = await _resources.GetChildrenAsync(parentId, ct);
+            var children = await _resources.GetChildrenAsync(parentId, limit: null, ct: ct);
             var existing = children.Items.FirstOrDefault(c =>
                 string.Equals(c.Type, ResourceType.Folder, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(c.Name, segment, StringComparison.Ordinal));

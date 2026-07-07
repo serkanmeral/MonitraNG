@@ -33,6 +33,7 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
+        services.AddMemoryCache();
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IResourceService, ResourceService>();

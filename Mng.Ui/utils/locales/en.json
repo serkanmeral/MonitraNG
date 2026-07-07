@@ -3565,6 +3565,12 @@
     "typeDocument": "Document",
     "typeFile": "File",
     "emptyFolder": "This folder is empty.",
+    "childrenRange": "{from}–{to} of {total} items",
+    "childrenPageSize": "Page size",
+    "folderPicker": {
+      "searchPlaceholder": "Search folders…",
+      "searchEmpty": "No matching folders found."
+    },
     "emptyDoc": "This page is empty. Click Edit to add content.",
     "emptyPage": "This page is empty. Click Edit to add content.",
     "discovery": {

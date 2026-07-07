@@ -27,7 +27,10 @@ public class ResourceService : IResourceService
 
     private const string ListQuery = "limit=1000&expand=false&showHistory=true";
     private const string TreeFolderListQuery = "limit=500&expand=false&showHistory=false&sort=name";
+    private const string ChildrenListQuerySuffix = "expand=false&showHistory=false";
     private const string DocxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+    private readonly Dictionary<string, List<ResourceDto>> _visibleChildrenCache = new(StringComparer.Ordinal);
 
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
@@ -119,11 +122,15 @@ public class ResourceService : IResourceService
         };
     }
 
-    public async Task<ResourceBootstrapDto> GetBootstrapAsync(string? folderId = null, CancellationToken ct = default)
+    public async Task<ResourceBootstrapDto> GetBootstrapAsync(
+        string? folderId = null,
+        int skip = 0,
+        int? limit = null,
+        CancellationToken ct = default)
     {
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         var treeRoots = await QueryLazyTreeFolderNodesAsync(null, snapshot, ct);
-        var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct);
+        var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct, skip, limit);
         var (breadcrumb, selectedFolder) = await ResolveFolderContextAsync(folderId, snapshot, ct);
 
         return new ResourceBootstrapDto
@@ -136,10 +143,14 @@ public class ResourceService : IResourceService
         };
     }
 
-    public async Task<ResourceBrowseContextDto> GetBrowseContextAsync(string? folderId, CancellationToken ct = default)
+    public async Task<ResourceBrowseContextDto> GetBrowseContextAsync(
+        string? folderId,
+        int skip = 0,
+        int? limit = null,
+        CancellationToken ct = default)
     {
         var snapshot = await _perms.LoadSnapshotAsync(ct);
-        var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct);
+        var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct, skip, limit);
         var (breadcrumb, selectedFolder) = await ResolveFolderContextAsync(folderId, snapshot, ct);
 
         return new ResourceBrowseContextDto
@@ -150,10 +161,52 @@ public class ResourceService : IResourceService
         };
     }
 
-    public async Task<ResourceListResult> GetChildrenAsync(string? parentId, CancellationToken ct = default)
+    public async Task<ResourceListResult> GetChildrenAsync(
+        string? parentId,
+        int skip = 0,
+        int? limit = null,
+        CancellationToken ct = default)
     {
         var snapshot = await _perms.LoadSnapshotAsync(ct);
-        return await QueryChildrenAsync(NormalizeParentId(parentId), snapshot, ct);
+        return await QueryChildrenAsync(NormalizeParentId(parentId), snapshot, ct, skip, limit);
+    }
+
+    public async Task<IReadOnlyList<TreeNodeDto>> SearchTreeFoldersAsync(
+        string query,
+        int limit = 50,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return Array.Empty<TreeNodeDto>();
+
+        var safeLimit = Math.Clamp(limit <= 0 ? 50 : limit, 1, _settings.Resources.MaxChildrenPageSize);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var match = new Dictionary<string, object?> { ["type"] = ResourceType.Folder };
+        var queryString =
+            $"limit={safeLimit}&skip=0&{ChildrenListQuerySuffix}&search={Uri.EscapeDataString(query.Trim())}";
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, queryString, Token, ct);
+
+        var folders = page.Items
+            .Select(MapRow)
+            .Where(f => f.__dataId is not null && snapshot.Resolve(f).CanView)
+            .OrderBy(f => f.name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var hasChildren = await ResolveFolderHasChildrenAsync(
+            folders.Select(f => f.__dataId!).ToList(),
+            snapshot,
+            ct);
+
+        return folders
+            .Select(f => new TreeNodeDto
+            {
+                Id = f.__dataId!,
+                Name = f.name ?? string.Empty,
+                ParentId = f.parentId,
+                HasChildren = hasChildren.Contains(f.__dataId!),
+                Children = new List<TreeNodeDto>()
+            })
+            .ToList();
     }
 
     public async Task<ResourceDto> GetByIdAsync(string id, CancellationToken ct = default)
@@ -1291,20 +1344,59 @@ public class ResourceService : IResourceService
     private async Task<ResourceListResult> QueryChildrenAsync(
         string? parentId,
         PermissionSnapshot snapshot,
+        CancellationToken ct,
+        int skip = 0,
+        int? limit = null)
+    {
+        var all = await GetVisibleChildrenCachedAsync(parentId, snapshot, ct);
+        var total = all.Count;
+
+        if (limit is null or <= 0)
+            return new ResourceListResult { Items = all, Total = total };
+
+        var safeLimit = Math.Clamp(limit.Value, 1, _settings.Resources.MaxChildrenPageSize);
+        var safeSkip = Math.Max(0, skip);
+        var pageItems = all.Skip(safeSkip).Take(safeLimit).ToList();
+        return new ResourceListResult { Items = pageItems, Total = total };
+    }
+
+    private async Task<List<ResourceDto>> GetVisibleChildrenCachedAsync(
+        string? parentId,
+        PermissionSnapshot snapshot,
         CancellationToken ct)
     {
-        var match = new Dictionary<string, object?> { ["parentId"] = parentId };
-        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+        var cacheKey = parentId ?? "__root__";
+        if (_visibleChildrenCache.TryGetValue(cacheKey, out var cached))
+            return cached;
 
-        var items = page.Items
-            .Select(MapRow)
+        var match = new Dictionary<string, object?> { ["parentId"] = parentId };
+        var rows = new List<DmResource>();
+        var dgSkip = 0;
+        const int dgPageSize = 500;
+
+        while (true)
+        {
+            var query = $"limit={dgPageSize}&skip={dgSkip}&{ChildrenListQuerySuffix}";
+            var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, query, Token, ct);
+            if (page.Items.Count == 0)
+                break;
+
+            rows.AddRange(page.Items.Select(MapRow));
+            if (page.Items.Count < dgPageSize)
+                break;
+
+            dgSkip += dgPageSize;
+        }
+
+        var visible = rows
             .Where(r => snapshot.Resolve(r).CanView)
             .OrderByDescending(r => r.type == ResourceType.Folder)
             .ThenBy(r => r.name, StringComparer.OrdinalIgnoreCase)
             .Select(r => ToDto(r, snapshot.Resolve(r)))
             .ToList();
 
-        return new ResourceListResult { Items = items, Total = items.Count };
+        _visibleChildrenCache[cacheKey] = visible;
+        return visible;
     }
 
     private async Task<(IReadOnlyList<BreadcrumbDto> Breadcrumb, ResourceDto? SelectedFolder)> ResolveFolderContextAsync(

@@ -212,6 +212,31 @@ function mapListResult(raw: unknown): DiResourceListResult {
   return { items, total: num(o, 'total') ?? items.length };
 }
 
+/** Varsayılan klasör içeriği sayfa boyutu (bootstrap/browse/children). */
+export const DI_CHILDREN_PAGE_SIZE = 25;
+
+export const DI_CHILDREN_PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+type DiChildrenQueryOptions = {
+  skip?: number;
+  limit?: number | null;
+};
+
+function buildListingQuery(
+  base: Record<string, string | undefined>,
+  options?: DiChildrenQueryOptions,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(base)) {
+    if (value) params.set(key, value);
+  }
+  const skip = options?.skip ?? 0;
+  if (skip > 0) params.set('skip', String(skip));
+  if (options?.limit != null && options.limit > 0) params.set('limit', String(options.limit));
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
 /** Klasör ağacı (yalnızca klasörler, iç içe — tam ağaç, geriye dönük). */
 export async function diGetTree(): Promise<DiTreeNode[]> {
   const raw = await fetchFromDocuments(`${BASE}/tree`, 'GET');
@@ -235,6 +260,15 @@ export async function diGetTreeChildren(parentId: string | null): Promise<DiTree
 export async function diGetTreePath(folderId: string): Promise<DiTreePath> {
   const raw = await fetchFromDocuments(`${BASE}/tree/path?folderId=${encodeURIComponent(folderId)}`, 'GET');
   return mapTreePath(raw);
+}
+
+/** Taşı/klon picker: görülebilir klasör adı araması. */
+export async function diSearchTreeFolders(q: string, limit = 50): Promise<DiTreeNode[]> {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) return [];
+  const params = new URLSearchParams({ q: trimmed, limit: String(limit) });
+  const raw = await fetchFromDocuments(`${BASE}/tree/search?${params.toString()}`, 'GET');
+  return Array.isArray(raw) ? raw.map(mapTreeNode) : [];
 }
 
 function mapBootstrap(raw: unknown): DiResourceBootstrap {
@@ -280,22 +314,37 @@ function mapBrowseContext(raw: unknown): DiResourceBrowseContext {
 }
 
 /** Ana ekran ilk yükleme / tam yenileme (ağaç + içerik, tek snapshot). */
-export async function diGetBootstrap(folderId?: string | null): Promise<DiResourceBootstrap> {
-  const qs = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';
+export async function diGetBootstrap(
+  folderId?: string | null,
+  options?: DiChildrenQueryOptions,
+): Promise<DiResourceBootstrap> {
+  const qs = buildListingQuery(
+    { folderId: folderId ?? undefined },
+    { skip: options?.skip ?? 0, limit: options?.limit ?? DI_CHILDREN_PAGE_SIZE },
+  );
   const raw = await fetchFromDocuments(`${BASE}/bootstrap${qs}`, 'GET');
   return mapBootstrap(raw);
 }
 
 /** Klasör gezinme (içerik + breadcrumb + seçili klasör, tek snapshot). */
-export async function diGetBrowseContext(folderId?: string | null): Promise<DiResourceBrowseContext> {
-  const qs = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';
+export async function diGetBrowseContext(
+  folderId?: string | null,
+  options?: DiChildrenQueryOptions,
+): Promise<DiResourceBrowseContext> {
+  const qs = buildListingQuery(
+    { folderId: folderId ?? undefined },
+    { skip: options?.skip ?? 0, limit: options?.limit ?? DI_CHILDREN_PAGE_SIZE },
+  );
   const raw = await fetchFromDocuments(`${BASE}/browse${qs}`, 'GET');
   return mapBrowseContext(raw);
 }
 
-/** Bir klasörün içeriği (klasör + markdown + dosya). parentId boşsa kök. */
-export async function diGetChildren(parentId?: string | null): Promise<DiResourceListResult> {
-  const qs = parentId ? `?parentId=${encodeURIComponent(parentId)}` : '';
+/** Bir klasörün içeriği (klasör + markdown + dosya). parentId boşsa kök. limit verilmezse tümü. */
+export async function diGetChildren(
+  parentId?: string | null,
+  options?: DiChildrenQueryOptions,
+): Promise<DiResourceListResult> {
+  const qs = buildListingQuery({ parentId: parentId ?? undefined }, options);
   const raw = await fetchFromDocuments(`${BASE}/children${qs}`, 'GET');
   return mapListResult(raw);
 }
