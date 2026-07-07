@@ -462,4 +462,4 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 10. **Sprint B** — `dm_document_context_types` dataset
 11. **D-E4** — Redis WOPI store (opsiyonel)
 
-**Son commit (DI):** D-E + D2 — editör oturum/kilitleme + sürüm UX (7 Tem gece)
+**Son commit (DI):** `f8f655ca` — D-E + D2 (editör oturum/kilitleme + sürüm UX) · test deploy ✅
