@@ -1,7 +1,7 @@
 # Document Intelligence — Ürün Yol Haritası
 
 **Durum:** Planlama (birleşik roadmap)  
-**Son güncelleme:** 6 Temmuz 2026  
+**Son güncelleme:** 7 Temmuz 2026  
 **Kapsam:** Sayfa · Döküman · Sheet · Sunum · Parametreler · Kurumsal kimlik (D-BR) · Zamanlama · Bildirim · Collabora oturum yönetimi · Workflow entegrasyonu (D-WF) · AI  
 **İlişkili:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md) · [DEVAM.md](./DEVAM.md) · [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md) · [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
@@ -32,18 +32,38 @@ Kullanıcı arayüzü ve dokümantasyonda aşağıdaki isimler kullanılır (“
 | **Döküman** | `type=file`, `.docx` | Collabora (WOPI) | Resmi Word: CoC, aktivite, kalite formu, antetli belge |
 | **Sheet** | `type=file`, `.xlsx` | Collabora Calc | Fiyat listesi, kapasite, plan, kontrol tablosu |
 | **Sunum** | `type=file`, `.pptx` | Collabora Impress | Müşteri sunumu, eğitim, yönetim brifingi |
-| **Dosya** | `type=file` (pdf, zip, img…) | Önizleme / indir | Ek, arşiv, referans |
+| **Dosya** | `type=file` (pdf, zip, img…) | Önizleme / indir | Ek, arşiv, referans; **harici yüklenen docx dahil** |
 | **Klasör** | `type=folder` | — | Hiyerarşi, yetki anchor |
+
+**Önemli:** Döküman ve Dosya ikisi de teknik olarak `type=file` olabilir (ör. ikisi de `.docx`). UI ayrımı **uzantı + `origin`** ile yapılır (aşağıda).
 
 ### Döküman kaynağı (`origin`)
 
-Her **Döküman** üç yoldan oluşabilir:
+| Origin | Açıklama | UI sınıfı |
+|--------|----------|-----------|
+| **`native`** | Klasörde «Yeni döküman» — DI LibreOffice hattıyla boş oluşturulan | **Döküman** |
+| **`manual`** | Şablondan parametre doldurarak üretilen | **Döküman** |
+| **`system`** | İş verisi tetikler (CoC, Activity, schedule…) | **Döküman** |
+| **`upload`** | Kullanıcının yüklediği binary (Word docx, pdf, zip…) | **Dosya** |
 
-| Origin | Açıklama |
-|--------|----------|
-| `upload` | Kullanıcı mevcut DOCX yükler |
-| `manual` | Kullanıcı şablondan parametre doldurarak üretir |
-| `system` | İş verisi tetikler (generation profile: sipariş kalemi, schedule vb.) |
+**UI türetme kuralı:**
+
+```text
+Sayfa    → type = markdown
+Döküman  → type = file AND origin ∈ { native, manual, system }
+           AND extension ∈ { docx }   (ileride xlsx, pptx → Faz S / Pr)
+Dosya    → type = file AND origin = upload
+           OR extension ∉ collabora-döküman seti
+```
+
+**Davranış ayrımı (karar — 7 Tem 2026):**
+
+| | Döküman | Dosya (upload docx dahil) |
+|---|---------|---------------------------|
+| Collabora düzenle | ✅ | ❌ |
+| Önizleme | Collabora veya PDF | **Gotenberg → PDF** (**D-FILE-PREV**) |
+| Antet (`letterheadId`) | ✅ (`native` oluşturmada seçim) | ❌ |
+| Kod (`documentNo`) | ✅ | ❌ |
 
 ---
 
@@ -56,9 +76,17 @@ Her **Döküman** üç yoldan oluşabilir:
 | Kaynak ağacı (klasör / sayfa / dosya) | ✅ Faz 1 |
 | Sayfa: taslak/yayın, sürüm geçmişi, iç link, arama | ✅ |
 | Grup bazlı klasör yetkisi + miras | ✅ |
-| Döküman: DOCX upload, Collabora edit (WOPI) | ✅ |
+| Döküman: DOCX upload → `origin=upload` (Dosya bandı) | ✅ **D-META** |
+| Döküman: native oluşturma + antet + kod | ✅ **D-CREATE** |
+| Yüklenen docx PDF önizleme (Gotenberg) | ✅ **D-FILE-PREV** |
+| Lazy tree + klasör arama + listing pagination | ✅ **D-PERF-1/3** (`dff51a2c`) |
+| Permission snapshot cache (domain TTL) | ✅ **D-PERF-2** (`dff51a2c`) |
+| DOCX sürüm geçmişi API + klonlama | ✅ **D-VERSIONS / D-CLONE** (`c5880739`) |
+| Etiket kataloğu (`dm_tags`) + tag API | ✅ (prod dataset 7 Tem) |
 | Belge Tasarımcısı: şablon, parametre (skaler), antet/footer (şablona gömülü) | ✅ D1 |
-| **Paylaşımlı antet kataloğu (`dm_letterheads`) + Collabora tasarım + tablo footer** | ✅ **D-BR1 Sprint A** (test) |
+| **Paylaşımlı antet kataloğu (`dm_letterheads`) + Collabora tasarım + tablo footer** | ✅ **D-BR1** |
+| **Şablonda varsayılan antet** (`defaultLetterheadId` — Belge Tasarımcısı) | ✅ **D-BR1** |
+| **Faz P — Sayfa** (keşif, editör, etiket, changeNote, backlink, alan giriş) | ✅ **Faz P** (6–7 Tem 2026) |
 | Otomatik üretim: CoC + Activity generation profilleri | ✅ |
 | Şablon publish/unpublish | ✅ |
 | System / Öğreticiler seed içerik | ✅ |
@@ -68,19 +96,22 @@ Her **Döküman** üç yoldan oluşabilir:
 
 | Alan | Durum |
 |------|-------|
-| Sayfa editörü olgunluğu (WYSIWYG, etiket UI, ana sayfa) | 🔲 Faz P |
-| Yapısal parametreler (tablo, kart, chart) | 🔲 Faz D-P |
-| Dataset / MO query ile parametre verisi | 🔲 Faz D-P |
-| Döküman sürüm UI (file) | 🔲 Faz D |
+| Yapısal parametreler (tablo, kart, chart) | ⏸️ **Faz D-P — ertelendi** |
+| Dataset / MO query ile parametre verisi | ⏸️ **Faz D-P — ertelendi** |
+| Parametre yönetimi UI (envanter ↔ tanım) | ⏸️ **Faz D-P — ertelendi** |
+| Döküman sürüm UI (file) — genişletme | 🔲 **D2** (backend ✅, UI kısmen) |
+| Döküman lifecycle (taslak/yayın docx) | ⏸️ **Faz M** — Minimal karar: yalnızca Sayfa |
 | Manuel şablondan üretim UX | 🔲 Faz D |
 | Sheet / Sunum Collabora | 🔲 Faz S / Pr |
 | Zamanlanmış üretim | 🔲 Faz D-S |
 | Döküman bildirimleri | 🔲 Faz D-N |
 | OC WorkItem ↔ doküman (tam UI) | 🔲 Faz D5 |
 | Collabora oturum görünürlüğü / limit (D-E) | 🔲 Faz D-E |
-| Paylaşımlı antet & kapak kataloğu; üretimde seçim | 🟡 **D-BR1 kısmi** (katalog ✅ · üretim seçimi 🔲) |
+| Kapak sayfası kataloğu + üretimde opsiyonel seçim | 🔲 **D-BR2** |
+| **`origin` formal dataset + upload fix** | ✅ **D-META** |
 | Workflow entegrasyonu (onaylı yayın, dağıtım) | 🔲 Faz D-WF |
 | AI: extract, tag, özet, benzer, asistan | 🔲 Faz AI |
+| Sayfa yorumu / izle-bildirim | 🔲 Faz P+ (erteli) |
 
 **Teknik referans:** `MngDocument` (`/documents/api/v1/...`), UI `/apps/document-intelligence`, kalıcılık `dm_resources`, `dm_resource_permissions`, `dm_resource_versions`, `dm_document_templates`.
 
@@ -117,6 +148,9 @@ Klasör convention zorunlu değil; tür filtresi + etiket yeterli olabilir. Öne
 ```text
 Faz P   → Sayfa (editör + keşif + etiket)
 Faz D   → Döküman (Collabora olgunlaştırma + üretim kanalları)
+  D-CREATE → Klasörde native döküman oluştur (docx + antet)
+  D-FILE-PREV → Yüklenen docx PDF önizleme (Gotenberg)
+  D-META  → origin metadata + UI sınıflandırma
   D-BR  → Kurumsal kimlik (antet kataloğu + kapak sayfası)
   D-E   → Collabora editör oturumları (sayım, limit, yönetim)
   D-WF  → Workflow entegrasyonu (olaylar, onaylı yayın, dağıtım)
@@ -172,25 +206,31 @@ flowchart TB
 
 | Sıra | Faz | Gerekçe |
 |------|-----|---------|
-| 1 | **P** | Düşük risk, hızlı değer, iç bilgi merkezi canlanır |
-| 2 | **D** + **D-E** (E1–E2) | Collabora home_mode limiti (20 conn / 10 doc) — önce bizim gate |
-| 3 | **D** + **D-BR1** | Paylaşımlı antet kataloğu; üretimde seçim — marka tutarlılığı, şablon çoğaltmayı azaltır |
-| 4 | **D** + **D-P** (P1–P3) | Odak referans; Activity sevkiyat tablosu vb. |
-| 5 | **D-BR2** | Kapak sayfası — rapor ve dış paylaşım belgeleri için profesyonel ilk sayfa |
-| 6 | **D-N** | Üretim maili — hızlı operasyonel kazanç |
-| 7 | **D-S** | Haftalık otomatik rapor senaryosu |
-| 8 | **D5** | Operasyon entegrasyonu — DI farkı |
-| 9 | **S** → **Pr** | Kurumsal içerik üçlüsü (Word·Excel·Sunum) |
-| 10 | **D-P** (P4–P5) | Chart + MO aggregate |
-| 11 | **D-WF** (0–1) | Event publish + CoC kalite onay playbook (D-N1 ile overlap netleştir) |
-| 12 | **AI** | Extract + tag + özet + benzer + asistan |
-| 13 | **M** + **D-WF2–4** | Kontrollü doküman lifecycle; AI düşük güven onayı |
+| ~~1~~ | ~~**P**~~ | ✅ Tamamlandı (6–7 Tem 2026) |
+| ~~3~~ | ~~**D-BR1**~~ | ✅ Tamamlandı — antet katalog + şablonda varsayılan antet (üretim dialog seçimi **yok**) |
+| ~~4~~ | ~~**D-META / D-CREATE / D-FILE-PREV**~~ | ✅ Tamamlandı (7 Tem 2026) — prod smoke |
+| ~~5~~ | ~~**D-PERF-1/2/3**~~ | ✅ Lazy tree, permission cache, pagination (`dff51a2c`) |
+| 1 | **D-E** (E1–E2) | Collabora home_mode limiti (20 conn / 10 doc) — önce bizim gate |
+| 2 | **D** (D2–D4) | Döküman sürüm UI, merge/PDF, manuel üretim UX |
+| 3 | **D-BR2** | Kapak sayfası — rapor ve dış paylaşım belgeleri için profesyonel ilk sayfa |
+| 4 | **D-N** | Üretim maili — hızlı operasyonel kazanç |
+| 5 | **D-S** | Haftalık otomatik rapor senaryosu |
+| 6 | **D5** | Operasyon entegrasyonu — DI farkı |
+| 7 | **S** → **Pr** | Kurumsal içerik üçlüsü (Word·Excel·Sunum) |
+| 8 | **D-WF** (0–1) | Event publish + CoC kalite onay playbook (D-N1 ile overlap netleştir) |
+| 9 | **D-P** (P1–P5) | ⏸️ **Ertelendi** — tablo/chart parametreler; Activity sevkiyat tablosu vb. |
+| 10 | **AI** | Extract + tag + özet + benzer + asistan |
+| 11 | **M** + **D-WF2–4** | Kontrollü doküman lifecycle; AI düşük güven onayı |
 
 ---
 
-## 6. Faz P — Sayfa
+## 6. Faz P — Sayfa ✅ (tamamlandı — 6–7 Temmuz 2026)
 
 **Hedef:** Kurumsal bilgi içeriğini **Sayfa** olarak yönetmek; editör ve keşif deneyimini güçlendirmek.
+
+**Commit:** `1441ac90` — keşif, changeNote, backlink, etiket UI, alan giriş sayfası, sürüm geçmişi; aramada taslak hariç. **WYSIWYG / «Zengin» editör bilinçli olarak kaldırıldı** — yalnızca Markdown editör (split önizleme, şablon, tablo, görsel, iç link picker).
+
+**Erteli (Faz P+):** Sayfa yorumu, izle/bildirim.
 
 ### P1 — Terminoloji ve UX
 - UI: “Markdown” → **Sayfa**; tür ikonları ve filtreler
@@ -237,9 +277,10 @@ flowchart TB
 Metadata (genişletme):
 
 ```text
-origin: upload | manual | system
-templateId, generationProfile, documentNo
-letterheadId, coverPageId   (Faz D-BR — üretimde seçilen kimlik)
+origin: upload | native | manual | system
+templateId, generationProfile, documentNo   (kod — native/manual/system)
+letterheadId                              (native oluşturmada seçim; şablonda defaultLetterheadId)
+coverPageId                               (Faz D-BR2)
 lifecycle: draft | active | superseded | archived  (Faz M)
 scheduleId (zamanlı üretimde)
 ```
@@ -261,19 +302,56 @@ scheduleId (zamanlı üretimde)
 | D4 | Merge + PDF indirme |
 | D5 | OC work item ↔ döküman |
 
+### D-CREATE — Klasörde native döküman (7 Tem 2026 planı)
+
+**Hedef:** Kaynak ağacında «Yeni döküman» — ad, kod, tür (MVP: docx), docx ise antet seçimi → boş Collabora dökümanı.
+
+| Alan | MVP |
+|------|-----|
+| Ad | Zorunlu |
+| Kod (`documentNo`) | Zorunlu; **domain geneli benzersiz** (#16 ✅) |
+| Tür | Yalnızca `docx` (xlsx/pptx → Faz S / Pr) |
+| Antet | docx ise `dm_letterheads` listesinden seçim |
+| `origin` | `native` |
+| Sonrası | Collabora edit (mevcut WOPI) |
+
+**Backend:** `MinimalDocxFactory` + `LetterheadDesignMerger` (mevcut) → `CreateFileResource` veya yeni `POST /resources/documents`.
+
+### D-FILE-PREV — Yüklenen docx önizleme (7 Tem 2026 planı)
+
+**Hedef:** `origin=upload` + `.docx` → Gotenberg DOCX→PDF → tarayıcı PDF iframe (`DiFilePreviewDialog`).
+
+| Konu | Karar |
+|------|--------|
+| Motor | Gotenberg (headless LibreOffice) — zaten prod’da |
+| Collabora fallback | **Yok** — dönüşüm başarısızsa indir |
+| Cache | MVP: on-demand; isteğe bağlı PDF cache (v2) |
+| UI uyarısı | «Harici Word belgesi — önizleme yaklaşık görünüm sunar.» |
+
+**API (taslak):** `GET /resources/{id}/preview/pdf`
+
+### D-META — origin ve UI sınıflandırma
+
+- Upload akışı → her zaman `origin=upload`
+- `dm_resources` dataset: `origin`, `letterheadId`, `documentNo` formal alanlar
+- UI: `isDiDocument()` / `isDiUploadedFile()`; ikon, filtre, menü, Collabora gate
+
 ### D4 — Üretim kanalları
 
 ```text
                     ┌─────────────────┐
                     │  dm_resources   │
-                    │  type=file docx │
+                    │  type=file      │
                     └────────┬────────┘
-           ┌─────────────────┼─────────────────┐
-           ▼                 ▼                 ▼
-    origin=upload    origin=manual      origin=system
+     ┌──────────────────┼──────────────────┬─────────────────┐
+     ▼                  ▼                  ▼                 ▼
+origin=upload    origin=native     origin=manual      origin=system
+ (Dosya)         (D-CREATE)        (şablondan)        (CoC/Activity…)
+ PDF preview     Collabora         Collabora          Collabora
 ```
 
-- **Upload:** mevcut akış + Collabora
+- **Upload (`origin=upload`):** yüklenen binary → **Dosya**; docx ise **D-FILE-PREV** PDF önizleme; Collabora **yok**
+- **Native (`origin=native`):** **D-CREATE** — boş docx + antet → Collabora edit
 - **Manuel:** şablondan oluştur → parametre formu → merge → ağaca ekle
 - **Sistem:** sipariş/OC/schedule tetikleyicisi
 
@@ -291,17 +369,18 @@ scheduleId (zamanlı üretimde)
 
 | Konu | Durum |
 |------|--------|
-| Antet | Şablona gömülü toggle’lar (logo, belge adı, docNo, tarih) |
-| Üretimde antet seçimi | Yok — şablon ne tanımlıysa o uygulanır |
+| Antet | Paylaşımlı **`dm_letterheads`** katalog + şablonda **`defaultLetterheadId`** (Belge Tasarımcısı) |
+| Üretimde antet seçimi | **Yok (bilinçli karar)** — antet şablon tanımında seçilir; üretim şablonun varsayılanını uygular |
 | Kapak sayfası | Yok |
-| Altbilgi | Şablon + domain footer profili |
+| Altbilgi | Antet tasarımı + domain footer profili |
 
 ### 8.1 Antet kataloğu — D-BR1
 
 - Domain genelinde **birden fazla antet tanımı** (katalog)
-- Şablonda **varsayılan antet**; üretim dialogunda listeden **seçim**
-- Logo, belge adı, numara, üretim tarihi — tek yerden yönetim
-- Mevcut şablon gömülü antetler → katalog kaydına **migration** (geriye uyum)
+- **Belge Tasarımcısı** → şablon tanımında **varsayılan antet** (`defaultLetterheadId`)
+- Üretim akışında ayrı antet seçimi **yok** — şablon ne tanımlıysa o uygulanır (farklı antet için ayrı şablon veya şablon düzenleme)
+- Logo, belge adı, numara, üretim tarihi — antet katalog kaydından yönetim
+- Mevcut şablon gömülü antetler → katalog kaydına **migration** (geriye uyum) ✅ prod
 
 **Kullanıcı değeri:** CoC ve Activity aynı kalır; antet departman veya müşteriye göre değişir — şablon çoğaltma azalır.
 
@@ -316,8 +395,10 @@ scheduleId (zamanlı üretimde)
 ### 8.3 Üretim deneyimi (hedef)
 
 ```text
-Şablon seç  →  (opsiyonel) Antet seç  →  (opsiyonel) Kapak ekle  →  Parametreler  →  Üret
+Şablon seç (şablondaki varsayılan antet uygulanır)  →  (opsiyonel) Kapak ekle  →  Parametreler  →  Üret
 ```
+
+Antet değişikliği gerekiyorsa **Belge Tasarımcısı**'nda şablonun `defaultLetterheadId` alanı güncellenir; üretim dialogunda ayrı antet seçimi **planlanmıyor**.
 
 Üretilen dökümanda hangi antet ve kapak kullanıldığı metadata’da saklanır (denetim, yeniden üretim).
 
@@ -325,8 +406,9 @@ scheduleId (zamanlı üretimde)
 
 | Dilim | Kapsam | Öncelik | Durum |
 |-------|--------|---------|-------|
-| **D-BR1a** | `dm_letterheads` + API + admin UI + Collabora tasarım + tablo footer skeleton + design merge | P0 | ✅ Sprint A (Odak test) |
-| **D-BR1b** | Şablon varsayılanı + **üretimde antet seçimi** + prod migration | P0 | 🔲 |
+| **D-BR1a** | `dm_letterheads` + API + admin UI + Collabora tasarım + tablo footer skeleton + design merge | P0 | ✅ Sprint A (Odak + prod) |
+| **D-BR1b** | Şablonda varsayılan antet (`defaultLetterheadId`) + prod migration + logo fix | P0 | ✅ (7 Tem 2026) |
+| **D-BR1b (iptal)** | ~~Üretim dialogunda antet seçimi~~ | — | ➖ **Yapılmayacak** — antet Belge Tasarımcısı'nda |
 | **D-BR2** | Kapak kataloğu + üretimde opsiyonel seçim | P1 | 🔲 |
 | **D-BR3** | Paylaşımlı altbilgi kataloğu (opsiyonel; footer şablonda kalabilir) | P2 | ➖ Tablo footer modeli ile birleşti |
 
@@ -524,7 +606,9 @@ Payload: `resourceId`, `generationProfile`, `origin`, `documentNo`, `contextType
 
 ---
 
-## 11. Faz D-P — Parametre sistemi 2.0
+## 11. Faz D-P — Parametre sistemi 2.0 ⏸️ (ertelendi)
+
+**Durum (7 Tem 2026):** Skaler parametreler ve mevcut generation profilleri yeterli; tablo/chart/MO query genişlemesi **ileriki fazlara ertelendi**. Yeniden ele alınırken Odak referans: Activity sevkiyat tablosu (D-P3 pilot).
 
 **Hedef:** Skaler `{{key}}` modelinin ötesine geçmek; tablo, kart, chart; dataset ve MO query ile veri çekmek.
 
@@ -852,14 +936,14 @@ AI fazından sonra veya paralel (müşteri talebi).
 
 ## 21. Açık kararlar
 
-| # | Konu | Seçenekler |
+| # | Konu | Seçenekler / karar |
 |---|------|------------|
 | 1 | Schedule query yetkisi | System token vs schedule owner vekili |
 | 2 | Chart MVP | Tablo fallback vs PNG zorunlu |
 | 3 | `perRow` schedule limit | Max satır / rate limit |
 | 4 | Bildirim kanalları | E-posta only vs in-app Faz 1 |
 | 5 | Mail şablonları | Notifier HTML vs DG `mail_templates` |
-| 6 | Sayfa yorum | Faz P vs erteleme |
+| 6 | Sayfa yorum | Faz P+ vs erteleme → **ertelendi** |
 | 7 | Editör idle timeout | 15 dk vs 30 dk vs WOPI TTL ile aynı |
 | 8 | WOPI store | In-memory (tek pod) vs Redis (replica) |
 | 9 | Limit tamponu | 18/9 (Collabora 20/10 altında) vs yapılandırılabilir |
@@ -867,6 +951,11 @@ AI fazından sonra veya paralel (müşteri talebi).
 | 11 | Workflow DI node’ları | Lifecycle API önce mi, playbook önce mi (D-WF1 vs D-WF2) |
 | 12 | Kapak zorunluluğu | Belge tipine göre opsiyonel mi, zorunlu mu (D-BR2) |
 | 13 | Antet tasarım derinliği | Toggle’lı standart layout (MVP) vs özel DOCX antet (ileri) |
+| **14** | **Üretimde antet seçimi** | **Karar: yok** — antet Belge Tasarımcısı'nda (`defaultLetterheadId`) |
+| **15** | **Faz D-P zamanlaması** | **Karar: ertelendi** — skaler + mevcut profiller yeterli |
+| **16** | **`documentNo` benzersizliği** | Klasör / domain / global — **bugün netleştirilecek** |
+| **17** | **Native create sonrası UX** | Liste kal vs Collabora otomatik aç — **bugün netleştirilecek** |
+| **18** | **Yüklenen docx Collabora fallback** | **Karar: yok** — yalnız PDF preview veya indir |
 
 ---
 
@@ -886,14 +975,51 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 
 ---
 
-## 23. Sonraki adımlar
+## 23. Sonraki adımlar (genel)
 
-1. Açık kararlar tablosunu ürün sahibi ile netleştir (özellikle #10–11: CoC mail vs onay, D-WF sırası).
-2. [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) — 15 senaryo matrisini Odak paydaşları ile doğrula.
-3. **D-E1–E2** — oturum sonlandırma + pre-Collabora limit (home_mode 20/10 tamponu).
-4. Faz P + **D-BR1** + D-P1 için sprint backlog çıkar.
-5. Activity şablonu sevkiyat tablosu → D-P3 pilot use case.
-6. **D-BR1** — «ODK Standart Antet» katalog kaydı + CoC/Activity üretim dialog’unda antet seçimi.
-7. **D-WF0** — `document.generated` event sözleşmesi + RabbitMQ publish (Workflow filterExpression hazırlığı).
-8. D-N1 (`document.generated` mail) → hızlı müşteri değeri; D-WF1 ile çakışmayı netleştir.
-9. Haftalık rapor senaryosu → **D-BR2** kapak + D-S2 üretim + **D-WF3** dağıtım zinciri acceptance criteria.
+1. ~~Faz P~~ ✅ · ~~D-BR1~~ ✅ · ~~D-META / D-CREATE / D-FILE-PREV~~ ✅ · ~~D-PERF-1/2/3~~ ✅
+2. **D-E1–E2** — oturum sonlandırma + pre-Collabora limit ← **sıradaki**
+3. **D2** — döküman sürüm UX (backend hazır)
+4. **D2–D4** — merge/PDF export, manuel üretim UX
+5. **D-BR2** — kapak kataloğu
+6. **D-N1** · CoC smoke · **D-P** ⏸️ · **Faz M** lifecycle ⏸️
+
+---
+
+## 24. Oturum özeti — D-META · D-CREATE · D-FILE-PREV ✅ (7 Temmuz 2026)
+
+**Ortam:** Test + prod deploy · prod smoke `192.168.20.8:5040` · script: `scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1`
+
+### Tamamlanan dilimler
+
+| Sıra | ID | Durum |
+|------|-----|--------|
+| 1 | **D-META** | ✅ |
+| 2 | **D-CREATE** | ✅ |
+| 3 | **D-FILE-PREV** | ✅ |
+| 4 | **D-PERF-1/2/3** | ✅ (`dff51a2c`) |
+| 5 | **Prod smoke** | ✅ 9/9 |
+
+### Kabul kriterleri
+
+- [x] Yüklenen `.docx` → `origin=upload`; Collabora editor-session **400**
+- [x] Upload docx → `GET …/preview/pdf` → PDF (DI minimal docx ile; karmaşık MS Word sınırlı)
+- [x] «Yeni döküman» → `origin=native` + `documentNo`; editor-session OK
+- [x] Native docx → PDF preview **400** (`PREVIEW_NOT_AVAILABLE`)
+- [x] Duplicate `documentNo` → **409**
+
+### Kararlar (kapatıldı)
+
+| # | Soru | Karar |
+|---|------|--------|
+| 16 | `documentNo` benzersizliği | **Domain geneli** ✅ |
+| 17 | Native create sonrası Collabora | **Evet** — `r/[id]` otomatik editör ✅ |
+| — | Döküman taslak/yayın | **Minimal** — yalnızca Sayfa; docx lifecycle **Faz M** |
+
+### Bilinçli sonraki fazlar
+
+- xlsx / pptx native create (Faz S / Pr)
+- PDF preview cache
+- Döküman sürüm UX genişletme (**D2**)
+- Collabora oturum limiti (**D-E1–E2** ← sıradaki)
+- Kapak sayfası (**D-BR2**)

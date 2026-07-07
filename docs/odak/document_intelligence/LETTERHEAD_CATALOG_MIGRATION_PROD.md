@@ -1,7 +1,7 @@
 # Document Intelligence — Production Kurulum ve Migration
 
 **Modül:** MngDocument + Mng.Ui (Document Intelligence)  
-**Son güncelleme:** 6 Temmuz 2026 (akşam — Faz P tamamlandı)  
+**Son güncelleme:** 7 Temmuz 2026 (prod migration uygulandı + logo fix `b11fccd4`)  
 **İlişkili:** [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md) · [PROD_OPERATIONS_AND_MIGRATION.md](./PROD_OPERATIONS_AND_MIGRATION.md) · [current_status.md](../../MngDocument/current_status.md)
 
 Bu doküman, production ortamına (`192.168.20.8`) **tek seferde uygulanacak** DI release paketinin kurulum ve migration rehberidir.
@@ -38,7 +38,7 @@ Bu doküman, production ortamına (`192.168.20.8`) **tek seferde uygulanacak** D
 - [ ] `mng_common` (MongoDB, MinIO, RabbitMQ, …) ayakta
 - [ ] MngKeeper, MngDataGateway, MngGateway, **Collabora**, **Gotenberg** çalışıyor
 - [ ] Prod token: `docs/odak/operationcore/scripts/load-operationcore-token-prod.ps1`
-- [ ] Git `main` — bu migration commit'i deploy edilmiş olmalı
+- [ ] Git `main` — logo fix commit `b11fccd4` (veya sonrası) deploy edilmiş olmalı
 
 **Collabora / WOPI (prod compose):**
 
@@ -194,18 +194,35 @@ Footer programmatic enjeksiyondan kalan veya header'sız dosyalar için:
 
 Bu script tasarım dosyasını siler ve `design-session` ile skeleton yeniden oluşturur. **Kullanıcı Collabora içeriği silinir** — prod'da dikkatli kullanın.
 
+### 5.4 Header logo / embedded media (7 Tem 2026)
+
+Antet tasarım DOCX'inde logo çoğu zaman `header2` (default) + `word/media/image1.jpeg` içindedir. Şablona header merge edildiğinde yalnızca XML kopyalanıp medya atlanırsa Collabora «**LetterheadLogo**» gösterir; WOPI «Başlatılıyor...» takılabilir.
+
+**Backend (commit `b11fccd4`):**
+
+| Bileşen | Davranış |
+|---------|----------|
+| `LetterheadDesignMerger` | `EnsureHeaderWithMediaFromDesign`, `HasBrokenHeaderImages`, `RepairHeaderMediaFromDesign` |
+| `TemplateEditorService` | WOPI GetFile — antet design indirme **session token** ile (Bearer yok) |
+| `TemplateLetterheadApplier` | Branding merge: header + tüm design medya |
+| `DocumentGenerationService` | Şablon yükleme + branding sonrası medya onarımı |
+
+**Doğrulama:** WOPI GetFile bytes > 25 KB ve `word/media/image1.jpeg` var; yeni üretilmiş CoC/Activity belgesinde logo görünür.
+
+**Not:** Migration öncesi üretilmiş belgeler otomatik düzelmez — yeniden generate gerekir.
+
 ---
 
 ## 6. Üretim akışı doğrulama
 
 ### 6.1 Checklist
 
-- [ ] Antet listesi UI açılıyor (`/apps/document-intelligence/designer/letterheads`)
-- [ ] Yeni antet: footer satır/sütun seçimi görünüyor (Odak toggle'ları yok)
-- [ ] Tasarım: Collabora'da header + boş footer tablosu
-- [ ] Kaydet sonrası WOPI tekrar açıldığında aynı içerik
-- [ ] CoC/Activity üretimi: design header/footer merge (logo, tablo)
-- [ ] `GET /letterheads/{id}/design-session` → `designFooterSource: design`
+- [x] Antet listesi UI açılıyor (`/apps/document-intelligence/designer/letterheads`)
+- [x] Tasarım: Collabora'da header + footer tablosu (ODK-STD / ODK_KRMSL_ANT)
+- [x] Kaydet sonrası WOPI tekrar açıldığında içerik yükleniyor (401 / takılma giderildi)
+- [x] CoC/Activity üretimi: design header merge + logo (`b11fccd4` sonrası yeniden generate)
+- [ ] Yeni antet: footer satır/sütun seçimi (Odak toggle'ları yok) — tam UI smoke isteğe bağlı
+- [ ] `GET /letterheads/{id}/design-session` → `designFooterSource: design` — isteğe bağlı smoke
 
 ### 6.2 Smoke (PowerShell)
 
@@ -258,7 +275,9 @@ Test'te doğrulanmış adımlar prod'da aynı script parametreleriyle tekrarlan�
 | Dosya | Amaç |
 |-------|------|
 | `MngDocument/.../LetterheadsController.cs` | REST API |
-| `LetterheadEditorService.cs` | WOPI + skeleton |
+| `LetterheadDesignMerger.cs` | Design header/footer merge + medya onarımı |
+| `TemplateEditorService.cs` | Şablon WOPI + header medya onarımı |
+| `DocumentGenerationService.cs` | Üretim yolunda medya onarımı |
 | `LetterheadDesignSkeletonBuilder.cs` | Header + boş footer tablosu |
 | `seed-letterheads-odak.ps1` | Katalog seed |
 | `regenerate-letterhead-design.ps1` | Tasarım DOCX onarım |
@@ -268,10 +287,12 @@ Test'te doğrulanmış adımlar prod'da aynı script parametreleriyle tekrarlan�
 
 ## 10. Sonraki prod adımları (D-BR1 devam)
 
-1. Kurumsal footer metinlerini Collabora'da ODK-STD / ODK-MINIMAL tasarımlarına yazın
-2. CoC + Activity üretim smoke (header + footer görünürlük)
-3. Üretim dialog antet seçimi (kod hazır olunca)
+1. ~~CoC + Activity üretim smoke (header + logo)~~ — ✅ (7 Tem 2026, `b11fccd4` deploy)
+2. Kurumsal footer metinlerini Collabora'da ODK-STD / ODK-MINIMAL tasarımlarına yazın (devam ediyor)
+3. ~~Üretim dialog antet seçimi~~ — ➖ **iptal** (antet Belge Tasarımcısı'nda `defaultLetterheadId`)
 4. `LegacyOdakFooterEnabled=false` kararı — tüm antetler tablo modeline geçince
+5. CoC/Activity uçtan uca smoke — `odak_siparis_kalemleri` prod verisi varsa
+6. ~~Faz P Sayfa~~ — ✅ (commit `1441ac90`); prod checklist §11.4
 
 ---
 

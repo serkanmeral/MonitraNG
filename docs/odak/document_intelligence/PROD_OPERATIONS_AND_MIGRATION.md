@@ -1,7 +1,7 @@
 # Document Intelligence — Prod işlemleri ve test ortamına taşıma
 
 **Modül:** MngDocument (Document Intelligence)  
-**Son güncelleme:** 6 Temmuz 2026 (akşam)  
+**Son güncelleme:** 7 Temmuz 2026 (D-META/CREATE/FILE-PREV prod smoke · dm_tags · deploy)  
 **Checkpoint özeti:** [DEVAM.md](./DEVAM.md)  
 **Prod migration (D-BR1 + Faz P):** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md)  
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md)
@@ -72,6 +72,7 @@ Kaynak tanım: [datasets/documentintelligence_datasets_phase1.json](./datasets/d
 | `dm_resource_permissions` | Klasör ACL | ↑ |
 | `dm_document_templates` | Parametreli şablon kayıtları | ↑ + **patch** (aşağıda) |
 | `dm_letterheads` | Paylaşımlı antet katalog (D-BR1) | ↑ + **seed** ([LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md)) |
+| `dm_tags` | Etiket kataloğu (D-TAGS) | ↑ (9. dataset — prod’da 7 Tem 2026’da eksikti, script ile eklendi) |
 | `dm_template_categories` | Tasarımcı kategori ağacı | ↑ + **seed** (aşağıda) |
 
 **Prod’da tam kurulum sırası:**
@@ -236,8 +237,10 @@ Test sunucusu hazır olunca:
 | **D4-INFRA** | Gotenberg + merge + PDF API | — | ✅ Prod deploy 26 Haz 2026 |
 | **D2** | Incremental numara runtime (`@__counters`) | Parametre modeli | ⏳ |
 | **D4** | Merge + DOCX indirme (üretim akışı) | D4-INFRA | ⏳ |
-| **D4-UI** | PDF önizleme (tarayıcı) | D4-INFRA prod | ⏳ |
-| **D3** | Tablo/liste parametreleri | Planlama | ⏳ |
+| **D4-UI** | Upload docx PDF önizleme (`GET …/preview/pdf`) | D4-INFRA | ✅ **D-FILE-PREV** (7 Tem 2026) |
+| **D-META/CREATE** | `origin` + native docx oluşturma | — | ✅ (7 Tem 2026) |
+| **D3 / D-P** | Tablo/liste/chart parametreleri | — | ⏸️ **Faz D-P — ertelendi** |
+| **D-E** | Collabora oturum limiti | — | 🔲 Sırada |
 
 Collabora embed yalnızca “tarayıcıda DOCX düzenleme” ihtiyacı netleşirse değerlendirilir.
 
@@ -262,6 +265,12 @@ Invoke-RestMethod "$gw/documents/api/v1/templates/<id>/source/structure" -Header
 # Rendering altyapısı (Gotenberg / LibreOffice)
 Invoke-RestMethod "$gw/documents/api/v1/rendering/status" -Headers $h
 # gotenbergReachable: true beklenir
+
+# D-META / D-CREATE / D-FILE-PREV smoke (9 kontrol)
+.\scripts\tests\MngDocument\smoke-di-meta-create-preview-prod.ps1
+
+# Etiket API (dm_tags dataset gerekli)
+Invoke-RestMethod "$gw/documents/api/v1/tags" -Headers $h
 ```
 
 ---
@@ -274,7 +283,7 @@ Invoke-RestMethod "$gw/documents/api/v1/rendering/status" -Headers $h
 | `MngDocument/.../DocumentTemplateService.cs` | Şablon CRUD + structure |
 | `Mng.Ui/pages/apps/document-intelligence/designer/` | Belge Tasarımcısı |
 | `docs/odak/document_intelligence/scripts/` | Dataset / seed / patch |
-| `scripts/tests/MngDocument/` | Smoke script’leri |
+| `scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1` | D-META/CREATE/FILE-PREV prod smoke |
 | `docs/odak/proddeploy/PROD_SERVER_STATUS.md` | Prod sunucu durumu |
 
 ---
@@ -282,5 +291,7 @@ Invoke-RestMethod "$gw/documents/api/v1/rendering/status" -Headers $h
 ## 10. Bilinen prod notları
 
 - `from-reference` öncesi `dm_document_templates` şeması patch edilmediyse DG 400 → backend 500 (çözüldü: patch script).
-- Test sunucusu `192.168.20.20` şu an DI geliştirmesinde birincil hedef değil; prod öncelikli.
-- `mngui` prod’da eski UI olabilir; Tasarımcı değişiklikleri yerel dev ile doğrulanır.
+- `dm_tags` prod’da ilk kurulumda atlanmış olabilir → tag API 404; `setup-document-intelligence-datasets.ps1` ile `dm_tags` oluşturun.
+- Karmaşık harici MS Word `.docx` dosyaları Gotenberg PDF preview’da başarısız olabilir; DI native minimal docx ile preview çalışır.
+- Test sunucusu `192.168.20.20` sync/deploy edildi (7 Tem); prod ile aynı `MngDocument` kod tabanı hedeflenir.
+- `mngui` prod deploy kullanıcı talebi ile (7 Tem 2026 tamamlandı).

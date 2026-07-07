@@ -1,40 +1,35 @@
 # Document Intelligence (MngDocument) — Devam noktası (checkpoint)
 
-**Son güncelleme:** 6 Temmuz 2026 (**D-BR1 antet katalog + tablo footer skeleton + Collabora tasarım**)
-**Durum:** **D-BR1 Sprint A ✅ (test)** · **Prod migration hazır** · **Sırada: prod kurulum veya Sprint B (context catalog)**
+**Son güncelleme:** 7 Temmuz 2026 (**D-META/CREATE/FILE-PREV ✅ · prod smoke · D-PERF ✅ · sırada D-E1–E2**)
+**Durum:** **Faz P ✅** · **D-BR1 ✅** · **D-META/CREATE/FILE-PREV ✅** · **D-PERF ✅** · **Prod deploy ✅**
 
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
 > ```
-> MonitraNG Document Intelligence — antet katalog (D-BR1) oturumuna devam.
+> MonitraNG Document Intelligence — devam.
 > Repo: c:\Users\monitra\Dev\MonitraNG\MonitraNG
 >
 > Önce oku:
 > - docs/MngDocument/current_status.md
-> - docs/odak/document_intelligence/LETTERHEAD_CATALOG_MIGRATION_PROD.md
 > - docs/odak/document_intelligence/DEVAM.md
+> - docs/odak/document_intelligence/DI_PRODUCT_ROADMAP.md
 >
-> Durum (6 Tem 2026):
-> - D-BR1 Sprint A tamam: dm_letterheads, antet UI, header/footer Collabora skeleton (tablo footer)
-> - Odak test (192.168.20.20): ODK Test Antet 1 header + boş footer tablosu doğrulandı
-> - Prod migration dokümanı hazır; prod deploy henüz yapılmadı
->
-> Sıradaki seçenekler:
-> 1) Prod migration uygula (LETTERHEAD_CATALOG_MIGRATION_PROD.md)
-> 2) Üretim dialogunda antet seçimi (D-BR1 kalan)
-> 3) Sprint B: dm_document_context_types dataset
+> Durum (7 Tem 2026 akşam):
+> - D-META / D-CREATE / D-FILE-PREV ✅ (c5880739) — prod smoke 9/9
+> - D-PERF lazy tree + permission cache + pagination ✅ (dff51a2c)
+> - Prod dm_tags dataset ✅ · mngdocument + mngui deploy ✅
+> - Döküman lifecycle: Minimal (taslak/yayın yalnızca Sayfa; Faz M ertelendi)
+> - Sırada: D-E1–E2 (Collabora oturum limiti) → D2 → D-BR2
 >
 > Test: 192.168.20.20:5040 | Prod: 192.168.20.8:5040
-> Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1
+> Token prod: load-operationcore-token-prod.ps1
+> Smoke: scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1
 > ```
 
-> **⭐ KALDIĞIMIZ YER (6 Tem 2026 — oturum sonu):**
-> - **Antet katalog:** `dm_letterheads`, CRUD API, Collabora WOPI tasarım, tablo footer (satır×sütun), header skeleton.
-> - **Model:** Footer Collabora'da düzenlenir; programmatic overlay kaldırıldı; üretimde design DOCX merge.
-> - **UI:** Antet listesi/modal (tablo boyutu), tasarım özeti paneli; Odak boolean footer toggle'ları kaldırıldı.
-> - **Odak test deploy ✅** · **Prod migration rehberi ✅** (`LETTERHEAD_CATALOG_MIGRATION_PROD.md`)
-> - **Sıradaki:** Prod kurulum VEYA üretim antet seçimi VEYA Sprint B (context catalog dataset).
-> - **Detay:** [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
+> **⭐ KALDIĞIMIZ YER (7 Tem 2026):**
+> - **D-E1–E2** implementasyonu — WOPI oturum sonlandırma + pre-Collabora limit gate
+> - Sonra **D2** (döküman sürüm UX), **D-BR2**, CoC smoke
+> - Roadmap §23: [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md)
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) · **Antet prod migration:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](LETTERHEAD_CATALOG_MIGRATION_PROD.md) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md)
 
@@ -290,20 +285,107 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 
 - **Üretim:** `192.168.20.8`, gateway `:5040`, UI `:3000`, WOPI `:5095`, Collabora `:9980`.
 - **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`.
-- **`mngdocument` + `mngui` + `gotenberg` + `collabora`:** ✅ prod (26 Haz 2026).
-- **Belge tasarımcısı:** ✅ prod UI + backend; COC-STANDARD page-structure güncellendi.
+- **`mngdocument` + `mngui` + `gotenberg` + `collabora`:** ✅ prod.
+- **Belge tasarımcısı:** ✅ prod — antet katalog, COC/LINE-ACTIVITY şablonları, Collabora WOPI, logo fix.
 - **Sync prod:** `scripts/odak/sync-odak-prod.ps1` · **Deploy:** `scripts/odak/deploy-odak-prod.ps1`
-- **Token prod:** `docs/odak/operationcore/scripts/get-operationcore-token-prod.ps1`
-- **CoC script:** `docs/odak/document_intelligence/scripts/update-coc-template-prod.ps1`
+- **Token prod:** `docs/odak/operationcore/scripts/load-operationcore-token-prod.ps1`
 
 ---
 
-## Sıradaki iş (öncelik)
+## Logo / header medya onarımı (7 Tem 2026)
 
-1. **Collabora UAT** — COC-STANDARD editör: footer tablo sütun tutamaçları, sayfa yapısı paneli (metadata dialog).
-2. **D2 — Incremental numara runtime** — `docNo` / DG `@__counters`.
-3. **Parametre tanımı UI** — placeholder envanteri ↔ parametre eşleme akışı.
-4. **D4 merge** — WorkItem / basit DOCX birleştirme + indirme.
-5. **Blank create** — `pageLayout`'u create API'ye taşıma (şu an edit dialog / varsayılan).
+| Belirti | Kök neden | Çözüm (commit `b11fccd4`) |
+|---------|-----------|---------------------------|
+| Collabora «Başlatılıyor...» | WOPI GetFile 401 — antet lookup Bearer yerine session token gerekir | `TemplateEditorService` → `_dg` + session token |
+| Şablonda logo var, üretimde «LetterheadLogo» | Storage'da header XML var, `word/media/*` yok; üretim WOPI onarımını kullanmıyordu | `EnsureHeaderWithMediaFromDesign` + `DocumentGenerationService` |
 
-**Commit:** 26 Haz 2026 — sayfa yapısı + footer tablo + prod deploy (GitLab + GitHub).
+**Not:** Daha önce üretilmiş DOCX dosyaları otomatik düzelmez; yeniden generate edilmelidir.
+
+---
+
+## Faz P — Sayfa UX (6–7 Temmuz 2026) ✅
+
+**Commit:** `1441ac90` — keşif, changeNote, backlink, etiket UI, alan giriş sayfası, sürüm geçmişi; aramada taslak hariç.
+
+**Backend (MngDocument):**
+- `changeNote` (versiyon kaydına not)
+- `GET .../markdown/{id}/backlinks`
+- `GET .../recent`, `GET .../drafts` (yalnızca yayınlanmış / taslak)
+- Arama: markdown taslakları hariç
+
+**UI (Mng.Ui):**
+- `DiDiscoveryHome` — keşif ana ekranı (son, taslak, alan kısayolları, arama)
+- `DiMarkdownEditor` — split önizleme, sayfa şablonları, tablo, görsel yükleme, iç link picker
+- `DiResourceTagsEditor`, `DiBacklinksPanel`, `DiSavePageDialog` (changeNote)
+- `DiAreaIndexBanner` — Sayfalar / Dökümanlar alan giriş sayfası
+- **Kaldırıldı:** WYSIWYG «Zengin» editör modu
+
+**Erteli (Faz P+):** Sayfa yorumu, izle/bildirim.
+
+**Prod checklist:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md §11](./LETTERHEAD_CATALOG_MIGRATION_PROD.md)
+
+---
+
+---
+
+## BUGUN-2026-07-07 — D-META · D-CREATE · D-FILE-PREV ✅
+
+**Detay:** [DI_PRODUCT_ROADMAP.md §24](./DI_PRODUCT_ROADMAP.md) · **Commit:** `c5880739` (özellikler) · **D-PERF:** `dff51a2c`
+
+### Kararlar
+
+| Konu | Karar |
+|------|--------|
+| Sayfa / Döküman / Dosya | UI `origin` + extension ile türetilir |
+| Yüklenen docx | **Dosya** — Collabora yok, PDF preview (Gotenberg) |
+| Native docx | **Döküman** — antet + kod; Collabora edit |
+| Döküman lifecycle | **Minimal** — taslak/yayın yalnızca Sayfa; docx → sürüm geçmişi; **Faz M** ertelendi |
+| `documentNo` (#16) | Domain geneli benzersiz ✅ |
+| Create → Collabora (#17) | `r/[id]` otomatik editör ✅ |
+| Üretim dialog antet | Yok (şablonda `defaultLetterheadId`) |
+
+### Prod smoke (7 Tem akşam)
+
+```powershell
+.\docs\odak\operationcore\scripts\get-operationcore-token-prod.ps1
+.\scripts\tests\MngDocument\smoke-di-meta-create-preview-prod.ps1
+```
+
+9/9 geçti. **Not:** Karmaşık harici MS Word docx Gotenberg’de dönüşmeyebilir; DI minimal docx OK.
+
+### Prod operasyon
+
+- **`dm_tags` dataset** prod’da eksikti → `setup-document-intelligence-datasets.ps1 -BaseUrl http://192.168.20.8:5040`
+- **`mngdocument` + `mngui`** deploy tamamlandı
+
+---
+
+## D-PERF — Performans (7 Temmuz 2026) ✅
+
+**Commit:** `dff51a2c`
+
+| ID | Özet |
+|----|------|
+| D-PERF-1 | Lazy tree: `tree/roots`, `tree/children`, `tree/path`, `tree/search` |
+| D-PERF-1b | Klasör picker arama (`DiFolderPickerList`) |
+| D-PERF-2 | Permission snapshot domain TTL cache; sayfalı ACL yükleme |
+| D-PERF-3 | Bootstrap / browse / children `skip/limit` pagination; UI footer |
+
+**Prod indeks:** `patch-dm-resources-indexes.ps1` (`idx_parentId_type`, vb.)
+
+---
+
+## Sıradaki iş (genel backlog)
+
+1. ~~**D-META + D-CREATE + D-FILE-PREV**~~ ✅
+2. ~~**D-PERF-1/2/3**~~ ✅
+3. **D-E1–E2** — Collabora oturum limiti ← **sıradaki**
+4. **D2** — döküman sürüm UX (backend hazır)
+5. **D2–D4** — merge/PDF, manuel üretim UX
+6. **D-BR2** — kapak sayfası kataloğu
+7. **CoC/Activity uçtan uca smoke**
+8. **D-N1** — `document.generated` bildirim maili
+9. **Faz M** — döküman lifecycle (onaylı yayın, arşiv)
+10. **Sprint B** — `dm_document_context_types` dataset
+
+**Son commit (DI):** `dff51a2c` — D-PERF · `c5880739` — D-META/CREATE/FILE-PREV, versions, clone, lazy tree

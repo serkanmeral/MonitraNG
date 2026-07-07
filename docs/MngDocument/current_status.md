@@ -2,50 +2,66 @@
 
 ## Son Çalışılan Konu
 
-**D-BR1 — Paylaşımlı antet kataloğu (Sprint A tamamlandı):** Antet CRUD, Collabora tasarım oturumu, header/footer skeleton modeli (tablo tabanlı footer), üretimde design DOCX merge.
+**7 Temmuz 2026 oturumu:** D-META / D-CREATE / D-FILE-PREV prod smoke; performans dilimleri (D-PERF); prod `dm_tags` dataset; döküman lifecycle kararı (Minimal).
 
-**Migration rehberi (prod):** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](../odak/document_intelligence/LETTERHEAD_CATALOG_MIGRATION_PROD.md)
+**Roadmap:** [DI_PRODUCT_ROADMAP.md §23](../odak/document_intelligence/DI_PRODUCT_ROADMAP.md)
 
-## Tamamlanan İşler (5–6 Tem 2026 oturumu)
+## Tamamlanan (bu oturum)
 
-### Antet kataloğu (D-BR1 — backend + UI + Odak test)
-- **`dm_letterheads`** dataset, `LetterheadsController`, `LetterheadService`, `LetterheadEditorService` (WOPI).
-- **`LetterheadDesignSkeletonBuilder`** — modal ayarlarından header şablonu + boş footer tablosu (satır×sütun).
-- **Collabora tasarım:** Header/footer tasarım DOCX içinde düzenlenir; WOPI okumada programmatic overlay yok (margin + eksik parça garantisi).
-- **`LetterheadDesignMerger`** — üretimde design header/footer merge; `HasDesignHeader`, `HasFooterTableStructure`.
-- **Footer ayarları:** `LetterheadFooterSettingsDto` (`enabled`, `tableRows`, `tableColumns`); Odak legacy boolean → `legacyOdakFooter` migrasyonu.
-- **UI:** `DiLetterheadCatalogForm` (tablo boyutu seçici), antet listesi/tasarım sayfaları, `DiLetterheadDesignFooterSummary`.
-- **Seed:** `seed-letterheads-odak.ps1`, `seed-letterheads-odak.json` (ODK-STD, ODK-MINIMAL).
-- **Onarım script:** `regenerate-letterhead-design.ps1` (bozuk tasarım DOCX sıfırlama).
-- **Odak test deploy:** `192.168.20.20` — ODK Test Antet 1 header + boş 2×2 footer tablosu doğrulandı.
+| ID | Özet | Commit / kanıt |
+|----|------|----------------|
+| **D-META** | `origin=upload`; Collabora yalnızca yönetilen docx; UI helper | `c5880739` |
+| **D-CREATE** | `POST /resources/documents`; kod + antet; `origin=native` | `c5880739` |
+| **D-FILE-PREV** | `GET …/preview/pdf` (Gotenberg); upload docx PDF iframe | `c5880739` |
+| **D-VERSIONS** | DOCX sürüm geçmişi + restore API | `c5880739` |
+| **D-CLONE** | Markdown + yönetilen DOCX klonlama | `c5880739` |
+| **D-PERF-1** | Lazy tree (`tree/roots`, `children`, `path`, `search`) | `c5880739` + `dff51a2c` |
+| **D-PERF-2** | Permission snapshot cache (domain TTL) | `dff51a2c` |
+| **D-PERF-3** | Bootstrap / browse / children pagination | `dff51a2c` |
+| **Prod smoke** | 9/9 kabul kriteri | `scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1` |
+| **Prod dm_tags** | Eksik dataset oluşturuldu; tag API çalışır | `setup-document-intelligence-datasets.ps1` |
+| **Prod deploy** | `mngdocument` + `mngui` | Kullanıcı onayı ile tamamlandı |
 
-### Önceki oturumlar (özet)
-- Kalem belgeleri (CoC + Activity), generation profilleri, unpublish API, LINE-ACTIVITY-STD şablonu.
-- DI_PRODUCT_ROADMAP birleşik faz planı (D-BR, D-WF, D-P, …).
+## Ürün Kararları (7 Temmuz 2026)
 
-## Devam Eden / Sıradaki
+| Konu | Karar |
+|------|--------|
+| Sayfa / Döküman / Dosya | `origin` + extension ile UI ayrımı |
+| Yüklenen docx | **Dosya** — Collabora yok; Gotenberg PDF preview |
+| Native docx | **Döküman** — antet seçimi; Collabora edit |
+| Döküman lifecycle | **Minimal** — taslak/yayın yalnızca **Sayfa** (markdown); docx için sürüm geçmişi yeterli; geniş lifecycle **Faz M** |
+| `documentNo` benzersizliği (#16) | **Domain geneli** — uygulandı (`EnsureDocumentNoUniqueAsync`) |
+| Create sonrası Collabora (#17) | **Evet** — `r/[id]` sayfasında otomatik editör açılır |
+| Üretim dialog antet | Yok (şablonda `defaultLetterheadId`) |
+| Faz D-P | Ertelendi |
 
-| Öncelik | Konu | Faz |
-|---------|------|-----|
-| P0 | **Prod migration** — dataset + seed + deploy + antet tasarım regen | D-BR1 |
-| P1 | Üretim dialogunda antet seçimi (şablondan farklı antet) | D-BR1 |
-| P1 | Parametre yönetimi UI (placeholder envanteri, context binding) | D-P |
-| P2 | Sprint B — `dm_document_context_types` (C# catalog → dataset) | Generic platform |
-| P2 | Sprint C — `poDocNo` decouple, footer plugin | Generic platform |
-| P3 | Kapak sayfası kataloğu | D-BR2 |
-| P3 | Collabora oturum limitleri | D-E |
+## Sıradaki İşler
 
-## Önemli Notlar
+1. **D-E1–E2** — Collabora oturum sonlandırma + pre-Collabora limit gate
+2. **D2** — döküman sürüm UX (backend hazır; UI iyileştirme)
+3. **D2–D4** — merge/PDF export, manuel üretim UX
+4. **D-BR2** — kapak sayfası kataloğu
+5. CoC/Activity uçtan uca smoke · **D-N1**
 
-- **Footer modeli:** Platform varsayılanı = tablo boyutu + Collabora'da doldurma. Odak kurumsal içerik yalnızca seed/migrasyon (`legacyOdakFooter`, `LegacyOdakFooterEnabled`).
-- **WOPI:** Collabora `:9980`, WOPI host internal `mngdocument:5095`; gateway'de `/wopi` route yok.
-- **Test:** `http://192.168.20.20:5040` · Token: `docs/odak/operationcore/scripts/load-operationcore-token.ps1`
-- **Deploy test:** `sync-odak-source.ps1 -Paths MngDocument,Mng.Ui` → `deploy-odak-apps.ps1 -Services mngdocument,mngui -NoCache`
+## Bilinen Notlar
+
+- **PDF preview:** DI minimal docx ile Gotenberg OK; karmaşık harici MS Word docx dönüşümü LibreOffice’te başarısız olabilir (`uno exception`) — beklenen sınırlama.
+- **Prod dataset checklist:** `dm_tags` kurulum script’inde 9. dataset; prod’da bir kez atlanmıştı — düzeltildi.
+- **Pagination footer:** 51+ kayıtta sayfa numarası; küçük klasörlerde sayaç + sayfa boyutu görünür.
+
+## Ortam
+
+| Ortam | Gateway | Token script |
+|-------|---------|--------------|
+| **Test** | `192.168.20.20:5040` | `load-operationcore-token.ps1` |
+| **Prod** | `192.168.20.8:5040` | `load-operationcore-token-prod.ps1` |
+
+Backend deploy otomatik; UI deploy kullanıcı talebi ile.
 
 ## Son Güncelleme
 
-**6 Temmuz 2026** — D-BR1 Sprint A (antet katalog + tablo footer skeleton + Collabora tasarım) tamamlandı; Odak test doğrulandı. Prod kurulum için migration dokümanı hazır.
+**7 Temmuz 2026 (akşam)** — D-META/CREATE/FILE-PREV prod smoke ✅; Minimal lifecycle kararı; sırada D-E1–E2.
 
 ## Nerede Kalmıştık
 
-Antet katalog MVP hazır. Yarın: **prod migration** uygulaması veya **üretim dialog antet seçimi** + **Sprint B (context catalog dataset)** ile devam.
+Prod smoke geçti. Döküman taslak/yayın **Faz M**'e ertelendi (Minimal). **D-E1–E2** implementasyonuna geçilecek.
