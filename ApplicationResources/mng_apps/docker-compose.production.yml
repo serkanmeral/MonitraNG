@@ -709,6 +709,7 @@ services:
       - MngDocumentSettings__Collabora__Enabled=${COLLABORA_ENABLED:-true}
       - MngDocumentSettings__Collabora__PublicBaseUrl=${COLLABORA_PUBLIC_URL:-http://192.168.20.8:9980}
       - MngDocumentSettings__Collabora__EditorPath=${COLLABORA_EDITOR_PATH:-/browser/dist/cool.html}
+      - MngDocumentSettings__Collabora__PostMessageOrigin=${COLLABORA_POSTMESSAGE_ORIGIN:-http://192.168.20.8:3000 http://192.168.20.20:3000 http://127.0.0.1:3000 http://localhost:3000}
       - MngDocumentSettings__Wopi__HostBaseUrl=${WOPI_HOST_URL:-http://mngdocument:5095}
       - MngDocumentSettings__Wopi__SessionMinutes=${WOPI_SESSION_MINUTES:-480}
       - MngDocumentSettings__Keeper__BaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}

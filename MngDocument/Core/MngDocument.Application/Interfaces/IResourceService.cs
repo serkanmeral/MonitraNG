@@ -90,6 +90,13 @@ public interface IResourceService
     /// <summary>Eski bir DOCX sürümünü yeni sürüm olarak geri yükler.</summary>
     Task<ResourceDto> RestoreFileVersionAsync(string id, int versionNumber, CancellationToken ct = default);
 
+    /// <summary>Belirli bir DOCX sürümünün değişiklik notunu günceller.</summary>
+    Task<MarkdownVersionDto> UpdateFileVersionChangeNoteAsync(
+        string id,
+        int versionNumber,
+        UpdateFileVersionChangeNoteRequest request,
+        CancellationToken ct = default);
+
     /// <summary>Collabora WOPI kaydı: dosyayı günceller, sürüm yazar; yeni sürüm numarasını döner.</summary>
     Task<int> SaveManagedDocumentFileAsync(
         string id,

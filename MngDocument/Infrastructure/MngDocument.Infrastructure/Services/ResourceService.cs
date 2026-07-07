@@ -641,6 +641,46 @@ public class ResourceService : IResourceService
         return ToDto(updated, snapshot.Resolve(updated));
     }
 
+    public async Task<MarkdownVersionDto> UpdateFileVersionChangeNoteAsync(
+        string id,
+        int versionNumber,
+        UpdateFileVersionChangeNoteRequest request,
+        CancellationToken ct = default)
+    {
+        var existing = await LoadOrThrowAsync(id, ct);
+        EnsureManagedDocxFile(existing);
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(existing, ResourceAction.Edit);
+
+        var version = await LoadVersionOrThrowAsync(id, versionNumber, null, ct);
+        if (string.IsNullOrWhiteSpace(version.__dataId))
+            throw DocumentException.NotFound("Sürüm kaydı bulunamadı.");
+
+        var note = ResolveChangeNote(request.ChangeNote, "save");
+        await _dg.UpdateAsync<DmResourceVersion>(
+            DmDatasets.ResourceVersions,
+            version.__dataId,
+            new Dictionary<string, object?> { ["changeNote"] = note },
+            Token,
+            ct);
+
+        var currentVersion = existing.currentVersionNumber ?? 1;
+        DmHistoryEntry? audit = null;
+        if (version.createdAt is null && version.createdBy is null)
+            BuildVersionAuditMap(existing.__history).TryGetValue(versionNumber, out audit);
+
+        return new MarkdownVersionDto
+        {
+            VersionNumber = version.versionNumber ?? versionNumber,
+            ChangeNote = note,
+            Size = version.size,
+            CreatedAt = version.createdAt ?? CreatedFrom(version.__history)?.timestamp ?? audit?.timestamp,
+            CreatedBy = version.createdBy ?? CreatedFrom(version.__history)?.userEmail ?? audit?.userEmail,
+            IsCurrent = versionNumber == currentVersion
+        };
+    }
+
     public async Task<int> SaveManagedDocumentFileAsync(
         string id,
         byte[] content,

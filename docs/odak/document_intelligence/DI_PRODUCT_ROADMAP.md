@@ -99,14 +99,14 @@ Dosya    → type = file AND origin = upload
 | Yapısal parametreler (tablo, kart, chart) | ⏸️ **Faz D-P — ertelendi** |
 | Dataset / MO query ile parametre verisi | ⏸️ **Faz D-P — ertelendi** |
 | Parametre yönetimi UI (envanter ↔ tanım) | ⏸️ **Faz D-P — ertelendi** |
-| Döküman sürüm UI (file) — genişletme | 🔲 **D2** (backend ✅, UI kısmen) |
+| Döküman sürüm UI (file) — genişletme | ✅ **D2** (7 Tem 2026 gece) |
 | Döküman lifecycle (taslak/yayın docx) | ⏸️ **Faz M** — Minimal karar: yalnızca Sayfa |
 | Manuel şablondan üretim UX | 🔲 Faz D |
 | Sheet / Sunum Collabora | 🔲 Faz S / Pr |
 | Zamanlanmış üretim | 🔲 Faz D-S |
 | Döküman bildirimleri | 🔲 Faz D-N |
 | OC WorkItem ↔ doküman (tam UI) | 🔲 Faz D5 |
-| Collabora oturum görünürlüğü / limit (D-E) | 🔲 Faz D-E |
+| Collabora oturum görünürlüğü / limit (D-E) | ✅ **Faz D-E** (E1–E3 + kilitleme, 7 Tem akşam) |
 | Kapak sayfası kataloğu + üretimde opsiyonel seçim | 🔲 **D-BR2** |
 | **`origin` formal dataset + upload fix** | ✅ **D-META** |
 | Workflow entegrasyonu (onaylı yayın, dağıtım) | 🔲 Faz D-WF |
@@ -210,17 +210,18 @@ flowchart TB
 | ~~3~~ | ~~**D-BR1**~~ | ✅ Tamamlandı — antet katalog + şablonda varsayılan antet (üretim dialog seçimi **yok**) |
 | ~~4~~ | ~~**D-META / D-CREATE / D-FILE-PREV**~~ | ✅ Tamamlandı (7 Tem 2026) — prod smoke |
 | ~~5~~ | ~~**D-PERF-1/2/3**~~ | ✅ Lazy tree, permission cache, pagination (`dff51a2c`) |
-| 1 | **D-E** (E1–E2) | Collabora home_mode limiti (20 conn / 10 doc) — önce bizim gate |
-| 2 | **D** (D2–D4) | Döküman sürüm UI, merge/PDF, manuel üretim UX |
-| 3 | **D-BR2** | Kapak sayfası — rapor ve dış paylaşım belgeleri için profesyonel ilk sayfa |
-| 4 | **D-N** | Üretim maili — hızlı operasyonel kazanç |
-| 5 | **D-S** | Haftalık otomatik rapor senaryosu |
-| 6 | **D5** | Operasyon entegrasyonu — DI farkı |
-| 7 | **S** → **Pr** | Kurumsal içerik üçlüsü (Word·Excel·Sunum) |
-| 8 | **D-WF** (0–1) | Event publish + CoC kalite onay playbook (D-N1 ile overlap netleştir) |
-| 9 | **D-P** (P1–P5) | ⏸️ **Ertelendi** — tablo/chart parametreler; Activity sevkiyat tablosu vb. |
-| 10 | **AI** | Extract + tag + özet + benzer + asistan |
-| 11 | **M** + **D-WF2–4** | Kontrollü doküman lifecycle; AI düşük güven onayı |
+| ~~1~~ | ~~**D-E** (E1–E3 + kilitleme)~~ | ✅ Oturum limiti, panel, döküman kilidi (7 Tem akşam) |
+| ~~2~~ | ~~**D2**~~ | ✅ Döküman sürüm UX — Collabora kayıt, changeNote, kapatma akışı (7 Tem gece) |
+| 1 | **D4** | Manuel şablondan üretim UX, merge + PDF indirme ← **sıradaki** |
+| 2 | **D-BR2** | Kapak sayfası — rapor ve dış paylaşım belgeleri için profesyonel ilk sayfa |
+| 3 | **D-N** | Üretim maili — hızlı operasyonel kazanç |
+| 4 | **D-S** | Haftalık otomatik rapor senaryosu |
+| 5 | **D5** | Operasyon entegrasyonu — DI farkı |
+| 6 | **S** → **Pr** | Kurumsal içerik üçlüsü (Word·Excel·Sunum) |
+| 7 | **D-WF** (0–1) | Event publish + CoC kalite onay playbook (D-N1 ile overlap netleştir) |
+| 8 | **D-P** (P1–P5) | ⏸️ **Ertelendi** — tablo/chart parametreler; Activity sevkiyat tablosu vb. |
+| 9 | **AI** | Extract + tag + özet + benzer + asistan |
+| 10 | **M** + **D-WF2–4** | Kontrollü doküman lifecycle; AI düşük güven onayı |
 
 ---
 
@@ -285,14 +286,20 @@ lifecycle: draft | active | superseded | archived  (Faz M)
 scheduleId (zamanlı üretimde)
 ```
 
-### D2 — Collabora olgunlaştırma (DOCX)
-| Özellik | Öncelik |
-|---------|---------|
-| Döküman sürüm geçmişi UI | P0 |
-| Collabora kaydet → yeni versiyon | P0 |
-| Editör oturum yönetimi + limit | P0 → **Faz D-E** |
-| PDF export | P1 |
-| Antet / footer / sayfa yapısı (şablona gömülü) | ✅ baseline → **Faz D-BR** (paylaşımlı katalog) |
+### D2 — Collabora olgunlaştırma (DOCX) ✅ (7 Temmuz 2026 gece)
+
+| Özellik | Durum |
+|---------|--------|
+| Döküman sürüm geçmişi UI (file) | ✅ `DiFileVersionHistoryDialog` — editör + `r/[id]` |
+| Collabora kaydet → yeni versiyon + sürüm notu | ✅ `useDiEditorVersionWatch`, `DiSaveVersionNoteDialog` |
+| Kapatırken kaydet → sürüm notu modalı | ✅ `useDiEditorCloseGuard` + paylaşımlı save-check promise |
+| `PATCH …/versions/{n}` changeNote | ✅ Backend + `diUpdateFileVersionChangeNote` |
+| Editör toolbar (`vN`, Geçmiş) | ✅ `DiResourceEditorDialog`, `editor/resource/[id].vue` |
+| DOCX detay + deep link | ✅ `r/[id].vue`, `?edit=1` |
+| WOPI `PostMessageOrigin` (modified algısı) | ✅ UI origin → session → `CheckFileInfo` |
+| Editör oturum yönetimi + limit | ✅ **Faz D-E** |
+| PDF export (Collabora) | 🔲 P1 — backlog |
+| Antet / footer / sayfa yapısı | ✅ **Faz D-BR** |
 
 ### D3 — Belge Tasarımcısı tamamlama
 | Dilim | İçerik |
@@ -432,19 +439,21 @@ Prod/test compose’da Collabora `home_mode.enable=true` ile çalışır (`Appli
 
 Limit Collabora içinde uygulanır; MngDocument bugün bunu okumaz veya yönetmez.
 
-### 9.2 Mevcut durum (baseline)
+### 9.2 Mevcut durum (7 Temmuz 2026 — ✅ uygulandı)
 
 | Konu | Durum |
 |------|--------|
-| WOPI oturum store | `InMemoryWopiSessionStore` — `CreateSession` / `GetSession` / `BumpVersion` |
-| Oturum metadata | `UserId`, `UserName`, `ResourceId` veya `TemplateId`, `ReadOnly`, `CreatedAt`, TTL (`WOPI_SESSION_MINUTES`, varsayılan 480 dk) |
-| UI istatistik | Yok |
-| Admin API | Yok |
-| Dialog kapanınca oturum sonlandırma | Yok — token bellekte TTL’ye kadar kalır |
-| Collabora öncesi limit | Yok — `GET .../editor-session` her zaman URL üretir |
-| Çoklu `mngdocument` instance | In-memory store paylaşılmaz (Redis gerekir) |
+| WOPI oturum store | `InMemoryWopiSessionStore` — `CreateSession`, `ListActive`, `Touch`, `Revoke`, `PurgeExpired` |
+| Oturum metadata | `UserId`, `UserName`, `ResourceId` / `TemplateId` / `LetterheadId`, `ReadOnly`, `CreatedAt`, `LastSeenAt` |
+| Pre-Collabora limit | ✅ `EditorLimitsSettings` — 18 conn / 9 doc / kullanıcı başına 3; 429 `EDITOR_CAPACITY_FULL` |
+| Oturum sonlandırma | ✅ `POST …/editor-sessions/{token}/end` + UI `pagehide` keepalive |
+| Stats / revoke | ✅ `GET editor-sessions/stats`; manager/admin oturum listesi + zorla kapat |
+| UI panel | ✅ `DiEditorSessionsPanel` — chip, modal, yenile, ~5 sn poll + `BroadcastChannel` |
+| Editör yeni sekme | ✅ `/editor/resource/[id]` + menüden yeni sekme |
+| Döküman kilidi | ✅ `GET …/editor-lock-status`; uyarı + sert kilit + aynı kullanıcı çift sekme engeli |
+| Çoklu `mngdocument` instance | 🔲 In-memory — **D-E4** (Redis) opsiyonel |
 
-**Akış:** Kullanıcı “Düzenle” → `ResourceEditorService` / `TemplateEditorService` → `CreateSession` → Collabora iframe URL.
+**Test deploy:** `mngdocument` @ `192.168.20.20` (7 Tem akşam). UI kilitleme/modal: lokal `npm run dev` (UI deploy bekliyor).
 
 ### 9.3 Connection vs document
 
@@ -500,13 +509,14 @@ Kullanıcı "Düzenle"
 }
 ```
 
-**Admin / operasyon API (taslak):**
+**Admin / operasyon API (canlı):**
 
 ```text
 GET    /documents/api/v1/editor-sessions/stats
-GET    /documents/api/v1/editor-sessions              [manager/admin]
-DELETE /documents/api/v1/editor-sessions/{token}      [admin veya oturum sahibi]
-POST   /documents/api/v1/editor-sessions/{token}/end    [UI kapanış]
+POST   /documents/api/v1/editor-sessions/{token}/end
+DELETE /documents/api/v1/editor-sessions/{token}
+GET    /documents/api/v1/resources/{id}/editor-lock-status
+GET    /documents/api/v1/resources/{id}/editor-session?readOnly=&bypassLock=
 ```
 
 Örnek `stats` yanıtı:
@@ -530,26 +540,37 @@ POST   /documents/api/v1/editor-sessions/{token}/end    [UI kapanış]
 }
 ```
 
-### 9.7 UI
+### 9.7 UI (✅)
 
-| Kitle | Özellik |
-|-------|---------|
-| **Manager / admin** | DI veya System panelinde “Editör: 7/18 bağlantı · 4/9 döküman”; oturum listesi; zorla kapat |
-| **Normal kullanıcı** | Limit dolunca anlaşılır uyarı; isteğe bağlı küçük kapasite göstergesi |
-| **Düzenle öncesi** | Opsiyonel `GET .../stats` ile buton disable |
+| Kitle | Özellik | Durum |
+|-------|---------|--------|
+| **Manager / admin** | Toolbar chip + oturum modalı (kapasite, liste, yenile, revoke) | ✅ `DiEditorSessionsPanel` |
+| **Normal kullanıcı** | Limit dolunca 429 mesajı | ✅ backend |
+| **Düzenle öncesi** | Başka kullanıcı / aynı kullanıcı çift sekme uyarısı | ✅ `DiEditorLockDialog` + `useDiEditorLockGate` |
+| **Kapanış** | Sekme/dialog kapanınca oturum düşürme | ✅ keepalive + broadcast |
 
-UI bileşenleri: `DiResourceEditorDialog`, `DiCollaboraEditor`, designer `edit.vue` — kapanışta `end session` çağrısı.
+UI bileşenleri: `DiResourceEditorDialog`, `editor/resource/[id].vue`, `useDiEditorSessionCleanup`, `diEditorSessionBroadcast`.
+
+**Yapılandırma** (`EditorLockSettings`):
+
+```json
+{
+  "warnOnActiveEditor": true,
+  "enforceExclusiveLock": true,
+  "allowManagerBypass": true,
+  "blockSameUserDuplicateSession": true
+}
+```
 
 ### 9.8 D-E dilimleri
 
-| Dilim | Kapsam |
-|-------|--------|
-| **D-E1** | Session `end` API + UI kapanış hook + idle timeout + `GetStats` |
-| **D-E2** | Pre-Collabora limit gate + 429 + `EditorLimitsSettings` |
-| **D-E3** | Manager UI: kapasite widget + oturum listesi + revoke |
-| **D-E4** | (Opsiyonel) Redis-backed store — çoklu `mngdocument` replica |
-
-**Tahmini süre:** 2–4 hafta (D-E1–E2 öncelikli)
+| Dilim | Kapsam | Durum |
+|-------|--------|--------|
+| **D-E1** | Session `end` API + UI kapanış hook + idle timeout + `GetStats` | ✅ |
+| **D-E2** | Pre-Collabora limit gate + 429 + `EditorLimitsSettings` | ✅ |
+| **D-E3** | Manager UI: kapasite widget + oturum listesi + revoke + poll/broadcast | ✅ |
+| **D-E-LOCK** | Döküman kilidi: uyarı, sert kilit, aynı kullanıcı çift sekme | ✅ |
+| **D-E4** | (Opsiyonel) Redis-backed store — çoklu `mngdocument` replica | 🔲 |
 
 **Not:** Collabora admin konsolu kendi connection/document sayısını gösterir; operasyonel tek kaynak **MngDocument WOPI store** olmalıdır. Collabora metrics scrape düşük öncelik.
 
@@ -977,12 +998,13 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 
 ## 23. Sonraki adımlar (genel)
 
-1. ~~Faz P~~ ✅ · ~~D-BR1~~ ✅ · ~~D-META / D-CREATE / D-FILE-PREV~~ ✅ · ~~D-PERF-1/2/3~~ ✅
-2. **D-E1–E2** — oturum sonlandırma + pre-Collabora limit ← **sıradaki**
-3. **D2** — döküman sürüm UX (backend hazır)
-4. **D2–D4** — merge/PDF export, manuel üretim UX
-5. **D-BR2** — kapak kataloğu
-6. **D-N1** · CoC smoke · **D-P** ⏸️ · **Faz M** lifecycle ⏸️
+1. ~~Faz P~~ ✅ · ~~D-BR1~~ ✅ · ~~D-META / D-CREATE / D-FILE-PREV~~ ✅ · ~~D-PERF-1/2/3~~ ✅ · ~~**D-E**~~ ✅ · ~~**D2**~~ ✅
+2. **D4** — manuel şablondan üretim UX, merge + PDF indirme ← **sıradaki**
+3. **D-BR2** — kapak kataloğu
+4. **CoC/Activity smoke** · **D-N1**
+5. **D-P** ⏸️ · **Faz M** lifecycle ⏸️
+6. **D-E4** — Redis WOPI store (opsiyonel, çoklu replica)
+7. **D2 P1** — Collabora PDF export (opsiyonel)
 
 ---
 
@@ -1020,6 +1042,48 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 
 - xlsx / pptx native create (Faz S / Pr)
 - PDF preview cache
-- Döküman sürüm UX genişletme (**D2**)
-- Collabora oturum limiti (**D-E1–E2** ← sıradaki)
+- ~~Döküman sürüm UX (**D2**)~~ ✅
+- Manuel üretim + merge/PDF (**D4** ← sıradaki)
 - Kapak sayfası (**D-BR2**)
+
+---
+
+## 25. Oturum özeti — D-E + D2 ✅ (7 Temmuz 2026 gece)
+
+**Ortam:** Test deploy `192.168.20.20` — `mngdocument` + `mngui` · UI doğrulama lokal + test
+
+### D-E — Editör oturumları ve kilitleme
+
+| Bileşen | Özet |
+|---------|------|
+| `EditorSessionService` | Limit gate (429), idle timeout, stats, revoke |
+| `EditorSessionsController` | `stats`, `{token}/end` |
+| `editor-lock-status` | Başka kullanıcı / aynı kullanıcı çift sekme; manager bypass |
+| `DiEditorSessionsPanel` | Toolbar chip, modal, poll, broadcast |
+| `DiEditorLockDialog` | Salt okunur / bypass seçenekleri |
+| `editor/resource/[id].vue` | Tam ekran editör (yeni sekme) |
+
+### D2 — Döküman sürüm UX
+
+| Bileşen | Özet |
+|---------|------|
+| `PATCH /resources/{id}/versions/{n}` | Sürüm `changeNote` güncelleme |
+| `useDiEditorVersionWatch` | Kayıt sonrası sürüm poll; paylaşımlı save-check promise |
+| `DiSaveVersionNoteDialog` | Kayıt toast + sürüm notu modalı |
+| `DiEditorCloseConfirmDialog` | Kaydet / kaydetmeden kapat; kayıtta not modalı |
+| `DiResourceEditorDialog` | Toolbar `vN`, Geçmiş, kapatma guard |
+| `r/[id].vue` | Native DOCX detay; `?edit=1` otomatik editör |
+| WOPI `PostMessageOrigin` | UI `window.location.origin` → session → Collabora postMessage |
+
+### Kabul kriterleri (D2)
+
+- [x] Collabora kayıt → yeni sürüm algılanır, toast + not modalı
+- [x] Kapat → Kaydet → not modalı → editör kapanır
+- [x] Geçmiş diyalogundan sürüm önizle / geri yükle
+- [x] `changeNote` PATCH kalıcı
+
+### Sıradaki
+
+- **D4** — manuel şablondan üretim, merge, PDF indirme
+- **D-BR2** — kapak sayfası kataloğu
+- CoC/Activity uçtan uca smoke

@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MngDocument.Application.Contracts.EditorSessions;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Interfaces;
 
@@ -235,11 +236,23 @@ public class ResourcesController : ControllerBase
         Ok(await _resources.GetMarkdownBacklinksAsync(id, ct));
 
     /// <summary>Collabora editör oturumu (DOCX dosyaları, iframe URL + WOPI token).</summary>
+    [HttpGet("{id}/editor-lock-status")]
+    [ProducesResponseType(typeof(DocumentEditorLockStatusDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetEditorLockStatus(string id) =>
+        Ok(_resourceEditor.GetEditorLockStatus(id));
+
+    /// <summary>Collabora editör oturumu (DOCX dosyaları, iframe URL + WOPI token).</summary>
     [HttpGet("{id}/editor-session")]
     [ProducesResponseType(typeof(ResourceEditorSessionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetEditorSession(string id, CancellationToken ct) =>
-        Ok(await _resourceEditor.CreateEditorSessionAsync(id, ct));
+    public async Task<IActionResult> GetEditorSession(
+        string id,
+        [FromQuery] bool? readOnly,
+        [FromQuery] bool bypassLock = false,
+        [FromQuery] string? postMessageOrigin = null,
+        CancellationToken ct = default) =>
+        Ok(await _resourceEditor.CreateEditorSessionAsync(id, readOnly, bypassLock, postMessageOrigin, ct));
 
     /// <summary>Yönetilen DOCX sürüm geçmişi (içerik hariç, en yeni önce).</summary>
     [HttpGet("{id}/versions")]
@@ -272,6 +285,17 @@ public class ResourcesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RestoreFileVersion(string id, int versionNumber, CancellationToken ct) =>
         Ok(await _resources.RestoreFileVersionAsync(id, versionNumber, ct));
+
+    /// <summary>Belirli bir DOCX sürümünün değişiklik notunu günceller.</summary>
+    [HttpPatch("{id}/versions/{versionNumber:int}")]
+    [ProducesResponseType(typeof(MarkdownVersionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateFileVersionChangeNote(
+        string id,
+        int versionNumber,
+        [FromBody] UpdateFileVersionChangeNoteRequest request,
+        CancellationToken ct) =>
+        Ok(await _resources.UpdateFileVersionChangeNoteAsync(id, versionNumber, request, ct));
 
     /// <summary>
     /// Yüklenen dosya için metadata kaydı oluşturur. UI dönen <c>id</c> ile DG

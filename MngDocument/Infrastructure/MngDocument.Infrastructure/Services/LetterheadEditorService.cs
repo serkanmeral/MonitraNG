@@ -25,6 +25,7 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IWopiSessionStore _sessions;
+    private readonly IEditorSessionService _editorSessions;
     private readonly ILetterheadService _letterheads;
     private readonly IDomainLogoProvider _logoProvider;
     private readonly ILetterheadFooterApplier _footerPreview;
@@ -34,6 +35,7 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IWopiSessionStore sessions,
+        IEditorSessionService editorSessions,
         ILetterheadService letterheads,
         IDomainLogoProvider logoProvider,
         ILetterheadFooterApplier footerPreview,
@@ -42,6 +44,7 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
         _dg = dg;
         _ctx = ctx;
         _sessions = sessions;
+        _editorSessions = editorSessions;
         _letterheads = letterheads;
         _logoProvider = logoProvider;
         _footerPreview = footerPreview;
@@ -89,7 +92,7 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
         };
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
-        var accessToken = _sessions.CreateSession(session, ttl);
+        var accessToken = _editorSessions.BeginSession(session, ttl);
 
         var wopiHost = _settings.Wopi.HostBaseUrl.TrimEnd('/');
         var wopiSrc = $"{wopiHost}/wopi/files/{Uri.EscapeDataString(id)}";
@@ -148,7 +151,8 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
             UserCanNotWriteRelative = false,
             SupportsLocks = false,
             SupportsRename = false,
-            UserCanRename = false
+            UserCanRename = false,
+            PostMessageOrigin = WopiCollaboraHelper.ResolvePostMessageOrigin(session, _settings.Collabora)
         };
     }
 

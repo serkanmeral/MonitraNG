@@ -11,11 +11,12 @@ import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklink
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intelligence/DiMarkdownVersionHistoryDialog.vue';
+import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/DiFileVersionHistoryDialog.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAppToast } from '@/composables/useAppToast';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { isDiDocxEditable, isDiPreviewable } from '@/utils/diFilePreview';
+import { isDiDocxEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
 import { DI_HOME_PATH, buildDiFolderUrl } from '@/utils/diResourceLink';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
@@ -49,6 +50,7 @@ const previewOpen = ref(false);
 const markdownContent = ref('');
 const markdownLoading = ref(false);
 const showMarkdown = ref(false);
+const showDocxDetail = ref(false);
 const docVersion = ref(0);
 const docMode = ref<'view' | 'edit'>('view');
 const editContent = ref('');
@@ -59,10 +61,30 @@ const saveDialog = ref(false);
 const saveDialogMode = ref<DiSavePageMode>('save');
 const pendingSaveAsDraft = ref(false);
 const historyDialog = ref(false);
+const fileHistoryDialog = ref(false);
 
 function resourceLabel(r: DiResource | null): string {
   if (!r) return '…';
   return diPageResourceLabel(r);
+}
+
+function formatSize(bytes: number | null | undefined): string {
+  if (bytes == null || !Number.isFinite(bytes) || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
 }
 
 const breadcrumbs = computed(() => [
@@ -136,7 +158,12 @@ async function openLoadedResource(r: DiResource) {
   }
 
   if (isDiDocxEditable(r)) {
-    editorOpen.value = true;
+    showDocxDetail.value = true;
+    docVersion.value = r.currentVersionNumber ?? 0;
+    const editQuery = route.query.edit === '1' || route.query.edit === 'true';
+    if (editQuery) {
+      editorOpen.value = true;
+    }
     return;
   }
 
@@ -158,6 +185,7 @@ async function loadResource() {
   loading.value = true;
   errorMessage.value = '';
   showMarkdown.value = false;
+  showDocxDetail.value = false;
   editorOpen.value = false;
   previewOpen.value = false;
   downloadedFallback.value = false;
@@ -244,9 +272,33 @@ async function onVersionRestored(restored: DiResource) {
   await loadMarkdownContent(restored);
 }
 
+async function onFileVersionRestored(restored: DiResource) {
+  resource.value = restored;
+  docVersion.value = restored.currentVersionNumber ?? docVersion.value;
+}
+
+async function refreshDocxResource() {
+  if (!resource.value) return;
+  try {
+    resource.value = await diGetById(resource.value.id);
+    docVersion.value = resource.value.currentVersionNumber ?? docVersion.value;
+  } catch {
+    // non-fatal
+  }
+}
+
 function onEditorOpenChange(open: boolean) {
   editorOpen.value = open;
+  if (!open && showDocxDetail.value) {
+    void refreshDocxResource();
+    return;
+  }
   if (!open) void goToParentFolder();
+}
+
+function onEditorSaved(updated: DiResource) {
+  resource.value = updated;
+  docVersion.value = updated.currentVersionNumber ?? docVersion.value;
 }
 
 function onPreviewOpenChange(open: boolean) {
@@ -429,6 +481,92 @@ watch(resourceId, () => {
         />
       </template>
 
+      <template v-else-if="showDocxDetail && resource">
+        <div class="d-flex align-center flex-wrap ga-2 mb-3">
+          <v-icon :icon="diPageResourceIcon(resource)" color="primary" class="mr-1" />
+          <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(resource) }}</h3>
+          <v-chip v-if="docVersion > 0" size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
+          <v-chip
+            v-if="isDiManagedDocument(resource) && resource.documentNo"
+            size="x-small"
+            variant="outlined"
+            prepend-icon="mdi-pound"
+          >
+            {{ resource.documentNo }}
+          </v-chip>
+          <v-spacer />
+          <v-btn
+            v-if="resource.permissions.canEdit"
+            size="small"
+            variant="tonal"
+            color="primary"
+            class="text-none"
+            prepend-icon="mdi-pencil"
+            @click="editorOpen = true"
+          >
+            {{ t('documentIntelligence.edit') }}
+          </v-btn>
+          <v-btn
+            size="small"
+            variant="text"
+            class="text-none"
+            prepend-icon="mdi-history"
+            @click="fileHistoryDialog = true"
+          >
+            {{ t('documentIntelligence.history') }}
+          </v-btn>
+          <v-btn
+            v-if="resource.permissions.canDownload"
+            size="small"
+            variant="text"
+            class="text-none"
+            prepend-icon="mdi-download"
+            @click="downloadFile(resource)"
+          >
+            {{ t('documentIntelligence.download') }}
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="!resource.permissions.canEdit"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-3 rounded-lg"
+        >
+          {{ t('documentIntelligence.viewOnlyHint') }}
+        </v-alert>
+
+        <v-list density="compact" class="bg-transparent mb-3 rounded-lg border pa-2">
+          <v-list-item v-if="resource.description">
+            <v-list-item-title class="text-caption text-medium-emphasis">
+              {{ t('documentIntelligence.resourceInfoDescription') }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="text-body-2">{{ resource.description }}</v-list-item-subtitle>
+          </v-list-item>
+          <v-list-item v-if="formatSize(resource.size)">
+            <v-list-item-title class="text-caption text-medium-emphasis">
+              {{ t('documentIntelligence.resourceInfoSize') }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="text-body-2">{{ formatSize(resource.size) }}</v-list-item-subtitle>
+          </v-list-item>
+          <v-list-item v-if="resource.updatedBy || resource.updatedAt">
+            <v-list-item-title class="text-caption text-medium-emphasis">
+              {{ t('documentIntelligence.metaUpdated') }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="text-body-2">
+              {{ [resource.updatedBy, resource.updatedAt ? formatDateTime(resource.updatedAt) : null].filter(Boolean).join(' · ') }}
+            </v-list-item-subtitle>
+          </v-list-item>
+        </v-list>
+
+        <div class="mb-3">
+          <DiTagPicker :model-value="resource.tags ?? []" readonly density="compact" />
+        </div>
+
+        <DiLinkedWorkItemsPanel :resource-id="resource.id" class="mt-2" />
+      </template>
+
       <v-alert
         v-else-if="downloadedFallback && resource"
         type="info"
@@ -454,6 +592,7 @@ watch(resourceId, () => {
       :model-value="editorOpen"
       :resource="resource"
       @update:model-value="onEditorOpenChange"
+      @saved="onEditorSaved"
     />
 
     <DiFilePreviewDialog
@@ -474,6 +613,13 @@ watch(resourceId, () => {
       :resource-id="resource?.id ?? null"
       :can-restore="resource?.permissions.canEdit ?? false"
       @restored="onVersionRestored"
+    />
+
+    <DiFileVersionHistoryDialog
+      v-model="fileHistoryDialog"
+      :resource="resource"
+      :can-restore="resource?.permissions.canEdit ?? false"
+      @restored="onFileVersionRestored"
     />
 
   </div>

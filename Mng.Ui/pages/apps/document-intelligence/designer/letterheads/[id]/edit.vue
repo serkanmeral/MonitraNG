@@ -5,6 +5,7 @@ import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollabo
 import DiLetterheadDesignFooterSummary from '@/components/apps/document-intelligence/DiLetterheadDesignFooterSummary.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { useDiEditorSessionCleanup } from '@/composables/useDiEditorSessionCleanup';
 import { diGetLetterhead, diGetLetterheadDesignSession } from '@/services/documentIntelligenceService';
 import type { DiLetterhead, DiLetterheadDesignSession } from '@/types/apps/documentIntelligence';
 
@@ -12,6 +13,7 @@ definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const { trackEditorAccessToken, releaseEditorSession } = useDiEditorSessionCleanup();
 const route = useRoute();
 const router = useRouter();
 
@@ -47,11 +49,14 @@ async function loadEditor() {
   editorUrl.value = null;
   designSession.value = null;
 
+  await releaseEditorSession();
+
   try {
     letterhead.value = await diGetLetterhead(id);
     const session = await diGetLetterheadDesignSession(id);
     designSession.value = session;
     editorUrl.value = session.editorUrl || null;
+    trackEditorAccessToken(session.accessToken);
   } catch (e: unknown) {
     const message = panelError(e, 'documentIntelligence.letterheads.errors.designSession');
     error.value = message;
@@ -65,6 +70,7 @@ async function loadEditor() {
 }
 
 function backToList() {
+  void releaseEditorSession();
   router.push('/apps/document-intelligence/designer/letterheads');
 }
 

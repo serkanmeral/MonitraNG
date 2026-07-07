@@ -34,4 +34,6 @@ public sealed class WopiCheckFileInfoDto
     public bool DisableExport { get; init; }
     public bool UserCanRename { get; init; }
     public bool SupportsRename { get; init; }
+    /// <summary>Collabora → host postMessage hedef origin(leri).</summary>
+    public string? PostMessageOrigin { get; init; }
 }

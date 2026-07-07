@@ -19,6 +19,8 @@ import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intellige
 import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/DiFileVersionHistoryDialog.vue';
 import DiResourceInfoDialog from '@/components/apps/document-intelligence/DiResourceInfoDialog.vue';
 import DiCloneResourceDialog from '@/components/apps/document-intelligence/DiCloneResourceDialog.vue';
+import DiEditorSessionsPanel from '@/components/apps/document-intelligence/DiEditorSessionsPanel.vue';
+import DiEditorLockDialog from '@/components/apps/document-intelligence/DiEditorLockDialog.vue';
 import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
 import { isDiPreviewable, isDiDocxEditable, isDiManagedDocument, isDiCloneable } from '@/utils/diFilePreview';
@@ -26,11 +28,13 @@ import { useDiLazyFolderTree } from '@/composables/useDiLazyFolderTree';
 import {
   DI_HOME_PATH,
   buildDiResourceUrl,
+  buildDiResourceEditorUrl,
   parseFolderIdQuery,
   parseLegacyResourceIdQuery,
 } from '@/utils/diResourceLink';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useDiEditorLockGate } from '@/composables/useDiEditorLockGate';
 import { useAppToast } from '@/composables/useAppToast';
 import { useApiErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAuthStore } from '@/stores/auth';
@@ -90,6 +94,17 @@ const { notifyApiError } = useApiErrorNotify();
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+const {
+  dialogOpen: editorLockDialogOpen,
+  lockStatus: editorLockStatus,
+  gateResourceEditor,
+  onDialogChoose: onEditorLockChoose,
+  onDialogUpdate: onEditorLockDialogUpdate,
+} = useDiEditorLockGate();
+
+const canViewEditorSessions = computed(
+  () => authStore.isAdmin || authStore.isManager
+);
 
 const {
   treeWidth,
@@ -483,6 +498,22 @@ function openFilePreview(resource: DiResource) {
 
 function openFileEditor(resource: DiResource) {
   void navigateTo(buildDiResourceUrl(resource.id));
+}
+
+async function openFileEditorInNewTab(resource: DiResource) {
+  const gate = await gateResourceEditor(resource.id);
+  if (!gate.proceed) return;
+
+  const url = buildDiResourceEditorUrl(resource.id, {
+    readOnly: gate.options?.readOnly,
+    bypassLock: gate.options?.bypassLock,
+  });
+
+  if (typeof window === 'undefined') {
+    void navigateTo(url);
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 async function openMarkdown(resource: DiResource) {
@@ -1160,6 +1191,8 @@ watch(
 
             <v-spacer />
 
+            <DiEditorSessionsPanel v-if="canViewEditorSessions" compact class="mr-2" />
+
             <v-btn
               v-if="selectedFolder && canManage(selectedFolder)"
               color="primary"
@@ -1539,7 +1572,7 @@ watch(
                               <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-tag-outline" :title="t('documentIntelligence.tags.editTitle')" @click="openResourceTags(d)" />
                               <v-list-item v-if="isDiCloneable(d)" prepend-icon="mdi-content-copy" :title="t('documentIntelligence.clone')" @click="openClone(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-history" :title="t('documentIntelligence.versionHistory')" @click="openFileHistory(d)" />
-                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-file-document-edit-outline" :title="t('documentIntelligence.openInEditor')" @click="openFileEditor(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-open-in-new" :title="t('documentIntelligence.openInEditor')" @click="openFileEditorInNewTab(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
                               <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
@@ -1914,6 +1947,13 @@ watch(
     <DiResourceEditorDialog
       v-model="fileEditorOpen"
       :resource="fileEditorResource"
+    />
+
+    <DiEditorLockDialog
+      :model-value="editorLockDialogOpen"
+      :status="editorLockStatus"
+      @update:model-value="onEditorLockDialogUpdate"
+      @choose="onEditorLockChoose"
     />
 
   </div>

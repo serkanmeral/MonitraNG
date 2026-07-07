@@ -34,6 +34,9 @@ import {
   type DiCreateBlankTemplateRequest,
   type DiTemplateEditorSession,
   type DiResourceEditorSession,
+  type DiDocumentEditorLockStatus,
+  type DiResourceEditorOpenOptions,
+  type DiEditorSessionStats,
   type DiCreateTemplateCategoryRequest,
   type DiDocxStructure,
   type DiRenameTemplateCategoryRequest,
@@ -537,6 +540,28 @@ export async function diDownloadFileVersion(
 export async function diRestoreFileVersion(id: string, versionNumber: number): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/versions/${versionNumber}/restore`, 'POST');
   return mapResource(raw);
+}
+
+/** Belirli bir DOCX sürümünün değişiklik notunu günceller. */
+export async function diUpdateFileVersionChangeNote(
+  id: string,
+  versionNumber: number,
+  changeNote: string,
+): Promise<DiMarkdownVersion> {
+  const raw = await fetchFromDocuments(
+    `${BASE}/${encodeURIComponent(id)}/versions/${versionNumber}`,
+    'PATCH',
+    { changeNote: changeNote || null },
+  );
+  const o = asRecord(raw);
+  return {
+    versionNumber: num(o, 'versionNumber') ?? versionNumber,
+    changeNote: str(o, 'changeNote'),
+    size: num(o, 'size'),
+    createdAt: str(o, 'createdAt'),
+    createdBy: str(o, 'createdBy'),
+    isCurrent: Boolean(o.isCurrent),
+  };
 }
 
 /** Belirli bir DOCX sürümünü salt okunur Collabora oturumunda açar. */
@@ -1111,7 +1136,47 @@ function mapResourceEditorSession(
     accessToken: str(o, 'accessToken') ?? '',
     wopiSrc: str(o, 'wopiSrc') ?? '',
     readOnly: Boolean(o.readOnly),
+    lockedByOthers: Boolean(o.lockedByOthers),
+    lockEnforced: Boolean(o.lockEnforced),
   };
+}
+
+function mapDocumentEditorLockStatus(raw: unknown): DiDocumentEditorLockStatus {
+  const o = asRecord(raw);
+  const editorsRaw = o.activeEditors ?? o.ActiveEditors;
+  const activeEditors = Array.isArray(editorsRaw)
+    ? editorsRaw.map((item) => {
+        const e = asRecord(item);
+        return {
+          userId: str(e, 'userId') ?? '',
+          userName: str(e, 'userName') ?? '',
+          lastSeenAt: str(e, 'lastSeenAt') ?? '',
+          isCurrentUser: Boolean(e.isCurrentUser),
+        };
+      })
+    : [];
+
+  return {
+    resourceId: str(o, 'resourceId'),
+    templateId: str(o, 'templateId'),
+    letterheadId: str(o, 'letterheadId'),
+    isLocked: Boolean(o.isLocked ?? o.isLockedByOthers),
+    isLockedByOthers: Boolean(o.isLockedByOthers),
+    isLockedBySelf: Boolean(o.isLockedBySelf),
+    warnOnActiveEditor: o.warnOnActiveEditor !== false,
+    enforceExclusiveLock: o.enforceExclusiveLock !== false,
+    canBypassLock: Boolean(o.canBypassLock),
+    activeEditors,
+  };
+}
+
+/** Döküman editör kilidi — başka kullanıcı düzenliyor mu? */
+export async function diGetResourceEditorLockStatus(resourceId: string): Promise<DiDocumentEditorLockStatus> {
+  const raw = await fetchFromDocuments(
+    `${BASE}/${encodeURIComponent(resourceId)}/editor-lock-status`,
+    'GET',
+  );
+  return mapDocumentEditorLockStatus(raw);
 }
 
 async function diGetResourceEditorSessionViaTemplate(
@@ -1161,13 +1226,21 @@ async function diGetResourceEditorSessionViaTemplate(
 
 export async function diGetResourceEditorSession(
   resourceId: string,
-  resourceName?: string
+  resourceName?: string,
+  options?: DiResourceEditorOpenOptions,
 ): Promise<DiResourceEditorSession> {
+  const params = new URLSearchParams();
+  if (options?.readOnly === true) params.set('readOnly', 'true');
+  if (options?.readOnly === false) params.set('readOnly', 'false');
+  if (options?.bypassLock) params.set('bypassLock', 'true');
+  if (import.meta.client && typeof window !== 'undefined' && window.location.origin) {
+    params.set('postMessageOrigin', window.location.origin);
+  }
+  const query = params.toString();
+  const path = `${BASE}/${encodeURIComponent(resourceId)}/editor-session${query ? `?${query}` : ''}`;
+
   try {
-    const raw = await fetchFromDocuments(
-      `${BASE}/${encodeURIComponent(resourceId)}/editor-session`,
-      'GET'
-    );
+    const raw = await fetchFromDocuments(path, 'GET');
     return mapResourceEditorSession(raw, resourceId);
   } catch (error: unknown) {
     if (diErrorStatus(error) === 404) {
@@ -1175,6 +1248,102 @@ export async function diGetResourceEditorSession(
     }
     throw error;
   }
+}
+
+const EDITOR_SESSIONS_BASE = '/api/v1/editor-sessions';
+
+/** Collabora WOPI oturumunu sonlandırır (dialog/sayfa kapanışı). */
+export async function diEndEditorSession(accessToken: string): Promise<void> {
+  const token = accessToken?.trim();
+  if (!token) return;
+  await fetchFromDocuments(
+    `${EDITOR_SESSIONS_BASE}/${encodeURIComponent(token)}/end`,
+    'POST',
+  );
+}
+
+/**
+ * Sekme kapanışında oturumu sonlandırır (fetch keepalive — Authorization ile).
+ * pagehide / beforeunload sırasında async çağrılar tamamlanmayabilir.
+ */
+export function diEndEditorSessionKeepalive(accessToken: string): void {
+  const token = accessToken?.trim();
+  if (!token || !import.meta.client) return;
+
+  const bearer = getAccessToken();
+  if (!bearer) return;
+
+  const url = `/api/documents/v1/editor-sessions/${encodeURIComponent(token)}/end`;
+  try {
+    void fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${bearer}` },
+      keepalive: true,
+    });
+  } catch {
+    // Best-effort on tab close.
+  }
+}
+
+/** Oturumu zorla kapat (manager/admin veya oturum sahibi). */
+export async function diRevokeEditorSession(accessToken: string): Promise<void> {
+  const token = accessToken?.trim();
+  if (!token) return;
+  await fetchFromDocuments(
+    `${EDITOR_SESSIONS_BASE}/${encodeURIComponent(token)}`,
+    'DELETE',
+  );
+}
+
+/** Aktif editör oturumu istatistikleri (D-E1 / D-E3). */
+export async function diGetEditorSessionStats(): Promise<DiEditorSessionStats> {
+  const raw = await fetchFromDocuments(`${EDITOR_SESSIONS_BASE}/stats`, 'GET');
+  const o = asRecord(raw);
+  const limits = asRecord(o.limits);
+  const collabora = asRecord(o.collaboraHomeMode);
+  const byUserRaw = Array.isArray(o.byUser) ? o.byUser : [];
+  const sessionsRaw = Array.isArray(o.sessions) ? o.sessions : null;
+
+  return {
+    activeConnections: num(o, 'activeConnections') ?? 0,
+    activeDocuments: num(o, 'activeDocuments') ?? 0,
+    limits: {
+      maxConnections: num(limits, 'maxConnections') ?? 0,
+      maxDocuments: num(limits, 'maxDocuments') ?? 0,
+      maxSessionsPerUser: num(limits, 'maxSessionsPerUser') ?? 0,
+    },
+    collaboraHomeMode: {
+      maxConnections: num(collabora, 'maxConnections') ?? 0,
+      maxDocuments: num(collabora, 'maxDocuments') ?? 0,
+    },
+    byUser: byUserRaw.map((item) => {
+      const u = asRecord(item);
+      return {
+        userId: str(u, 'userId') ?? '',
+        displayName: str(u, 'displayName') ?? '',
+        connectionCount: num(u, 'connectionCount') ?? 0,
+      };
+    }),
+    sessions: sessionsRaw
+      ? sessionsRaw.map((item) => {
+          const s = asRecord(item);
+          return {
+            accessToken: str(s, 'accessToken'),
+            tokenPrefix: str(s, 'tokenPrefix') ?? '',
+            resourceId: str(s, 'resourceId'),
+            templateId: str(s, 'templateId'),
+            letterheadId: str(s, 'letterheadId'),
+            kind: str(s, 'kind') ?? '',
+            displayName: str(s, 'displayName'),
+            userId: str(s, 'userId') ?? '',
+            userName: str(s, 'userName') ?? '',
+            readOnly: Boolean(s.readOnly),
+            createdAt: str(s, 'createdAt') ?? '',
+            lastSeenAt: str(s, 'lastSeenAt') ?? '',
+          };
+        })
+      : null,
+  };
 }
 
 export async function diGetDocxStructure(resourceId: string): Promise<DiDocxStructure> {

@@ -3624,6 +3624,54 @@
     "download": "Download",
     "preview": "Preview",
     "openInEditor": "Open in editor",
+    "openInEditorNewTab": "Open in editor (new tab)",
+    "editorNewTabHint": "This tab is a Collabora editor session. Closing the tab ends the session.",
+    "close": "Close",
+    "editorSessions": {
+      "title": "Editor sessions",
+      "capacityShort": "Editor: {connections}/{maxConnections} · {documents}/{maxDocuments} docs",
+      "connections": "Connections",
+      "documents": "Open documents",
+      "empty": "No active Collabora editor sessions.",
+      "byUserTitle": "By user",
+      "sessionsTitle": "Active sessions",
+      "colUser": "User",
+      "colDocument": "Document",
+      "colKind": "Type",
+      "colMode": "Mode",
+      "colLastSeen": "Last activity",
+      "colActions": "Actions",
+      "modeEdit": "Editing",
+      "revoke": "Close",
+      "refresh": "Refresh",
+      "refreshHint": "Fetch current session counts from the server",
+      "kind": {
+        "resource": "Document",
+        "template": "Template",
+        "letterhead": "Letterhead",
+        "unknown": "Other"
+      },
+      "errors": {
+        "load": "Could not load editor session statistics.",
+        "revoke": "Could not close the session."
+      }
+    },
+    "editorLock": {
+      "title": "Document in use",
+      "titleSelf": "Document already open",
+      "message": "Another user is currently editing this document:",
+      "messageSelf": "You already have this document open in the editor (another tab or window).",
+      "messageMixed": "This document is open both by you and another user:",
+      "youOtherTab": "You (other tab)",
+      "lastActivity": "Last activity: {time}",
+      "hardLockHint": "This document is locked. You can only open it in read-only mode.",
+      "selfLockHint": "Close the other editor tab to continue editing, or open read-only.",
+      "bypassHint": "As a manager you can bypass the lock and open in edit mode.",
+      "openReadOnly": "Open read-only",
+      "continueEditing": "Edit anyway",
+      "editAnywayAdmin": "Bypass lock and edit",
+      "cancel": "Cancel"
+    },
     "editorTemplateFallbackHint": "Until MngDocument is updated, the file opens via a temporary template copy. Saves stay on that copy; the folder file updates in place after MngDocument is deployed.",
     "previewUnavailable": "Inline preview is not available for this file type. You can download it.",
     "saveAsDraft": "Save as draft",
@@ -3650,8 +3698,21 @@
       "titleSave": "Save page",
       "titlePublish": "Publish page",
       "titleDraft": "Save as draft",
+      "titleVersionNote": "Add version note",
       "changeNoteLabel": "What changed?",
-      "changeNoteHint": "Optional — shown in version history."
+      "changeNoteHint": "Optional — shown in version history.",
+      "skipNote": "Skip",
+      "saveNote": "Save note"
+    },
+    "editorVersion": {
+      "savedToast": "Saved as v{n}.",
+      "noteSaved": "Version note saved."
+    },
+    "editorClose": {
+      "title": "Unsaved changes",
+      "message": "This document has unsaved changes. Do you want to save before closing?",
+      "save": "Save",
+      "discard": "Close without saving"
     },
     "backlinks": {
       "title": "Pages linking here",
@@ -4047,7 +4108,8 @@
       "versionsLoad": "Could not load version history.",
       "clone": "Clone failed.",
       "versionLoad": "Could not load version content.",
-      "versionRestore": "Could not restore the version."
+      "versionRestore": "Could not restore the version.",
+      "versionNoteSave": "Could not save the version note."
     },
     "permissions": {
       "menuTitle": "Permissions",

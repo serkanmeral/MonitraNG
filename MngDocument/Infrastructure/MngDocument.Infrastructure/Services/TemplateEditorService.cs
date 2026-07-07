@@ -27,6 +27,7 @@ public sealed class TemplateEditorService : ITemplateEditorService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IWopiSessionStore _sessions;
+    private readonly IEditorSessionService _editorSessions;
     private readonly IDocumentTemplateService _templates;
     private readonly ITemplateBrandingApplier _brandingApplier;
     private readonly MngDocumentSettings _settings;
@@ -35,6 +36,7 @@ public sealed class TemplateEditorService : ITemplateEditorService
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IWopiSessionStore sessions,
+        IEditorSessionService editorSessions,
         IDocumentTemplateService templates,
         ITemplateBrandingApplier brandingApplier,
         IOptions<MngDocumentSettings> settings)
@@ -42,6 +44,7 @@ public sealed class TemplateEditorService : ITemplateEditorService
         _dg = dg;
         _ctx = ctx;
         _sessions = sessions;
+        _editorSessions = editorSessions;
         _templates = templates;
         _brandingApplier = brandingApplier;
         _settings = settings.Value;
@@ -185,7 +188,7 @@ public sealed class TemplateEditorService : ITemplateEditorService
         };
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
-        var accessToken = _sessions.CreateSession(session, ttl);
+        var accessToken = _editorSessions.BeginSession(session, ttl);
 
         var wopiHost = _settings.Wopi.HostBaseUrl.TrimEnd('/');
         var wopiSrc = $"{wopiHost}/wopi/files/{Uri.EscapeDataString(id)}";
@@ -245,7 +248,8 @@ public sealed class TemplateEditorService : ITemplateEditorService
             UserCanNotWriteRelative = false,
             SupportsLocks = false,
             SupportsRename = false,
-            UserCanRename = false
+            UserCanRename = false,
+            PostMessageOrigin = WopiCollaboraHelper.ResolvePostMessageOrigin(session, _settings.Collabora)
         };
     }
 

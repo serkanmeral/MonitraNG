@@ -5,6 +5,7 @@ import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollabo
 import DiTemplatePageStructureForm from '@/components/apps/document-intelligence/DiTemplatePageStructureForm.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { useDiEditorSessionCleanup } from '@/composables/useDiEditorSessionCleanup';
 import {
   diGetTemplate,
   diGetTemplateEditorSession,
@@ -22,6 +23,7 @@ definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const { trackEditorAccessToken, releaseEditorSession } = useDiEditorSessionCleanup();
 const route = useRoute();
 const router = useRouter();
 
@@ -116,6 +118,8 @@ async function loadEditor() {
   editorUrl.value = null;
   editorReadOnly.value = false;
 
+  await releaseEditorSession();
+
   try {
     template.value = await diGetTemplate(id);
     syncPageStructureFromTemplate(template.value);
@@ -123,6 +127,7 @@ async function loadEditor() {
     const session = await diGetTemplateEditorSession(id);
     editorReadOnly.value = session.readOnly || isPublished.value;
     editorUrl.value = session.editorUrl || null;
+    trackEditorAccessToken(session.accessToken);
   } catch (e: unknown) {
     const message = panelError(e, 'documentIntelligence.designer.errors.load');
     error.value = message;
@@ -158,6 +163,7 @@ async function applyPageStructure() {
 }
 
 function backToList() {
+  void releaseEditorSession();
   router.push(listPath.value);
 }
 

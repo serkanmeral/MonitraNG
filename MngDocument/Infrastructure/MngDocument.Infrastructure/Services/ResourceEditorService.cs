@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
+using MngDocument.Application.Contracts.EditorSessions;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Contracts.Templates;
 using MngDocument.Application.Exceptions;
@@ -20,6 +21,7 @@ public sealed class ResourceEditorService : IResourceEditorService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IWopiSessionStore _sessions;
+    private readonly IEditorSessionService _editorSessions;
     private readonly IPermissionService _perms;
     private readonly IResourceService _resources;
     private readonly MngDocumentSettings _settings;
@@ -28,6 +30,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IWopiSessionStore sessions,
+        IEditorSessionService editorSessions,
         IPermissionService perms,
         IResourceService resources,
         IOptions<MngDocumentSettings> settings)
@@ -35,6 +38,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         _dg = dg;
         _ctx = ctx;
         _sessions = sessions;
+        _editorSessions = editorSessions;
         _perms = perms;
         _resources = resources;
         _settings = settings.Value;
@@ -42,7 +46,22 @@ public sealed class ResourceEditorService : IResourceEditorService
 
     private string? Token => _ctx.BearerToken;
 
-    public async Task<ResourceEditorSessionDto> CreateEditorSessionAsync(string resourceId, CancellationToken ct = default)
+    public DocumentEditorLockStatusDto GetEditorLockStatus(string resourceId)
+    {
+        var id = resourceId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(id))
+            throw DocumentException.NotFound();
+
+        var userId = _ctx.UserId ?? _ctx.Username ?? "anonymous";
+        return _editorSessions.GetDocumentLockStatus(id, null, null, userId, _ctx.IsAdmin || _ctx.IsManager);
+    }
+
+    public async Task<ResourceEditorSessionDto> CreateEditorSessionAsync(
+        string resourceId,
+        bool? requestReadOnly = null,
+        bool bypassLock = false,
+        string? postMessageOrigin = null,
+        CancellationToken ct = default)
     {
         EnsureCollaboraEnabled();
 
@@ -65,10 +84,26 @@ public sealed class ResourceEditorService : IResourceEditorService
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
         var effective = snapshot.Resolve(resource);
-        var readOnly = !effective.CanEdit;
+        var canEdit = effective.CanEdit;
+        var wantReadOnly = requestReadOnly ?? !canEdit;
+        var readOnly = wantReadOnly || !canEdit;
 
         var userId = _ctx.UserId ?? _ctx.Username ?? "anonymous";
         var userName = _ctx.Username ?? userId;
+
+        var lockStatus = _editorSessions.GetDocumentLockStatus(id, null, null, userId, _ctx.IsAdmin || _ctx.IsManager);
+        var locked = lockStatus.IsLocked;
+        var lockEnforced = false;
+
+        if (locked && canEdit)
+        {
+            var canBypass = lockStatus.CanBypassLock && bypassLock;
+            if (lockStatus.EnforceExclusiveLock && !canBypass && !wantReadOnly)
+            {
+                readOnly = true;
+                lockEnforced = true;
+            }
+        }
 
         var session = new WopiSession
         {
@@ -78,11 +113,12 @@ public sealed class ResourceEditorService : IResourceEditorService
             UserName = userName,
             DataGatewayToken = Token,
             Version = (resource.currentVersionNumber ?? 1).ToString(),
-            ReadOnly = readOnly
+            ReadOnly = readOnly,
+            PostMessageOrigin = WopiCollaboraHelper.NormalizePostMessageOrigin(postMessageOrigin)
         };
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
-        var accessToken = _sessions.CreateSession(session, ttl);
+        var accessToken = _editorSessions.BeginSession(session, ttl);
         var (editorUrl, wopiSrc) = BuildEditorUrls(id, accessToken, readOnly);
 
         return new ResourceEditorSessionDto
@@ -91,7 +127,9 @@ public sealed class ResourceEditorService : IResourceEditorService
             EditorUrl = editorUrl,
             AccessToken = accessToken,
             WopiSrc = wopiSrc,
-            ReadOnly = readOnly
+            ReadOnly = readOnly,
+            LockedByOthers = lockStatus.IsLockedByOthers,
+            LockEnforced = lockEnforced && readOnly
         };
     }
 
@@ -151,7 +189,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         };
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
-        var accessToken = _sessions.CreateSession(session, ttl);
+        var accessToken = _editorSessions.BeginSession(session, ttl);
         var (editorUrl, wopiSrc) = BuildEditorUrls(id, accessToken, readOnly: true);
 
         return new ResourceEditorSessionDto
@@ -189,7 +227,8 @@ public sealed class ResourceEditorService : IResourceEditorService
             UserCanNotWriteRelative = false,
             SupportsLocks = false,
             SupportsRename = false,
-            UserCanRename = false
+            UserCanRename = false,
+            PostMessageOrigin = WopiCollaboraHelper.ResolvePostMessageOrigin(session, _settings.Collabora)
         };
     }
 

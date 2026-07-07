@@ -91,6 +91,15 @@ public sealed class WopiController : ControllerBase
         return Ok();
     }
 
-    private WopiSession? ResolveSession(string? accessToken) =>
-        string.IsNullOrWhiteSpace(accessToken) ? null : _sessions.GetSession(accessToken);
+    private WopiSession? ResolveSession(string? accessToken)
+    {
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return null;
+
+        var session = _sessions.GetSession(accessToken);
+        if (session is not null)
+            _sessions.Touch(accessToken);
+
+        return session;
+    }
 }

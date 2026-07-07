@@ -136,6 +136,13 @@ public sealed class UpdateResourceMetadataRequest
     public string? Description { get; set; }
 }
 
+/// <summary>Yönetilen DOCX sürüm kaydının değişiklik notunu günceller.</summary>
+public sealed class UpdateFileVersionChangeNoteRequest
+{
+    /// <summary>Sürüm geçmişinde görünecek not. Boşsa varsayılan <c>save</c> kullanılır.</summary>
+    public string? ChangeNote { get; set; }
+}
+
 /// <summary>Markdown sayfa veya manual DOCX klonlama isteği.</summary>
 public sealed class CloneResourceRequest
 {

@@ -57,6 +57,7 @@ public static class ServiceRegistration
         services.AddScoped<LetterheadHeaderValueEnricher>();
         services.AddScoped<IDocumentGenerationService, DocumentGenerationService>();
         services.AddSingleton<IWopiSessionStore, InMemoryWopiSessionStore>();
+        services.AddScoped<IEditorSessionService, EditorSessionService>();
 
         return services;
     }

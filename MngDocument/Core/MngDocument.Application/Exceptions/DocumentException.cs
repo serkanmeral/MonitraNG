@@ -34,4 +34,7 @@ public class DocumentException : Exception
 
     public static DocumentException ServiceUnavailable(string code, string message, string messageTr) =>
         new(code, message, messageTr, 503);
+
+    public static DocumentException TooManyRequests(string code, string message, string messageTr) =>
+        new(code, message, messageTr, 429);
 }

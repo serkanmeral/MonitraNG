@@ -3547,6 +3547,54 @@
     "download": "İndir",
     "preview": "Önizle",
     "openInEditor": "Editörde göster",
+    "openInEditorNewTab": "Editörde göster (yeni sekme)",
+    "editorNewTabHint": "Bu sekme Collabora editör oturumudur. Sekmeyi kapattığınızda oturum sonlandırılır.",
+    "close": "Kapat",
+    "editorSessions": {
+      "title": "Editör oturumları",
+      "capacityShort": "Editör: {connections}/{maxConnections} · {documents}/{maxDocuments} döküman",
+      "connections": "Bağlantılar",
+      "documents": "Açık dökümanlar",
+      "empty": "Şu an aktif Collabora editör oturumu yok.",
+      "byUserTitle": "Kullanıcı özeti",
+      "sessionsTitle": "Aktif oturumlar",
+      "colUser": "Kullanıcı",
+      "colDocument": "Döküman",
+      "colKind": "Tür",
+      "colMode": "Mod",
+      "colLastSeen": "Son aktivite",
+      "colActions": "İşlem",
+      "modeEdit": "Düzenleme",
+      "revoke": "Kapat",
+      "refresh": "Yenile",
+      "refreshHint": "Sunucudan güncel oturum sayılarını alır",
+      "kind": {
+        "resource": "Döküman",
+        "template": "Şablon",
+        "letterhead": "Antet",
+        "unknown": "Diğer"
+      },
+      "errors": {
+        "load": "Editör oturum istatistikleri yüklenemedi.",
+        "revoke": "Oturum kapatılamadı."
+      }
+    },
+    "editorLock": {
+      "title": "Döküman düzenleniyor",
+      "titleSelf": "Döküman zaten açık",
+      "message": "Bu dökümanda şu anda başka bir kullanıcı çalışıyor:",
+      "messageSelf": "Bu dökümanı zaten editörde açıksınız (başka sekme veya pencere).",
+      "messageMixed": "Bu döküman hem sizde hem başka kullanıcıda açık:",
+      "youOtherTab": "Siz (başka sekme)",
+      "lastActivity": "Son aktivite: {time}",
+      "hardLockHint": "Bu döküman kilitli. Yalnızca salt okunur modda açabilirsiniz.",
+      "selfLockHint": "Düzenlemeye devam etmek için diğer editör sekmesini kapatın veya salt okunur açın.",
+      "bypassHint": "Yönetici olarak kilidi atlayıp düzenleme modunda açabilirsiniz.",
+      "openReadOnly": "Salt okunur aç",
+      "continueEditing": "Yine de düzenle",
+      "editAnywayAdmin": "Kilidi atla ve düzenle",
+      "cancel": "Vazgeç"
+    },
     "editorTemplateFallbackHint": "MngDocument güncellenene kadar dosya, geçici şablon kopyası üzerinden açılır. Kaydettiğiniz değişiklikler bu kopyada kalır; klasördeki asıl dosya MngDocument deploy sonrası doğrudan güncellenir.",
     "previewUnavailable": "Bu dosya türü için satır içi önizleme yok. İndirebilirsiniz.",
     "saveAsDraft": "Taslak olarak kaydet",
@@ -3573,8 +3621,21 @@
       "titleSave": "Sayfayı kaydet",
       "titlePublish": "Sayfayı yayınla",
       "titleDraft": "Taslak olarak kaydet",
+      "titleVersionNote": "Sürüm notu ekle",
       "changeNoteLabel": "Ne değişti?",
-      "changeNoteHint": "Opsiyonel — sürüm geçmişinde görünür."
+      "changeNoteHint": "Opsiyonel — sürüm geçmişinde görünür.",
+      "skipNote": "Atla",
+      "saveNote": "Notu kaydet"
+    },
+    "editorVersion": {
+      "savedToast": "v{n} kaydedildi.",
+      "noteSaved": "Sürüm notu kaydedildi."
+    },
+    "editorClose": {
+      "title": "Kaydedilmemiş değişiklikler",
+      "message": "Dökümanda kaydedilmemiş değişiklikler var. Kapatmadan önce kaydetmek ister misiniz?",
+      "save": "Kaydet",
+      "discard": "Kaydetmeden kapat"
     },
     "backlinks": {
       "title": "Bu sayfaya link verenler",
@@ -3970,7 +4031,8 @@
       "versionsLoad": "Sürüm geçmişi yüklenemedi.",
       "clone": "Klonlama başarısız.",
       "versionLoad": "Sürüm içeriği yüklenemedi.",
-      "versionRestore": "Sürüm geri yüklenemedi."
+      "versionRestore": "Sürüm geri yüklenemedi.",
+      "versionNoteSave": "Sürüm notu kaydedilemedi."
     },
     "permissions": {
       "menuTitle": "İzinler",

@@ -15,6 +15,17 @@ public sealed class WopiSession
     /// <summary>Dolu ise WOPI yanıtı bu sürüm anlık görüntüsünden okunur (salt okunur önizleme).</summary>
     public int? PreviewVersionNumber { get; init; }
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
+    /// <summary>Collabora PostMessage hedefi — tarayıcı <c>window.location.origin</c>.</summary>
+    public string? PostMessageOrigin { get; init; }
+}
+
+public sealed class WopiActiveSession
+{
+    public required string AccessToken { get; init; }
+    public required WopiSession Session { get; init; }
+    public DateTime ExpiresAt { get; init; }
+    public DateTime LastSeenAt { get; init; }
 }
 
 public interface IWopiSessionStore
@@ -22,4 +33,9 @@ public interface IWopiSessionStore
     string CreateSession(WopiSession session, TimeSpan ttl);
     WopiSession? GetSession(string accessToken);
     void BumpVersion(string accessToken, string newVersion);
+    void Touch(string accessToken);
+    bool Revoke(string accessToken);
+    int RevokeByUser(string userId);
+    IReadOnlyList<WopiActiveSession> ListActive(TimeSpan idleTimeout);
+    void PurgeExpired(TimeSpan idleTimeout);
 }

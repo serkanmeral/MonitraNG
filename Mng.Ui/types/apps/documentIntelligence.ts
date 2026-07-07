@@ -733,4 +733,69 @@ export interface DiResourceEditorSession {
   readOnly: boolean;
   /** Prod'da resource editor-session yoksa şablon kopyası üzerinden açıldı. */
   viaTemplateFallback?: boolean;
+  lockedByOthers?: boolean;
+  lockEnforced?: boolean;
+}
+
+export interface DiDocumentActiveEditor {
+  userId: string;
+  userName: string;
+  lastSeenAt: string;
+  isCurrentUser: boolean;
+}
+
+export interface DiDocumentEditorLockStatus {
+  resourceId?: string | null;
+  templateId?: string | null;
+  letterheadId?: string | null;
+  isLocked: boolean;
+  isLockedByOthers: boolean;
+  isLockedBySelf: boolean;
+  warnOnActiveEditor: boolean;
+  enforceExclusiveLock: boolean;
+  canBypassLock: boolean;
+  activeEditors: DiDocumentActiveEditor[];
+}
+
+export type DiEditorLockChoice = 'edit' | 'readOnly' | 'cancel';
+
+export interface DiResourceEditorOpenOptions {
+  readOnly?: boolean;
+  bypassLock?: boolean;
+}
+
+export interface DiEditorSessionLimits {
+  maxConnections: number;
+  maxDocuments: number;
+  maxSessionsPerUser: number;
+}
+
+export interface DiEditorSessionUserStats {
+  userId: string;
+  displayName: string;
+  connectionCount: number;
+}
+
+export interface DiEditorSessionItem {
+  accessToken?: string | null;
+  tokenPrefix: string;
+  resourceId?: string | null;
+  templateId?: string | null;
+  letterheadId?: string | null;
+  kind: string;
+  displayName?: string | null;
+  userId: string;
+  userName: string;
+  readOnly: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
+export interface DiEditorSessionStats {
+  activeConnections: number;
+  activeDocuments: number;
+  limits: DiEditorSessionLimits;
+  collaboraHomeMode: { maxConnections: number; maxDocuments: number };
+  byUser: DiEditorSessionUserStats[];
+  sessions: DiEditorSessionItem[] | null;
 }

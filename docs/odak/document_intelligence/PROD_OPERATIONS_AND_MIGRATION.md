@@ -240,7 +240,7 @@ Test sunucusu hazır olunca:
 | **D4-UI** | Upload docx PDF önizleme (`GET …/preview/pdf`) | D4-INFRA | ✅ **D-FILE-PREV** (7 Tem 2026) |
 | **D-META/CREATE** | `origin` + native docx oluşturma | — | ✅ (7 Tem 2026) |
 | **D3 / D-P** | Tablo/liste/chart parametreleri | — | ⏸️ **Faz D-P — ertelendi** |
-| **D-E** | Collabora oturum limiti | — | 🔲 Sırada |
+| **D-E** | Collabora oturum limiti + kilitleme | — | ✅ Test deploy 7 Tem 2026 |
 
 Collabora embed yalnızca “tarayıcıda DOCX düzenleme” ihtiyacı netleşirse değerlendirilir.
 

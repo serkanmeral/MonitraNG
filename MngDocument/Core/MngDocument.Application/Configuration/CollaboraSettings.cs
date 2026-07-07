@@ -10,6 +10,12 @@ public class CollaboraSettings
 
     /// <summary>cool.html yolu (CODE sürümüne göre).</summary>
     public string EditorPath { get; set; } = "/browser/dist/cool.html";
+
+    /// <summary>
+    /// Host uygulama origin(leri) — Collabora PostMessage API (Doc_ModifiedStatus, Action_Save).
+    /// Boşlukla ayrılmış birden fazla origin (örn. http://localhost:3000 http://127.0.0.1:3000).
+    /// </summary>
+    public string? PostMessageOrigin { get; set; }
 }
 
 public class WopiSettings

@@ -1,7 +1,7 @@
 # Document Intelligence (MngDocument) — Devam noktası (checkpoint)
 
-**Son güncelleme:** 7 Temmuz 2026 (**D-META/CREATE/FILE-PREV ✅ · prod smoke · D-PERF ✅ · sırada D-E1–E2**)
-**Durum:** **Faz P ✅** · **D-BR1 ✅** · **D-META/CREATE/FILE-PREV ✅** · **D-PERF ✅** · **Prod deploy ✅**
+**Son güncelleme:** 7 Temmuz 2026 gece (**D-E ✅ · D2 ✅ · sırada D4**)
+**Durum:** **Faz P ✅** · **D-BR1 ✅** · **D-META/CREATE/FILE-PREV ✅** · **D-PERF ✅** · **D-E ✅** · **D2 ✅** · **Test deploy ✅**
 
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
@@ -14,22 +14,24 @@
 > - docs/odak/document_intelligence/DEVAM.md
 > - docs/odak/document_intelligence/DI_PRODUCT_ROADMAP.md
 >
-> Durum (7 Tem 2026 akşam):
+> Durum (7 Tem 2026 gece):
 > - D-META / D-CREATE / D-FILE-PREV ✅ (c5880739) — prod smoke 9/9
 > - D-PERF lazy tree + permission cache + pagination ✅ (dff51a2c)
-> - Prod dm_tags dataset ✅ · mngdocument + mngui deploy ✅
-> - Döküman lifecycle: Minimal (taslak/yayın yalnızca Sayfa; Faz M ertelendi)
-> - Sırada: D-E1–E2 (Collabora oturum limiti) → D2 → D-BR2
+> - D-E1–E3 + döküman kilidi ✅
+> - D2 döküman sürüm UX ✅ — changeNote, kapat-kaydet-not, PostMessageOrigin
+> - Test deploy: mngdocument + mngui @ 192.168.20.20
+> - Sırada: **D4** (manuel üretim / merge / PDF) → D-BR2 → CoC smoke
 >
 > Test: 192.168.20.20:5040 | Prod: 192.168.20.8:5040
 > Token prod: load-operationcore-token-prod.ps1
 > Smoke: scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1
 > ```
 
-> **⭐ KALDIĞIMIZ YER (7 Tem 2026):**
-> - **D-E1–E2** implementasyonu — WOPI oturum sonlandırma + pre-Collabora limit gate
-> - Sonra **D2** (döküman sürüm UX), **D-BR2**, CoC smoke
-> - Roadmap §23: [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md)
+> **⭐ KALDIĞIMIZ YER (7 Tem 2026 gece):**
+> - **D-E + D2** tamamlandı — editör oturum/kilitleme + Collabora sürüm UX (kaydet, not, kapat akışı)
+> - Test ortamına `mngdocument` + `mngui` deploy edildi
+> - Sırada **D4** (manuel şablondan üretim, merge, PDF), sonra **D-BR2**, CoC smoke
+> - Roadmap §25: [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md)
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) · **Antet prod migration:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](LETTERHEAD_CATALOG_MIGRATION_PROD.md) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md)
 
@@ -375,17 +377,89 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 
 ---
 
+---
+
+## D-E — Editör oturumları ve döküman kilidi (7 Temmuz 2026) ✅
+
+**Hedef:** Collabora limitlerine çarpmadan önce WOPI oturumlarını saymak, yönetmek ve eşzamanlı düzenlemeyi kontrol etmek.
+
+### Backend (MngDocument — test deploy ✅)
+
+| Bileşen | Açıklama |
+|---------|----------|
+| `EditorLimitsSettings` | 18 bağlantı / 9 döküman / kullanıcı başına 3 / 30 dk idle |
+| `EditorSessionService` | `BeginSession`, `EndSession`, `GetStats`, limit gate (429) |
+| `EditorSessionsController` | `stats`, `{token}/end`, revoke |
+| `EditorLockSettings` | Uyarı, sert kilit, manager bypass, aynı kullanıcı çift sekme engeli |
+| `GET …/editor-lock-status` | Aktif düzenleyiciler + kilit bayrakları |
+| `GET …/editor-session` | `readOnly`, `bypassLock` query; sunucu tarafı kilit zorlaması |
+
+### UI (Mng.Ui — lokal dev, deploy bekliyor)
+
+| Bileşen | Açıklama |
+|---------|----------|
+| `DiEditorSessionsPanel` | Toolbar chip, modal (liste, yenile, revoke), poll + broadcast |
+| `useDiEditorSessionCleanup` | `pagehide` keepalive `end` |
+| `editor/resource/[id].vue` | Tam ekran editör (yeni sekme) |
+| `DiEditorLockDialog` | Başka kullanıcı / aynı sekme uyarısı; salt okunur / bypass |
+| `diEditorSessionBroadcast` | Sekmeler arası oturum değişikliği |
+
+### Doğrulama
+
+- Test: `192.168.20.20:5040` — `mngdocument` deploy (7 Tem akşam ×2)
+- UI: lokal `npm run dev` → **7 Tem gece:** test `mngui` deploy (D-E + D2)
+
+---
+
+## D2 — Döküman sürüm UX (7 Temmuz 2026 gece) ✅
+
+**Hedef:** Native DOCX için Collabora kayıt → yeni sürüm, sürüm notu, geçmiş UX; kapatırken kaydet akışında da not modalı.
+
+### Backend (MngDocument)
+
+| Bileşen | Açıklama |
+|---------|----------|
+| `PATCH /resources/{id}/versions/{n}` | Sürüm `changeNote` güncelleme |
+| `UpdateFileVersionChangeNoteAsync` | `ResourceService` |
+| WOPI `PostMessageOrigin` | Oturum bazlı + statik config; `CheckFileInfo` |
+| `WopiCollaboraHelper` | Collabora postMessage origin çözümlemesi |
+
+### UI (Mng.Ui)
+
+| Bileşen | Açıklama |
+|---------|----------|
+| `useDiEditorVersionWatch` | Kayıt sonrası sürüm poll; paylaşımlı save-check promise (race fix) |
+| `DiSaveVersionNoteDialog` | Kayıt toast + sürüm notu girişi |
+| `DiEditorCloseConfirmDialog` | Kaydet / kaydetmeden kapat / iptal |
+| `useDiEditorCloseGuard` | Modified algısı; kapat-kaydet → not → kapat |
+| `DiResourceEditorDialog` | Toolbar `vN`, Geçmiş, Collabora entegrasyonu |
+| `r/[id].vue` | DOCX detay sayfası; `?edit=1` otomatik editör |
+| `editor/resource/[id].vue` | Tam ekran editör (yeni sekme) |
+| `diGetResourceEditorSession` | `postMessageOrigin=window.location.origin` |
+
+### Doğrulama
+
+- [x] Collabora kayıt → toast + sürüm notu modalı
+- [x] Kapat → Kaydet → not modalı → editör kapanır
+- [x] Sürüm geçmişi önizle / geri yükle
+- [x] `changeNote` PATCH kalıcı
+
+**Teknik not:** `documentSaved` ile `finishCloseAfterSave` aynı anda `checkVersionAfterSave` çağırıyordu; ikinci çağrı erken çıkıp editörü kapatıyordu → paylaşımlı promise ile düzeltildi.
+
+---
+
 ## Sıradaki iş (genel backlog)
 
 1. ~~**D-META + D-CREATE + D-FILE-PREV**~~ ✅
 2. ~~**D-PERF-1/2/3**~~ ✅
-3. **D-E1–E2** — Collabora oturum limiti ← **sıradaki**
-4. **D2** — döküman sürüm UX (backend hazır)
-5. **D2–D4** — merge/PDF, manuel üretim UX
+3. ~~**D-E1–E3 + kilitleme**~~ ✅
+4. ~~**D2** — döküman sürüm UX~~ ✅
+5. **D4** — merge/PDF, manuel üretim UX ← **sıradaki**
 6. **D-BR2** — kapak sayfası kataloğu
 7. **CoC/Activity uçtan uca smoke**
 8. **D-N1** — `document.generated` bildirim maili
 9. **Faz M** — döküman lifecycle (onaylı yayın, arşiv)
 10. **Sprint B** — `dm_document_context_types` dataset
+11. **D-E4** — Redis WOPI store (opsiyonel)
 
-**Son commit (DI):** `dff51a2c` — D-PERF · `c5880739` — D-META/CREATE/FILE-PREV, versions, clone, lazy tree
+**Son commit (DI):** D-E + D2 — editör oturum/kilitleme + sürüm UX (7 Tem gece)

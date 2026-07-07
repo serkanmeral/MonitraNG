@@ -14,6 +14,20 @@ export function buildDiResourceUrl(resourceId: string): string {
   return `${DI_HOME_PATH}/r/${encodeURIComponent(id)}`;
 }
 
+/** Tam ekran Collabora editör sayfası (yeni sekme). */
+export function buildDiResourceEditorUrl(
+  resourceId: string,
+  options?: { readOnly?: boolean; bypassLock?: boolean },
+): string {
+  const id = resourceId.trim();
+  if (!id) return DI_HOME_PATH;
+  const params = new URLSearchParams();
+  if (options?.readOnly) params.set('readOnly', '1');
+  if (options?.bypassLock) params.set('bypassLock', '1');
+  const query = params.toString();
+  return `${DI_HOME_PATH}/editor/resource/${encodeURIComponent(id)}${query ? `?${query}` : ''}`;
+}
+
 /** Markdown editöründe kullanılacak göreli DI iç link URL'si. */
 export function buildDiResourceMarkdownHref(resourceId: string): string {
   return buildDiResourceUrl(resourceId);

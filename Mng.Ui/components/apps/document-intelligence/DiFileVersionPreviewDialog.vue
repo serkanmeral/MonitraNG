@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { useDiEditorSessionCleanup } from '@/composables/useDiEditorSessionCleanup';
 import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollaboraEditor.vue';
 import { diGetFileVersionPreviewSession } from '@/services/documentIntelligenceService';
 import type { DiResource } from '@/types/apps/documentIntelligence';
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const { trackEditorAccessToken, releaseEditorSession } = useDiEditorSessionCleanup();
 
 const open = computed({
   get: () => props.modelValue,
@@ -46,11 +48,13 @@ async function loadPreview() {
   const vn = props.versionNumber;
   if (!id || vn == null) return;
 
+  await releaseEditorSession();
   reset();
   loading.value = true;
   try {
     const session = await diGetFileVersionPreviewSession(id, vn);
     editorUrl.value = session.editorUrl || null;
+    trackEditorAccessToken(session.accessToken);
   } catch (e: unknown) {
     error.value = panelError(e, 'documentIntelligence.errors.preview');
   } finally {
@@ -62,7 +66,10 @@ watch(
   () => [props.modelValue, props.resource?.id, props.versionNumber] as const,
   ([isOpen]) => {
     if (isOpen) void loadPreview();
-    else reset();
+    else {
+      void releaseEditorSession();
+      reset();
+    }
   },
 );
 </script>

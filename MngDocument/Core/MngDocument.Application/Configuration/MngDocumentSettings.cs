@@ -11,6 +11,8 @@ public class MngDocumentSettings
     public DocumentRenderingSettings DocumentRendering { get; set; } = new();
     public CollaboraSettings Collabora { get; set; } = new();
     public WopiSettings Wopi { get; set; } = new();
+    public EditorLimitsSettings EditorLimits { get; set; } = new();
+    public EditorLockSettings EditorLock { get; set; } = new();
     public KeeperSettings Keeper { get; set; } = new();
     public DomainFooterProfileSettings FooterProfile { get; set; } = new();
     /// <summary>When true and footerBlocks empty, applies legacy Odak FooterInjector + FooterProfile.</summary>

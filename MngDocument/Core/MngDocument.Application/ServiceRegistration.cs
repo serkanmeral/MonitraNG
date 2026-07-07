@@ -18,6 +18,8 @@ public static class ServiceRegistration
             s.DocumentRendering = settings.DocumentRendering;
             s.Collabora = settings.Collabora;
             s.Wopi = settings.Wopi;
+            s.EditorLimits = settings.EditorLimits;
+            s.EditorLock = settings.EditorLock;
             s.Keeper = settings.Keeper;
             s.FooterProfile = settings.FooterProfile;
             s.DocumentGeneration = settings.DocumentGeneration;

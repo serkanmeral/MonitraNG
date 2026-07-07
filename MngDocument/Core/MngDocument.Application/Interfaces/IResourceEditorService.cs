@@ -1,3 +1,4 @@
+using MngDocument.Application.Contracts.EditorSessions;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Contracts.Templates;
 
@@ -5,7 +6,14 @@ namespace MngDocument.Application.Interfaces;
 
 public interface IResourceEditorService
 {
-    Task<ResourceEditorSessionDto> CreateEditorSessionAsync(string resourceId, CancellationToken ct = default);
+    DocumentEditorLockStatusDto GetEditorLockStatus(string resourceId);
+
+    Task<ResourceEditorSessionDto> CreateEditorSessionAsync(
+        string resourceId,
+        bool? requestReadOnly = null,
+        bool bypassLock = false,
+        string? postMessageOrigin = null,
+        CancellationToken ct = default);
 
     /// <summary>Belirli bir sürümü salt okunur Collabora oturumunda açar.</summary>
     Task<ResourceEditorSessionDto> CreateVersionPreviewSessionAsync(

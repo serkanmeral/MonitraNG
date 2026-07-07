@@ -4,6 +4,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import {
   applyCollaboraUiCustomizations,
   handleCollaboraHostMessage,
+  requestCollaboraSave,
 } from '@/utils/diCollaboraPostMessage';
 
 const props = withDefaults(
@@ -16,18 +17,59 @@ const props = withDefaults(
   }>(),
   {
     hideCollaboraChrome: true,
-  }
+  },
 );
+
+const emit = defineEmits<{
+  documentSaved: [];
+}>();
 
 const { t } = useAppI18n();
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const iframeLoaded = ref(false);
+const documentModified = ref(false);
+const collaboraMessagingActive = ref(false);
+
+let saveWaitResolve: (() => void) | null = null;
+let saveWaitTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearSaveWait() {
+  if (saveWaitTimeout) {
+    clearTimeout(saveWaitTimeout);
+    saveWaitTimeout = null;
+  }
+  saveWaitResolve = null;
+}
+
+function resolveSaveWait() {
+  const resolve = saveWaitResolve;
+  clearSaveWait();
+  resolve?.();
+}
+
+function onModifiedStatus(modified: boolean) {
+  const wasModified = documentModified.value;
+  documentModified.value = modified;
+  if (!modified) {
+    resolveSaveWait();
+    if (wasModified) emit('documentSaved');
+  }
+}
+
+function onSaveComplete() {
+  documentModified.value = false;
+  resolveSaveWait();
+  emit('documentSaved');
+}
 
 watch(
   () => props.editorUrl,
   () => {
     iframeLoaded.value = false;
-  }
+    documentModified.value = false;
+    collaboraMessagingActive.value = false;
+    clearSaveWait();
+  },
 );
 
 function onIframeLoad() {
@@ -38,8 +80,42 @@ function onIframeLoad() {
 }
 
 function onHostMessage(event: MessageEvent) {
-  if (!props.hideCollaboraChrome) return;
-  handleCollaboraHostMessage(event, props.editorUrl, iframeRef.value);
+  const handled = handleCollaboraHostMessage(event, props.editorUrl, iframeRef.value, {
+    onDocumentLoaded: () => {
+      collaboraMessagingActive.value = true;
+      if (props.hideCollaboraChrome) {
+        applyCollaboraUiCustomizations(iframeRef.value, props.editorUrl);
+      }
+    },
+    onModifiedStatus: (modified) => {
+      collaboraMessagingActive.value = true;
+      onModifiedStatus(modified);
+    },
+    onSaveComplete: () => {
+      collaboraMessagingActive.value = true;
+      onSaveComplete();
+    },
+  });
+  if (handled) collaboraMessagingActive.value = true;
+}
+
+function isModified(): boolean {
+  return documentModified.value;
+}
+
+function requestSave(): Promise<void> {
+  if (!documentModified.value || !iframeRef.value || !props.editorUrl) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    clearSaveWait();
+    saveWaitResolve = resolve;
+    saveWaitTimeout = setTimeout(() => {
+      resolveSaveWait();
+    }, 15000);
+    requestCollaboraSave(iframeRef.value, props.editorUrl, { dontTerminateEdit: true });
+  });
 }
 
 onMounted(() => {
@@ -48,6 +124,13 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('message', onHostMessage);
+  clearSaveWait();
+});
+
+defineExpose({
+  isModified,
+  requestSave,
+  hasCollaboraMessaging: () => collaboraMessagingActive.value,
 });
 </script>
 

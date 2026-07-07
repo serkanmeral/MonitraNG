@@ -157,6 +157,7 @@ services:
       - MngDocumentSettings__Collabora__Enabled=true
       - MngDocumentSettings__Collabora__PublicBaseUrl=http://192.168.20.20:9980
       - MngDocumentSettings__Collabora__EditorPath=/browser/dist/cool.html
+      - MngDocumentSettings__Collabora__PostMessageOrigin=http://192.168.20.20:3000 http://127.0.0.1:3000 http://localhost:3000
       - MngDocumentSettings__Wopi__HostBaseUrl=http://mngdocument:5095
       - MngDocumentSettings__Wopi__SessionMinutes=480
 
