@@ -34,7 +34,7 @@ namespace MngDataGateway.Persistence.Services
             if (filters.Length == 0)
                 return null;
 
-            var matchFilter = new BsonDocument();
+            var clauses = new List<(string Field, BsonValue Condition)>();
 
             foreach (var filter in filters)
             {
@@ -54,7 +54,7 @@ namespace MngDataGateway.Persistence.Services
                     var condition = BuildCondition(fieldName, operatorStr, valueStr);
                     if (condition != null)
                     {
-                        matchFilter[fieldName] = condition;
+                        clauses.Add((fieldName, condition));
                     }
                 }
                 catch (Exception ex)
@@ -63,7 +63,68 @@ namespace MngDataGateway.Persistence.Services
                 }
             }
 
-            return matchFilter.ElementCount > 0 ? matchFilter : null;
+            return BuildMatchDocument(clauses);
+        }
+
+        private static BsonDocument? BuildMatchDocument(List<(string Field, BsonValue Condition)> clauses)
+        {
+            if (clauses.Count == 0)
+                return null;
+
+            var andParts = new BsonArray();
+
+            foreach (var group in clauses.GroupBy(c => c.Field, StringComparer.Ordinal))
+            {
+                var conditions = group.Select(g => g.Condition).ToList();
+                if (conditions.Count == 1)
+                {
+                    andParts.Add(new BsonDocument(group.Key, conditions[0]));
+                    continue;
+                }
+
+                if (TryMergeOperatorDocuments(conditions, out var merged))
+                {
+                    andParts.Add(new BsonDocument(group.Key, merged));
+                    continue;
+                }
+
+                foreach (var condition in conditions)
+                {
+                    andParts.Add(new BsonDocument(group.Key, condition));
+                }
+            }
+
+            if (andParts.Count == 0)
+                return null;
+
+            if (andParts.Count == 1)
+                return andParts[0].AsBsonDocument;
+
+            return new BsonDocument("$and", andParts);
+        }
+
+        /// <summary>
+        /// Merge operator docs on the same field (e.g. gte + lte → single range condition).
+        /// </summary>
+        private static bool TryMergeOperatorDocuments(IReadOnlyList<BsonValue> conditions, out BsonDocument merged)
+        {
+            merged = new BsonDocument();
+            foreach (var condition in conditions)
+            {
+                if (!condition.IsBsonDocument)
+                    return false;
+
+                foreach (var element in condition.AsBsonDocument.Elements)
+                {
+                    if (!element.Name.StartsWith("$", StringComparison.Ordinal))
+                        return false;
+                    if (merged.Contains(element.Name))
+                        return false;
+                    merged[element.Name] = element.Value;
+                }
+            }
+
+            return merged.ElementCount > 0;
         }
 
         /// <summary>
@@ -72,16 +133,17 @@ namespace MngDataGateway.Persistence.Services
         private BsonValue? BuildCondition(string fieldName, string operatorStr, string valueStr)
         {
             var comparisonValue = NormalizeDateComparisonValue(operatorStr, valueStr);
+            var comparisonOperand = ParseComparisonOperand(operatorStr, comparisonValue, valueStr);
 
             return operatorStr switch
             {
                 "eq" when IsDateOnly(valueStr) => new BsonDocument("$regex", new BsonString($"^{Regex.Escape(valueStr)}")).Add("$options", "i"),
                 "eq" => ParseValue(comparisonValue),
-                "ne" => new BsonDocument("$ne", ParseValue(comparisonValue)),
-                "gt" => new BsonDocument("$gt", ParseValue(comparisonValue)),
-                "gte" => new BsonDocument("$gte", ParseValue(comparisonValue)),
-                "lt" => new BsonDocument("$lt", ParseValue(comparisonValue)),
-                "lte" => new BsonDocument("$lte", ParseValue(comparisonValue)),
+                "ne" => new BsonDocument("$ne", comparisonOperand),
+                "gt" => new BsonDocument("$gt", comparisonOperand),
+                "gte" => new BsonDocument("$gte", comparisonOperand),
+                "lt" => new BsonDocument("$lt", comparisonOperand),
+                "lte" => new BsonDocument("$lte", comparisonOperand),
                 "in" => new BsonDocument("$in", ParseArrayValue(valueStr)),
                 "nin" => new BsonDocument("$nin", ParseArrayValue(valueStr)),
                 "contains" => new BsonDocument("$regex", new BsonString(valueStr)).Add("$options", "i"),
@@ -92,12 +154,74 @@ namespace MngDataGateway.Persistence.Services
         }
 
         /// <summary>
+        /// Datetime fields are stored as BSON Date in MongoDB; range operators must use BsonDateTime.
+        /// Plain date (YYYY-MM-DD) and ISO datetime strings are parsed for gte/lte/gt/lt.
+        /// </summary>
+        private BsonValue ParseComparisonOperand(string operatorStr, string comparisonValue, string rawValue)
+        {
+            if (operatorStr is "gt" or "gte" or "lt" or "lte"
+                && TryParseFilterDateTime(comparisonValue, out var dateTime))
+            {
+                return new BsonDateTime(dateTime);
+            }
+
+            return ParseValue(comparisonValue);
+        }
+
+        private static bool TryParseFilterDateTime(string valueStr, out DateTime utc)
+        {
+            utc = default;
+            if (string.IsNullOrWhiteSpace(valueStr))
+                return false;
+
+            var trimmed = valueStr.Trim();
+
+            if (DateTime.TryParseExact(
+                    trimmed,
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var dateOnly))
+            {
+                utc = DateTime.SpecifyKind(dateOnly, DateTimeKind.Utc);
+                return true;
+            }
+
+            if (!IsIsoDateTime(trimmed))
+                return false;
+
+            if (!DateTime.TryParse(
+                    trimmed,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var parsed))
+            {
+                return false;
+            }
+
+            utc = parsed.Kind switch
+            {
+                DateTimeKind.Utc => parsed,
+                DateTimeKind.Local => parsed.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(parsed, DateTimeKind.Utc),
+            };
+            return true;
+        }
+
+        private static bool IsIsoDateTime(string valueStr) =>
+            !string.IsNullOrWhiteSpace(valueStr)
+            && valueStr.Contains('T', StringComparison.Ordinal)
+            && DateTime.TryParse(
+                valueStr.Trim(),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out _);
+
+        /// <summary>
         /// Parse value string to BsonValue (try number, bool, then string).
-        /// ISO date strings stay as strings so filters match ISO string fields in MongoDB.
         /// </summary>
         private BsonValue ParseValue(string valueStr)
         {
-            // Try number
             if (int.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue))
                 return intValue;
             if (long.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
@@ -105,11 +229,9 @@ namespace MngDataGateway.Persistence.Services
             if (double.TryParse(valueStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
                 return doubleValue;
 
-            // Try bool
             if (bool.TryParse(valueStr, out var boolValue))
                 return boolValue;
 
-            // Default to string (including ISO date/datetime values)
             return valueStr;
         }
 
@@ -132,8 +254,9 @@ namespace MngDataGateway.Persistence.Services
 
             return operatorStr switch
             {
-                "lte" => $"{valueStr}T23:59:59.9999999Z",
-                "gt" => $"{valueStr}T23:59:59.9999999Z",
+                "lte" => $"{valueStr}T23:59:59.999Z",
+                "gt" => $"{valueStr}T23:59:59.999Z",
+                "gte" => $"{valueStr}T00:00:00.000Z",
                 _ => valueStr
             };
         }
@@ -145,7 +268,6 @@ namespace MngDataGateway.Persistence.Services
         {
             var array = new BsonArray();
 
-            // Try to parse as JSON array first
             if (valueStr.TrimStart().StartsWith("["))
             {
                 try
@@ -162,7 +284,6 @@ namespace MngDataGateway.Persistence.Services
                 }
             }
 
-            // Parse as comma-separated values
             var values = valueStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
             foreach (var value in values)
             {
@@ -211,4 +332,3 @@ namespace MngDataGateway.Persistence.Services
         }
     }
 }
-

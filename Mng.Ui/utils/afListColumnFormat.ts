@@ -7,6 +7,7 @@ export type AfListColumnFormatType =
   | 'date'
   | 'currency'
   | 'text-transform'
+  | 'truncate'
   | 'color'
   | 'conditional-color';
 
@@ -22,6 +23,8 @@ export interface AfListColumnFormatCondition {
 
 export interface AfListColumnFormat {
   type?: AfListColumnFormatType;
+  /** Ham değer → görünen metin (select / enum etiketleri). */
+  valueMap?: Record<string, string>;
   pattern?: string;
   replacement?: string;
   decimalPlaces?: number;
@@ -31,6 +34,9 @@ export interface AfListColumnFormat {
   showTime?: boolean;
   timeFormat?: 'HH:mm' | 'HH:mm:ss';
   textTransform?: 'uppercase' | 'lowercase' | 'capitalize';
+  /** truncate — gösterilecek maksimum karakter; aşılırsa ellipsis eklenir. */
+  maxLength?: number;
+  ellipsis?: string;
   textColor?: string;
   customTextColor?: string;
   backgroundColor?: string;
@@ -58,7 +64,25 @@ export function formatTypeLabelKey(type: AfListColumnFormatType | undefined): st
   if (!type || type === 'none') return 'none';
   if (type === 'text-transform') return 'textTransform';
   if (type === 'conditional-color') return 'conditionalColor';
+  if (type === 'truncate') return 'truncate';
   return type;
+}
+
+export function truncateListColumnText(
+  value: string,
+  maxLength: number,
+  ellipsis = '...'
+): string {
+  const text = value ?? '';
+  if (!text || maxLength <= 0 || text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}${ellipsis}`;
+}
+
+export function isListColumnTextTruncated(value: string, format?: AfListColumnFormat | null): boolean {
+  if (format?.type !== 'truncate') return false;
+  const max = Number(format.maxLength);
+  if (!Number.isFinite(max) || max <= 0) return false;
+  return value.length > max;
 }
 
 export function isActiveListColumnFormat(format?: AfListColumnFormat | null): boolean {
@@ -138,6 +162,10 @@ export function evaluateListFormatCondition(
 }
 
 export function applyListColumnFormatting(value: string, format?: AfListColumnFormat | null): string {
+  if (format?.valueMap) {
+    const mapped = format.valueMap[value];
+    if (mapped !== undefined) return mapped;
+  }
   if (!format?.type || format.type === 'none') return value;
 
   try {
@@ -217,6 +245,13 @@ export function applyListColumnFormatting(value: string, format?: AfListColumnFo
           return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
         }
         return value;
+
+      case 'truncate':
+        return truncateListColumnText(
+          value,
+          Number(format.maxLength) || 0,
+          format.ellipsis ?? '...'
+        );
 
       case 'color':
       case 'conditional-color':

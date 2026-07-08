@@ -259,10 +259,16 @@ namespace MngDataGateway.Api.Controllers
                     database.DatabaseNamespace.DatabaseName,
                     options);
 
-                // Handle showQuery - return pipeline
+                // Handle showQuery - return pipeline together with data (debug / reporting)
                 if (showQuery)
                 {
-                    return Ok(new { query = result.Query ?? new List<object>() });
+                    Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
+                    return Ok(new
+                    {
+                        query = result.Query ?? new List<object>(),
+                        data = result.Data,
+                        totalCount = result.TotalCount,
+                    });
                 }
 
                 // Handle CSV format

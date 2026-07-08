@@ -884,8 +884,8 @@ namespace MngDataGateway.Persistence.Services
                 var skip = Math.Max(0, options.Skip);
                 var limit = Math.Min(Math.Max(1, options.Limit), querySettings.MaxPageSize);
 
-                // Parse filter
-                var matchFilter = _filterParser.Parse(options.Filter);
+                // Parse filter (+ datetime schema coercion for BSON Date vs legacy ISO strings)
+                var matchFilter = MatchFilterFactory.Build(_filterParser, options.Filter, schema);
 
                 // Parse sort
                 var sortDefinition = _sortParser.Parse(options.Sort);
@@ -1164,6 +1164,7 @@ namespace MngDataGateway.Persistence.Services
                 {
                     matchFilter = new BsonDocument(match.Select(kvp =>
                         new BsonElement(kvp.Key, BsonValue.Create(kvp.Value))));
+                    matchFilter = DatetimeMatchFilterExpander.Expand(matchFilter, schema);
                 }
 
                 // Parse sort

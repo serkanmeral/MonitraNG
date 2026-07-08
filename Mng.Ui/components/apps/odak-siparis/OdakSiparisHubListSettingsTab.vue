@@ -140,7 +140,7 @@ function resetDefaults() {
             {{ t('odakSiparis.packages.settings.listColumns.editFormat') }}
           </v-btn>
           <v-switch v-model="element.visible" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.visible')" hide-details density="compact" color="primary" />
-          <v-switch v-model="element.sortable" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.sortable')" hide-details density="compact" />
+          <v-switch v-model="element.sortable" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.sortable')" hide-details density="compact" color="primary" />
           <v-switch
             v-if="scope === 'packages_list' || scope === 'global_shipments_list'"
             v-model="element.filterable"
@@ -148,6 +148,7 @@ function resetDefaults() {
             :label="t('odakSiparis.packages.settings.listColumns.filterable')"
             hide-details
             density="compact"
+            color="primary"
           />
         </div>
       </v-card>

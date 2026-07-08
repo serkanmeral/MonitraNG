@@ -7,6 +7,12 @@ export interface OdakHubListColumnConfig {
   sortable: boolean;
   filterable: boolean;
   width?: number;
+  /** İsteğe bağlı sütun başlığı (relation alt alanları için). */
+  title?: string;
+  /** Relation kaynak alanı (fieldName) expand sonrası gösterilecek hedef alan — örn. birimId + ad. */
+  relationDisplayField?: string;
+  /** Sanal sütun — DG fields sorgusuna dahil edilmez (ör. katılımcı sayısı). */
+  virtual?: boolean;
   format?: AfListColumnFormat;
 }
 
@@ -59,6 +65,9 @@ function normalizeHubListColumn(raw: unknown, fallbackOrder: number): OdakHubLis
   const o = raw as Record<string, unknown>;
   const fieldName = String(o.fieldName ?? o.FieldName ?? '').trim();
   if (!fieldName) return null;
+  const relationDisplayField = String(o.relationDisplayField ?? o.RelationDisplayField ?? '').trim() || undefined;
+  const title = String(o.title ?? o.Title ?? '').trim() || undefined;
+  const virtual = o.virtual === true || o.Virtual === true;
   return {
     fieldName,
     visible: o.visible !== false && o.Visible !== false,
@@ -66,6 +75,9 @@ function normalizeHubListColumn(raw: unknown, fallbackOrder: number): OdakHubLis
     sortable: o.sortable === true || o.Sortable === true,
     filterable: o.filterable === true || o.Filterable === true,
     width: o.width != null ? Number(o.width) : o.Width != null ? Number(o.Width) : undefined,
+    ...(title ? { title } : {}),
+    ...(relationDisplayField ? { relationDisplayField } : {}),
+    ...(virtual ? { virtual: true } : {}),
     format: (o.format ?? o.Format) as AfListColumnFormat | undefined,
   };
 }

@@ -160,6 +160,22 @@ export const welcomeModuleRegistry: WelcomeModuleDefinition[] = [
     ],
   },
   {
+    id: 'reporting',
+    routePrefix: '/apps/reporting',
+    group: 'platform',
+    groupOrder: 3,
+    order: 3,
+    titleKey: 'welcome.modules.reporting.title',
+    descriptionKey: 'welcome.modules.reporting.description',
+    icon: 'mdi-table-large',
+    color: 'blue-grey',
+    links: [
+      { labelKey: 'welcome.modules.reporting.linkCatalog', to: '/apps/reporting' },
+      { labelKey: 'welcome.modules.reporting.linkCategories', to: '/apps/reporting/categories' },
+      { labelKey: 'welcome.modules.reporting.linkDesigner', to: '/apps/reporting/designer' },
+    ],
+  },
+  {
     id: 'odak-egitim',
     routePrefix: '/apps/odak-egitim',
     group: 'domainApps',

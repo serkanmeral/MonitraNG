@@ -427,6 +427,12 @@ const sidebarItem: menu[] = [
     icon: EditCircleIcon,
     to: "/apps/document-intelligence/designer",
   },
+  {
+    title: "Raporlama",
+    pageCode: "reporting.menuTitle",
+    icon: ChartBarIcon,
+    to: "/apps/reporting",
+  },
   { header: "Pages" },
   {
     title: 'Pricing',

@@ -4,6 +4,7 @@ import {
   BorderAllIcon,
   BrandTablerIcon,
   CalendarIcon,
+  ChartBarIcon,
   CircleDotIcon,
   ClipboardIcon,
   FileCheckIcon,
@@ -376,6 +377,11 @@ const horizontalItems: menu[] = [
     title: "Belge Tasarımcısı",
     icon: FileCheckIcon,
     to: "/apps/document-intelligence/designer",
+  },
+  {
+    title: "Raporlama",
+    icon: ChartBarIcon,
+    to: "/apps/reporting",
   },
 
   {

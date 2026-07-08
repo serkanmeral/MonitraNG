@@ -43,6 +43,7 @@ const allFormatTypeOptions = computed(() => [
     title: ft('types.textTransform'),
     value: 'text-transform' as const,
   },
+  { title: ft('types.truncate'), value: 'truncate' as const },
   { title: ft('types.color'), value: 'color' as const },
   {
     title: ft('types.conditionalColor'),
@@ -277,6 +278,35 @@ function removeCondition(index: number) {
           prepend-inner-icon="mdi-format-letter-case"
           hide-details
         />
+      </v-col>
+    </v-row>
+
+    <v-row v-if="format.type === 'truncate'">
+      <v-col cols="6">
+        <v-text-field
+          v-model.number="format.maxLength"
+          :label="ft('maxLength')"
+          type="number"
+          min="1"
+          max="2000"
+          variant="outlined"
+          prepend-inner-icon="mdi-format-letter-case-upper"
+          hide-details
+        />
+      </v-col>
+      <v-col cols="6">
+        <v-text-field
+          v-model="format.ellipsis"
+          :label="ft('ellipsis')"
+          :placeholder="ft('ellipsisPlaceholder')"
+          variant="outlined"
+          hide-details
+        />
+      </v-col>
+      <v-col cols="12">
+        <div class="text-caption text-medium-emphasis">
+          {{ ft('truncateHint') }}
+        </div>
       </v-col>
     </v-row>
 
