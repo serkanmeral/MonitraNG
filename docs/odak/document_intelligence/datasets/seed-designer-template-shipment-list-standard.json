@@ -1,0 +1,72 @@
+{
+  "categoryPath": ["Operasyon Belgeleri", "Kalem Activity / Yaşam Döngüsü"],
+  "template": {
+    "name": "İş Paketi Sevkiyat Listesi",
+    "code": "SHIPMENT-LIST-STD",
+    "description": "İş paketi sevkiyat kalemleri XLSX listesi (G5 pilot).",
+    "primaryContextType": "odak.siparis.package",
+    "generationProfile": "odak.shipmentList.fromPackage",
+    "xlsxFile": "ODK-SHIPMENT-LIST-template-seed.xlsx",
+    "letterhead": {
+      "enabled": false
+    },
+    "parameters": [
+      {
+        "key": "packageNo",
+        "label": "İş Paketi No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "packageNo" }
+      },
+      {
+        "key": "packageName",
+        "label": "İş Paketi Adı",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "name" }
+      },
+      {
+        "key": "customerName",
+        "label": "Müşteri",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "customerId.unvan" }
+      },
+      {
+        "key": "deliveryDate",
+        "label": "Termin",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "deliveryDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "issueDate",
+        "label": "Liste Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy"
+      },
+      {
+        "key": "shipmentLines",
+        "label": "Sevkiyat satırları",
+        "kind": "table",
+        "dataType": "table",
+        "valueSourceMode": "manual",
+        "dataSourceRef": "odak.packageShipmentLines.byPackage",
+        "docBinding": {
+          "regionKind": "sheet",
+          "tableIndex": 0,
+          "headerRowIndex": 5,
+          "templateRowIndex": 6
+        }
+      },
+      {
+        "key": "generatedAt",
+        "label": "Üretim Zamanı",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy HH:mm"
+      }
+    ]
+  }
+}

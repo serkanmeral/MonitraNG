@@ -1,0 +1,25 @@
+{
+  "records": [
+    {
+      "type": "odak.siparis.line",
+      "displayName": "Sipariş kalemi",
+      "rootDataset": "odak_siparis_kalemleri",
+      "isActive": true,
+      "definitionJson": "{\"relations\":[{\"path\":\"parentPackageId\",\"dataset\":\"odak_is_paketleri\",\"optional\":false},{\"path\":\"parentPackageId.customerId\",\"dataset\":\"odak_musteriler\",\"optional\":true},{\"path\":\"productId\",\"dataset\":\"odak_urunler\",\"optional\":true}]}"
+    },
+    {
+      "type": "odak.siparis.package",
+      "displayName": "İş paketi",
+      "rootDataset": "odak_is_paketleri",
+      "isActive": true,
+      "definitionJson": "{\"relations\":[{\"path\":\"customerId\",\"dataset\":\"odak_musteriler\",\"optional\":true}]}"
+    },
+    {
+      "type": "oc.workItem",
+      "displayName": "Operation Core iş kaydı",
+      "rootDataset": "op_work_items",
+      "isActive": true,
+      "definitionJson": "{\"relations\":[{\"path\":\"boardId\",\"dataset\":\"op_boards\",\"optional\":true},{\"path\":\"typeId\",\"dataset\":\"op_work_item_types\",\"optional\":true}]}"
+    }
+  ]
+}

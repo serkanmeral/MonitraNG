@@ -20,6 +20,18 @@ public sealed class DocumentGenerationController : ControllerBase
         _generation = generation;
     }
 
+    [HttpPost("run")]
+    [ProducesResponseType(typeof(GenerateDocumentResultDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Run(
+        [FromBody] DocumentGenerationRuntimeEnvelope envelope,
+        CancellationToken ct)
+    {
+        var result = await _generation.RunGenerationAsync(envelope, ct);
+        return StatusCode(StatusCodes.Status201Created, result);
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(GenerateDocumentResultDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -46,17 +58,31 @@ public sealed class DocumentGenerationController : ControllerBase
         CancellationToken ct) =>
         Ok(await _generation.PreviewAsync(profileCode, contextId, ct));
 
+    [HttpGet("producers")]
+    [ProducesResponseType(typeof(IReadOnlyList<DocumentProducerDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListProducers(CancellationToken ct) =>
+        Ok(await _generation.ListProducersAsync(ct));
+
+    [HttpGet("producers/{code}")]
+    [ProducesResponseType(typeof(DocumentProducerDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProducer(string code, CancellationToken ct)
+    {
+        var producer = await _generation.GetProducerAsync(code, ct);
+        return producer is null ? NotFound() : Ok(producer);
+    }
+
     [HttpGet("context-types")]
     [ProducesResponseType(typeof(IReadOnlyList<DocumentContextTypeDto>), StatusCodes.Status200OK)]
-    public IActionResult ListContextTypes() =>
-        Ok(_generation.ListContextTypes());
+    public async Task<IActionResult> ListContextTypes(CancellationToken ct) =>
+        Ok(await _generation.ListContextTypesAsync(ct));
 
     [HttpGet("context-types/{type}")]
     [ProducesResponseType(typeof(DocumentContextTypeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetContextType(string type)
+    public async Task<IActionResult> GetContextType(string type, CancellationToken ct)
     {
-        var def = _generation.GetContextType(type);
+        var def = await _generation.GetContextTypeAsync(type, ct);
         return def is null ? NotFound() : Ok(def);
     }
 }

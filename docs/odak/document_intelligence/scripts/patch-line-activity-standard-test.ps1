@@ -16,6 +16,7 @@ $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
 $seedFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/seed-designer-template-line-activity-standard.json"
+. (Join-Path $scriptDir "lib/Convert-DiTemplateParameters.ps1")
 
 $token = $Token
 if ([string]::IsNullOrEmpty($token)) {
@@ -84,33 +85,7 @@ if ($detail.status -eq "published") {
     throw "Published sablon parametreleri API uzerinden guncellenemez. Tasarimcida draft'a alin veya -Replace ile yeniden seed edin."
 }
 
-$params = @()
-foreach ($p in @($tplSeed.parameters)) {
-    $entry = @{
-        key = [string]$p.key
-        label = [string]$p.label
-        dataType = [string]$p.dataType
-        valueSourceMode = [string]$p.valueSourceMode
-    }
-    if ($p.defaultValue) { $entry.defaultValue = [string]$p.defaultValue }
-    if ($p.format) { $entry.format = [string]$p.format }
-    if ($p.contextBinding) {
-        $cb = @{ path = [string]$p.contextBinding.path }
-        if ($p.contextBinding.fallbackPath) { $cb.fallbackPath = [string]$p.contextBinding.fallbackPath }
-        if ($p.contextBinding.format) { $cb.format = [string]$p.contextBinding.format }
-        $entry.contextBinding = $cb
-    }
-    if ($p.incremental) {
-        $entry.incremental = @{
-            format = [string]$p.incremental.format
-            startValue = [int]$p.incremental.startValue
-            incrementStep = [int]$p.incremental.incrementStep
-            scopeKey = [string]$p.incremental.scopeKey
-            resetPolicy = [string]$p.incremental.resetPolicy
-        }
-    }
-    $params += $entry
-}
+$params = ConvertTo-DiTemplateParameterEntries -Parameters @($tplSeed.parameters)
 
 $paramBody = @{ parameters = $params }
 if ($tplSeed.primaryContextType) { $paramBody.primaryContextType = [string]$tplSeed.primaryContextType }

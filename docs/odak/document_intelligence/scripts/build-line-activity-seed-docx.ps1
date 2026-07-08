@@ -226,6 +226,40 @@ function New-StatusStrip {
 "@
 }
 
+function New-ShipmentLinesTable {
+    $cols = @($content.shipmentLineColumns)
+    if ($cols.Count -eq 0) { return "" }
+    $colWidth = [int](9026 / $cols.Count)
+    $headerCells = ($cols | ForEach-Object { New-StatusCell ([string]$_.header) "" $true }) -join "`n"
+    $templateCells = ($cols | ForEach-Object {
+        $field = [string]$_.field
+        New-StatusCell "" "{{shipmentLines.$field}}" $false
+    }) -join "`n"
+    $gridCols = ($cols | ForEach-Object { "<w:gridCol w:w=`"$colWidth`"/>" }) -join ""
+    return @"
+<w:tbl>
+  <w:tblPr>
+    <w:tblW w:w="5000" w:type="pct"/>
+    <w:tblBorders>
+      <w:top w:val="single" w:sz="4" w:space="0" w:color="$BorderLight"/>
+      <w:left w:val="single" w:sz="4" w:space="0" w:color="$BorderLight"/>
+      <w:bottom w:val="single" w:sz="4" w:space="0" w:color="$BorderLight"/>
+      <w:right w:val="single" w:sz="4" w:space="0" w:color="$BorderLight"/>
+      <w:insideH w:val="single" w:sz="4" w:space="0" w:color="$BorderLight"/>
+      <w:insideV w:val="single" w:sz="4" w:space="0" w:color="$BorderLight"/>
+    </w:tblBorders>
+  </w:tblPr>
+  <w:tblGrid>$gridCols</w:tblGrid>
+  <w:tr>
+    $headerCells
+  </w:tr>
+  <w:tr>
+    $templateCells
+  </w:tr>
+</w:tbl>
+"@
+}
+
 function Convert-ContentRows($rows) {
     return @($rows | ForEach-Object { @{ Label = [string]$_.label; Value = [string]$_.value } })
 }
@@ -259,6 +293,10 @@ $(New-Spacer 200)
 $(New-SectionHeading $sections.shipment)
 $(New-Spacer 80)
 $(New-KvTable $shipmentRows)
+$(New-Spacer 160)
+$(New-SectionHeading $sections.shipmentLines)
+$(New-Spacer 80)
+$(New-ShipmentLinesTable)
 $(New-Spacer 240)
 $(New-Paragraph (New-Run $labels.footerNote 16 $ColorMuted $false $true) "left" 120 0)
 "@

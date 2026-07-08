@@ -20,6 +20,10 @@
       {
         "name": "Kalem Activity / Yaşam Döngüsü",
         "description": "Kalem activity raporu ve iç özet belgeleri"
+      },
+      {
+        "name": "Sevkiyat Listeleri",
+        "description": "İş paketi sevkiyat XLSX çıktı şablonları (G5)"
       }
     ]
   },

@@ -3,7 +3,8 @@
     "packageContext": "İş paketi bağlamı",
     "lineCommercial": "Kalem - ticari ve teknik",
     "quality": "Kalite ve uygunluk",
-    "shipment": "Sevkiyat özeti"
+    "shipment": "Sevkiyat özeti",
+    "shipmentLines": "Sevkiyat satırları"
   },
   "statusStrip": {
     "lineDeliveryDate": "Kalem termin",
@@ -41,5 +42,11 @@
     { "label": "Sevk özeti", "value": "{{shippedSummary}}" },
     { "label": "Sevkiyat tarihi", "value": "{{shipmentDate}}" },
     { "label": "Sevkiyat adresi", "value": "{{shipmentAddress}}" }
+  ],
+  "shipmentLineColumns": [
+    { "header": "Kalem No", "field": "lineNo" },
+    { "header": "Tanım", "field": "lineDescription" },
+    { "header": "Sevk Miktarı", "field": "shippedQuantity" },
+    { "header": "Mod", "field": "lineMode" }
   ]
 }

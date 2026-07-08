@@ -363,7 +363,7 @@ Hafta 5+   S3 / Pr3 senaryolar (ihtiyaç halinde)
 - Gerçek zamanlı co-authoring (Collabora özelliği; D-E exclusive edit yeterli)
 - Microsoft 365 / Graph senkron
 - Video ağır sunum arşivi (streaming CDN — ayrı proje)
-- Şablondan üretim (S3/Pr3) — ilk dilimlerde yok
+- Şablondan üretim (S3/Pr3) — ilk dilimlerde yok; **Odak G5** ile XLSX sevkiyat listesi generation hattı ayrıca ✅ (8 Tem 2026)
 
 ---
 
@@ -383,7 +383,9 @@ Hafta 5+   S3 / Pr3 senaryolar (ihtiyaç halinde)
 
 1. ~~Kararları kilitle~~ ✅ (8 Tem 2026)
 2. ~~**O-0 → Pr2 implementasyonu**~~ ✅ (8 Tem 2026 gece)
-3. **S3 / Pr3** — şablondan sheet/sunum (senaryo netleşince)
-4. **D-BR2** / **CoC smoke** / **D-N1** ile paralel gidebilir
+3. ~~**G5 — XLSX sevkiyat listesi (Odak generation)**~~ ✅ (8 Tem 2026 sabah) — [DI_PRODUCT_ROADMAP §26](./DI_PRODUCT_ROADMAP.md)
+4. **G5+** — iş paketi writeback; prod deploy
+5. **S3 / Pr3** — şablondan sheet/sunum (senaryo netleşince)
+6. **D-BR2** / **CoC smoke** / **D-N1** ile paralel gidebilir
 
-**Durum:** Managed Office çekirdeği tamam — test `mngdocument` deploy ✅; `mngui` deploy sırada.
+**Durum:** Managed Office + Odak G5 tamam — test `mngdocument` + `mngui` deploy ✅ (8 Tem sabah).

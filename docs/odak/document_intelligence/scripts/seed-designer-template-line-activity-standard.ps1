@@ -17,6 +17,7 @@ $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
 $seedFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/seed-designer-template-line-activity-standard.json"
 $cocSeedDocx = Join-Path $repoRoot "docs/odak/document_intelligence/sample/ODK-COC-template-seed.docx"
+. (Join-Path $scriptDir "lib/Convert-DiTemplateParameters.ps1")
 
 $token = $Token
 $isProd = $BaseUrl -match "192\.168\.20\.8"
@@ -151,33 +152,7 @@ Invoke-Json -Method PUT -Uri "$templatesBase/$templateId/metadata" -Body @{
     code = [string]$tpl.code
 } | Out-Null
 
-$params = @()
-foreach ($p in @($tpl.parameters)) {
-    $entry = @{
-        key             = [string]$p.key
-        label           = [string]$p.label
-        dataType        = [string]$p.dataType
-        valueSourceMode = [string]$p.valueSourceMode
-    }
-    if ($p.defaultValue) { $entry.defaultValue = [string]$p.defaultValue }
-    if ($p.format) { $entry.format = [string]$p.format }
-    if ($p.contextBinding) {
-        $cb = @{ path = [string]$p.contextBinding.path }
-        if ($p.contextBinding.fallbackPath) { $cb.fallbackPath = [string]$p.contextBinding.fallbackPath }
-        if ($p.contextBinding.format) { $cb.format = [string]$p.contextBinding.format }
-        $entry.contextBinding = $cb
-    }
-    if ($p.incremental) {
-        $entry.incremental = @{
-            format        = [string]$p.incremental.format
-            startValue    = [int]$p.incremental.startValue
-            incrementStep = [int]$p.incremental.incrementStep
-            scopeKey      = [string]$p.incremental.scopeKey
-            resetPolicy   = [string]$p.incremental.resetPolicy
-        }
-    }
-    $params += $entry
-}
+$params = ConvertTo-DiTemplateParameterEntries -Parameters @($tpl.parameters)
 $paramBody = @{ parameters = $params }
 if ($tpl.primaryContextType) { $paramBody.primaryContextType = [string]$tpl.primaryContextType }
 if ($tpl.generationProfile) { $paramBody.generationProfile = [string]$tpl.generationProfile }

@@ -51,8 +51,12 @@ public static class ServiceRegistration
         services.AddScoped<ILetterheadFooterApplier, LetterheadFooterApplier>();
         services.AddScoped<ITemplateBrandingApplier, TemplateBrandingApplier>();
         services.AddScoped<IDocumentRenderService, GotenbergDocumentRenderService>();
+        services.AddScoped<DocumentContextCatalogProvider>();
+        services.AddScoped<DocumentProducerCatalogProvider>();
+        services.AddScoped<DocumentDataSourceCatalogProvider>();
         services.AddScoped<DocumentContextLoader>();
         services.AddScoped<DocumentIncrementalAllocator>();
+        services.AddScoped<IDataSourceExecutor, DgDataSourceExecutor>();
         services.AddScoped<DocumentParameterResolver>();
         services.AddScoped<LetterheadHeaderValueEnricher>();
         services.AddScoped<IDocumentGenerationService, DocumentGenerationService>();

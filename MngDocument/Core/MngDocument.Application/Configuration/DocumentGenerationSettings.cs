@@ -8,8 +8,11 @@ public class DocumentGenerationSettings
 public sealed class DocumentGenerationProfileSettings
 {
     public string Code { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
     public string TemplateCode { get; set; } = string.Empty;
     public string ContextType { get; set; } = string.Empty;
+    /// <summary>Output format: <c>docx</c> (default) or <c>xlsx</c> (G5).</summary>
+    public string OutputFormat { get; set; } = "docx";
     public List<string> OutputFolderPath { get; set; } = new();
     public string FileNamePattern { get; set; } = "{docNo}.docx";
     public DocumentGenerationIdempotencySettings? Idempotency { get; set; }

@@ -1,0 +1,28 @@
+{
+  "records": [
+    {
+      "code": "odak.coc.fromLine",
+      "displayName": "Uygunluk belgesi (sipariş kalemi)",
+      "contextType": "odak.siparis.line",
+      "templateCode": "COC-STANDARD",
+      "isActive": true,
+      "definitionJson": "{\"outputFolderPath\":[\"Odak\",\"CoC\",\"{workPackageNo}\"],\"fileNamePattern\":\"{poDocNo}-{workPackageNo}-K{lineNo}.docx\",\"idempotency\":{\"dataset\":\"odak_siparis_kalemleri\",\"guardField\":\"cocDiResourceId\",\"writebackFields\":[\"cocDiResourceId\",\"cocDocNo\",\"cocGeneratedAt\",\"cocTemplateCode\",\"cocTemplateName\"]},\"defaults\":{\"documentName\":\"Uygunluk Belgesi\",\"signatoryName\":\"GİZEM CANDAŞ\",\"signatoryTitle\":\"KALİTE KONTROL YÖNETİCİSİ\"}}"
+    },
+    {
+      "code": "odak.line.activity.fromLine",
+      "displayName": "Kalem activity raporu",
+      "contextType": "odak.siparis.line",
+      "templateCode": "LINE-ACTIVITY-STD",
+      "isActive": true,
+      "definitionJson": "{\"outputFolderPath\":[\"Odak\",\"Activity\",\"{workPackageNo}\"],\"fileNamePattern\":\"{poDocNo}-{workPackageNo}-K{lineNo}.docx\",\"idempotency\":{\"dataset\":\"odak_siparis_kalemleri\",\"writebackFields\":[\"activityDiResourceId\",\"activityDocNo\",\"activityGeneratedAt\",\"activityTemplateCode\",\"activityTemplateName\"]},\"defaults\":{\"documentName\":\"Kalem Activity Raporu\"}}"
+    },
+    {
+      "code": "odak.shipmentList.fromPackage",
+      "displayName": "İş paketi sevkiyat listesi (XLSX)",
+      "contextType": "odak.siparis.package",
+      "templateCode": "SHIPMENT-LIST-STD",
+      "isActive": true,
+      "definitionJson": "{\"outputFormat\":\"xlsx\",\"outputFolderPath\":[\"Odak\",\"Sevkiyat\",\"{packageNo}\"],\"fileNamePattern\":\"{packageNo}-Sevkiyat-Listesi.xlsx\",\"defaults\":{\"documentName\":\"Sevkiyat Listesi\"}}"
+    }
+  ]
+}

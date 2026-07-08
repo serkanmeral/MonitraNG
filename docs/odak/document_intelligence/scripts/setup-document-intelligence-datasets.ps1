@@ -18,6 +18,9 @@ $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../../../..")).Path
 $categoryFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/documentintelligence_dataset_category.json"
 $datasetsFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/documentintelligence_datasets_phase1.json"
+$contextTypesFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/dm_document_context_types_dataset.json"
+$dataSourcesFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/dm_data_sources_dataset.json"
+$producersFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/dm_document_producers_dataset.json"
 
 $datasetsPath = if ($UseGateway) { "/data/api/v1/datasets" } else { "/api/v1/datasets" }
 $categoriesPath = if ($UseGateway) { "/data/api/v1/dataset-categories" } else { "/api/v1/dataset-categories" }
@@ -139,7 +142,23 @@ else {
 }
 
 $schemas = Get-Content $datasetsFile -Raw -Encoding UTF8 | ConvertFrom-Json
-$order = @("dm_resources", "dm_resource_versions", "dm_resource_permissions", "dm_resource_links", "dm_template_categories", "dm_document_templates", "dm_generation_counters", "dm_letterheads", "dm_tags")
+if (Test-Path $contextTypesFile) {
+    $ctxSchema = Get-Content $contextTypesFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    $schemas = @($schemas) + @($ctxSchema)
+}
+if (Test-Path $dataSourcesFile) {
+    $dsSchema = Get-Content $dataSourcesFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    $schemas = @($schemas) + @($dsSchema)
+}
+if (Test-Path $producersFile) {
+    $prodSchema = Get-Content $producersFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    $schemas = @($schemas) + @($prodSchema)
+}
+$order = @(
+    "dm_resources", "dm_resource_versions", "dm_resource_permissions", "dm_resource_links",
+    "dm_template_categories", "dm_document_templates", "dm_generation_counters", "dm_letterheads",
+    "dm_tags", "dm_document_context_types", "dm_data_sources", "dm_document_producers"
+)
 $byName = @{}
 foreach ($s in $schemas) { $byName[$s.name] = $s }
 

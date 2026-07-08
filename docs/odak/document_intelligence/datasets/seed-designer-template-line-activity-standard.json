@@ -202,6 +202,20 @@
         "contextBinding": { "path": "cocGeneratedAt", "format": "dd.MM.yyyy" }
       },
       {
+        "key": "shipmentLines",
+        "label": "Sevkiyat satırları",
+        "kind": "table",
+        "dataType": "table",
+        "valueSourceMode": "manual",
+        "dataSourceRef": "odak.shipmentLines.byParentLine",
+        "docBinding": {
+          "regionKind": "table",
+          "tableIndex": 5,
+          "headerRowIndex": 0,
+          "templateRowIndex": 1
+        }
+      },
+      {
         "key": "generatedAt",
         "label": "Rapor Üretim Zamanı",
         "dataType": "date",

@@ -81,6 +81,31 @@ public static class DocumentContextCatalog
                     Field("productId.partNumber", "Teknik resim no"),
                     Field("productId.revizyon", "Ürün revizyon")
                 }
+            },
+            ["odak.siparis.package"] = new DocumentContextTypeDefinition
+            {
+                Type = "odak.siparis.package",
+                DisplayName = "İş paketi",
+                RootDataset = "odak_is_paketleri",
+                Relations = new[]
+                {
+                    new DocumentContextRelationDefinition
+                    {
+                        Path = "customerId",
+                        Dataset = "odak_musteriler",
+                        Optional = true
+                    }
+                },
+                Fields = new[]
+                {
+                    Field("packageNo", "İş paketi no"),
+                    Field("name", "İş paketi adı"),
+                    Field("status", "Durum"),
+                    Field("beginDate", "Başlangıç", "date"),
+                    Field("deliveryDate", "Termin", "date"),
+                    Field("deliveryAddress", "Teslimat adresi"),
+                    Field("customerId.unvan", "Müşteri unvan")
+                }
             }
         };
 

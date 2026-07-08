@@ -1,38 +1,38 @@
 # Document Intelligence (MngDocument) — Devam noktası (checkpoint)
 
-**Son güncelleme:** 8 Temmuz 2026 gece (**O-0…Pr2 ✅ · sırada D-BR2 / CoC smoke**)
-**Durum:** **Faz P ✅** · **D4 ✅** · **Managed Office O-0→Pr2 ✅** · **Test deploy ✅** (mngdocument; mngui bu oturum)
+**Son güncelleme:** 8 Temmuz 2026 sabah (**G0–G5 ✅ · G6 ertelendi · sırada G6 / iş paketi writeback / prod**)
+**Durum:** **Faz P ✅** · **D4 ✅** · **Managed Office O-0→Pr2 ✅** · **Odak Generation G0–G5 ✅** · **Test deploy ✅** (`mngdocument` + `mngui` @ 192.168.20.20)
 
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
 > ```
-> MonitraNG Document Intelligence — devam.
+> MonitraNG Document Intelligence + Odak Sipariş — devam.
 > Repo: c:\Users\monitra\Dev\MonitraNG\MonitraNG
 >
 > Önce oku:
 > - docs/MngDocument/current_status.md
 > - docs/odak/document_intelligence/DEVAM.md
-> - docs/odak/document_intelligence/DI_PRODUCT_ROADMAP.md
+> - docs/odak/document_intelligence/DI_PRODUCT_ROADMAP.md (§26 G0–G5)
 >
-> Durum (8 Tem 2026 gece):
-> - D4 manuel şablondan üretim ✅
-> - **Managed Office O-0 → O-1 → S1 → S2 → Pr1 → Pr2 ✅**
-> - Editör oturumları: officeKind tür sütunu + hızlı yenileme ✅
-> - Demo: Collabora XLSX/PPTX müşteri sunumu (`publish-collabora-demos.ps1`)
-> - Test deploy: mngdocument @ 192.168.20.20; mngui deploy sırada
-> - Sırada: **D-BR2** veya **CoC smoke**
+> Durum (8 Tem 2026 sabah):
+> - **G0–G5 ✅** — RuntimeEnvelope, producer/dataSource/context katalogları, DOCX tablo (Activity), XLSX sevkiyat listesi
+> - **Kritik fix:** DataSourceTokenResolver JsonElement → `{{runtime.contextId}}` artık çözülüyor (boş tablo kök nedeni)
+> - **IX04 doğrulandı:** 34 sevkiyat satırı XLSX’te dolu (test @ 192.168.20.20)
+> - **UI:** Odak Sipariş → iş paketi → Belgeler → «Sevkiyat listesi (XLSX)» / Listeyi üret
+> - **G6 ertelendi** — work item bağlantısı acelesi yok
+> - Sırada: G6 (isteğe bağlı), iş paketine writeback, prod deploy, D-BR2 veya CoC smoke
 >
 > Test: 192.168.20.20:5040 | Prod: 192.168.20.8:5040
-> Token prod: load-operationcore-token-prod.ps1
-> Smoke: scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1
+> Token test: docs/odak/operationcore/scripts/get-operationcore-token.ps1
+> Smoke G5: scripts/tests/MngDocument/smoke-shipment-list-xlsx-test.ps1 -PackageId <uuid>
+> Smoke Activity tablo: scripts/tests/MngDocument/smoke-activity-shipment-table-test.ps1
 > ```
 
-> **⭐ KALDIĞIMIZ YER (8 Tem 2026 gece):**
-> - **Managed Office (O-0…Pr2)** tamamlandı — docx/xlsx/pptx native, Collabora, sürüm, PDF
-> - **Pr1** sunum menüsü açıldı; **Pr2** smoke geçti
-> - Editör oturumları tür sütunu + performans düzeltmesi
-> - Sırada **D-BR2** (kapak) veya **CoC/Activity smoke**
-> - Detay: [SHEET_ROADMAP.md](./SHEET_ROADMAP.md) · [DI_PRODUCT_ROADMAP.md §15–16](./DI_PRODUCT_ROADMAP.md)
+> **⭐ KALDIĞIMIZ YER (8 Tem 2026 sabah):**
+> - **G0–G5** tamamlandı; IX04 sevkiyat listesi XLSX **canlı doğrulandı**
+> - **G6** (work item) **ertelendi**
+> - Sırada: G6 (opsiyonel), üretilen listenin iş paketinde kalıcı listelenmesi (writeback), prod deploy, D-BR2 / CoC smoke
+> - Detay: [DI_PRODUCT_ROADMAP.md §26](./DI_PRODUCT_ROADMAP.md) · [SHEET_ROADMAP.md §13](./SHEET_ROADMAP.md)
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) · **Antet prod migration:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](LETTERHEAD_CATALOG_MIGRATION_PROD.md) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md)
 
@@ -541,12 +541,64 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 4. ~~**D2** — döküman sürüm UX~~ ✅
 5. ~~**D4** — merge/PDF, manuel üretim UX, Collabora önizleme~~ ✅
 6. ~~**Faz S + Pr — Managed Office (O-0 → Pr2)**~~ ✅ — [SHEET_ROADMAP.md](./SHEET_ROADMAP.md)
-7. **D-BR2** — kapak sayfası kataloğu
-8. **CoC/Activity uçtan uca smoke**
-9. **S3 / Pr3** — şablondan sheet/sunum (senaryo)
-10. **D-N1** — `document.generated` bildirim maili
-11. **Faz M** — döküman lifecycle (onaylı yayın, arşiv)
-12. **Sprint B** — `dm_document_context_types` dataset
-13. **D-E4** — Redis WOPI store (opsiyonel)
+7. ~~**G0–G5 — Odak generation runtime + XLSX sevkiyat listesi**~~ ✅ — [DI_PRODUCT_ROADMAP.md §26](./DI_PRODUCT_ROADMAP.md)
+8. **G6** — work item bağlantısı ⏸️ **ertelendi**
+9. **G5+** — iş paketine sevkiyat listesi writeback (kalıcı listeleme); prod deploy
+10. **D-BR2** — kapak sayfası kataloğu
+11. **CoC/Activity uçtan uca smoke** (prod verisi)
+12. **S3 / Pr3** — şablondan sheet/sunum (senaryo)
+13. **D-N1** — `document.generated` bildirim maili
+14. **Faz M** — döküman lifecycle (onaylı yayın, arşiv)
+15. **Sprint B** — `dm_document_context_types` dataset (kısmen G3 ile canlı)
+16. **D-E4** — Redis WOPI store (opsiyonel)
 
-**Son deploy (DI):** 8 Tem 2026 — `mngdocument` @ test ✅ · `mngui` deploy bu oturum
+**Son deploy (DI + Odak G5):** 8 Tem 2026 sabah — `mngdocument` + `mngui` @ test ✅ · commit/push bu oturum
+
+---
+
+## G0–G5 — Odak generation runtime + sevkiyat listesi XLSX (8 Temmuz 2026) ✅
+
+**Hedef:** Odak Sipariş bağlamından profil tabanlı belge üretimi; Activity DOCX tablo; iş paketi sevkiyat listesi XLSX.
+
+### Tamamlanan dilimler
+
+| Dilim | Özet |
+|-------|------|
+| **G0** | `POST /generate/run` RuntimeEnvelope; producer/context API |
+| **G1** | `DgDataSourceExecutor`, `DocumentContextLoader`, context katalog |
+| **G2** | DOCX `DocxTableExpander`; Activity `shipmentLines` tablo; smoke |
+| **G3** | `dm_document_context_types` seed + provider |
+| **G4** | `dm_data_sources` + `dm_document_producers` katalog; `dataSourceRef` |
+| **G5** | XLSX renderer (`XlsxPlaceholderMerger/Scanner/TableExpander`); `outputFormat: xlsx`; `SHIPMENT-LIST-STD`; Odak UI «Listeyi üret» |
+
+### Kritik düzeltmeler (G5 debug)
+
+| Sorun | Kök neden | Çözüm |
+|-------|-----------|--------|
+| Tablo boş | `DataSourceTokenResolver` `JsonElement` match değerlerini çözümlemiyordu → DG’ye literal `{{runtime.contextId}}` gidiyordu | `JsonElement` / `JsonNode` desteği |
+| Termin `dd.MM.yyyy` literal | `ApplyFormat` tarih formatını path sanıyordu | Yalnızca `{token}` içeren formatlarda `ApplyFormat` |
+| Yanlış şablon kaynağı | `SHIPMENT-LIST-STD` kaynağı `.docx` olarak kayıtlıydı | `XlsxTemplateBytesResolver` → built-in `ShipmentListTemplateXlsxFactory` fallback |
+| Eski satırlar | Bazı kayıtlarda `parentPackageId` boş | `PackageShipmentLinesQueryFallback` (shipment / line join) |
+
+### Seed / smoke
+
+```powershell
+.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
+.\docs\odak\document_intelligence\scripts\deploy-shipment-list-design-test.ps1
+.\scripts\tests\MngDocument\smoke-shipment-list-xlsx-test.ps1
+.\scripts\tests\MngDocument\smoke-activity-shipment-table-test.ps1
+.\scripts\tests\MngDocument\smoke-producers-catalog-test.ps1
+```
+
+- Şablon: `SHIPMENT-LIST-STD` · Producer: `odak.shipmentList.fromPackage` · DataSource: `odak.packageShipmentLines.byPackage`
+- Çıktı klasörü: `Odak/Sevkiyat/{packageNo}/` · Silme: yalnızca DI’dan (writeback yok)
+
+### UI (Odak Sipariş)
+
+- `OdakSiparisLineDocumentsPanel.vue` — «Sevkiyat listesi (XLSX)» kartı + **Listeyi üret**
+- `odakSiparisPackageDocumentService.ts` → `diGenerateDocument`
+
+### Bilinçli ertelenen
+
+- **G6** — OperationCore work item bağlantısı
+- İş paketine üretilen XLSX `resourceId` writeback (CoC/Activity benzeri idempotency yok)

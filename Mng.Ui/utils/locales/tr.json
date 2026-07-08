@@ -4889,6 +4889,14 @@
         "unresolved": "Tanımlı ama boş/çözülemeyen parametreler: {keys}"
       }
     },
+    "packageDocuments": {
+      "shipmentListTitle": "Sevkiyat listesi (XLSX)",
+      "shipmentListHint": "İş paketindeki sevkiyat kalemlerinden Excel listesi üretir.",
+      "shipmentListAction": "Listeyi üret",
+      "shipmentListSuccess": "Sevkiyat listesi oluşturuldu: {fileName}",
+      "shipmentListError": "Sevkiyat listesi üretilemedi.",
+      "lineSectionTitle": "Kalem belgeleri"
+    },
     "lineDocuments": {
       "createTitle": "Kalem belgesi oluştur",
       "createAction": "Belge oluştur",

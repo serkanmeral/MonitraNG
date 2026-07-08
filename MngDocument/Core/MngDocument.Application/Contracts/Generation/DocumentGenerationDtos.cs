@@ -6,6 +6,7 @@ public sealed class GenerateDocumentRequest
     public string? TemplateCode { get; set; }
     public DocumentGenerationContextDto Context { get; set; } = new();
     public Dictionary<string, string>? Overrides { get; set; }
+    public DocumentGenerationRuntimeDto? Runtime { get; set; }
 }
 
 public sealed class DocumentGenerationContextDto
@@ -66,6 +67,14 @@ public sealed class DocumentContextFieldDto
     public string Path { get; init; } = string.Empty;
     public string Label { get; init; } = string.Empty;
     public string DataType { get; init; } = "text";
+}
+
+public sealed class DocumentProducerDto
+{
+    public string Code { get; init; } = string.Empty;
+    public string DisplayName { get; init; } = string.Empty;
+    public string ContextType { get; init; } = string.Empty;
+    public string TemplateCode { get; init; } = string.Empty;
 }
 
 public sealed class DocumentGenerationPreviewDto

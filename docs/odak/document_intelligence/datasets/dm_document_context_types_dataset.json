@@ -1,0 +1,61 @@
+{
+  "name": "dm_document_context_types",
+  "description": "Document Intelligence — generic context type catalog (G3)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "type",
+      "title": "Context type code",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "text",
+      "name": "displayName",
+      "title": "Display name",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 256 }
+    },
+    {
+      "fieldType": "text",
+      "name": "rootDataset",
+      "title": "DG root dataset",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "text",
+      "name": "definitionJson",
+      "title": "Relations + fields JSON",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32000 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Active",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_type",
+      "fields": { "type": 1 },
+      "unique": true
+    }
+  ]
+}

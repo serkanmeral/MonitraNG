@@ -401,12 +401,12 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
                 "Kaynak bir dosya olmalıdır.");
         }
 
-        if (!DocxStructureParser.IsDocxExtension(resource.Extension))
+        if (!DocxStructureParser.IsTemplateSourceExtension(resource.Extension))
         {
             throw DocumentException.Validation(
-                "SOURCE_NOT_DOCX",
-                "Only DOCX sources are supported in this phase.",
-                "Bu aşamada yalnızca DOCX kaynak desteklenir.");
+                "SOURCE_NOT_OFFICE",
+                "Only DOCX/XLSX/PPTX sources are supported.",
+                "Bu aşamada yalnızca DOCX, XLSX veya PPTX kaynak desteklenir.");
         }
 
         if (string.IsNullOrWhiteSpace(resource.FilePath))
@@ -468,12 +468,12 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
                 "Dosya adı zorunludur.");
         }
 
-        if (!DocxStructureParser.IsDocxExtension(Path.GetExtension(fileName)))
+        if (!DocxStructureParser.IsTemplateSourceExtension(Path.GetExtension(fileName)))
         {
             throw DocumentException.Validation(
-                "SOURCE_NOT_DOCX",
-                "Only DOCX sources are supported in this phase.",
-                "Bu aşamada yalnızca DOCX kaynak desteklenir.");
+                "SOURCE_NOT_OFFICE",
+                "Only DOCX/XLSX/PPTX sources are supported.",
+                "Bu aşamada yalnızca DOCX, XLSX veya PPTX kaynak desteklenir.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Content))
@@ -1104,6 +1104,9 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
         DmDocumentTemplate template,
         CancellationToken ct)
     {
+        if (!DocxStructureParser.IsDocxExtension(Path.GetExtension(template.sourceFileName)))
+            return template;
+
         if (string.IsNullOrWhiteSpace(Token))
             return template;
 

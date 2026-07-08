@@ -8,10 +8,13 @@ public static class TemplateParameterMapper
     {
         Key = model.Key,
         Label = model.Label,
+        Kind = model.Kind,
         DataType = model.DataType,
         ValueSourceMode = model.ValueSourceMode,
+        DataSourceRef = model.DataSourceRef,
         DefaultValue = model.DefaultValue,
         Format = model.Format,
+        ValueSource = model.ValueSource,
         Incremental = model.Incremental is null
             ? null
             : new TemplateIncrementalOptionsDto
@@ -38,10 +41,13 @@ public static class TemplateParameterMapper
     {
         Key = dto.Key,
         Label = dto.Label,
+        Kind = string.IsNullOrWhiteSpace(dto.Kind) ? "scalar" : dto.Kind,
         DataType = dto.DataType,
         ValueSourceMode = dto.ValueSourceMode,
+        DataSourceRef = dto.DataSourceRef,
         DefaultValue = dto.DefaultValue,
         Format = dto.Format,
+        ValueSource = dto.ValueSource,
         Incremental = dto.Incremental is null
             ? null
             : new TemplateIncrementalModel
@@ -73,7 +79,10 @@ public static class TemplateParameterMapper
                 ParagraphIndex = model.ParagraphIndex,
                 OriginalText = model.OriginalText,
                 CharStart = model.CharStart,
-                CharEnd = model.CharEnd
+                CharEnd = model.CharEnd,
+                TableIndex = model.TableIndex,
+                HeaderRowIndex = model.HeaderRowIndex,
+                TemplateRowIndex = model.TemplateRowIndex
             };
 
     private static TemplateDocBindingModel? MapDocBindingToModel(TemplateDocBindingDto? dto) =>
@@ -85,6 +94,9 @@ public static class TemplateParameterMapper
                 ParagraphIndex = dto.ParagraphIndex,
                 OriginalText = dto.OriginalText,
                 CharStart = dto.CharStart,
-                CharEnd = dto.CharEnd
+                CharEnd = dto.CharEnd,
+                TableIndex = dto.TableIndex,
+                HeaderRowIndex = dto.HeaderRowIndex,
+                TemplateRowIndex = dto.TemplateRowIndex
             };
 }

@@ -42,11 +42,17 @@ public sealed class TemplateParameterDto
 {
     public string Key { get; init; } = string.Empty;
     public string Label { get; init; } = string.Empty;
+
+    /// <summary>scalar · table · list · chart (default scalar).</summary>
+    public string Kind { get; init; } = "scalar";
+
     public string DataType { get; init; } = "text";
     public string ValueSourceMode { get; init; } = "manual";
+    public string? DataSourceRef { get; init; }
     public string? DefaultValue { get; init; }
     public string? Format { get; init; }
     public TemplateIncrementalOptionsDto? Incremental { get; init; }
+    public TemplateValueSourceModel? ValueSource { get; init; }
     public TemplateDocBindingDto? DocBinding { get; init; }
 
     /// <summary>Legacy API alias for <see cref="DocBinding"/>.</summary>
@@ -71,6 +77,9 @@ public class TemplateDocBindingDto
     public string? OriginalText { get; init; }
     public int? CharStart { get; init; }
     public int? CharEnd { get; init; }
+    public int? TableIndex { get; init; }
+    public int? HeaderRowIndex { get; init; }
+    public int? TemplateRowIndex { get; init; }
 }
 
 /// <summary>Legacy name — use <see cref="TemplateDocBindingDto"/>.</summary>

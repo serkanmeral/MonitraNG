@@ -1,0 +1,18 @@
+{
+  "records": [
+    {
+      "code": "odak.shipmentLines.byParentLine",
+      "displayName": "Sevkiyat satırları (sipariş kalemi)",
+      "provider": "dg",
+      "isActive": true,
+      "definitionJson": "{\"mode\":\"queryPage\",\"provider\":\"dg\",\"dataset\":\"odak_sevkiyat_kalemleri\",\"match\":{\"parentLineId\":\"{{runtime.contextId}}\"},\"query\":\"sort=lineNo&limit=50\",\"columns\":[{\"sourceField\":\"lineNo\",\"header\":\"Kalem No\"},{\"sourceField\":\"lineDescription\",\"header\":\"Tanım\"},{\"sourceField\":\"shippedQuantity\",\"header\":\"Sevk Miktarı\",\"format\":\"N0\"},{\"sourceField\":\"lineMode\",\"header\":\"Mod\"}]}"
+    },
+    {
+      "code": "odak.packageShipmentLines.byPackage",
+      "displayName": "Sevkiyat satırları (iş paketi)",
+      "provider": "dg",
+      "isActive": true,
+      "definitionJson": "{\"mode\":\"queryPage\",\"provider\":\"dg\",\"dataset\":\"odak_sevkiyat_kalemleri\",\"match\":{\"parentPackageId\":\"{{runtime.contextId}}\"},\"query\":\"sort=lineNo&limit=200\",\"columns\":[{\"sourceField\":\"lineNo\",\"header\":\"Kalem No\"},{\"sourceField\":\"lineDescription\",\"header\":\"Tanım\"},{\"sourceField\":\"shippedQuantity\",\"header\":\"Sevk Miktarı\",\"format\":\"N0\"},{\"sourceField\":\"lineMode\",\"header\":\"Mod\"}]}"
+    }
+  ]
+}

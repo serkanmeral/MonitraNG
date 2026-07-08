@@ -4888,6 +4888,14 @@
         "unresolved": "Defined but empty/unresolved parameters: {keys}"
       }
     },
+    "packageDocuments": {
+      "shipmentListTitle": "Shipment list (XLSX)",
+      "shipmentListHint": "Generates an Excel list from shipment lines in this work package.",
+      "shipmentListAction": "Generate list",
+      "shipmentListSuccess": "Shipment list created: {fileName}",
+      "shipmentListError": "Could not generate shipment list.",
+      "lineSectionTitle": "Line documents"
+    },
     "lineDocuments": {
       "createTitle": "Create line document",
       "createAction": "Create document",

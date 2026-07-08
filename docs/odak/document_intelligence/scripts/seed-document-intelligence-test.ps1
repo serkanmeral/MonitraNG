@@ -67,15 +67,18 @@ if ($WhatIf) { Write-Host "(WhatIf — yazma adimlari atlanir veya dry-run)" -Fo
 Write-Host ""
 
 if (-not $SkipDatasets) {
-    Invoke-Step -Title "1/6 Dataset category + dm_* schemas" -ScriptName "setup-document-intelligence-datasets.ps1"
-    Invoke-Step -Title "2/6 dm_document_templates schema patch" -ScriptName "patch-document-intelligence-templates-dataset.ps1"
+    Invoke-Step -Title "1/7 Dataset category + dm_* schemas" -ScriptName "setup-document-intelligence-datasets.ps1"
+    Invoke-Step -Title "2/7 dm_document_templates schema patch" -ScriptName "patch-document-intelligence-templates-dataset.ps1"
+    Invoke-Step -Title "3/9 dm_document_context_types seed (G3)" -ScriptName "seed-dm-document-context-types.ps1"
+    Invoke-Step -Title "4/9 dm_data_sources seed (G4)" -ScriptName "seed-dm-data-sources.ps1"
+    Invoke-Step -Title "5/9 dm_document_producers seed (G4)" -ScriptName "seed-dm-document-producers.ps1"
 }
 else {
     Write-Host "SKIP datasets (SkipDatasets)" -ForegroundColor Yellow
 }
 
 if (-not $SkipCategories) {
-    Invoke-Step -Title "3/6 Template category tree" -ScriptName "seed-designer-template-categories.ps1"
+    Invoke-Step -Title "6/9 Template category tree" -ScriptName "seed-designer-template-categories.ps1"
 }
 else {
     Write-Host "SKIP categories (SkipCategories)" -ForegroundColor Yellow
@@ -85,16 +88,16 @@ if (-not $SkipCoc) {
     $cocParams = @{}
     if ($CocReplace) { $cocParams.Replace = $true }
     if ($WhatIf) { $cocParams.WhatIf = $true }
-    Invoke-Step -Title "4/6 COC-STANDARD template" -ScriptName "seed-designer-template-coc-standard.ps1" -ExtraParams $cocParams
+    Invoke-Step -Title "7/9 COC-STANDARD template" -ScriptName "seed-designer-template-coc-standard.ps1" -ExtraParams $cocParams
 }
 else {
     Write-Host "SKIP CoC template (SkipCoc)" -ForegroundColor Yellow
 }
 
 if (-not $SkipResources) {
-    Invoke-Step -Title "5/7 Ust klasorler (Sayfalar / Dokumanlar)" -ScriptName "seed-resource-root-folders.ps1" -ExtraParams @{ Server = $Server }
-    Invoke-Step -Title "6/7 MonitraNG tutorials (dm_resources)" -ScriptName "seed-monitrang-tutorials.ps1" -ExtraParams @{ Server = $Server }
-    Invoke-Step -Title "7/7 Side menu entry" -ScriptName "patch-document-side-menu.ps1"
+    Invoke-Step -Title "8/10 Ust klasorler (Sayfalar / Dokumanlar)" -ScriptName "seed-resource-root-folders.ps1" -ExtraParams @{ Server = $Server }
+    Invoke-Step -Title "9/10 MonitraNG tutorials (dm_resources)" -ScriptName "seed-monitrang-tutorials.ps1" -ExtraParams @{ Server = $Server }
+    Invoke-Step -Title "10/10 Side menu entry" -ScriptName "patch-document-side-menu.ps1"
 }
 else {
     Write-Host "SKIP resources + side menu (SkipResources)" -ForegroundColor Yellow

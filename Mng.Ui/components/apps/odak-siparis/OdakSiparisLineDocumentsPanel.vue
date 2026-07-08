@@ -4,7 +4,8 @@ import OdakSiparisLineDocumentsCreateDialog from '@/components/apps/odak-siparis
 import OdakSiparisSubListScroll from '@/components/apps/odak-siparis/OdakSiparisSubListScroll.vue';
 import OdakSiparisSubListToolbar from '@/components/apps/odak-siparis/OdakSiparisSubListToolbar.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { usePanelErrorNotify, useApiErrorNotify } from '@/composables/useApiErrorNotify';
+import { useAppToast } from '@/composables/useAppToast';
 import {
   ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
   ODAK_SUB_LIST_TABLE_CLASS,
@@ -16,9 +17,13 @@ import {
   lineDocumentHasParameterWarnings,
   type OdakLineDocumentRow,
 } from '@/utils/odakSiparisLineDocumentService';
+import {
+  generateOdakPackageShipmentList,
+  packageDocumentHasParameterWarnings,
+} from '@/utils/odakSiparisPackageDocumentService';
 import type { DiGenerateDocumentResult } from '@/types/apps/documentIntelligence';
 import { lineDataId, listLinesForPackage } from '@/utils/odakSiparisLineService';
-import { ExternalLinkIcon, PlusIcon, RefreshIcon } from 'vue-tabler-icons';
+import { ExternalLinkIcon, FileSpreadsheetIcon, PlusIcon, RefreshIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
   packageId: string;
@@ -27,6 +32,8 @@ const props = defineProps<{
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const { notifyApiError } = useApiErrorNotify();
+const { push } = useAppToast();
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -34,6 +41,8 @@ const successMessage = ref('');
 const parameterWarningResult = ref<DiGenerateDocumentResult | null>(null);
 const allLines = ref<OdakLineRow[]>([]);
 const createDialogOpen = ref(false);
+const shipmentListLoading = ref(false);
+const shipmentListResult = ref<DiGenerateDocumentResult | null>(null);
 
 const documentRows = computed(() => flattenLineDocuments(allLines.value, lineDataId));
 
@@ -120,6 +129,39 @@ function onCreated(result: DiGenerateDocumentResult | null) {
   void loadLines();
 }
 
+async function generateShipmentList() {
+  if (!props.packageId?.trim()) return;
+  shipmentListLoading.value = true;
+  errorMessage.value = '';
+  try {
+    const result = await generateOdakPackageShipmentList(props.packageId);
+    shipmentListResult.value = result;
+    successMessage.value = t('odakSiparis.packageDocuments.shipmentListSuccess', {
+      fileName: result.fileName?.trim() || result.docNo?.trim() || '—',
+    });
+    if (packageDocumentHasParameterWarnings(result)) {
+      parameterWarningResult.value = result;
+    }
+    push({
+      title: t('odakSiparis.packageDocuments.shipmentListTitle'),
+      message: successMessage.value,
+      severity: 'success',
+    });
+  } catch (e: unknown) {
+    errorMessage.value = notifyApiError(e, {
+      fallbackKey: 'odakSiparis.packageDocuments.shipmentListError',
+    }).message;
+  } finally {
+    shipmentListLoading.value = false;
+  }
+}
+
+function openShipmentListDi() {
+  const id = shipmentListResult.value?.resourceId?.trim();
+  if (!id) return;
+  navigateTo(diResourceUrl(id));
+}
+
 function openDi(row: OdakLineDocumentRow) {
   const id = row.resourceId?.trim();
   if (!id) return;
@@ -129,6 +171,7 @@ function openDi(row: OdakLineDocumentRow) {
 watch(
   () => props.packageId,
   () => {
+    shipmentListResult.value = null;
     void loadLines();
   }
 );
@@ -175,6 +218,50 @@ onMounted(() => {
         </li>
       </ul>
     </v-alert>
+
+    <v-card variant="outlined" class="mb-4">
+      <v-card-text class="d-flex flex-wrap align-center ga-3 py-3">
+        <div class="flex-grow-1 min-width-0">
+          <div class="text-subtitle-2 font-weight-medium">
+            {{ t('odakSiparis.packageDocuments.shipmentListTitle') }}
+          </div>
+          <div class="text-body-2 text-medium-emphasis">
+            {{ t('odakSiparis.packageDocuments.shipmentListHint') }}
+          </div>
+          <div
+            v-if="shipmentListResult?.resourceId"
+            class="text-body-2 mt-2 d-flex flex-wrap align-center ga-2"
+          >
+            <span>{{ shipmentListResult.fileName || shipmentListResult.docNo || '—' }}</span>
+            <v-btn
+              size="small"
+              variant="text"
+              color="primary"
+              class="px-1"
+              @click="openShipmentListDi"
+            >
+              <ExternalLinkIcon class="mr-1" size="16" />
+              {{ t('odakSiparis.lineDocuments.openDi') }}
+            </v-btn>
+          </div>
+        </div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          size="small"
+          :loading="shipmentListLoading"
+          :disabled="!packageId"
+          @click="generateShipmentList"
+        >
+          <FileSpreadsheetIcon class="mr-1" size="16" />
+          {{ t('odakSiparis.packageDocuments.shipmentListAction') }}
+        </v-btn>
+      </v-card-text>
+    </v-card>
+
+    <div class="text-subtitle-2 font-weight-medium mb-2">
+      {{ t('odakSiparis.packageDocuments.lineSectionTitle') }}
+    </div>
 
     <OdakSiparisSubListScroll>
       <template #toolbar>

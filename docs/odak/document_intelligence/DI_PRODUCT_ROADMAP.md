@@ -1,7 +1,7 @@
 # Document Intelligence — Ürün Yol Haritası
 
 **Durum:** Planlama (birleşik roadmap)  
-**Son güncelleme:** 7 Temmuz 2026  
+**Son güncelleme:** 8 Temmuz 2026  
 **Kapsam:** Sayfa · Döküman · Sheet · Sunum · Parametreler · Kurumsal kimlik (D-BR) · Zamanlama · Bildirim · Collabora oturum yönetimi · Workflow entegrasyonu (D-WF) · AI  
 **İlişkili:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md) · [DEVAM.md](./DEVAM.md) · [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md) · [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
@@ -88,6 +88,10 @@ Dosya    → type = file AND origin = upload
 | **Şablonda varsayılan antet** (`defaultLetterheadId` — Belge Tasarımcısı) | ✅ **D-BR1** |
 | **Faz P — Sayfa** (keşif, editör, etiket, changeNote, backlink, alan giriş) | ✅ **Faz P** (6–7 Tem 2026) |
 | Otomatik üretim: CoC + Activity generation profilleri | ✅ |
+| **Odak generation runtime (G0–G5):** RuntimeEnvelope, producer/dataSource katalog, DOCX tablo, XLSX sevkiyat listesi | ✅ **G0–G5** (8 Tem 2026) |
+| Managed Office: native docx/xlsx/pptx + Collabora + sürüm + PDF | ✅ **O-0→Pr2** (8 Tem 2026) |
+| Manuel şablondan üretim UX + merge/PDF | ✅ **D4** |
+| Sheet / Sunum Collabora (native) | ✅ **S1+S2 / Pr1+Pr2** |
 | Şablon publish/unpublish | ✅ |
 | System / Öğreticiler seed içerik | ✅ |
 | OC kalem belgeleri paneli + deep link | ✅ |
@@ -96,13 +100,15 @@ Dosya    → type = file AND origin = upload
 
 | Alan | Durum |
 |------|-------|
-| Yapısal parametreler (tablo, kart, chart) | ⏸️ **Faz D-P — ertelendi** |
-| Dataset / MO query ile parametre verisi | ⏸️ **Faz D-P — ertelendi** |
+| Yapısal parametreler (tablo, kart, chart) | ⏸️ **Faz D-P — ertelendi** (kısmi: **G2/G5** tablo merge DOCX/XLSX) |
+| Dataset / MO query ile parametre verisi | ⏸️ **Faz D-P — ertelendi** (kısmi: **G1/G4** `dataSourceRef` + DG executor) |
 | Parametre yönetimi UI (envanter ↔ tanım) | ⏸️ **Faz D-P — ertelendi** |
 | Döküman sürüm UI (file) — genişletme | ✅ **D2** (7 Tem 2026 gece) |
 | Döküman lifecycle (taslak/yayın docx) | ⏸️ **Faz M** — Minimal karar: yalnızca Sayfa |
-| Manuel şablondan üretim UX | 🔲 Faz D |
-| Sheet / Sunum Collabora | 🔲 Faz S / Pr |
+| Manuel şablondan üretim UX | ✅ **D4** |
+| Sheet / Sunum Collabora | ✅ **O-0→Pr2** |
+| İş paketi sevkiyat listesi writeback | 🔲 **G5+** |
+| Work item ↔ üretilen belge (G6) | ⏸️ **G6 — ertelendi** |
 | Zamanlanmış üretim | 🔲 Faz D-S |
 | Döküman bildirimleri | 🔲 Faz D-N |
 | OC WorkItem ↔ doküman (tam UI) | 🔲 Faz D5 |
@@ -212,16 +218,19 @@ flowchart TB
 | ~~5~~ | ~~**D-PERF-1/2/3**~~ | ✅ Lazy tree, permission cache, pagination (`dff51a2c`) |
 | ~~1~~ | ~~**D-E** (E1–E3 + kilitleme)~~ | ✅ Oturum limiti, panel, döküman kilidi (7 Tem akşam) |
 | ~~2~~ | ~~**D2**~~ | ✅ Döküman sürüm UX — Collabora kayıt, changeNote, kapatma akışı (7 Tem gece) |
-| 1 | **D4** | Manuel şablondan üretim UX, merge + PDF indirme ← **sıradaki** |
-| 2 | **D-BR2** | Kapak sayfası — rapor ve dış paylaşım belgeleri için profesyonel ilk sayfa |
-| 3 | **D-N** | Üretim maili — hızlı operasyonel kazanç |
-| 4 | **D-S** | Haftalık otomatik rapor senaryosu |
-| 5 | **D5** | Operasyon entegrasyonu — DI farkı |
-| 6 | **S** → **Pr** | Kurumsal içerik üçlüsü (Word·Excel·Sunum) |
-| 7 | **D-WF** (0–1) | Event publish + CoC kalite onay playbook (D-N1 ile overlap netleştir) |
-| 8 | **D-P** (P1–P5) | ⏸️ **Ertelendi** — tablo/chart parametreler; Activity sevkiyat tablosu vb. |
-| 9 | **AI** | Extract + tag + özet + benzer + asistan |
-| 10 | **M** + **D-WF2–4** | Kontrollü doküman lifecycle; AI düşük güven onayı |
+| ~~1~~ | ~~**D4**~~ | ✅ Manuel üretim, merge, PDF |
+| ~~2~~ | ~~**S → Pr**~~ | ✅ Managed Office O-0→Pr2 |
+| ~~3~~ | ~~**G0–G5**~~ | ✅ Odak generation runtime + XLSX sevkiyat listesi (8 Tem 2026) |
+| 1 | **G5+** | İş paketi writeback + prod deploy |
+| 2 | **D-BR2** | Kapak sayfası |
+| 3 | **CoC/Activity smoke** | Prod verisi ile uçtan uca |
+| 4 | **D-N** | Üretim maili |
+| 5 | **D-S** | Haftalık otomatik rapor |
+| 6 | **D5 / G6** | Operasyon entegrasyonu; G6 work item ⏸️ |
+| 7 | **D-WF** (0–1) | Event publish + CoC kalite onay |
+| 8 | **D-P** (P1–P5) | ⏸️ Ertelendi — chart/card/composite |
+| 9 | **AI** | Extract + tag + özet |
+| 10 | **M** + **D-WF2–4** | Lifecycle; AI onayı |
 
 ---
 
@@ -629,7 +638,7 @@ Payload: `resourceId`, `generationProfile`, `origin`, `documentNo`, `contextType
 
 ## 11. Faz D-P — Parametre sistemi 2.0 ⏸️ (ertelendi)
 
-**Durum (7 Tem 2026):** Skaler parametreler ve mevcut generation profilleri yeterli; tablo/chart/MO query genişlemesi **ileriki fazlara ertelendi**. Yeniden ele alınırken Odak referans: Activity sevkiyat tablosu (D-P3 pilot).
+**Durum (7 Tem 2026):** Skaler parametreler ve mevcut generation profilleri yeterli; tablo/chart/MO query genişlemesi **ileriki fazlara ertelendi**. **Güncelleme (8 Tem 2026):** Activity DOCX tablo (**G2**) ve XLSX sevkiyat listesi tablo genişlemesi (**G5**) `dataSourceRef` + `DocxTableExpander` / `XlsxTableExpander` ile kısmen karşılandı; tam D-P (chart, card, designer veri sekmesi) hâlâ erteli.
 
 **Hedef:** Skaler `{{key}}` modelinin ötesine geçmek; tablo, kart, chart; dataset ve MO query ile veri çekmek.
 
@@ -1088,6 +1097,61 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 
 ### Sıradaki
 
-- **D4** — manuel şablondan üretim, merge, PDF indirme
+- **G5+** — iş paketi sevkiyat listesi writeback; prod deploy
+- **G6** ⏸️ — work item bağlantısı
 - **D-BR2** — kapak sayfası kataloğu
 - CoC/Activity uçtan uca smoke
+
+---
+
+## 26. Faz G — Odak generation runtime (G0–G5) ✅ (8 Temmuz 2026)
+
+**Hedef:** Odak Sipariş / OperationCore bağlamından profil tabanlı belge üretimi; şablon + data source + producer katalogları; DOCX ve XLSX çıktı.
+
+**İlişkili:** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · Checkpoint [DEVAM.md](./DEVAM.md)
+
+### G dilimleri
+
+| Dilim | Kapsam | Durum |
+|-------|--------|-------|
+| **G0** | `POST /documents/api/v1/generate/run` · `RuntimeEnvelope` · producer/context API | ✅ |
+| **G1** | `DgDataSourceExecutor` · `DocumentContextLoader` · context yükleme | ✅ |
+| **G2** | `DocxTableExpander` · Activity `odak.shipmentLines.byParentLine` · DOCX tablo smoke | ✅ |
+| **G3** | `dm_document_context_types` dataset + `DocumentContextTypeCatalogProvider` | ✅ |
+| **G4** | `dm_data_sources` + `dm_document_producers` · `dataSourceRef` çözümleme | ✅ |
+| **G5** | XLSX: `XlsxPlaceholderScanner/Merger/TableExpander` · `outputFormat: xlsx` · `SHIPMENT-LIST-STD` · Odak UI | ✅ |
+| **G6** | OperationCore work item ↔ üretilen belge | ⏸️ ertelendi |
+| **G5+** | İş paketine `resourceId` writeback (kalıcı listeleme) | 🔲 |
+
+### G5 pilot: sevkiyat listesi XLSX
+
+| Öğe | Değer |
+|-----|-------|
+| Producer | `odak.shipmentList.fromPackage` |
+| DataSource | `odak.packageShipmentLines.byPackage` |
+| Şablon | `SHIPMENT-LIST-STD` |
+| Context | `odak.package` · `contextId` = iş paketi UUID |
+| Çıktı | `Odak/Sevkiyat/{packageNo}/` · `.xlsx` |
+| UI | Odak Sipariş → iş paketi → Belgeler → **Listeyi üret** |
+
+### Kritik düzeltmeler (debug)
+
+- `DataSourceTokenResolver`: `JsonElement` match değerleri → boş tablo kök nedeni giderildi
+- `DocumentParameterResolver`: `dd.MM.yyyy` literal fix
+- `XlsxTemplateBytesResolver`: built-in `ShipmentListTemplateXlsxFactory` fallback
+- `PackageShipmentLinesQueryFallback`: eski kayıtlarda boş `parentPackageId`
+
+### Smoke / seed
+
+```powershell
+.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
+.\docs\odak\document_intelligence\scripts\deploy-shipment-list-design-test.ps1
+.\scripts\tests\MngDocument\smoke-shipment-list-xlsx-test.ps1 -PackageId <uuid>
+.\scripts\tests\MngDocument\smoke-activity-shipment-table-test.ps1
+```
+
+### Bilinçli kapsam dışı (G5)
+
+- Üretim idempotency yok (her çağrı yeni `dm_resources`)
+- İş paketi writeback yok — silme yalnızca DI klasöründen
+- Prod deploy bu fazda test ortamında doğrulandı

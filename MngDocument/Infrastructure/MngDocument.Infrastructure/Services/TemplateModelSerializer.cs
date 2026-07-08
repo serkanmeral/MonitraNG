@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MngDocument.Application.Contracts.Templates;
 
 namespace MngDocument.Infrastructure.Services;
 
@@ -68,11 +69,22 @@ public sealed class TemplateParameterModel
 {
     public string Key { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
+
+    /// <summary>scalar · table · list · chart (default scalar).</summary>
+    public string Kind { get; set; } = "scalar";
+
     public string DataType { get; set; } = "text";
     public string ValueSourceMode { get; set; } = "manual";
+
+    /// <summary>Catalog ref to <c>dm_data_sources.code</c> (G4); inline <see cref="ValueSource"/> is fallback.</summary>
+    [JsonPropertyName("dataSourceRef")]
+    public string? DataSourceRef { get; set; }
     public string? DefaultValue { get; set; }
     public string? Format { get; set; }
     public TemplateIncrementalModel? Incremental { get; set; }
+
+    [JsonPropertyName("valueSource")]
+    public TemplateValueSourceModel? ValueSource { get; set; }
 
     /// <summary>DOCX region binding (designer paragraph selection).</summary>
     [JsonPropertyName("docBinding")]
@@ -97,6 +109,11 @@ public sealed class TemplateDocBindingModel
     public string? OriginalText { get; set; }
     public int? CharStart { get; set; }
     public int? CharEnd { get; set; }
+
+    /// <summary>0-based index among top-level <c>w:tbl</c> in document body (G2).</summary>
+    public int? TableIndex { get; set; }
+    public int? HeaderRowIndex { get; set; }
+    public int? TemplateRowIndex { get; set; }
 }
 
 public sealed class TemplateContextBindingModel
@@ -118,7 +135,7 @@ public sealed class TemplateIncrementalModel
 
 public static class TemplateModelSerializer
 {
-    public const string CurrentSchemaVersion = "1.5";
+    public const string CurrentSchemaVersion = "1.6";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

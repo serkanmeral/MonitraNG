@@ -21,6 +21,7 @@ $footerScript = Join-Path $scriptDir "inject-coc-footer-docx.ps1"
 $seedFile = Join-Path $repoRoot "docs/odak/document_intelligence/datasets/seed-designer-template-line-activity-standard.json"
 $seedDocx = Join-Path $repoRoot "docs/odak/document_intelligence/sample/ODK-LINE-ACTIVITY-template-seed.docx"
 $uploadDocx = Join-Path $repoRoot "docs/odak/document_intelligence/sample/ODK-LINE-ACTIVITY-template-upload.docx"
+. (Join-Path $scriptDir "lib/Convert-DiTemplateParameters.ps1")
 
 $token = $Token
 if ([string]::IsNullOrEmpty($token)) {
@@ -126,33 +127,7 @@ Invoke-WebRequest -Uri $putUrl2 -Method POST -Body $footerBytes -ContentType "ap
 Write-Host "OK footer tablo" -ForegroundColor Green
 Remove-Item $tmpBranded, $tmpFooter -Force -ErrorAction SilentlyContinue
 
-$params = @()
-foreach ($p in @($seed.template.parameters)) {
-    $entry = @{
-        key = [string]$p.key
-        label = [string]$p.label
-        dataType = [string]$p.dataType
-        valueSourceMode = [string]$p.valueSourceMode
-    }
-    if ($p.defaultValue) { $entry.defaultValue = [string]$p.defaultValue }
-    if ($p.format) { $entry.format = [string]$p.format }
-    if ($p.contextBinding) {
-        $cb = @{ path = [string]$p.contextBinding.path }
-        if ($p.contextBinding.fallbackPath) { $cb.fallbackPath = [string]$p.contextBinding.fallbackPath }
-        if ($p.contextBinding.format) { $cb.format = [string]$p.contextBinding.format }
-        $entry.contextBinding = $cb
-    }
-    if ($p.incremental) {
-        $entry.incremental = @{
-            format = [string]$p.incremental.format
-            startValue = [int]$p.incremental.startValue
-            incrementStep = [int]$p.incremental.incrementStep
-            scopeKey = [string]$p.incremental.scopeKey
-            resetPolicy = [string]$p.incremental.resetPolicy
-        }
-    }
-    $params += $entry
-}
+$params = ConvertTo-DiTemplateParameterEntries -Parameters @($seed.template.parameters)
 Invoke-Json -Method PUT -Uri "$BaseUrl/documents/api/v1/templates/$($tpl.id)/parameters" -Body @{
     parameters = $params
     primaryContextType = [string]$seed.template.primaryContextType

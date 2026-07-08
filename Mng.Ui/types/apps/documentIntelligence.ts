@@ -424,16 +424,39 @@ export interface DiTemplateDocBinding {
   originalText?: string | null;
   charStart?: number | null;
   charEnd?: number | null;
+  tableIndex?: number | null;
+  headerRowIndex?: number | null;
+  templateRowIndex?: number | null;
 }
 
 /** @deprecated use DiTemplateDocBinding */
 export type DiTemplateSourceBinding = DiTemplateDocBinding;
 
+export interface DiTemplateValueSource {
+  mode?: string;
+  provider?: string;
+  dataset?: string | null;
+  queryName?: string | null;
+  idFrom?: string | null;
+  query?: string | null;
+  match?: Record<string, unknown> | null;
+  parameters?: Record<string, unknown> | null;
+  path?: string | null;
+  fallbackPath?: string | null;
+  field?: string | null;
+  format?: string | null;
+  defaultValue?: string | null;
+  columns?: Array<{ sourceField: string; header?: string | null; format?: string | null }> | null;
+}
+
 export interface DiTemplateParameter {
   key: string;
   label: string;
+  /** scalar · table · list · chart */
+  kind?: string;
   dataType: string;
   valueSourceMode: DiTemplateValueSourceMode | string;
+  dataSourceRef?: string | null;
   defaultValue?: string | null;
   format?: string | null;
   incremental?: DiTemplateIncrementalOptions | null;
@@ -441,6 +464,7 @@ export interface DiTemplateParameter {
   /** @deprecated use docBinding */
   sourceBinding?: DiTemplateDocBinding | null;
   contextBinding?: DiTemplateContextBinding | null;
+  valueSource?: DiTemplateValueSource | null;
 }
 
 export interface DiTemplateSummary {
@@ -473,6 +497,16 @@ export interface DiDocumentContextType {
   displayName: string;
   rootDataset: string;
   fields: DiDocumentContextField[];
+}
+
+export interface DiGenerationRuntimeEnvelope {
+  producerCode: string;
+  context: { type: string; id: string };
+  scope?: { workspaceId?: string | null; domainId?: string | null };
+  params?: Record<string, string>;
+  overrides?: Record<string, string>;
+  trigger?: { kind?: string; correlationId?: string | null };
+  templateCode?: string | null;
 }
 
 export interface DiGenerateDocumentRequest {

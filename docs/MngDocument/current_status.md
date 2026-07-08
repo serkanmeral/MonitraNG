@@ -2,39 +2,41 @@
 
 ## Son Çalışılan Konu
 
-**8 Temmuz 2026 (gece):** Managed Office **O-0 → Pr2** tamamlandı (sheet + sunum); editör oturumları iyileştirmeleri; müşteri demo dosyaları.
+**8 Temmuz 2026 (sabah):** Odak **G0–G5** generation runtime tamamlandı; XLSX sevkiyat listesi IX04’te canlı doğrulandı; kritik `DataSourceTokenResolver` JsonElement fix.
 
-**Roadmap:** [SHEET_ROADMAP.md](../odak/document_intelligence/SHEET_ROADMAP.md) · [DI_PRODUCT_ROADMAP.md §15–16](../odak/document_intelligence/DI_PRODUCT_ROADMAP.md) · Checkpoint: [DEVAM.md](../odak/document_intelligence/DEVAM.md)
+**Roadmap:** [DI_PRODUCT_ROADMAP.md §26](../odak/document_intelligence/DI_PRODUCT_ROADMAP.md) · [SHEET_ROADMAP.md](../odak/document_intelligence/SHEET_ROADMAP.md) · Checkpoint: [DEVAM.md](../odak/document_intelligence/DEVAM.md)
 
 ## Tamamlanan (bu oturum)
 
 | ID | Özet |
 |----|------|
-| **O-0 / O-1** | `ManagedOfficeProfiles`, WOPI genelleme, `MinimalXlsxFactory` / `MinimalPptxFactory`, native API (`documents\|sheets\|presentations/native`) |
-| **S1** | Yeni elektronik tablo UI + `diCreateNativeSheet` |
-| **S2** | Gotenberg `export/pdf` (DOCX/XLSX/PPTX), `smoke-sheet-native-test.ps1` |
-| **Pr1** | Yeni sunum UI + `diCreateNativePresentation` |
-| **Pr2** | Sunum sürüm/PDF smoke, `smoke-presentation-pr2-test.ps1` |
-| **D-E+** | Editör oturumları `officeKind` tür sütunu; DG toplu sorgu ile hızlı yenileme |
-| **Demo** | `CollaboraDemoXlsxFactory` / `CollaboraDemoPptxFactory`, `publish-collabora-demos.ps1` |
+| **G0** | `POST /generate/run` RuntimeEnvelope; producer/context API |
+| **G1** | `DgDataSourceExecutor`, `DocumentContextLoader`, context katalog |
+| **G2** | DOCX `DocxTableExpander`; Activity `shipmentLines` tablo; smoke |
+| **G3** | `dm_document_context_types` seed + provider |
+| **G4** | `dm_data_sources` + `dm_document_producers` katalog; `dataSourceRef` |
+| **G5** | XLSX renderer; `outputFormat: xlsx`; `SHIPMENT-LIST-STD`; Odak UI «Listeyi üret» |
+| **G5-fix** | `DataSourceTokenResolver` JsonElement; `DocumentParameterResolver` format; `XlsxTemplateBytesResolver` fallback; `PackageShipmentLinesQueryFallback` |
 
-**Deploy test:** `mngdocument` @ `192.168.20.20` ✅ · `mngui` deploy bu oturum sonunda planlandı.
+**Önceki oturum (gece):** Managed Office O-0→Pr2 ✅ (sheet + sunum).
+
+**Deploy test:** `mngdocument` + `mngui` @ `192.168.20.20` ✅ (8 Tem sabah).
 
 ## Sıradaki İşler
 
-1. **D-BR2** — kapak sayfası kataloğu + üretimde opsiyonel seçim
-2. **CoC/Activity** uçtan uca smoke (prod verisi varsa)
-3. **S3 / Pr3** — şablondan sheet/sunum (senaryo netleşince)
-4. **D-N1** — `document.generated` bildirim maili
-5. **D4 / Managed Office prod deploy** — test doğrulandıktan sonra isteğe bağlı
-6. Non-admin izin filtreleme canlı doğrulaması (DI-PERM açık borç)
+1. **G5+** — iş paketine sevkiyat listesi writeback (kalıcı listeleme); prod deploy
+2. **G6** — work item bağlantısı ⏸️ ertelendi
+3. **D-BR2** — kapak sayfası kataloğu
+4. **CoC/Activity** uçtan uca smoke (prod verisi)
+5. **D-N1** — `document.generated` bildirim maili
+6. **S3 / Pr3** — şablondan sheet/sunum (senaryo)
 
 ## Önemli Notlar
 
-- UI terimi: **Elektronik tablo** / **Spreadsheet** (kod içi `sheet` kalabilir).
-- PDF export: Collabora menüsü + sunucu `export/pdf` ikisi de aktif.
-- Demo factory’ler yalnızca `scripts/tests/MngDocument/demo/` aracıyla; production API’de yok.
-- Smoke scriptleri editör oturum limiti için başta oturum temizliği yapar.
+- Sevkiyat listesi üretiminde iş paketine **writeback yok**; silme = DI `Odak/Sevkiyat/{packageNo}` klasöründen XLSX silmek yeterli.
+- Her üretim yeni `dm_resources` kaydı oluşturur (idempotency yok).
+- IX04 test paketi: `2d8aeb0e-6f67-4f3a-a578-21cff682ec17` — 34 sevkiyat satırı dolu.
+- Smoke: `scripts/tests/MngDocument/smoke-shipment-list-xlsx-test.ps1 -PackageId <uuid>`
 
 ## Ortam
 
@@ -45,8 +47,8 @@
 
 ## Son Güncelleme
 
-**8 Temmuz 2026 (gece)** — O-0…Pr2 kapatıldı; test smoke geçti. Sırada D-BR2 veya CoC smoke.
+**8 Temmuz 2026 (sabah)** — G0–G5 kapatıldı; IX04 XLSX doğrulandı. Sırada writeback / prod / D-BR2.
 
 ## Nerede Kalmıştık
 
-Managed Office çekirdeği (docx/xlsx/pptx) tamam. Sonraki odak: **D-BR2** (kapak) veya **CoC/Activity smoke**.
+Odak generation çekirdeği (DOCX tablo + XLSX sevkiyat listesi) tamam. Sonraki odak: **iş paketi writeback**, **prod deploy**, veya **D-BR2 / CoC smoke**.

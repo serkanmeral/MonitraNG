@@ -69,6 +69,7 @@ import {
   type DiUpdateResourceMetadataRequest,
   type DiDocumentContextType,
   type DiGenerateDocumentRequest,
+  type DiGenerationRuntimeEnvelope,
   type DiGenerateDocumentResult,
   type DiDocumentGenerationStatus,
   type DiDocumentGenerationPreview,
@@ -824,9 +825,11 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
   const inc = o.incremental;
   const bind = o.docBinding ?? o.sourceBinding;
   const ctx = o.contextBinding;
+  const vs = o.valueSource;
   return {
     key: str(o, 'key') ?? '',
     label: str(o, 'label') ?? '',
+    kind: str(o, 'kind') ?? 'scalar',
     dataType: str(o, 'dataType') ?? 'text',
     valueSourceMode: str(o, 'valueSourceMode') ?? 'manual',
     defaultValue: str(o, 'defaultValue'),
@@ -868,6 +871,22 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
             fallbackPath: str(asRecord(ctx), 'fallbackPath'),
             defaultValue: str(asRecord(ctx), 'defaultValue'),
             format: str(asRecord(ctx), 'format'),
+          }
+        : null,
+    valueSource:
+      vs && typeof vs === 'object'
+        ? {
+            mode: str(asRecord(vs), 'mode') ?? undefined,
+            provider: str(asRecord(vs), 'provider') ?? undefined,
+            dataset: str(asRecord(vs), 'dataset'),
+            queryName: str(asRecord(vs), 'queryName'),
+            idFrom: str(asRecord(vs), 'idFrom'),
+            query: str(asRecord(vs), 'query'),
+            path: str(asRecord(vs), 'path'),
+            fallbackPath: str(asRecord(vs), 'fallbackPath'),
+            field: str(asRecord(vs), 'field'),
+            format: str(asRecord(vs), 'format'),
+            defaultValue: str(asRecord(vs), 'defaultValue'),
           }
         : null,
   };
@@ -1688,6 +1707,14 @@ export async function diGetDocumentGenerationStatus(
 
 export async function diGenerateDocument(request: DiGenerateDocumentRequest): Promise<DiGenerateDocumentResult> {
   const raw = await fetchFromDocuments(GENERATE_BASE, 'POST', request);
+  return mapGenerateResult(raw);
+}
+
+/** Generic producer run (G0) — maps to generation profile until dm_document_producers (G4). */
+export async function diRunGeneration(
+  envelope: DiGenerationRuntimeEnvelope
+): Promise<DiGenerateDocumentResult> {
+  const raw = await fetchFromDocuments(`${GENERATE_BASE}/run`, 'POST', envelope);
   return mapGenerateResult(raw);
 }
 

@@ -161,6 +161,45 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         return new DataGatewayPage(items, total);
     }
 
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> ExecuteNamedQueryAsync(
+        string datasetName,
+        string queryName,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        if (parameters is not null)
+        {
+            foreach (var kv in parameters)
+                payload[kv.Key] = kv.Value;
+        }
+
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(
+                HttpMethod.Post,
+                $"data/{datasetName}/queries/{Uri.EscapeDataString(queryName)}",
+                token,
+                JsonContent.Create(payload)),
+            cancellationToken);
+
+        await EnsureSuccessOrThrowAsync(response, cancellationToken);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        if (json.ValueKind != JsonValueKind.Array)
+            return Array.Empty<Dictionary<string, object?>>();
+
+        var list = new List<Dictionary<string, object?>>();
+        foreach (var item in json.EnumerateArray())
+        {
+            var row = JsonSerializer.Deserialize<Dictionary<string, object?>>(item.GetRawText(), JsonOptions);
+            if (row is not null)
+                list.Add(row);
+        }
+
+        return list;
+    }
+
     public async Task<byte[]> DownloadFileAsync(
         string filePath,
         string? token = null,
