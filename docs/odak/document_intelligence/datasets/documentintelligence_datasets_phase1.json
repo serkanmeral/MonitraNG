@@ -1009,6 +1009,34 @@
     ]
   },
   {
+    "name": "dm_cover_pages",
+    "description": "Document Intelligence - paylasimli kapak sayfasi katalogu (D-BR2).",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      { "fieldType": "text", "name": "name", "title": "Kapak adi", "mandatory": true, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "code", "title": "Kapak kodu", "mandatory": true, "unique": true, "isArray": false },
+      { "fieldType": "text", "name": "description", "title": "Aciklama", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "bool", "name": "isDefault", "title": "Varsayilan kapak", "mandatory": false, "unique": false, "isArray": false, "defaultValue": false },
+      { "fieldType": "bool", "name": "isActive", "title": "Aktif", "mandatory": false, "unique": false, "isArray": false, "defaultValue": true },
+      { "fieldType": "text", "name": "coverPageJson", "title": "Kapak tanimi (JSON)", "mandatory": true, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "settingsJson", "title": "Kapak ayarlari (JSON)", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "file", "name": "designFile", "title": "Kapak tasarim DOCX", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "designStoragePath", "title": "Kapak tasarim dosya yolu", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "designFileName", "title": "Kapak tasarim dosya adi", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "createdBy", "title": "Olusturan", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "datetime", "name": "createdAt", "title": "Olusturma zamani", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "updatedBy", "title": "Guncelleyen", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "datetime", "name": "updatedAt", "title": "Guncelleme zamani", "mandatory": false, "unique": false, "isArray": false }
+    ],
+    "indexList": [
+      { "name": "idx_cover_page_code", "fields": { "code": 1 }, "unique": true },
+      { "name": "idx_cover_page_isDefault", "fields": { "isDefault": 1 }, "unique": false }
+    ]
+  },
+  {
     "name": "dm_tags",
     "description": "Document Intelligence - etiket katalogu (D-TAGS).",
     "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",

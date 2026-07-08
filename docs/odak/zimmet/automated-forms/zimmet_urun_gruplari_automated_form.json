@@ -1,0 +1,29 @@
+{
+  "formName": "Zimmet Urun Gruplari",
+  "formCode": "zimmet-urun-gruplari-form",
+  "description": "Zimmet urun gruplari — laptop, monitor, canta, sarf",
+  "datasetName": "zimmet_urun_gruplari",
+  "isActive": true,
+  "sideMenuConfig": { "enabled": false },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "ad",
+    "defaultSortOrder": "asc",
+    "columns": [
+      { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+      { "fieldName": "trackBySerial", "visible": true, "order": 3, "sortable": true, "filterable": true },
+      { "fieldName": "isFixedAsset", "visible": true, "order": 4, "sortable": true, "filterable": true },
+      { "fieldName": "aktif", "visible": true, "order": 5, "sortable": true, "filterable": true }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aciklama", "aktif"],
+    "fieldOrder": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aciklama", "aktif"],
+    "readonlyOnEditFields": ["kod"],
+    "fieldGroups": [
+      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aktif"] },
+      { "key": "detay", "title": "Detay", "fields": ["aciklama"] }
+    ]
+  }
+}

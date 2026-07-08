@@ -1,0 +1,29 @@
+{
+  "formName": "Zimmet Depo Lokasyonlari",
+  "formCode": "zimmet-depo-lokasyonlari-form",
+  "description": "Depo ic lokasyonlar",
+  "datasetName": "zimmet_depo_lokasyonlari",
+  "isActive": true,
+  "sideMenuConfig": { "enabled": false },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "kod",
+    "defaultSortOrder": "asc",
+    "columns": [
+      { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+      { "fieldName": "depoId", "visible": true, "order": 3, "sortable": false, "filterable": false, "displayField": "ad" },
+      { "fieldName": "aktif", "visible": true, "order": 4, "sortable": true, "filterable": true }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "ad", "depoId", "aktif"],
+    "fieldOrder": ["kod", "ad", "depoId", "aktif"],
+    "relationConfig": {
+      "depoId": { "displayField": "ad" }
+    },
+    "fieldGroups": [
+      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "depoId", "aktif"] }
+    ]
+  }
+}

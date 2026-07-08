@@ -1,0 +1,53 @@
+{
+  "formName": "Zimmet Demirbaslar",
+  "formCode": "zimmet-demirbaslar-form",
+  "description": "Tekil fiziksel demirbas envanteri",
+  "datasetName": "zimmet_demirbaslar",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": true,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/zimmet-demirbaslar-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "demirbasNo",
+    "defaultSortOrder": "desc",
+    "columns": [
+      { "fieldName": "demirbasNo", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "katalogUrunId", "visible": true, "order": 2, "sortable": false, "filterable": false, "displayField": "ad" },
+      { "fieldName": "seriNo", "visible": true, "order": 3, "sortable": true, "filterable": true },
+      { "fieldName": "durum", "visible": true, "order": 4, "sortable": true, "filterable": true },
+      { "fieldName": "depoId", "visible": true, "order": 5, "sortable": false, "filterable": false, "displayField": "ad" },
+      { "fieldName": "zimmetliPersonelId", "visible": true, "order": 6, "sortable": false, "filterable": false }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": [
+      "katalogUrunId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
+      "zimmetliPersonelId", "girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId",
+      "girisRef", "zimmetRef", "notlar"
+    ],
+    "fieldOrder": [
+      "katalogUrunId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
+      "zimmetliPersonelId", "girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId",
+      "girisRef", "zimmetRef", "notlar"
+    ],
+    "readonlyOnEditFields": ["demirbasNo"],
+    "relationConfig": {
+      "katalogUrunId": { "displayField": "ad" },
+      "depoId": { "displayField": "ad" },
+      "lokasyonId": { "displayField": "ad" },
+      "tedarikciId": { "displayField": "unvan" }
+    },
+    "fieldLayout": {
+      "notlar": { "textWidget": "textarea" }
+    },
+    "fieldGroups": [
+      { "key": "kimlik", "title": "Kimlik", "fields": ["katalogUrunId", "seriNo", "marka", "model", "durum"] },
+      { "key": "konum", "title": "Konum", "fields": ["depoId", "lokasyonId", "zimmetliPersonelId"] },
+      { "key": "finans", "title": "Finans / garanti", "fields": ["girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId"] },
+      { "key": "referans", "title": "Referans", "fields": ["girisRef", "zimmetRef", "notlar"] }
+    ]
+  }
+}

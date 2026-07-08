@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
@@ -17,7 +18,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { useAppToast } from '@/composables/useAppToast';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
-import { DI_HOME_PATH, buildDiFolderUrl } from '@/utils/diResourceLink';
+import { DI_HOME_PATH, DI_LAST_FOLDER_STORAGE_KEY, buildDiFolderUrl, parseFromFolderQuery } from '@/utils/diResourceLink';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
   diErrorStatus,
@@ -89,14 +90,39 @@ function formatDateTime(iso: string | null | undefined): string {
   }
 }
 
-const breadcrumbs = computed(() => [
-  { title: t('documentIntelligence.menuTitle'), to: DI_HOME_PATH },
-  ...folderPath.value.map((b) => ({
-    title: b.name,
-    to: buildDiFolderUrl(b.id),
-  })),
-  { title: resourceLabel(resource.value), disabled: true },
-]);
+const breadcrumbs = computed(() => {
+  const fromFolder = parseFromFolderQuery(route.query as Record<string, unknown>);
+  const folderHome = fromFolder
+    ? buildDiFolderUrl(fromFolder)
+    : DI_HOME_PATH;
+  return [
+    { title: t('documentIntelligence.menuTitle'), to: folderHome },
+    ...folderPath.value.map((b) => ({
+      title: b.name,
+      to: buildDiFolderUrl(b.id),
+    })),
+    { title: resourceLabel(resource.value), disabled: true },
+  ];
+});
+
+const hasFromFolderContext = computed(
+  () => parseFromFolderQuery(route.query as Record<string, unknown>) != null,
+);
+
+function resolveReturnFolderId(): string | null {
+  const fromFolder = parseFromFolderQuery(route.query as Record<string, unknown>);
+  if (fromFolder) return fromFolder;
+  if (resource.value?.parentId) return resource.value.parentId;
+  if (import.meta.client) {
+    const stored = sessionStorage.getItem(DI_LAST_FOLDER_STORAGE_KEY)?.trim();
+    if (stored) return stored;
+  }
+  return null;
+}
+
+function folderReturnUrl(refresh = false): string {
+  return buildDiFolderUrl(resolveReturnFolderId(), refresh ? { refresh: true } : undefined);
+}
 
 function notify(text: string, color: 'success' | 'error' | 'info' = 'info') {
   push({
@@ -107,7 +133,15 @@ function notify(text: string, color: 'success' | 'error' | 'info' = 'info') {
 }
 
 async function goToParentFolder() {
-  await navigateTo(buildDiFolderUrl(resource.value?.parentId ?? null));
+  const folderId = resolveReturnFolderId();
+  if (!folderId) {
+    await navigateTo(DI_HOME_PATH);
+    return;
+  }
+  await navigateTo({
+    path: DI_HOME_PATH,
+    query: { folderId },
+  });
 }
 
 async function downloadFile(r: DiResource) {
@@ -354,6 +388,18 @@ onMounted(() => {
 watch(resourceId, () => {
   void loadResource();
 });
+
+onBeforeRouteLeave((to) => {
+  const folderId = resolveReturnFolderId();
+  if (!folderId) return true;
+  if (to.path === DI_HOME_PATH && !to.query.folderId) {
+    return {
+      path: DI_HOME_PATH,
+      query: { folderId },
+    };
+  }
+  return true;
+});
 </script>
 
 <template>
@@ -383,8 +429,8 @@ watch(resourceId, () => {
         >
           {{ t('documentIntelligence.copyLink') }}
         </v-btn>
-        <v-btn variant="tonal" size="small" class="text-none" :to="DI_HOME_PATH">
-          {{ t('documentIntelligence.menuTitle') }}
+        <v-btn variant="tonal" size="small" class="text-none" :to="folderReturnUrl()">
+          {{ hasFromFolderContext ? t('documentIntelligence.backToFolder') : t('documentIntelligence.menuTitle') }}
         </v-btn>
       </div>
 

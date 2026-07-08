@@ -1,0 +1,80 @@
+{
+  "name": "zimmet_urun_gruplari",
+  "description": "Zimmet — urun gruplari (laptop, monitor, canta, sarf)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "indexList": [
+    { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true }
+  ],
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Grup kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": {
+        "minLength": 3,
+        "maxLength": 20,
+        "pattern": "^GRP-[A-Z0-9]+$",
+        "message": "Kod GRP-XXX formatinda olmalidir"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Grup adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 100 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "trackBySerial",
+      "title": "Seri no ile takip",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "isFixedAsset",
+      "title": "Demirbas",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "isConsumable",
+      "title": "Sarf malzeme",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "text",
+      "name": "aciklama",
+      "title": "Aciklama",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ]
+}

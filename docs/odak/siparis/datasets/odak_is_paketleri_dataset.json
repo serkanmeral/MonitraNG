@@ -318,6 +318,138 @@
       "unique": false,
       "isArray": false,
       "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "shipmentListDiResourceId",
+      "title": "Sevkiyat listesi DI kaynak id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "shipmentListFileName",
+      "title": "Sevkiyat listesi dosya adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "shipmentListGeneratedAt",
+      "title": "Sevkiyat listesi uretim zamani",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "shipmentListTemplateCode",
+      "title": "Sevkiyat listesi sablon kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "shipmentListTemplateName",
+      "title": "Sevkiyat listesi sablon adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageDashboardDiResourceId",
+      "title": "Kontrol paneli DI kaynak id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageDashboardFileName",
+      "title": "Kontrol paneli dosya adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "packageDashboardGeneratedAt",
+      "title": "Kontrol paneli uretim zamani",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "packageDashboardTemplateCode",
+      "title": "Kontrol paneli sablon kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageDashboardTemplateName",
+      "title": "Kontrol paneli sablon adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageBriefDiResourceId",
+      "title": "Musteri sunumu DI kaynak id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageBriefFileName",
+      "title": "Musteri sunumu dosya adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "packageBriefGeneratedAt",
+      "title": "Musteri sunumu uretim zamani",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "packageBriefTemplateCode",
+      "title": "Musteri sunumu sablon kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageBriefTemplateName",
+      "title": "Musteri sunumu sablon adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
     }
   ],
   "indexList": [

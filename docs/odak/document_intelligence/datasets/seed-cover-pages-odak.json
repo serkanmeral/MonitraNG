@@ -1,0 +1,30 @@
+{
+  "defaultSettings": {
+    "pageLayout": {
+      "marginTopTwips": 1440,
+      "marginRightTwips": 1440,
+      "marginBottomTwips": 1440,
+      "marginLeftTwips": 1440,
+      "headerDistanceTwips": 709,
+      "footerDistanceTwips": 658,
+      "footerLeftIndentTwips": -567
+    }
+  },
+  "coverPages": [
+    {
+      "code": "ODK-COVER-STD",
+      "name": "ODK Standart Kapak",
+      "description": "Executive kapak — belge adi, musteri, numara, uretim tarihi.",
+      "isDefault": true,
+      "isActive": true,
+      "definition": {
+        "showLogo": true,
+        "showDocumentName": true,
+        "showDocNo": true,
+        "showGeneratedAt": true,
+        "showCustomerName": true
+      }
+    }
+  ],
+  "templateCodes": []
+}

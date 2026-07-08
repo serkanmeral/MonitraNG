@@ -1,16 +1,28 @@
 # Odak Sipariş — Oturum durumu
 
-**Son güncelleme:** 3 Temmuz 2026 (gece oturumu)  
-**Konu:** Sevkiyat miktar UX · UTF-8 paket metin onarımı · hub UI · bildirim/mail şablonları
+**Son güncelleme:** 8 Temmuz 2026 (PACKAGE-BRIEF planı · DI P0+P1)  
+**Konu:** Sevkiyat miktar UX · UTF-8 paket metin onarımı · hub UI · bildirim/mail şablonları · **CoC/Activity/XLSX belgeler ✅** · **Medya paketi planı ✅**
 
-> **Kaldığımız yer:** Prod UI deploy edildi (bu oturum sonunda). Paket `name`/`deliveryAddress`/`notes` Türkçe karakter onarımı prod’da **504 paket / 614 alan** PATCH edildi (ARG1704 doğrulandı). Sevkiyat listesinde miktar sütun etiketleri netleştirildi; satır **Kalan = Toplam − Sevk** düzeltmesi canlı. Go-live BLOCKER’ları (sevkiyat kalemi gap, 3 fail sevkiyat, paket/kalem sayı farkı, CAPA, PO PDF) **hâlâ açık** — bkz. aşağı.
+> **Kaldığımız yer:** DI belge üretimi doğrulandı. **PACKAGE-BRIEF** (dashboard XLSX + sunum PPTX) planı onaylandı — sıra **P2** parametre stüdyosu. Bkz. [DI_PRODUCT_ROADMAP.md §27](../document_intelligence/DI_PRODUCT_ROADMAP.md).
 
 **Ana referans:** [CANLI_GECIS_KAPSAMI.md](./CANLI_GECIS_KAPSAMI.md)  
 **Go-live raporu:** `datasets/odak-go-live-readiness-report.json`
 
 ---
 
-## Bu oturumda tamamlanan işler
+## Document Intelligence — kalem / paket belgeleri (8 Temmuz 2026) ✅
+
+Odak Sipariş → iş paketi → **Belgeler** sekmesi; backend @ `192.168.20.20`, UI lokal `npm run dev`.
+
+| Akış | Durum | Not |
+|------|-------|-----|
+| **CoC** (uygunluk belgesi) | ✅ | Kalem bazlı; tek üretim guard |
+| **Activity** (DOCX tablo) | ✅ | `shipmentLines` tablo merge |
+| **Sevkiyat listesi XLSX** | ✅ | G5+ writeback — pakette kalıcı `shipmentListDiResourceId` |
+
+Detay: [document_intelligence/DEVAM.md](../document_intelligence/DEVAM.md) · [MngDocument/current_status.md](../../MngDocument/current_status.md)
+
+---
 
 ### Sevkiyat miktar UX (Mng.Ui)
 - [x] **Kalan miktar (B paketi):** `aggregateLineQuantities`, paket özeti/dashboard refresh, kalem dialog readonly Kalan

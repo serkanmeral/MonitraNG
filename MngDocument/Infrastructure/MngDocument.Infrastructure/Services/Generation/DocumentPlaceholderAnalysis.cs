@@ -28,10 +28,23 @@ internal static class DocumentPlaceholderAnalysis
         IReadOnlyDictionary<string, string> values) =>
         AnalyzeFromHits(scan.Placeholders, model, values);
 
+    internal static Result AnalyzePptx(
+        PptxPlaceholderScanner.ScanResult scan,
+        TemplateModelDocument model,
+        IReadOnlyDictionary<string, string> values) =>
+        AnalyzeFromHits(scan.Placeholders, model, values);
+
     internal static IReadOnlyList<string> ScanRemainingXlsxPlaceholderKeys(byte[] xlsxBytes)
     {
         using var stream = new MemoryStream(xlsxBytes, writable: false);
         var scan = XlsxPlaceholderScanner.Scan(stream);
+        return ScanRemainingFromHits(scan.Placeholders);
+    }
+
+    internal static IReadOnlyList<string> ScanRemainingPptxPlaceholderKeys(byte[] pptxBytes)
+    {
+        using var stream = new MemoryStream(pptxBytes, writable: false);
+        var scan = PptxPlaceholderScanner.Scan(stream);
         return ScanRemainingFromHits(scan.Placeholders);
     }
 

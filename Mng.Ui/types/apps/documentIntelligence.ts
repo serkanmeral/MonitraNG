@@ -449,6 +449,37 @@ export interface DiTemplateValueSource {
   columns?: Array<{ sourceField: string; header?: string | null; format?: string | null }> | null;
 }
 
+export interface DiDocumentProducerDetail {
+  code: string;
+  displayName: string;
+  contextType: string;
+  templateCode: string;
+  outputFormat: string;
+  outputFolderPath: string[];
+  fileNamePattern: string;
+  idempotencyDataset?: string | null;
+  idempotencyGuardField?: string | null;
+  writebackFields: string[];
+}
+
+export interface DiDocumentDataSourceSummary {
+  code: string;
+  displayName: string;
+  provider: string;
+  mode: string;
+  dataset?: string | null;
+  query?: string | null;
+  match?: Record<string, unknown> | null;
+  columnCount: number;
+}
+
+export interface DiDocumentDataSourceDetail extends DiDocumentDataSourceSummary {
+  queryName?: string | null;
+  idFrom?: string | null;
+  parameters?: Record<string, unknown> | null;
+  columns: Array<{ sourceField: string; header?: string | null; format?: string | null }>;
+}
+
 export interface DiTemplateParameter {
   key: string;
   label: string;
@@ -481,6 +512,8 @@ export interface DiTemplateSummary {
   parameterCount: number;
   primaryContextType?: string | null;
   generationProfile?: string | null;
+  /** docx | xlsx | pptx — kaynak dosya uzantısından türetilir. */
+  outputFormat?: string;
   createdBy: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -525,6 +558,9 @@ export interface DiGenerateDocumentResult {
   letterheadId?: string | null;
   letterheadCode?: string | null;
   letterheadName?: string | null;
+  coverPageId?: string | null;
+  coverPageCode?: string | null;
+  coverPageName?: string | null;
   docNo?: string | null;
   resourceId: string;
   fileName: string;
@@ -562,6 +598,8 @@ export interface DiGenerateFromTemplateRequest {
   parentFolderId: string;
   documentName?: string | null;
   overrides?: Record<string, string>;
+  includeCoverPage?: boolean;
+  coverPageId?: string | null;
 }
 
 export interface DiPreviewFromTemplateRequest {
@@ -587,6 +625,7 @@ export interface DiTemplateGenerationPreviewSession {
 export interface DiTemplateDetail extends DiTemplateSummary {
   schemaVersion: string;
   defaultLetterheadId?: string | null;
+  defaultCoverPageId?: string | null;
   letterhead: DiTemplateLetterhead | null;
   footer: DiTemplateFooter | null;
   pageLayout: DiTemplatePageLayout | null;
@@ -663,6 +702,68 @@ export interface DiUpdateLetterheadRequest {
   isActive?: boolean;
   letterhead: DiTemplateLetterhead;
   settings?: DiLetterheadSettings;
+}
+
+export interface DiCoverPageDefinition {
+  showLogo: boolean;
+  showDocumentName: boolean;
+  showDocNo: boolean;
+  showGeneratedAt: boolean;
+  showCustomerName: boolean;
+}
+
+export interface DiCoverPageSettings {
+  pageLayout: DiTemplatePageLayout;
+}
+
+export interface DiCoverPage {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  definition: DiCoverPageDefinition;
+  settings: DiCoverPageSettings;
+  designStoragePath?: string | null;
+  designFileName?: string | null;
+  hasDesign?: boolean;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DiCoverPageListResult {
+  items: DiCoverPage[];
+  total: number;
+}
+
+export interface DiCreateCoverPageRequest {
+  name: string;
+  code: string;
+  description?: string | null;
+  isDefault?: boolean;
+  isActive?: boolean;
+  definition?: DiCoverPageDefinition;
+  settings?: DiCoverPageSettings;
+}
+
+export interface DiUpdateCoverPageRequest {
+  name: string;
+  code: string;
+  description?: string | null;
+  isDefault?: boolean;
+  isActive?: boolean;
+  definition?: DiCoverPageDefinition;
+  settings?: DiCoverPageSettings;
+}
+
+export interface DiCoverPageDesignSession {
+  coverPageId: string;
+  editorUrl: string;
+  accessToken: string;
+  wopiSrc: string;
+  readOnly: boolean;
 }
 
 export interface DiTemplatePageLayout {
@@ -773,6 +874,7 @@ export interface DiUpdateTemplateLetterheadRequest {
 export interface DiUpdateTemplatePageStructureRequest {
   pageLayout?: DiTemplatePageLayout | null;
   defaultLetterheadId?: string | null;
+  defaultCoverPageId?: string | null;
   footer?: DiTemplateFooter | null;
 }
 

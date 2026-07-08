@@ -172,8 +172,24 @@ if ($shipmentPlaceholders.Count -gt 0) {
 Write-Host "  OK resourceId=$($generated.resourceId) file=$($generated.fileName)" -ForegroundColor Green
 Write-Host "  OK remaining shipmentLines placeholders: 0" -ForegroundColor Green
 
+Write-Host "6) writeback (G5+ — odak_is_paketleri)" -ForegroundColor Yellow
+$pkg = Invoke-Dg -Path "/data/odak_is_paketleri/$([uri]::EscapeDataString($packageId))"
+$wbResourceId = [string]$pkg.shipmentListDiResourceId
+$wbFileName = [string]$pkg.shipmentListFileName
+if ([string]::IsNullOrWhiteSpace($wbResourceId)) {
+    throw "writeback shipmentListDiResourceId bos."
+}
+if ($wbResourceId -ne $generated.resourceId) {
+    throw "writeback resourceId uyumsuz: beklenen=$($generated.resourceId) gercek=$wbResourceId"
+}
+if ([string]::IsNullOrWhiteSpace($wbFileName)) {
+    throw "writeback shipmentListFileName bos."
+}
+Write-Host "  OK shipmentListDiResourceId=$wbResourceId" -ForegroundColor Green
+Write-Host "  OK shipmentListFileName=$wbFileName" -ForegroundColor Green
+
 if (-not $KeepArtifacts) {
-    Write-Host "6) cleanup" -ForegroundColor Yellow
+    Write-Host "7) cleanup" -ForegroundColor Yellow
     try {
         Invoke-Docs -Path "/resources/$([uri]::EscapeDataString($generated.resourceId))" -Method DELETE | Out-Null
         Write-Host "  OK silindi" -ForegroundColor Green

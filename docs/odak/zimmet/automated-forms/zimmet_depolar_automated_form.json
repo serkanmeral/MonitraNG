@@ -1,0 +1,28 @@
+{
+  "formName": "Zimmet Depolar",
+  "formCode": "zimmet-depolar-form",
+  "description": "Zimmet depo tanimlari",
+  "datasetName": "zimmet_depolar",
+  "isActive": true,
+  "sideMenuConfig": { "enabled": false },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "ad",
+    "defaultSortOrder": "asc",
+    "columns": [
+      { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+      { "fieldName": "sorumluId", "visible": true, "order": 3, "sortable": false, "filterable": false },
+      { "fieldName": "aktif", "visible": true, "order": 4, "sortable": true, "filterable": true }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "ad", "adres", "sorumluId", "aktif"],
+    "fieldOrder": ["kod", "ad", "adres", "sorumluId", "aktif"],
+    "readonlyOnEditFields": ["kod"],
+    "fieldGroups": [
+      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "sorumluId", "aktif"] },
+      { "key": "adres", "title": "Adres", "fields": ["adres"] }
+    ]
+  }
+}

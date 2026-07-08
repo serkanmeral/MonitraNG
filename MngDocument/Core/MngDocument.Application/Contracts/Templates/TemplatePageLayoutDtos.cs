@@ -16,5 +16,6 @@ public sealed class UpdateTemplatePageStructureRequest
 {
     public TemplatePageLayoutDto? PageLayout { get; set; }
     public string? DefaultLetterheadId { get; set; }
+    public string? DefaultCoverPageId { get; set; }
     public TemplateFooterDto? Footer { get; set; }
 }

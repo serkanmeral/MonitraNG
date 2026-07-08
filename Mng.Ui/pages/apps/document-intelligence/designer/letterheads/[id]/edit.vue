@@ -28,7 +28,6 @@ const error = ref<string | null>(null);
 const editorError = ref<string | null>(null);
 
 const breadcrumbs = computed(() => [
-  { title: t('documentIntelligence.menuTitle'), to: '/apps/document-intelligence' },
   { title: t('documentIntelligence.designer.title'), to: '/apps/document-intelligence/designer' },
   { title: t('documentIntelligence.letterheads.title'), to: '/apps/document-intelligence/designer/letterheads' },
   { title: letterhead.value?.name ?? t('documentIntelligence.letterheads.designTitle'), disabled: true },

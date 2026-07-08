@@ -85,6 +85,21 @@ export interface OdakPackageRow {
   poDocumentsGlobal?: OdakFileFieldValue[] | null;
   poDocumentsRestricted?: OdakFileFieldValue[] | null;
   poStorageKey?: string | null;
+  shipmentListDiResourceId?: string;
+  shipmentListFileName?: string;
+  shipmentListGeneratedAt?: string;
+  shipmentListTemplateCode?: string;
+  shipmentListTemplateName?: string;
+  packageDashboardDiResourceId?: string;
+  packageDashboardFileName?: string;
+  packageDashboardGeneratedAt?: string;
+  packageDashboardTemplateCode?: string;
+  packageDashboardTemplateName?: string;
+  packageBriefDiResourceId?: string;
+  packageBriefFileName?: string;
+  packageBriefGeneratedAt?: string;
+  packageBriefTemplateCode?: string;
+  packageBriefTemplateName?: string;
 }
 
 /** DG file alani — kayit sonrasi metadata veya upload oncesi base64 payload. */

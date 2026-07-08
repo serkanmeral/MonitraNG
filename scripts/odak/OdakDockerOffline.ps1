@@ -15,9 +15,9 @@ $script:OdakDockerServiceCatalog = @{
     mngllm             = @{ Context = "MngLLM";             Dockerfile = "Presentation/MngLLM.Api/Dockerfile"; Image = "mngllm" }
     mngscheduler       = @{ Context = "MngScheduler";       Dockerfile = "Presentation/MngScheduler.Api/Dockerfile"; Image = "mngscheduler" }
     mngworkflow        = @{ Context = "MngWorkflow";        Dockerfile = "Presentation/MngWorkflow.Api/Dockerfile"; Image = "mngworkflow" }
-    mngworkflow-worker = @{ Context = "MngWorkflow";        Dockerfile = "Presentation/MngWorkflow.Worker/Dockerfile"; Image = "mngworkflow-worker" }
+    "mngworkflow-worker" = @{ Context = "MngWorkflow";        Dockerfile = "Presentation/MngWorkflow.Worker/Dockerfile"; Image = "mngworkflow-worker" }
     mngalarm           = @{ Context = "MngAlarm";           Dockerfile = "Presentation/MngAlarm.Api/Dockerfile"; Image = "mngalarm" }
-    mngalarm-worker    = @{ Context = "MngAlarm";           Dockerfile = "Presentation/MngAlarm.Worker/Dockerfile"; Image = "mngalarm-worker" }
+    "mngalarm-worker"  = @{ Context = "MngAlarm";           Dockerfile = "Presentation/MngAlarm.Worker/Dockerfile"; Image = "mngalarm-worker" }
     mngoperations      = @{ Context = "MngOperations";      Dockerfile = "Presentation/MngOperations.Api/Dockerfile"; Image = "mngoperations" }
     mngdocument        = @{ Context = "MngDocument";        Dockerfile = "Presentation/MngDocument.Api/Dockerfile"; Image = "mngdocument" }
     mngadmin           = @{ Context = "MngAdmin";           Dockerfile = "Presentation/MngAdmin.Api/Dockerfile"; Image = "mngadmin" }

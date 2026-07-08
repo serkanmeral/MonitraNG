@@ -28,6 +28,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
     private readonly IDocumentRenderService _render;
     private readonly ITemplateBrandingApplier _brandingApplier;
     private readonly ILetterheadService _letterheads;
+    private readonly ICoverPageService _coverPages;
 
     public DocumentTemplateService(
         IMngDataGatewayClient dg,
@@ -35,7 +36,8 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
         IResourceService resources,
         IDocumentRenderService render,
         ITemplateBrandingApplier brandingApplier,
-        ILetterheadService letterheads)
+        ILetterheadService letterheads,
+        ICoverPageService coverPages)
     {
         _dg = dg;
         _ctx = ctx;
@@ -43,6 +45,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
         _render = render;
         _brandingApplier = brandingApplier;
         _letterheads = letterheads;
+        _coverPages = coverPages;
     }
 
     private string? Token => _ctx.BearerToken;
@@ -280,6 +283,17 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             {
                 model.Parameters = TemplateModelSerializer.RemoveSystemLetterheadParameters(model.Parameters);
             }
+        }
+
+        if (request.DefaultCoverPageId is not null)
+        {
+            var defaultCoverId = string.IsNullOrWhiteSpace(request.DefaultCoverPageId)
+                ? null
+                : request.DefaultCoverPageId.Trim();
+            if (defaultCoverId is not null)
+                await _coverPages.EnsureActiveAsync(defaultCoverId, ct);
+
+            model.DefaultCoverPageId = defaultCoverId;
         }
 
         if (request.Footer is not null)
@@ -1009,10 +1023,57 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
     {
         var bytes = await _dg.DownloadFileAsync(filePath, Token, ct);
         using var ms = new MemoryStream(bytes, writable: false);
+
+        if (DocxStructureParser.IsXlsxExtension(Path.GetExtension(fileName)))
+        {
+            ms.Position = 0;
+            var placeholderScan = XlsxPlaceholderScanner.Scan(ms);
+            return new DocxStructureDto
+            {
+                TemplateId = templateId ?? string.Empty,
+                ResourceId = resourceId,
+                FileName = fileName,
+                TableCount = 0,
+                Paragraphs = Array.Empty<DocxParagraphDto>(),
+                Placeholders = placeholderScan.Placeholders
+                    .Select(p => new DocxPlaceholderDto
+                    {
+                        Key = p.Key,
+                        Token = p.Token,
+                        OccurrenceCount = p.OccurrenceCount
+                    })
+                    .ToList(),
+                PlaceholderWarnings = placeholderScan.Warnings.ToList()
+            };
+        }
+
+        if (DocxStructureParser.IsPptxExtension(Path.GetExtension(fileName)))
+        {
+            ms.Position = 0;
+            var placeholderScan = PptxPlaceholderScanner.Scan(ms);
+            return new DocxStructureDto
+            {
+                TemplateId = templateId ?? string.Empty,
+                ResourceId = resourceId,
+                FileName = fileName,
+                TableCount = 0,
+                Paragraphs = Array.Empty<DocxParagraphDto>(),
+                Placeholders = placeholderScan.Placeholders
+                    .Select(p => new DocxPlaceholderDto
+                    {
+                        Key = p.Key,
+                        Token = p.Token,
+                        OccurrenceCount = p.OccurrenceCount
+                    })
+                    .ToList(),
+                PlaceholderWarnings = placeholderScan.Warnings.ToList()
+            };
+        }
+
         ms.Position = 0;
         var parsed = DocxStructureParser.Parse(ms);
         ms.Position = 0;
-        var placeholderScan = DocxPlaceholderScanner.Scan(ms);
+        var docxPlaceholderScan = DocxPlaceholderScanner.Scan(ms);
 
         return new DocxStructureDto
         {
@@ -1023,7 +1084,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             Paragraphs = parsed.Paragraphs
                 .Select(p => new DocxParagraphDto { Index = p.Index, Text = p.Text })
                 .ToList(),
-            Placeholders = placeholderScan.Placeholders
+            Placeholders = docxPlaceholderScan.Placeholders
                 .Select(p => new DocxPlaceholderDto
                 {
                     Key = p.Key,
@@ -1031,7 +1092,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
                     OccurrenceCount = p.OccurrenceCount
                 })
                 .ToList(),
-            PlaceholderWarnings = placeholderScan.Warnings.ToList()
+            PlaceholderWarnings = docxPlaceholderScan.Warnings.ToList()
         };
     }
 
@@ -1250,6 +1311,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             PrimaryContextType = model.PrimaryContextType,
             GenerationProfile = model.GenerationProfile,
             DefaultLetterheadId = model.DefaultLetterheadId,
+            DefaultCoverPageId = model.DefaultCoverPageId,
             Letterhead = TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
             Footer = TemplateModelSerializer.ToFooterDto(model.Footer),
             PageLayout = TemplateModelSerializer.ToPageLayoutDto(model.PageLayout),

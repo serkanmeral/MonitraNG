@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using MngDocument.Application.Configuration;
+using MngDocument.Application.Exceptions;
 using MngDocument.Application.Interfaces;
 using MngDocument.Domain.Constants;
 using MngDocument.Infrastructure.Services;
@@ -105,7 +106,12 @@ public sealed class DocumentIncrementalAllocator
             var row = page.Items[0];
             var id = ReadString(row, "__dataId") ?? ReadString(row, "dataId");
             if (string.IsNullOrWhiteSpace(id))
-                throw new InvalidOperationException("Counter row id missing.");
+            {
+                throw DocumentException.ServiceUnavailable(
+                    "COUNTER_DATA_INVALID",
+                    "Counter row id missing.",
+                    "Sayaç kaydı geçersiz. dm_generation_counters verisini kontrol edin.");
+            }
 
             var current = ReadLong(row, "value");
             if (current < start)
@@ -122,7 +128,10 @@ public sealed class DocumentIncrementalAllocator
             return next;
         }
 
-        throw new InvalidOperationException($"Could not allocate counter for key '{counterKey}'.");
+        throw DocumentException.ServiceUnavailable(
+            "COUNTER_ALLOCATION_FAILED",
+            $"Could not allocate counter for key '{counterKey}'.",
+            "Dosya numarası sayacı ayrılamadı. dm_generation_counters dataset'inin tanımlı olduğundan ve DataGateway erişilebilir olduğundan emin olun.");
     }
 
     private static long ReadLong(Dictionary<string, object?> row, string key)

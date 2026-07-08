@@ -54,6 +54,9 @@ public static class DocxStructureParser
     public static bool IsXlsxExtension(string? extension) =>
         string.Equals(extension?.Trim().TrimStart('.'), "xlsx", StringComparison.OrdinalIgnoreCase);
 
+    public static bool IsPptxExtension(string? extension) =>
+        string.Equals(extension?.Trim().TrimStart('.'), "pptx", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>DOCX / XLSX / PPTX şablon kaynağı (G5 XLSX pilot).</summary>
     public static bool IsTemplateSourceExtension(string? extension) =>
         ManagedOfficeProfiles.IsManagedOfficeExtension(extension, null);

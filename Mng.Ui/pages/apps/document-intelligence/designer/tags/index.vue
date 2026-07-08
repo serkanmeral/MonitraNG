@@ -13,7 +13,6 @@ const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const breadcrumbs = computed(() => [
-  { title: t('documentIntelligence.menuTitle'), to: '/apps/document-intelligence' },
   { title: t('documentIntelligence.designer.title'), to: '/apps/document-intelligence/designer' },
   { title: t('documentIntelligence.tagsCatalog.title'), disabled: true },
 ]);

@@ -156,7 +156,7 @@ if (Test-Path $producersFile) {
 }
 $order = @(
     "dm_resources", "dm_resource_versions", "dm_resource_permissions", "dm_resource_links",
-    "dm_template_categories", "dm_document_templates", "dm_generation_counters", "dm_letterheads",
+    "dm_template_categories", "dm_document_templates", "dm_generation_counters", "dm_letterheads", "dm_cover_pages",
     "dm_tags", "dm_document_context_types", "dm_data_sources", "dm_document_producers"
 )
 $byName = @{}

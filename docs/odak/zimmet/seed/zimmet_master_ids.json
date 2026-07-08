@@ -1,0 +1,34 @@
+{
+  "gateway": "http://192.168.20.20:5040",
+  "ids": {
+    "urunGruplari": {
+      "GRP-MON": "9d794cd7-dfa6-446b-a910-9c0b06da55ef",
+      "GRP-ACC": "df390f7b-8446-4cbd-b68e-4d304e44f1a5",
+      "GRP-LAP": "9fbb995d-5341-4350-bf43-4fe4e575ac9b",
+      "GRP-CNT": "650cefa4-caf6-452a-bc17-edc9e60fbeb2"
+    },
+    "urunler": {
+      "PRD-DELL-5520": "0a6a84b2-cc91-497b-afad-42c772f061fe",
+      "PRD-HP-840": "5d1521d8-eb61-414b-8591-87ec1ff8e2e6",
+      "PRD-DELL-U2722D": "88d2c171-de75-4531-b029-f73cca73627d",
+      "PRD-LOG-MX": "01ac6f7a-4456-4d43-9291-5e38906c5874",
+      "PRD-LENOVO-BAG": "ecfe1761-d2d2-4e70-bc77-6805a0bd63bb"
+    },
+    "depolar": {
+      "DEP-ANA": "bd1c9caa-261b-4d55-8602-e66508ded90c"
+    },
+    "lokasyonlar": {
+      "DEP-ANA/B-01": "80cf923c-2907-4bdb-80f1-29f242069416",
+      "DEP-ANA/A-02": "81b2256f-ccf2-48f3-9562-ec26023bd512",
+      "DEP-ANA/A-01": "0e9f5d83-e86d-4d5c-8885-342757cd8759"
+    },
+    "demirbaslar": {
+      "DMB-LAP-001": "a4b80b2e-196c-4013-8e9c-483b015594c1",
+      "DMB-LAP-002": "a872e81d-3bbf-4671-a047-bb751ee81ec9",
+      "DMB-MON-001": "f8dd950e-0aa8-49f8-8811-69e88215be73",
+      "DMB-BAG-001": "7fc1ce8c-8b41-4c60-a7e5-a73cacc56a3e",
+      "DMB-LAP-003": "9041d408-4437-40cd-ac47-f8a6a88e47e9"
+    }
+  },
+  "seededAt": "2026-07-07T23:47:53.6914268Z"
+}

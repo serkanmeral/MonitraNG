@@ -40,8 +40,10 @@ public static class ServiceRegistration
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();
+        services.AddScoped<ICoverPageService, CoverPageService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ILetterheadEditorService, LetterheadEditorService>();
+        services.AddScoped<ICoverPageEditorService, CoverPageEditorService>();
         services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
         services.AddScoped<ITemplateEditorService, TemplateEditorService>();
         services.AddScoped<IResourceEditorService, ResourceEditorService>();
@@ -58,6 +60,7 @@ public static class ServiceRegistration
         services.AddScoped<DocumentIncrementalAllocator>();
         services.AddScoped<IDataSourceExecutor, DgDataSourceExecutor>();
         services.AddScoped<DocumentParameterResolver>();
+        services.AddScoped<PackageDashboardMetricsEnricher>();
         services.AddScoped<LetterheadHeaderValueEnricher>();
         services.AddScoped<IDocumentGenerationService, DocumentGenerationService>();
         services.AddSingleton<IWopiSessionStore, InMemoryWopiSessionStore>();

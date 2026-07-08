@@ -1,0 +1,170 @@
+{
+  "categoryPath": ["Operasyon Belgeleri", "Medya Paketi"],
+  "template": {
+    "name": "İş Paketi Müşteri Sunumu",
+    "code": "PACKAGE-BRIEF-STD",
+    "description": "İş paketi executive brifing sunumu PPTX — KPI kartları, tamamlanma, kalem özeti, kalite (7 slayt).",
+    "primaryContextType": "odak.siparis.package",
+    "generationProfile": "odak.package.brief.fromPackage",
+    "pptxFile": "ODK-PACKAGE-BRIEF-template-seed.pptx",
+    "letterhead": {
+      "enabled": false
+    },
+    "parameters": [
+      {
+        "key": "documentName",
+        "label": "Belge Adı",
+        "dataType": "text",
+        "valueSourceMode": "static",
+        "defaultValue": "İş Paketi Sunumu"
+      },
+      {
+        "key": "packageNo",
+        "label": "İş Paketi No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "packageNo" }
+      },
+      {
+        "key": "packageName",
+        "label": "İş Paketi Adı",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "name" }
+      },
+      {
+        "key": "customerName",
+        "label": "Müşteri",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "customerId.unvan" }
+      },
+      {
+        "key": "statusLabel",
+        "label": "Durum",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "deliveryDate",
+        "label": "Termin",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "deliveryDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "beginDate",
+        "label": "Başlangıç",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "beginDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "issueDate",
+        "label": "Liste Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy"
+      },
+      {
+        "key": "lineCount",
+        "label": "Kalem Sayısı",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "partCount",
+        "label": "Parça Sayısı",
+        "dataType": "number",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "partCount" }
+      },
+      {
+        "key": "stockCount",
+        "label": "Stok",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "shippedCount",
+        "label": "Sevk",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "remainingQuantity",
+        "label": "Kalan Miktar",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "fulfillmentPctLabel",
+        "label": "Tamamlanma %",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "shipmentSummary",
+        "label": "Sevkiyat özeti",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "0/0"
+      },
+      {
+        "key": "openNcrCount",
+        "label": "Açık NCR",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "openCapaCount",
+        "label": "Açık CAPA",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "deliveryUrgencyLabel",
+        "label": "Termin uyarısı",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "linesSummary",
+        "label": "Kalem özeti",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "deliveryAddress",
+        "label": "Sevkiyat Adresi",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "deliveryAddress" }
+      },
+      {
+        "key": "notes",
+        "label": "Notlar",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "notes" }
+      },
+      {
+        "key": "generatedAt",
+        "label": "Üretim Zamanı",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy HH:mm"
+      }
+    ]
+  }
+}

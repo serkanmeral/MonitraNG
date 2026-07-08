@@ -82,6 +82,7 @@ public sealed class CreateFileResourceRequest
     public string? TemplateCode { get; set; }
     public string? GenerationProfile { get; set; }
     public string? LetterheadId { get; set; }
+    public string? CoverPageId { get; set; }
     public string? DocumentNo { get; set; }
 }
 

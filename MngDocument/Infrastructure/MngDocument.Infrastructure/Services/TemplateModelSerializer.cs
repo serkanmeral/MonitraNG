@@ -19,6 +19,9 @@ public sealed class TemplateModelDocument
     [JsonPropertyName("defaultLetterheadId")]
     public string? DefaultLetterheadId { get; set; }
 
+    [JsonPropertyName("defaultCoverPageId")]
+    public string? DefaultCoverPageId { get; set; }
+
     [JsonPropertyName("letterhead")]
     public TemplateLetterheadModel? Letterhead { get; set; }
 
@@ -342,6 +345,14 @@ public static class TemplateModelSerializer
     internal static bool IsHeaderBoundLetterheadCreatePerson(TemplateParameterModel param) =>
         string.Equals(param.Key, LetterheadConstants.CreatePersonKey, StringComparison.OrdinalIgnoreCase)
         && string.Equals(param.DocBinding?.RegionKind, "header", StringComparison.OrdinalIgnoreCase);
+
+    internal static bool IsXlsxLogoParameter(TemplateParameterModel param) =>
+        string.Equals(param.Kind, "image", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(param.DocBinding?.RegionKind, "xlsxLogo", StringComparison.OrdinalIgnoreCase);
+
+    internal static bool IsPptxLogoParameter(TemplateParameterModel param) =>
+        string.Equals(param.Kind, "image", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(param.DocBinding?.RegionKind, "pptxLogo", StringComparison.OrdinalIgnoreCase);
 
     private static void UpsertSystemParameter(List<TemplateParameterModel> list, TemplateParameterModel param)
     {

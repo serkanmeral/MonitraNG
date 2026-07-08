@@ -235,6 +235,7 @@ function onShipmentSaved() {
         :key="packageId"
         :package-id="packageId"
         :package-no="(pkg ?? packageRow).packageNo"
+        :package-row="pkg ?? packageRow"
       />
     </div>
 

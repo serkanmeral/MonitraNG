@@ -24,6 +24,10 @@
       {
         "name": "Sevkiyat Listeleri",
         "description": "İş paketi sevkiyat XLSX çıktı şablonları (G5)"
+      },
+      {
+        "name": "Medya Paketi",
+        "description": "İş paketi dashboard XLSX ve müşteri sunumu PPTX (PACKAGE-BRIEF)"
       }
     ]
   },

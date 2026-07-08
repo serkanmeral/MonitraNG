@@ -1,0 +1,36 @@
+{
+  "formName": "Zimmet Urun Katalogu",
+  "formCode": "zimmet-urunler-form",
+  "description": "Zimmet urun katalogu — marka, model, grup",
+  "datasetName": "zimmet_urunler",
+  "isActive": true,
+  "sideMenuConfig": { "enabled": false },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "ad",
+    "defaultSortOrder": "asc",
+    "columns": [
+      { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+      { "fieldName": "urunGrubuId", "visible": true, "order": 3, "sortable": false, "filterable": false, "displayField": "ad" },
+      { "fieldName": "marka", "visible": true, "order": 4, "sortable": true, "filterable": true },
+      { "fieldName": "model", "visible": true, "order": 5, "sortable": true, "filterable": true },
+      { "fieldName": "aktif", "visible": true, "order": 6, "sortable": true, "filterable": true }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "ad", "urunGrubuId", "marka", "model", "aciklama", "varsayilanGarantiAy", "aktif"],
+    "fieldOrder": ["kod", "ad", "urunGrubuId", "marka", "model", "varsayilanGarantiAy", "aktif", "aciklama"],
+    "readonlyOnEditFields": ["kod"],
+    "relationConfig": {
+      "urunGrubuId": { "displayField": "ad" }
+    },
+    "fieldLayout": {
+      "aciklama": { "textWidget": "textarea" }
+    },
+    "fieldGroups": [
+      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "urunGrubuId", "marka", "model", "varsayilanGarantiAy", "aktif"] },
+      { "key": "detay", "title": "Detay", "fields": ["aciklama"] }
+    ]
+  }
+}

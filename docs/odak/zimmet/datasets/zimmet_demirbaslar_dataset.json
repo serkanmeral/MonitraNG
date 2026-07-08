@@ -1,0 +1,169 @@
+{
+  "name": "zimmet_demirbaslar",
+  "description": "Zimmet — tekil fiziksel demirbas kayitlari",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "indexList": [
+    { "name": "idx_demirbasNo", "fields": { "demirbasNo": 1 }, "unique": true },
+    { "name": "idx_seriNo", "fields": { "seriNo": 1 }, "unique": true }
+  ],
+  "fields": [
+    {
+      "fieldType": "incremental",
+      "name": "demirbasNo",
+      "title": "Demirbas no",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "incrementalOptions": {
+        "format": "DMB-{0:D5}",
+        "startValue": 1,
+        "incrementStep": 1
+      }
+    },
+    {
+      "fieldType": "relation",
+      "name": "katalogUrunId",
+      "title": "Katalog urun",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_urunler"
+    },
+    {
+      "fieldType": "text",
+      "name": "seriNo",
+      "title": "Seri numarasi",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 80 }
+    },
+    {
+      "fieldType": "text",
+      "name": "marka",
+      "title": "Marka",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 80 }
+    },
+    {
+      "fieldType": "text",
+      "name": "model",
+      "title": "Model",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "select",
+      "name": "durum",
+      "title": "Durum",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "depoda",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "depoda", "label": "Depoda" },
+            { "value": "zimmetli", "label": "Zimmetli" },
+            { "value": "bakimda", "label": "Bakimda" },
+            { "value": "hurda", "label": "Hurda" },
+            { "value": "kayip", "label": "Kayip" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "relation",
+      "name": "depoId",
+      "title": "Depo",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_depolar"
+    },
+    {
+      "fieldType": "relation",
+      "name": "lokasyonId",
+      "title": "Lokasyon",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_depo_lokasyonlari"
+    },
+    {
+      "fieldType": "persons",
+      "name": "zimmetliPersonelId",
+      "title": "Zimmetli personel",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "girisTarihi",
+      "title": "Giris tarihi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "garantiBitis",
+      "title": "Garanti bitis",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "number",
+      "name": "alisFiyati",
+      "title": "Alis fiyati",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "relation",
+      "name": "tedarikciId",
+      "title": "Tedarikci",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "tedarikciler"
+    },
+    {
+      "fieldType": "text",
+      "name": "girisRef",
+      "title": "Depo giris WI",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 40 }
+    },
+    {
+      "fieldType": "text",
+      "name": "zimmetRef",
+      "title": "Aktif zimmet WI",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 40 }
+    },
+    {
+      "fieldType": "text",
+      "name": "notlar",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    }
+  ]
+}

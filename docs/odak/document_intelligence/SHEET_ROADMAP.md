@@ -1,7 +1,7 @@
 # Document Intelligence — Managed Office (Sheet & Sunum) Yol Haritası
 
-**Durum:** **O-0 → Pr2 ✅** (8 Temmuz 2026 gece) — S3/Pr3 senaryoya bağlı  
-**Tarih:** 8 Temmuz 2026 (kararlar: 8 Tem 2026 · implementasyon: 8 Tem 2026 gece)  
+**Durum:** **O-0 → Pr2 ✅** · **S3-lite ✅** · **Pr3 (PACKAGE-BRIEF) ✅ Faz 1** — Faz 2 polish backlog  
+**Tarih:** 8 Temmuz 2026 (akşam · medya paketi deploy + kullanıcı doğrulama)  
 **İlişkili:** [DI_PRODUCT_ROADMAP.md §15–16](./DI_PRODUCT_ROADMAP.md) · [DEVAM.md](./DEVAM.md) · [KURUMSAL_ICERIK_SUNUM.md](./KURUMSAL_ICERIK_SUNUM.md)
 
 > **Strateji:** Sheet (xlsx) ve Sunum (pptx) ayrı ürünler değil; **Döküman (docx) omurgasının** Collabora üzerindeki uzantılarıdır. WOPI / sürüm / kilit / oturum **bir kez genellenir** (`O-0`); Sheet ve Sunum ince katmanlar olarak üstüne eklenir. PPTX’i «sonra düşünürüz» diye xlsx’e özel kısayol **yapılmaz**.
@@ -149,7 +149,7 @@ Sheet ve Sunum için **aynı kurallar**; docx’ten sapmalar bilinçli.
 | Upload → Dosya (editör yok) | ✅ | ✅ | ✅ |
 | Sürüm UX (D2) | ✅ | ✅ | ✅ |
 | export/pdf | ✅ | ✅ | ✅ |
-| Şablondan üretim | ✅ D4 | backlog S3 | backlog Pr3 |
+| Şablondan üretim | ✅ D4 | ✅ G5 + **PACKAGE-DASHBOARD** | ✅ **PACKAGE-BRIEF (Pr3)** |
 | UI create menü | ✅ | ✅ | ✅ |
 | `isDi*` sınıfı | ✅ | ✅ | ✅ |
 
@@ -223,15 +223,16 @@ O-0 üzerine ince katman:
 
 **Tahmini:** 3–5 gün
 
-### S3 — Şablondan sheet — **P1**
+### S3 — Şablondan sheet — **P1** ✅ (PACKAGE-DASHBOARD)
 
-| Seçenek | Karmaşıklık |
-|---------|---------------|
-| Hücrede `{{key}}` metin | Orta |
-| Named range | Yüksek |
-| Dataset → satır doldurma | Orta |
+| Seçenek | Karmaşıklık | Durum |
+|---------|-------------|--------|
+| Hücrede `{{key}}` metin (**S3-lite**) | Orta | ✅ KPI scalar merge |
+| Dataset → satır doldurma (`kind=table`) | Orta | ✅ G5 + dashboard `packageLines` |
+| Named range | Yüksek | backlog |
+| Gömülü chart + Veri sayfası (**Yol A**) | Düşük (motor) | ✅ patcher'lar; donut görünürlük Faz 2 |
 
-Senaryo netleşene kadar ertelenir (fiyat listesi / kapasite planı).
+**Senaryo:** `PACKAGE-DASHBOARD-STD` — KPI band, 2 chart, domain logo, 3 sayfa. Deploy: `patch-package-dashboard-standard-test.ps1`.
 
 ### Pr1 — Sunum (pptx) — **P1** (O-0 + S1 pattern sonrası)
 
@@ -252,15 +253,17 @@ S2 ile simetrik; çoğu kod kind-agnostic.
 
 **Tahmini:** 2–3 gün
 
-### Pr3 — Şablondan sunum — **P2**
+### Pr3 — Şablondan sunum — **P2** ✅ Faz 1 (PACKAGE-BRIEF)
 
-| Senaryo | Not |
-|---------|-----|
-| Kurumsal şablon slayt + `{{title}}` | D4 analoğu |
-| Müşteri logosu slayt master | Letterhead benzeri ama Impress master — ayrı tasarım |
-| OC / eğitim paketi üretimi | Sistem kanalı |
+| Senaryo | Not | Durum |
+|---------|-----|--------|
+| Kurumsal şablon slayt + `{{key}}` | `PptxPlaceholderMerger` + profil | ✅ |
+| Müşteri sunumu 7 slayt | `PackageBriefTemplatePptxFactory` + enricher | ✅ · kullanıcı onayı |
+| OC / eğitim paketi üretimi | Sistem kanalı | backlog |
 
-Belge Tasarımcısı pptx desteği **Pr3-Designer** — docx designer’dan bağımsız değerlendirilir.
+**Deploy kritik:** `patch-package-brief-standard-test.ps1` PPTX binary sync yapar.
+
+**Faz 2 backlog:** PPTX `domainLogo` · veri-güdümlü çubuk grafik · Collabora ince ayar.
 
 ### O-2 — Upload office PDF önizleme (opsiyonel)
 
@@ -383,9 +386,9 @@ Hafta 5+   S3 / Pr3 senaryolar (ihtiyaç halinde)
 
 1. ~~Kararları kilitle~~ ✅ (8 Tem 2026)
 2. ~~**O-0 → Pr2 implementasyonu**~~ ✅ (8 Tem 2026 gece)
-3. ~~**G5 — XLSX sevkiyat listesi (Odak generation)**~~ ✅ (8 Tem 2026 sabah) — [DI_PRODUCT_ROADMAP §26](./DI_PRODUCT_ROADMAP.md)
-4. **G5+** — iş paketi writeback; prod deploy
-5. **S3 / Pr3** — şablondan sheet/sunum (senaryo netleşince)
-6. **D-BR2** / **CoC smoke** / **D-N1** ile paralel gidebilir
+3. ~~**G5 — XLSX sevkiyat listesi**~~ ✅ · ~~**G5+ writeback**~~ ✅
+4. ~~**S3-lite + PACKAGE-DASHBOARD + Pr3 PACKAGE-BRIEF Faz 1**~~ ✅ (8 Tem 2026 akşam)
+5. **Medya paketi Faz 2** — donut görünürlük · PPTX logo · dinamik grafik
+6. **D-BR2** / **D-N1** / **D-S1** — sıradaki adaylar
 
-**Durum:** Managed Office + Odak G5 tamam — test `mngdocument` + `mngui` deploy ✅ (8 Tem sabah).
+**Durum:** Odak medya paketi Faz 1 tamam — test deploy ✅; kullanıcı brief onayı ✅.

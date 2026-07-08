@@ -1,4 +1,8 @@
 import { fetchFromDocuments, fetchBlobFromDataGateway, getAccessToken } from '@/services/apiService';
+import {
+  documentsApiErrorUserMessage,
+  parseDocumentsApiErrorBody,
+} from '@/utils/documentsApiError';
 import { useAuthStore } from '@/stores/auth';
 import {
   diFullPermission,
@@ -62,12 +66,22 @@ import {
   type DiLetterheadDesignSession,
   type DiCreateLetterheadRequest,
   type DiUpdateLetterheadRequest,
+  type DiCoverPage,
+  type DiCoverPageDefinition,
+  type DiCoverPageListResult,
+  type DiCoverPageSettings,
+  type DiCoverPageDesignSession,
+  type DiCreateCoverPageRequest,
+  type DiUpdateCoverPageRequest,
   type DiTag,
   type DiTagListResult,
   type DiCreateTagRequest,
   type DiUpdateTagRequest,
   type DiUpdateResourceMetadataRequest,
   type DiDocumentContextType,
+  type DiDocumentProducerDetail,
+  type DiDocumentDataSourceDetail,
+  type DiDocumentDataSourceSummary,
   type DiGenerateDocumentRequest,
   type DiGenerationRuntimeEnvelope,
   type DiGenerateDocumentResult,
@@ -84,6 +98,7 @@ const LINKS_BASE = '/api/v1';
 const TEMPLATES_BASE = '/api/v1/templates';
 const TEMPLATE_CATEGORIES_BASE = '/api/v1/template-categories';
 const LETTERHEADS_BASE = '/api/v1/letterheads';
+const COVER_PAGES_BASE = '/api/v1/cover-pages';
 const TAGS_BASE = '/api/v1/tags';
 const GENERATE_BASE = '/api/v1/generate';
 
@@ -798,8 +813,22 @@ function mapCategoryTreeNode(raw: unknown): DiTreeNode {
   };
 }
 
+function inferTemplateOutputFormat(
+  sourceFileName?: string | null,
+  sourceStoragePath?: string | null,
+): string {
+  const pathOrName = (sourceFileName || sourceStoragePath || '').trim();
+  if (!pathOrName) return 'docx';
+  const ext = pathOrName.split('.').pop()?.toLowerCase() ?? '';
+  if (ext === 'xlsx' || ext === 'xlsm') return 'xlsx';
+  if (ext === 'pptx') return 'pptx';
+  return 'docx';
+}
+
 function mapTemplateSummary(raw: unknown): DiTemplateSummary {
   const o = asRecord(raw);
+  const sourceFileName = str(o, 'sourceFileName');
+  const sourceStoragePath = str(o, 'sourceStoragePath');
   return {
     id: str(o, 'id') ?? '',
     categoryId: str(o, 'categoryId'),
@@ -807,8 +836,9 @@ function mapTemplateSummary(raw: unknown): DiTemplateSummary {
     code: str(o, 'code'),
     description: str(o, 'description'),
     sourceResourceId: str(o, 'sourceResourceId'),
-    sourceStoragePath: str(o, 'sourceStoragePath'),
-    sourceFileName: str(o, 'sourceFileName'),
+    sourceStoragePath,
+    sourceFileName,
+    outputFormat: str(o, 'outputFormat') ?? inferTemplateOutputFormat(sourceFileName, sourceStoragePath),
     creationMode: str(o, 'creationMode') ?? 'fromTemplate',
     status: str(o, 'status') ?? 'draft',
     parameterCount: num(o, 'parameterCount') ?? 0,
@@ -820,18 +850,35 @@ function mapTemplateSummary(raw: unknown): DiTemplateSummary {
   };
 }
 
+function mapDocBinding(raw: unknown): DiTemplateDocBinding | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const b = asRecord(raw);
+  return {
+    regionKind: str(b, 'regionKind') ?? 'paragraph',
+    paragraphIndex: num(b, 'paragraphIndex') ?? 0,
+    originalText: str(b, 'originalText'),
+    charStart: num(b, 'charStart'),
+    charEnd: num(b, 'charEnd'),
+    tableIndex: num(b, 'tableIndex'),
+    headerRowIndex: num(b, 'headerRowIndex'),
+    templateRowIndex: num(b, 'templateRowIndex'),
+  };
+}
+
 function mapTemplateParameter(raw: unknown): DiTemplateParameter {
   const o = asRecord(raw);
   const inc = o.incremental;
   const bind = o.docBinding ?? o.sourceBinding;
   const ctx = o.contextBinding;
   const vs = o.valueSource;
+  const binding = mapDocBinding(bind);
   return {
     key: str(o, 'key') ?? '',
     label: str(o, 'label') ?? '',
     kind: str(o, 'kind') ?? 'scalar',
     dataType: str(o, 'dataType') ?? 'text',
     valueSourceMode: str(o, 'valueSourceMode') ?? 'manual',
+    dataSourceRef: str(o, 'dataSourceRef'),
     defaultValue: str(o, 'defaultValue'),
     format: str(o, 'format'),
     incremental:
@@ -844,26 +891,8 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
             resetPolicy: str(asRecord(inc), 'resetPolicy') ?? 'none',
           }
         : null,
-    docBinding:
-      bind && typeof bind === 'object'
-        ? {
-            regionKind: str(asRecord(bind), 'regionKind') ?? 'paragraph',
-            paragraphIndex: num(asRecord(bind), 'paragraphIndex') ?? 0,
-            originalText: str(asRecord(bind), 'originalText'),
-            charStart: num(asRecord(bind), 'charStart'),
-            charEnd: num(asRecord(bind), 'charEnd'),
-          }
-        : null,
-    sourceBinding:
-      bind && typeof bind === 'object'
-        ? {
-            regionKind: str(asRecord(bind), 'regionKind') ?? 'paragraph',
-            paragraphIndex: num(asRecord(bind), 'paragraphIndex') ?? 0,
-            originalText: str(asRecord(bind), 'originalText'),
-            charStart: num(asRecord(bind), 'charStart'),
-            charEnd: num(asRecord(bind), 'charEnd'),
-          }
-        : null,
+    docBinding: binding,
+    sourceBinding: binding,
     contextBinding:
       ctx && typeof ctx === 'object'
         ? {
@@ -887,6 +916,24 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
             field: str(asRecord(vs), 'field'),
             format: str(asRecord(vs), 'format'),
             defaultValue: str(asRecord(vs), 'defaultValue'),
+            match:
+              asRecord(vs).match && typeof asRecord(vs).match === 'object'
+                ? (asRecord(vs).match as Record<string, unknown>)
+                : null,
+            parameters:
+              asRecord(vs).parameters && typeof asRecord(vs).parameters === 'object'
+                ? (asRecord(vs).parameters as Record<string, unknown>)
+                : null,
+            columns: Array.isArray(asRecord(vs).columns)
+              ? (asRecord(vs).columns as unknown[]).map((col) => {
+                  const c = asRecord(col);
+                  return {
+                    sourceField: str(c, 'sourceField') ?? '',
+                    header: str(c, 'header'),
+                    format: str(c, 'format'),
+                  };
+                })
+              : null,
           }
         : null,
   };
@@ -941,6 +988,7 @@ function mapTemplateDetail(raw: unknown): DiTemplateDetail {
     primaryContextType: summary.primaryContextType ?? str(o, 'primaryContextType'),
     generationProfile: summary.generationProfile ?? str(o, 'generationProfile'),
     defaultLetterheadId: str(o, 'defaultLetterheadId'),
+    defaultCoverPageId: str(o, 'defaultCoverPageId'),
     letterhead: mapTemplateLetterhead(o.letterhead),
     footer: mapTemplateFooter(o.footer),
     pageLayout: mapTemplatePageLayout(o.pageLayout),
@@ -1545,6 +1593,110 @@ export async function diDeleteLetterhead(id: string): Promise<void> {
   await fetchFromDocuments(`${LETTERHEADS_BASE}/${encodeURIComponent(id)}`, 'DELETE');
 }
 
+function mapCoverPageDefinition(raw: unknown): DiCoverPageDefinition {
+  const o = asRecord(raw);
+  return {
+    showLogo: o.showLogo !== false,
+    showDocumentName: o.showDocumentName !== false,
+    showDocNo: o.showDocNo !== false,
+    showGeneratedAt: o.showGeneratedAt !== false,
+    showCustomerName: o.showCustomerName !== false,
+  };
+}
+
+function mapCoverPageSettings(raw: unknown): DiCoverPageSettings {
+  const o = asRecord(raw);
+  return {
+    pageLayout: mapTemplatePageLayout(o.pageLayout) ?? diCreateDefaultPageLayout(),
+  };
+}
+
+export function diCreateDefaultCoverPageDefinition(): DiCoverPageDefinition {
+  return {
+    showLogo: true,
+    showDocumentName: true,
+    showDocNo: true,
+    showGeneratedAt: true,
+    showCustomerName: true,
+  };
+}
+
+export function diCreateDefaultCoverPageSettings(): DiCoverPageSettings {
+  return { pageLayout: diCreateDefaultPageLayout() };
+}
+
+function mapCoverPage(raw: unknown): DiCoverPage {
+  const o = asRecord(raw);
+  return {
+    id: str(o, 'id') ?? '',
+    name: str(o, 'name') ?? '',
+    code: str(o, 'code') ?? '',
+    description: str(o, 'description'),
+    isDefault: o.isDefault === true,
+    isActive: o.isActive !== false,
+    definition: mapCoverPageDefinition(o.definition),
+    settings: mapCoverPageSettings(o.settings ?? {}),
+    designStoragePath: str(o, 'designStoragePath'),
+    designFileName: str(o, 'designFileName'),
+    hasDesign: Boolean(o.hasDesign),
+    createdBy: str(o, 'createdBy'),
+    createdAt: str(o, 'createdAt'),
+    updatedAt: str(o, 'updatedAt'),
+  };
+}
+
+export async function diListCoverPages(activeOnly = false): Promise<DiCoverPageListResult> {
+  const query = activeOnly ? '?activeOnly=true' : '';
+  const raw = await fetchFromDocuments(`${COVER_PAGES_BASE}${query}`, 'GET');
+  const o = asRecord(raw);
+  const itemsRaw = Array.isArray(o.items) ? o.items : [];
+  return {
+    items: itemsRaw.map(mapCoverPage),
+    total: num(o, 'total') ?? itemsRaw.length,
+  };
+}
+
+export async function diGetCoverPage(id: string): Promise<DiCoverPage> {
+  const raw = await fetchFromDocuments(`${COVER_PAGES_BASE}/${encodeURIComponent(id)}`, 'GET');
+  return mapCoverPage(raw);
+}
+
+export async function diGetCoverPageDesignSession(id: string): Promise<DiCoverPageDesignSession> {
+  const raw = await fetchFromDocuments(
+    `${COVER_PAGES_BASE}/${encodeURIComponent(id)}/design-session`,
+    'GET'
+  );
+  const o = asRecord(raw);
+  return {
+    coverPageId: str(o, 'coverPageId') ?? id,
+    editorUrl: str(o, 'editorUrl') ?? '',
+    accessToken: str(o, 'accessToken') ?? '',
+    wopiSrc: str(o, 'wopiSrc') ?? '',
+    readOnly: o.readOnly !== false,
+  };
+}
+
+export async function diCreateCoverPage(request: DiCreateCoverPageRequest): Promise<DiCoverPage> {
+  const raw = await fetchFromDocuments(COVER_PAGES_BASE, 'POST', request);
+  return mapCoverPage(raw);
+}
+
+export async function diUpdateCoverPage(
+  id: string,
+  request: DiUpdateCoverPageRequest
+): Promise<DiCoverPage> {
+  const raw = await fetchFromDocuments(
+    `${COVER_PAGES_BASE}/${encodeURIComponent(id)}`,
+    'PUT',
+    request
+  );
+  return mapCoverPage(raw);
+}
+
+export async function diDeleteCoverPage(id: string): Promise<void> {
+  await fetchFromDocuments(`${COVER_PAGES_BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
 function mapTag(raw: unknown): DiTag {
   const o = asRecord(raw);
   return {
@@ -1635,6 +1787,9 @@ function mapGenerateResult(raw: unknown): DiGenerateDocumentResult {
     letterheadId: str(o, 'letterheadId'),
     letterheadCode: str(o, 'letterheadCode'),
     letterheadName: str(o, 'letterheadName'),
+    coverPageId: str(o, 'coverPageId'),
+    coverPageCode: str(o, 'coverPageCode'),
+    coverPageName: str(o, 'coverPageName'),
     docNo: str(o, 'docNo'),
     resourceId: str(o, 'resourceId') ?? '',
     fileName: str(o, 'fileName') ?? '',
@@ -1659,6 +1814,93 @@ function mapGenerateResult(raw: unknown): DiGenerateDocumentResult {
 export async function diListDocumentContextTypes(): Promise<DiDocumentContextType[]> {
   const raw = await fetchFromDocuments(`${GENERATE_BASE}/context-types`, 'GET');
   return Array.isArray(raw) ? raw.map(mapContextType) : [];
+}
+
+function mapDocumentProducerDetail(raw: unknown): DiDocumentProducerDetail {
+  const o = asRecord(raw);
+  const folderRaw = o.outputFolderPath;
+  const writebackRaw = o.writebackFields;
+  return {
+    code: str(o, 'code') ?? '',
+    displayName: str(o, 'displayName') ?? '',
+    contextType: str(o, 'contextType') ?? '',
+    templateCode: str(o, 'templateCode') ?? '',
+    outputFormat: str(o, 'outputFormat') ?? 'docx',
+    outputFolderPath: Array.isArray(folderRaw) ? folderRaw.map((x) => String(x)) : [],
+    fileNamePattern: str(o, 'fileNamePattern') ?? '',
+    idempotencyDataset: str(o, 'idempotencyDataset'),
+    idempotencyGuardField: str(o, 'idempotencyGuardField'),
+    writebackFields: Array.isArray(writebackRaw) ? writebackRaw.map((x) => String(x)) : [],
+  };
+}
+
+function mapDocumentDataSourceSummary(raw: unknown): DiDocumentDataSourceSummary {
+  const o = asRecord(raw);
+  const matchRaw = o.match;
+  return {
+    code: str(o, 'code') ?? '',
+    displayName: str(o, 'displayName') ?? '',
+    provider: str(o, 'provider') ?? '',
+    mode: str(o, 'mode') ?? '',
+    dataset: str(o, 'dataset'),
+    query: str(o, 'query'),
+    match:
+      matchRaw && typeof matchRaw === 'object' ? (matchRaw as Record<string, unknown>) : null,
+    columnCount: num(o, 'columnCount') ?? 0,
+  };
+}
+
+function mapDocumentDataSourceDetail(raw: unknown): DiDocumentDataSourceDetail {
+  const summary = mapDocumentDataSourceSummary(raw);
+  const o = asRecord(raw);
+  const paramsRaw = o.parameters;
+  const columnsRaw = o.columns;
+  return {
+    ...summary,
+    queryName: str(o, 'queryName'),
+    idFrom: str(o, 'idFrom'),
+    parameters:
+      paramsRaw && typeof paramsRaw === 'object' ? (paramsRaw as Record<string, unknown>) : null,
+    columns: Array.isArray(columnsRaw)
+      ? columnsRaw.map((col) => {
+          const c = asRecord(col);
+          return {
+            sourceField: str(c, 'sourceField') ?? '',
+            header: str(c, 'header'),
+            format: str(c, 'format'),
+          };
+        })
+      : [],
+  };
+}
+
+export async function diGetDocumentProducer(code: string): Promise<DiDocumentProducerDetail | null> {
+  try {
+    const raw = await fetchFromDocuments(
+      `${GENERATE_BASE}/producers/${encodeURIComponent(code)}`,
+      'GET'
+    );
+    return mapDocumentProducerDetail(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function diListDocumentDataSources(): Promise<DiDocumentDataSourceSummary[]> {
+  const raw = await fetchFromDocuments(`${GENERATE_BASE}/data-sources`, 'GET');
+  return Array.isArray(raw) ? raw.map(mapDocumentDataSourceSummary) : [];
+}
+
+export async function diGetDocumentDataSource(code: string): Promise<DiDocumentDataSourceDetail | null> {
+  try {
+    const raw = await fetchFromDocuments(
+      `${GENERATE_BASE}/data-sources/${encodeURIComponent(code)}`,
+      'GET'
+    );
+    return mapDocumentDataSourceDetail(raw);
+  } catch {
+    return null;
+  }
 }
 
 export async function diPreviewDocumentGeneration(
@@ -1897,17 +2139,11 @@ export function diErrorStatus(error: unknown): number | null {
 export function diExtractMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
     const data = (error as { data?: unknown }).data;
-    if (data && typeof data === 'object') {
-      const d = data as Record<string, unknown>;
-      if (typeof d.messageTr === 'string' && d.messageTr) return d.messageTr;
-      if (typeof d.message === 'string' && d.message) return d.message;
-      const nested = d.error;
-      if (nested && typeof nested === 'object') {
-        const ne = nested as Record<string, unknown>;
-        if (typeof ne.message === 'string' && ne.message) return ne.message;
-      }
+    const fromBody = documentsApiErrorUserMessage(data, diErrorStatus(error) ?? 500, fallback);
+    if (fromBody !== fallback || parseDocumentsApiErrorBody(data)) {
+      return fromBody;
     }
-    return error.message || fallback;
+    return error.message && error.message !== 'Internal Server Error' ? error.message : fallback;
   }
   return fallback;
 }

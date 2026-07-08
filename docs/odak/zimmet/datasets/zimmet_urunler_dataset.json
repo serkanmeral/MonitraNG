@@ -1,0 +1,89 @@
+{
+  "name": "zimmet_urunler",
+  "description": "Zimmet — urun katalogu (fiziksel demirbas degil, tanim)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "indexList": [
+    { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true }
+  ],
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Urun kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": {
+        "minLength": 3,
+        "maxLength": 40,
+        "pattern": "^PRD-[A-Z0-9-]+$",
+        "message": "Kod PRD-XXX formatinda olmalidir"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Urun adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "urunGrubuId",
+      "title": "Urun grubu",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_urun_gruplari"
+    },
+    {
+      "fieldType": "text",
+      "name": "marka",
+      "title": "Marka",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 80 }
+    },
+    {
+      "fieldType": "text",
+      "name": "model",
+      "title": "Model",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "aciklama",
+      "title": "Aciklama",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 1000 }
+    },
+    {
+      "fieldType": "number",
+      "name": "varsayilanGarantiAy",
+      "title": "Varsayilan garanti (ay)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0, "max": 120 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ]
+}

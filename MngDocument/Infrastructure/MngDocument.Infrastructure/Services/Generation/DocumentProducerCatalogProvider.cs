@@ -181,7 +181,12 @@ public sealed class DocumentProducerCatalogProvider
     private static string NormalizeOutputFormat(string? format)
     {
         var normalized = format?.Trim().ToLowerInvariant();
-        return normalized is "xlsx" ? "xlsx" : "docx";
+        return normalized switch
+        {
+            "xlsx" => "xlsx",
+            "pptx" => "pptx",
+            _ => "docx"
+        };
     }
 
     private sealed class ProducerDefinitionPayload

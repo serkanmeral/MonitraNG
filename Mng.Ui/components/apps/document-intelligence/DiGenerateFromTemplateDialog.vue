@@ -10,10 +10,13 @@ import {
   diGenerateFromTemplate,
   diGetTemplate,
   diListTemplates,
+  diListCoverPages,
   diFetchResourceExportPdf,
 } from '@/services/documentIntelligenceService';
 import type {
+  DiCoverPage,
   DiGenerateDocumentResult,
+  DiTemplateDetail,
   DiTemplateParameter,
   DiTemplateSummary,
 } from '@/types/apps/documentIntelligence';
@@ -38,8 +41,13 @@ const { trackEditorAccessToken, releaseEditorSession } = useDiEditorSessionClean
 const loadingTemplates = ref(false);
 const loadingTemplate = ref(false);
 const templates = ref<DiTemplateSummary[]>([]);
+const templateDetail = ref<DiTemplateDetail | null>(null);
+const coverPages = ref<DiCoverPage[]>([]);
+const coverPagesLoading = ref(false);
 const templateId = ref<string | null>(null);
 const documentName = ref('');
+const includeCoverPage = ref(false);
+const coverPageId = ref<string | null>(null);
 const parameters = ref<DiTemplateParameter[]>([]);
 const overrides = ref<Record<string, string>>({});
 const previewLoading = ref(false);
@@ -69,6 +77,23 @@ const selectedTemplate = computed(
   () => publishedTemplates.value.find((tpl) => tpl.id === templateId.value) ?? null
 );
 
+const isDocxTemplate = computed(() => {
+  const format = (templateDetail.value?.outputFormat ?? selectedTemplate.value?.outputFormat ?? 'docx')
+    .trim()
+    .toLowerCase();
+  return format !== 'xlsx' && format !== 'pptx';
+});
+
+const coverPageItems = computed(() =>
+  coverPages.value
+    .filter((item) => item.isActive)
+    .map((item) => ({
+      title: item.name,
+      value: item.id,
+      subtitle: item.code,
+    }))
+);
+
 const collaboraPreviewTitle = computed(() => {
   const name = documentName.value.trim() || selectedTemplate.value?.name || '';
   return name
@@ -77,7 +102,7 @@ const collaboraPreviewTitle = computed(() => {
 });
 
 const editableParameters = computed(() =>
-  parameters.value.filter((p) => isUserEditableParam(p.key, p.valueSourceMode))
+  parameters.value.filter((p) => isUserEditableParam(p.key, p.valueSourceMode, p.kind))
 );
 
 const autoParameters = computed(() =>
@@ -98,10 +123,11 @@ const canSubmit = computed(
     )
 );
 
-function isUserEditableParam(key: string, mode: string | undefined): boolean {
+function isUserEditableParam(key: string, mode: string | undefined, kind?: string | undefined): boolean {
   if (SYSTEM_PARAM_KEYS.has(key.trim().toLowerCase())) return false;
+  if ((kind ?? 'scalar').toLowerCase() === 'image') return false;
   const m = (mode ?? 'manual').toLowerCase();
-  return m !== 'incremental' && m !== 'generated';
+  return m !== 'incremental' && m !== 'generated' && m !== 'domain';
 }
 
 function paramModeLabel(mode: string | undefined): string {
@@ -111,7 +137,10 @@ function paramModeLabel(mode: string | undefined): string {
 
 function resetState() {
   templateId.value = null;
+  templateDetail.value = null;
   documentName.value = '';
+  includeCoverPage.value = false;
+  coverPageId.value = null;
   parameters.value = [];
   overrides.value = {};
   previewMissing.value = [];
@@ -144,6 +173,18 @@ async function loadTemplates() {
   }
 }
 
+async function loadCoverPages() {
+  coverPagesLoading.value = true;
+  try {
+    const res = await diListCoverPages(true);
+    coverPages.value = res.items;
+  } catch {
+    coverPages.value = [];
+  } finally {
+    coverPagesLoading.value = false;
+  }
+}
+
 async function loadTemplateDetail(id: string) {
   loadingTemplate.value = true;
   errorMessage.value = '';
@@ -151,7 +192,14 @@ async function loadTemplateDetail(id: string) {
   previewWarnings.value = [];
   try {
     const detail = await diGetTemplate(id);
+    templateDetail.value = detail;
     parameters.value = detail.parameters ?? [];
+    includeCoverPage.value = Boolean(detail.defaultCoverPageId?.trim());
+    coverPageId.value =
+      detail.defaultCoverPageId ??
+      coverPages.value.find((item) => item.isDefault && item.isActive)?.id ??
+      coverPages.value.find((item) => item.isActive)?.id ??
+      null;
     overrides.value = {};
     for (const p of editableParameters.value) {
       if (p.defaultValue?.trim()) {
@@ -164,6 +212,7 @@ async function loadTemplateDetail(id: string) {
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'documentIntelligence.generateFromTemplate.errors.loadTemplate');
     parameters.value = [];
+    templateDetail.value = null;
   } finally {
     loadingTemplate.value = false;
   }
@@ -199,7 +248,7 @@ async function runPreview() {
 
     for (const [key, rawValue] of Object.entries(session.values ?? {})) {
       const value = String(rawValue ?? '');
-      if (!isUserEditableParam(key, parameters.value.find((p) => p.key === key)?.valueSourceMode)) {
+      if (!isUserEditableParam(key, parameters.value.find((p) => p.key === key)?.valueSourceMode, parameters.value.find((p) => p.key === key)?.kind)) {
         continue;
       }
       if (!overrides.value[key]?.trim() && value.trim()) {
@@ -240,6 +289,8 @@ async function submit() {
       parentFolderId: folderId,
       documentName: name,
       overrides: buildOverridesPayload(),
+      includeCoverPage: isDocxTemplate.value ? includeCoverPage.value : undefined,
+      coverPageId: isDocxTemplate.value && includeCoverPage.value ? coverPageId.value : undefined,
     });
     lastResult.value = result;
     emit('created', result);
@@ -302,12 +353,14 @@ watch(
       return;
     }
     void loadTemplates();
+    void loadCoverPages();
   }
 );
 
 watch(templateId, (id) => {
   if (!props.modelValue || !id) {
     parameters.value = [];
+    templateDetail.value = null;
     overrides.value = {};
     return;
   }
@@ -412,6 +465,32 @@ watch(templateId, (id) => {
             persistent-hint
             class="mb-3"
           />
+
+          <template v-if="isDocxTemplate && coverPages.length">
+            <v-switch
+              v-model="includeCoverPage"
+              :label="t('documentIntelligence.generateFromTemplate.includeCoverPage')"
+              color="primary"
+              hide-details
+              class="mb-2"
+            />
+            <v-select
+              v-if="includeCoverPage"
+              v-model="coverPageId"
+              :items="coverPageItems"
+              :label="t('documentIntelligence.generateFromTemplate.coverPageLabel')"
+              :loading="coverPagesLoading"
+              item-title="title"
+              item-value="value"
+              variant="outlined"
+              density="comfortable"
+              class="mb-3"
+            >
+              <template #item="{ item, props: itemProps }">
+                <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+              </template>
+            </v-select>
+          </template>
 
           <v-progress-linear v-if="loadingTemplate" indeterminate class="mb-3" />
 

@@ -2,8 +2,10 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
+using MngDocument.Application.Contracts.CoverPages;
 using MngDocument.Application.Contracts.Letterheads;
 using MngDocument.Application.Contracts.Generation;
+using MngDocument.Application.Contracts.Templates;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Exceptions;
 using MngDocument.Application.Interfaces;
@@ -23,10 +25,14 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private readonly DocumentContextLoader _contextLoader;
     private readonly DocumentContextCatalogProvider _contextCatalog;
     private readonly DocumentProducerCatalogProvider _producerCatalog;
+    private readonly DocumentDataSourceCatalogProvider _dataSourceCatalog;
     private readonly DocumentParameterResolver _parameterResolver;
     private readonly ITemplateBrandingApplier _brandingApplier;
     private readonly ILetterheadService _letterheads;
+    private readonly ICoverPageService _coverPages;
     private readonly LetterheadHeaderValueEnricher _headerEnricher;
+    private readonly PackageDashboardMetricsEnricher _packageDashboardEnricher;
+    private readonly IDomainLogoProvider _logoProvider;
     private readonly ITemplateEditorService _templateEditor;
 
     public DocumentGenerationService(
@@ -36,11 +42,15 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         DocumentContextLoader contextLoader,
         DocumentContextCatalogProvider contextCatalog,
         DocumentProducerCatalogProvider producerCatalog,
+        DocumentDataSourceCatalogProvider dataSourceCatalog,
         DocumentParameterResolver parameterResolver,
         IOptions<MngDocumentSettings> settings,
         ITemplateBrandingApplier brandingApplier,
         ILetterheadService letterheads,
+        ICoverPageService coverPages,
         LetterheadHeaderValueEnricher headerEnricher,
+        PackageDashboardMetricsEnricher packageDashboardEnricher,
+        IDomainLogoProvider logoProvider,
         ITemplateEditorService templateEditor)
     {
         _dg = dg;
@@ -49,10 +59,14 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         _contextLoader = contextLoader;
         _contextCatalog = contextCatalog;
         _producerCatalog = producerCatalog;
+        _dataSourceCatalog = dataSourceCatalog;
         _parameterResolver = parameterResolver;
         _brandingApplier = brandingApplier;
         _letterheads = letterheads;
+        _coverPages = coverPages;
         _headerEnricher = headerEnricher;
+        _packageDashboardEnricher = packageDashboardEnricher;
+        _logoProvider = logoProvider;
         _templateEditor = templateEditor;
     }
 
@@ -79,10 +93,22 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             Fields = def.Fields
         };
 
-    public async Task<DocumentProducerDto?> GetProducerAsync(string code, CancellationToken ct = default)
+    public async Task<DocumentProducerDetailDto?> GetProducerAsync(string code, CancellationToken ct = default)
     {
         var profile = await _producerCatalog.TryGetAsync(code, ct);
-        return profile is null ? null : MapProducer(profile);
+        return profile is null ? null : MapProducerDetail(profile);
+    }
+
+    public async Task<IReadOnlyList<DocumentDataSourceSummaryDto>> ListDataSourcesAsync(CancellationToken ct = default)
+    {
+        var entries = await _dataSourceCatalog.ListEntriesAsync(ct);
+        return entries.Select(MapDataSourceSummary).ToList();
+    }
+
+    public async Task<DocumentDataSourceDetailDto?> GetDataSourceAsync(string code, CancellationToken ct = default)
+    {
+        var entry = await _dataSourceCatalog.TryGetEntryAsync(code, ct);
+        return entry is null ? null : MapDataSourceDetail(entry);
     }
 
     public async Task<IReadOnlyList<DocumentProducerDto>> ListProducersAsync(CancellationToken ct = default)
@@ -105,6 +131,65 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             ContextType = profile.ContextType,
             TemplateCode = profile.TemplateCode
         };
+
+    private static DocumentProducerDetailDto MapProducerDetail(DocumentGenerationProfileSettings profile) =>
+        new()
+        {
+            Code = profile.Code,
+            DisplayName = string.IsNullOrWhiteSpace(profile.DisplayName) ? profile.Code : profile.DisplayName,
+            ContextType = profile.ContextType,
+            TemplateCode = profile.TemplateCode,
+            OutputFormat = string.IsNullOrWhiteSpace(profile.OutputFormat) ? "docx" : profile.OutputFormat.Trim(),
+            OutputFolderPath = profile.OutputFolderPath?.ToList() ?? new List<string>(),
+            FileNamePattern = profile.FileNamePattern ?? string.Empty,
+            IdempotencyDataset = profile.Idempotency?.Dataset,
+            IdempotencyGuardField = profile.Idempotency?.GuardField,
+            WritebackFields = profile.Idempotency?.WritebackFields?.ToList() ?? new List<string>()
+        };
+
+    private static DocumentDataSourceSummaryDto MapDataSourceSummary(DataSourceCatalogEntry entry)
+    {
+        var def = entry.Definition;
+        return new DocumentDataSourceSummaryDto
+        {
+            Code = entry.Code,
+            DisplayName = entry.DisplayName,
+            Provider = entry.Provider,
+            Mode = def.Mode ?? string.Empty,
+            Dataset = def.Dataset,
+            Query = def.Query,
+            Match = def.Match,
+            ColumnCount = def.Columns?.Count ?? 0
+        };
+    }
+
+    private static DocumentDataSourceDetailDto MapDataSourceDetail(DataSourceCatalogEntry entry)
+    {
+        var def = entry.Definition;
+        var summary = MapDataSourceSummary(entry);
+        return new DocumentDataSourceDetailDto
+        {
+            Code = summary.Code,
+            DisplayName = summary.DisplayName,
+            Provider = summary.Provider,
+            Mode = summary.Mode,
+            Dataset = summary.Dataset,
+            Query = summary.Query,
+            Match = summary.Match,
+            ColumnCount = summary.ColumnCount,
+            QueryName = def.QueryName,
+            IdFrom = def.IdFrom,
+            Parameters = def.Parameters,
+            Columns = (def.Columns ?? new List<TemplateTableColumnModel>())
+                .Select(c => new DocumentDataSourceColumnDto
+                {
+                    SourceField = c.SourceField,
+                    Header = c.Header,
+                    Format = c.Format
+                })
+                .ToList()
+        };
+    }
 
     public async Task<DocumentGenerationStatusDto> GetStatusAsync(
         string profileCode,
@@ -285,6 +370,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         DocumentPlaceholderAnalysis.Result placeholderAnalysis;
         string mimeType;
         string extension;
+        var coverResolve = new CoverPageResolveResult();
 
         if (IsXlsxFormat(outputFormat))
         {
@@ -296,8 +382,28 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
                 model,
                 resolved,
                 placeholderAnalysis.PreservePlaceholderKeys);
+
+            merged = XlsxImageParameterApplicator.Apply(merged, model, resolved);
+
             mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             extension = ".xlsx";
+        }
+        else if (IsPptxFormat(outputFormat))
+        {
+            var pptxBytes = await LoadTemplateBytesAsync(templateRow, ct);
+            placeholderAnalysis = AnalyzePptxPlaceholders(pptxBytes, model, values);
+            merged = PptxPlaceholderMerger.Merge(
+                pptxBytes,
+                resolved.Scalars,
+                placeholderAnalysis.PreservePlaceholderKeys);
+
+            merged = PptxImageParameterApplicator.Apply(merged, model, resolved);
+
+            if (string.Equals(profile.Code, "odak.package.brief.fromPackage", StringComparison.OrdinalIgnoreCase))
+                merged = PptxFulfillmentBarPatcher.Apply(merged, values);
+
+            mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            extension = ".pptx";
         }
         else
         {
@@ -339,13 +445,32 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
                 model,
                 resolved,
                 placeholderAnalysis.PreservePlaceholderKeys);
+
+            coverResolve = await _coverPages.ResolveAsync(
+                ShouldIncludeCoverPage(request.IncludeCoverPage, model.DefaultCoverPageId),
+                request.CoverPageId,
+                model.DefaultCoverPageId,
+                ct);
+            if (!string.IsNullOrWhiteSpace(coverResolve.CoverPageId))
+            {
+                merged = await ApplyCoverPageMergeAsync(
+                    merged,
+                    coverResolve,
+                    values,
+                    placeholderAnalysis.PreservePlaceholderKeys,
+                    ct);
+            }
+
             mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
             extension = ".docx";
         }
 
-        var remainingPlaceholders = IsXlsxFormat(outputFormat)
-            ? DocumentPlaceholderAnalysis.ScanRemainingXlsxPlaceholderKeys(merged)
-            : DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(merged);
+        var remainingPlaceholders = outputFormat switch
+        {
+            "xlsx" => DocumentPlaceholderAnalysis.ScanRemainingXlsxPlaceholderKeys(merged),
+            "pptx" => DocumentPlaceholderAnalysis.ScanRemainingPptxPlaceholderKeys(merged),
+            _ => DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(merged)
+        };
 
         var fileName = ApplyPattern(profile.FileNamePattern, values, contextId);
         if (!fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
@@ -372,10 +497,11 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             TemplateCode = templateRow.code ?? templateCode,
             GenerationProfile = profile.Code,
             LetterheadId = letterheadResolve.LetterheadId,
+            CoverPageId = coverResolve.CoverPageId,
             DocumentNo = businessDocNo
         }, ct);
 
-        await WritebackAsync(profile, contextId, templateRow, templateCode, values, saved.Id, ct);
+        await WritebackAsync(profile, contextId, templateRow, templateCode, values, saved.Id, fileName, ct);
 
         var generatedAt = DateTime.UtcNow;
 
@@ -389,6 +515,9 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             LetterheadId = letterheadResolve.LetterheadId,
             LetterheadCode = letterheadResolve.LetterheadCode,
             LetterheadName = letterheadResolve.LetterheadName,
+            CoverPageId = coverResolve.CoverPageId,
+            CoverPageCode = coverResolve.CoverPageCode,
+            CoverPageName = coverResolve.CoverPageName,
             DocNo = businessDocNo,
             ResourceId = saved.Id,
             FileName = fileName,
@@ -499,12 +628,68 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             documentName,
             ct);
         var values = resolved.Scalars;
+        var outputFormat = await ResolveTemplateOutputFormatAsync(templateRow, model, ct);
 
-        var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
-        var mergedDocx = await MergeAndBrandAsync(templateRow, model, resolved, docxBytes, placeholderAnalysis, ct);
-        var remainingPlaceholders = DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(mergedDocx);
+        byte[] merged;
+        string mimeType;
+        string extension;
+        var coverResolve = new CoverPageResolveResult();
 
-        var fileName = ResolveManualFileName(documentName, values, templateRow);
+        if (IsXlsxFormat(outputFormat))
+        {
+            var rawTemplateBytes = await LoadTemplateBytesAsync(templateRow, ct);
+            var xlsxBytes = XlsxTemplateBytesResolver.Resolve(rawTemplateBytes, templateRow);
+            merged = MergeScalarsAndSheetRows(
+                xlsxBytes,
+                model,
+                resolved,
+                placeholderAnalysis.PreservePlaceholderKeys);
+            merged = XlsxImageParameterApplicator.Apply(merged, model, resolved);
+            mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            extension = ".xlsx";
+        }
+        else if (IsPptxFormat(outputFormat))
+        {
+            var pptxBytes = await LoadTemplateBytesAsync(templateRow, ct);
+            merged = PptxPlaceholderMerger.Merge(
+                pptxBytes,
+                resolved.Scalars,
+                placeholderAnalysis.PreservePlaceholderKeys);
+            merged = PptxImageParameterApplicator.Apply(merged, model, resolved);
+            mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            extension = ".pptx";
+        }
+        else
+        {
+            var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
+            merged = await MergeAndBrandAsync(templateRow, model, resolved, docxBytes, placeholderAnalysis, ct);
+            coverResolve = await _coverPages.ResolveAsync(
+                ShouldIncludeCoverPage(request.IncludeCoverPage, model.DefaultCoverPageId),
+                request.CoverPageId,
+                model.DefaultCoverPageId,
+                ct);
+            if (!string.IsNullOrWhiteSpace(coverResolve.CoverPageId))
+            {
+                merged = await ApplyCoverPageMergeAsync(
+                    merged,
+                    coverResolve,
+                    values,
+                    placeholderAnalysis.PreservePlaceholderKeys,
+                    ct);
+            }
+
+            mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            extension = ".docx";
+        }
+
+        var remainingPlaceholders = outputFormat switch
+        {
+            "xlsx" => DocumentPlaceholderAnalysis.ScanRemainingXlsxPlaceholderKeys(merged),
+            "pptx" => DocumentPlaceholderAnalysis.ScanRemainingPptxPlaceholderKeys(merged),
+            _ => DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(merged)
+        };
+
+        var fileName = ResolveManualFileName(documentName, values, templateRow, extension);
         var displayName = ResolveManualDisplayName(documentName, fileName);
         var letterheadResolve = await _letterheads.ResolveAsync(
             model.DefaultLetterheadId,
@@ -516,15 +701,16 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             ParentId = parentFolderId,
             Name = displayName,
             OriginalFileName = fileName,
-            MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            Extension = ".docx",
-            Size = mergedDocx.Length,
-            Content = Convert.ToBase64String(mergedDocx),
+            MimeType = mimeType,
+            Extension = extension,
+            Size = merged.Length,
+            Content = Convert.ToBase64String(merged),
             Origin = ResourceOrigin.Manual,
             TemplateId = templateRow.__dataId,
             TemplateCode = templateRow.code,
             GenerationProfile = ManualProfileCode,
             LetterheadId = letterheadResolve.LetterheadId,
+            CoverPageId = coverResolve.CoverPageId,
             DocumentNo = ResolveBusinessDocNo(values)
         }, ct);
 
@@ -540,6 +726,9 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             LetterheadId = letterheadResolve.LetterheadId,
             LetterheadCode = letterheadResolve.LetterheadCode,
             LetterheadName = letterheadResolve.LetterheadName,
+            CoverPageId = coverResolve.CoverPageId,
+            CoverPageCode = coverResolve.CoverPageCode,
+            CoverPageName = coverResolve.CoverPageName,
             DocNo = ResolveBusinessDocNo(values),
             ResourceId = saved.Id,
             FileName = fileName,
@@ -595,8 +784,24 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             Token,
             ct);
 
-        var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
-        var placeholderAnalysis = AnalyzePlaceholders(docxBytes, model, values);
+        var outputFormat = await ResolveTemplateOutputFormatAsync(templateRow, model, ct);
+        DocumentPlaceholderAnalysis.Result placeholderAnalysis;
+        if (IsXlsxFormat(outputFormat))
+        {
+            var rawTemplateBytes = await LoadTemplateBytesAsync(templateRow, ct);
+            var xlsxBytes = XlsxTemplateBytesResolver.Resolve(rawTemplateBytes, templateRow);
+            placeholderAnalysis = AnalyzeXlsxPlaceholders(xlsxBytes, model, values);
+        }
+        else if (IsPptxFormat(outputFormat))
+        {
+            var pptxBytes = await LoadTemplateBytesAsync(templateRow, ct);
+            placeholderAnalysis = AnalyzePptxPlaceholders(pptxBytes, model, values);
+        }
+        else
+        {
+            var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
+            placeholderAnalysis = AnalyzePlaceholders(docxBytes, model, values);
+        }
 
         return (templateRow, model, resolved, placeholderAnalysis);
     }
@@ -653,6 +858,35 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             placeholderAnalysis.PreservePlaceholderKeys);
     }
 
+    private static bool ShouldIncludeCoverPage(bool? requestInclude, string? templateDefaultCoverPageId)
+    {
+        if (requestInclude == false)
+            return false;
+
+        if (requestInclude == true)
+            return true;
+
+        return !string.IsNullOrWhiteSpace(templateDefaultCoverPageId);
+    }
+
+    private async Task<byte[]> ApplyCoverPageMergeAsync(
+        byte[] mergedDocx,
+        CoverPageResolveResult coverResolve,
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlySet<string>? preservePlaceholderKeys,
+        CancellationToken ct)
+    {
+        var coverDesignBytes = await TryLoadCoverDesignDocxAsync(coverResolve.CoverPage, ct);
+        if (coverDesignBytes is not { Length: > 0 })
+            return mergedDocx;
+
+        var filledCover = DocxPlaceholderMerger.Merge(
+            coverDesignBytes,
+            values,
+            preservePlaceholderKeys);
+        return CoverPageMerger.Prepend(mergedDocx, filledCover);
+    }
+
     private static byte[] MergeScalarsAndTables(
         byte[] docxBytes,
         TemplateModelDocument model,
@@ -676,10 +910,28 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private static bool IsXlsxFormat(string outputFormat) =>
         string.Equals(outputFormat, "xlsx", StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsPptxFormat(string outputFormat) =>
+        string.Equals(outputFormat, "pptx", StringComparison.OrdinalIgnoreCase);
+
     private static string NormalizeOutputFormat(string? format)
     {
         var normalized = format?.Trim().ToLowerInvariant();
-        return normalized is "xlsx" ? "xlsx" : "docx";
+        return normalized switch
+        {
+            "xlsx" => "xlsx",
+            "pptx" => "pptx",
+            _ => "docx"
+        };
+    }
+
+    private static DocumentPlaceholderAnalysis.Result AnalyzePptxPlaceholders(
+        byte[] pptxBytes,
+        TemplateModelDocument model,
+        IReadOnlyDictionary<string, string> values)
+    {
+        using var stream = new MemoryStream(pptxBytes, writable: false);
+        var scan = PptxPlaceholderScanner.Scan(stream);
+        return DocumentPlaceholderAnalysis.AnalyzePptx(scan, model, values);
     }
 
     private static DocumentPlaceholderAnalysis.Result AnalyzeXlsxPlaceholders(
@@ -707,24 +959,64 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private static string ResolveManualFileName(
         string? documentName,
         IReadOnlyDictionary<string, string> values,
-        DmDocumentTemplate template)
+        DmDocumentTemplate template,
+        string extension = ".docx")
     {
+        var normalizedExt = extension.StartsWith('.') ? extension : "." + extension;
         if (!string.IsNullOrWhiteSpace(documentName))
         {
             var baseName = SanitizeFileStem(documentName.Trim());
-            return baseName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+            return baseName.EndsWith(normalizedExt, StringComparison.OrdinalIgnoreCase)
                 ? baseName
-                : baseName + ".docx";
+                : baseName + normalizedExt;
         }
 
         if (values.TryGetValue(LetterheadConstants.DocNoKey, out var docNo) && !string.IsNullOrWhiteSpace(docNo))
-            return $"{SanitizeFileStem(docNo)}.docx";
+            return $"{SanitizeFileStem(docNo)}{normalizedExt}";
 
         var code = template.code?.Trim();
         if (string.IsNullOrWhiteSpace(code))
             code = template.name?.Trim() ?? "document";
 
-        return $"{SanitizeFileStem(code)}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.docx";
+        return $"{SanitizeFileStem(code)}-{DateTime.UtcNow:yyyyMMdd-HHmmss}{normalizedExt}";
+    }
+
+    private async Task<string> ResolveTemplateOutputFormatAsync(
+        DmDocumentTemplate template,
+        TemplateModelDocument model,
+        CancellationToken ct)
+    {
+        var fromFile = InferOutputFormatFromFileName(
+            template.sourceFileName,
+            template.sourceStoragePath);
+        if (!string.Equals(fromFile, "docx", StringComparison.OrdinalIgnoreCase))
+            return fromFile;
+
+        if (!string.IsNullOrWhiteSpace(model.GenerationProfile))
+        {
+            var profile = await _producerCatalog.TryGetAsync(model.GenerationProfile.Trim(), ct);
+            if (profile is not null)
+                return NormalizeOutputFormat(profile.OutputFormat);
+        }
+
+        return fromFile;
+    }
+
+    private static string InferOutputFormatFromFileName(string? sourceFileName, string? sourceStoragePath)
+    {
+        var pathOrName = sourceFileName?.Trim();
+        if (string.IsNullOrWhiteSpace(pathOrName))
+            pathOrName = sourceStoragePath?.Trim();
+        if (string.IsNullOrWhiteSpace(pathOrName))
+            return "docx";
+
+        var ext = Path.GetExtension(pathOrName).TrimStart('.').ToLowerInvariant();
+        return ext switch
+        {
+            "xlsx" or "xlsm" => "xlsx",
+            "pptx" => "pptx",
+            _ => "docx"
+        };
     }
 
     private static string ResolveManualDisplayName(string? documentName, string fileName)
@@ -822,6 +1114,16 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
 
         EnrichPatternTokens(resolved.Scalars, contextTree);
 
+        if (_packageDashboardEnricher.AppliesTo(profile.Code))
+        {
+            await _packageDashboardEnricher.EnrichAsync(
+                resolved,
+                contextId.Trim(),
+                contextTree,
+                Token,
+                ct);
+        }
+
         return (templateRow, model, resolved);
     }
 
@@ -860,6 +1162,23 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             return null;
 
         return await _dg.DownloadFileAsync(letterhead.DesignStoragePath, Token, ct);
+    }
+
+    private async Task<byte[]?> TryLoadCoverDesignDocxAsync(CoverPageDto? coverPage, CancellationToken ct)
+    {
+        if (coverPage is null || string.IsNullOrWhiteSpace(coverPage.Id))
+            return null;
+
+        var row = await _dg.GetByIdAsync<DmCoverPage>(DmDatasets.CoverPages, coverPage.Id, Token, ct);
+        if (row is null)
+            return null;
+
+        var bytes = await CoverPageDesignFileLoader.DownloadDesignAsync(_dg, row, Token, ct);
+        if (bytes is not { Length: > 0 })
+            return null;
+
+        bytes = DocxZipHelper.DeduplicateParts(bytes);
+        return bytes;
     }
 
     private static string ResolveTemplateCode(
@@ -1057,6 +1376,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         string templateCode,
         Dictionary<string, string> values,
         string resourceId,
+        string fileName,
         CancellationToken ct)
     {
         var idempotency = profile.Idempotency;
@@ -1099,6 +1419,51 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
                     break;
                 case "activitytemplatename":
                     payload["activityTemplateName"] = templateRow.name ?? string.Empty;
+                    break;
+                case "shipmentlistdiresourceid":
+                    payload["shipmentListDiResourceId"] = resourceId;
+                    break;
+                case "shipmentlistfilename":
+                    payload["shipmentListFileName"] = fileName;
+                    break;
+                case "shipmentlistgeneratedat":
+                    payload["shipmentListGeneratedAt"] = DateTime.UtcNow;
+                    break;
+                case "shipmentlisttemplatecode":
+                    payload["shipmentListTemplateCode"] = templateRow.code ?? templateCode;
+                    break;
+                case "shipmentlisttemplatename":
+                    payload["shipmentListTemplateName"] = templateRow.name ?? string.Empty;
+                    break;
+                case "packagedashboarddiresourceid":
+                    payload["packageDashboardDiResourceId"] = resourceId;
+                    break;
+                case "packagedashboardfilename":
+                    payload["packageDashboardFileName"] = fileName;
+                    break;
+                case "packagedashboardgeneratedat":
+                    payload["packageDashboardGeneratedAt"] = DateTime.UtcNow;
+                    break;
+                case "packagedashboardtemplatecode":
+                    payload["packageDashboardTemplateCode"] = templateRow.code ?? templateCode;
+                    break;
+                case "packagedashboardtemplatename":
+                    payload["packageDashboardTemplateName"] = templateRow.name ?? string.Empty;
+                    break;
+                case "packagebriefdiresourceid":
+                    payload["packageBriefDiResourceId"] = resourceId;
+                    break;
+                case "packagebrieffilename":
+                    payload["packageBriefFileName"] = fileName;
+                    break;
+                case "packagebriefgeneratedat":
+                    payload["packageBriefGeneratedAt"] = DateTime.UtcNow;
+                    break;
+                case "packagebrieftemplatecode":
+                    payload["packageBriefTemplateCode"] = templateRow.code ?? templateCode;
+                    break;
+                case "packagebrieftemplatename":
+                    payload["packageBriefTemplateName"] = templateRow.name ?? string.Empty;
                     break;
                 default:
                     payload[field] = field.Equals(idempotency.GuardField, StringComparison.OrdinalIgnoreCase)

@@ -71,15 +71,22 @@ function Invoke-DmCatalogSeed {
             continue
         }
 
-        if ($existing -and $existing.dataId) {
-            $id = [string]$existing.dataId
-            Invoke-DgData -Method PUT -Uri "$dataBase/$id" -Body $body | Out-Null
-            Write-Host "  OK update code=$code id=$id" -ForegroundColor Green
+        if ($existing) {
+            $id = if ($existing.dataId) { [string]$existing.dataId } elseif ($existing.__dataId) { [string]$existing.__dataId } else { "" }
+            if ($id) {
+                Invoke-DgData -Method PUT -Uri "$dataBase/$id" -Body $body | Out-Null
+                Write-Host "  OK update code=$code id=$id" -ForegroundColor Green
+            }
+            else {
+                $created = Invoke-DgData -Method POST -Uri $dataBase -Body $body
+                $newId = if ($created.dataId) { [string]$created.dataId } elseif ($created.__dataId) { [string]$created.__dataId } else { [string]$created.id }
+                Write-Host "  OK create code=$code id=$newId" -ForegroundColor Green
+            }
         }
         else {
             $created = Invoke-DgData -Method POST -Uri $dataBase -Body $body
-            $id = if ($created.dataId) { [string]$created.dataId } else { [string]$created.id }
-            Write-Host "  OK create code=$code id=$id" -ForegroundColor Green
+            $newId = if ($created.dataId) { [string]$created.dataId } elseif ($created.__dataId) { [string]$created.__dataId } else { [string]$created.id }
+            Write-Host "  OK create code=$code id=$newId" -ForegroundColor Green
         }
     }
 

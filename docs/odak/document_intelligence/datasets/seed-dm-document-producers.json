@@ -22,7 +22,23 @@
       "contextType": "odak.siparis.package",
       "templateCode": "SHIPMENT-LIST-STD",
       "isActive": true,
-      "definitionJson": "{\"outputFormat\":\"xlsx\",\"outputFolderPath\":[\"Odak\",\"Sevkiyat\",\"{packageNo}\"],\"fileNamePattern\":\"{packageNo}-Sevkiyat-Listesi.xlsx\",\"defaults\":{\"documentName\":\"Sevkiyat Listesi\"}}"
+      "definitionJson": "{\"outputFormat\":\"xlsx\",\"outputFolderPath\":[\"Odak\",\"Sevkiyat\",\"{packageNo}\"],\"fileNamePattern\":\"{packageNo}-Sevkiyat-Listesi.xlsx\",\"idempotency\":{\"dataset\":\"odak_is_paketleri\",\"writebackFields\":[\"shipmentListDiResourceId\",\"shipmentListFileName\",\"shipmentListGeneratedAt\",\"shipmentListTemplateCode\",\"shipmentListTemplateName\"]},\"defaults\":{\"documentName\":\"Sevkiyat Listesi\"}}"
+    },
+    {
+      "code": "odak.package.dashboard.fromPackage",
+      "displayName": "İş paketi kontrol paneli (XLSX)",
+      "contextType": "odak.siparis.package",
+      "templateCode": "PACKAGE-DASHBOARD-STD",
+      "isActive": true,
+      "definitionJson": "{\"outputFormat\":\"xlsx\",\"outputFolderPath\":[\"Odak\",\"Medya\",\"{packageNo}\"],\"fileNamePattern\":\"{packageNo}-Kontrol-Paneli.xlsx\",\"idempotency\":{\"dataset\":\"odak_is_paketleri\",\"writebackFields\":[\"packageDashboardDiResourceId\",\"packageDashboardFileName\",\"packageDashboardGeneratedAt\",\"packageDashboardTemplateCode\",\"packageDashboardTemplateName\"]},\"defaults\":{\"documentName\":\"İş Paketi Kontrol Paneli\"}}"
+    },
+    {
+      "code": "odak.package.brief.fromPackage",
+      "displayName": "İş paketi müşteri sunumu (PPTX)",
+      "contextType": "odak.siparis.package",
+      "templateCode": "PACKAGE-BRIEF-STD",
+      "isActive": true,
+      "definitionJson": "{\"outputFormat\":\"pptx\",\"outputFolderPath\":[\"Odak\",\"Medya\",\"{packageNo}\"],\"fileNamePattern\":\"{packageNo}-Musteri-Sunumu.pptx\",\"idempotency\":{\"dataset\":\"odak_is_paketleri\",\"writebackFields\":[\"packageBriefDiResourceId\",\"packageBriefFileName\",\"packageBriefGeneratedAt\",\"packageBriefTemplateCode\",\"packageBriefTemplateName\"]},\"defaults\":{\"documentName\":\"İş Paketi Sunumu\"}}"
     }
   ]
 }

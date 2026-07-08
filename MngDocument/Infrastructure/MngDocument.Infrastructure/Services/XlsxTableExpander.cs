@@ -66,7 +66,33 @@ public static class XlsxTableExpander
             }
         }
 
-        return output.ToArray();
+        var expanded = output.ToArray();
+        var lastDataRow = ResolveLastDataRow(sheetParams, tables);
+        expanded = XlsxChartRangePatcher.ClampEmbeddedChartRanges(expanded, lastDataRow);
+        if (tables.TryGetValue("donutSlices", out var donutRows) && donutRows.Count > 0)
+            expanded = XlsxDonutChartCachePatcher.Apply(expanded, donutRows);
+        return expanded;
+    }
+
+    private static int ResolveLastDataRow(
+        IReadOnlyList<TemplateParameterModel> sheetParams,
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, object?>>> tables)
+    {
+        var maxRow = 10;
+        foreach (var param in sheetParams)
+        {
+            if (!tables.TryGetValue(param.Key, out var rows) || rows.Count == 0)
+                continue;
+
+            var binding = param.DocBinding;
+            if (binding?.TableIndex != 2)
+                continue;
+
+            if (string.Equals(param.Key, "chartLines", StringComparison.OrdinalIgnoreCase))
+                maxRow = Math.Max(maxRow, 9 + rows.Count);
+        }
+
+        return maxRow;
     }
 
     private static bool IsSheetTableParameter(TemplateParameterModel param) =>
@@ -101,13 +127,19 @@ public static class XlsxTableExpander
 
         var rows = sheetData.Elements(Main + "row").ToList();
 
-        foreach (var param in sheetParams)
+        var paramsForSheet = sheetParams
+            .Where(p =>
+            {
+                var binding = p.DocBinding!;
+                var targetSheetIndex = binding.TableIndex ?? 0;
+                return targetSheetIndex == sheetIndex;
+            })
+            .OrderByDescending(p => p.DocBinding!.TemplateRowIndex ?? 0)
+            .ToList();
+
+        foreach (var param in paramsForSheet)
         {
             var binding = param.DocBinding!;
-            var targetSheetIndex = binding.TableIndex ?? 0;
-            if (targetSheetIndex != sheetIndex)
-                continue;
-
             var templateRowIndex = binding.TemplateRowIndex ?? 1;
             if (templateRowIndex < 0 || templateRowIndex >= rows.Count)
                 continue;
@@ -146,18 +178,100 @@ public static class XlsxTableExpander
         IReadOnlyDictionary<string, object?> dataRow,
         IReadOnlyList<TemplateTableColumnModel>? columns)
     {
-        foreach (var textNode in row.Descendants(Main + "t").ToList())
+        foreach (var cell in row.Elements(Main + "c").ToList())
         {
-            textNode.Value = TableCellPlaceholderRegex.Replace(textNode.Value, match =>
-            {
-                var key = match.Groups[1].Value;
-                var field = match.Groups[2].Value;
-                if (!string.Equals(key, paramKey, StringComparison.OrdinalIgnoreCase))
-                    return match.Value;
+            var inlineText = cell.Element(Main + "is")?.Element(Main + "t");
+            if (inlineText is null)
+                continue;
 
-                return FormatCellValue(field, dataRow, columns);
-            });
+            var original = inlineText.Value;
+            if (!TableCellPlaceholderRegex.IsMatch(original))
+                continue;
+
+            var match = TableCellPlaceholderRegex.Match(original);
+            var key = match.Groups[1].Value;
+            var field = match.Groups[2].Value;
+            if (!string.Equals(key, paramKey, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var column = columns?
+                .FirstOrDefault(c => string.Equals(c.SourceField, field, StringComparison.OrdinalIgnoreCase));
+
+            var textValue = FormatCellValue(field, dataRow, columns);
+            inlineText.Value = textValue;
+
+            if (TryGetNumericCellValue(field, column, dataRow, textValue, out var numericValue))
+                WriteNumericCell(cell, numericValue);
         }
+    }
+
+    private static bool TryGetNumericCellValue(
+        string field,
+        TemplateTableColumnModel? column,
+        IReadOnlyDictionary<string, object?> dataRow,
+        string textValue,
+        out double numericValue)
+    {
+        numericValue = 0;
+
+        if (TryGetFieldValue(dataRow, field, out var raw) && raw is not null && raw is not string)
+        {
+            if (raw is double d)
+            {
+                numericValue = d;
+                return true;
+            }
+
+            if (raw is float f)
+            {
+                numericValue = f;
+                return true;
+            }
+
+            if (raw is decimal m)
+            {
+                numericValue = (double)m;
+                return true;
+            }
+
+            if (raw is int or long or short or byte)
+            {
+                numericValue = Convert.ToDouble(raw, CultureInfo.InvariantCulture);
+                return true;
+            }
+        }
+
+        if (!IsNumericTableColumn(field, column))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(textValue))
+            return false;
+
+        return double.TryParse(textValue, NumberStyles.Any, CultureInfo.InvariantCulture, out numericValue)
+               || double.TryParse(textValue, NumberStyles.Any, CultureInfo.GetCultureInfo("tr-TR"), out numericValue);
+    }
+
+    private static bool IsNumericTableColumn(string field, TemplateTableColumnModel? column)
+    {
+        if (column?.Format is not null
+            && column.Format.StartsWith("N", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return field.Equals("shippedQuantity", StringComparison.OrdinalIgnoreCase)
+               || field.Equals("quantity", StringComparison.OrdinalIgnoreCase)
+               || field.Equals("remainingQuantity", StringComparison.OrdinalIgnoreCase)
+               || field.Equals("amount", StringComparison.OrdinalIgnoreCase)
+               || field.EndsWith("Count", StringComparison.OrdinalIgnoreCase)
+               || field.EndsWith("Amount", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void WriteNumericCell(XElement cell, double numericValue)
+    {
+        cell.Attribute("t")?.Remove();
+        cell.Elements(Main + "is").Remove();
+        cell.Elements(Main + "f").Remove();
+        cell.Elements(Main + "v").Remove();
+        cell.Add(new XElement(Main + "v", numericValue.ToString(CultureInfo.InvariantCulture)));
     }
 
     private static string FormatCellValue(

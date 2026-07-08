@@ -10,12 +10,14 @@ import {
   diGetTemplate,
   diGetTemplateEditorSession,
   diListLetterheads,
+  diListCoverPages,
   diPublishTemplate,
   diUnpublishTemplate,
   diUpdateTemplatePageStructure,
 } from '@/services/documentIntelligenceService';
 import type {
   DiLetterhead,
+  DiCoverPage,
   DiTemplateDetail,
 } from '@/types/apps/documentIntelligence';
 
@@ -45,7 +47,10 @@ const unpublishing = ref(false);
 
 const letterheads = ref<DiLetterhead[]>([]);
 const letterheadsLoading = ref(false);
+const coverPages = ref<DiCoverPage[]>([]);
+const coverPagesLoading = ref(false);
 const defaultLetterheadId = ref<string | null>(null);
+const defaultCoverPageId = ref<string | null>(null);
 const applyingPageStructure = ref(false);
 const pageStructureExpanded = ref<number | undefined>(undefined);
 
@@ -65,8 +70,17 @@ const letterheadSelectOptions = computed(() =>
     }))
 );
 
+const coverPageSelectOptions = computed(() =>
+  coverPages.value
+    .filter((item) => item.isActive)
+    .map((item) => ({
+      value: item.id,
+      title: item.name,
+      subtitle: item.code,
+    }))
+);
+
 const breadcrumbs = computed(() => [
-  { title: t('documentIntelligence.menuTitle'), to: '/apps/document-intelligence' },
   { title: t('documentIntelligence.designer.title'), to: listPath.value },
   { title: template.value?.name ?? t('documentIntelligence.designer.editTitle'), disabled: true },
 ]);
@@ -86,9 +100,30 @@ function resolveCatalogDefaultLetterheadId(items: DiLetterhead[]): string | null
   return firstActive?.id ?? null;
 }
 
+function resolveCatalogDefaultCoverPageId(items: DiCoverPage[]): string | null {
+  const catalogDefault = items.find((item) => item.isDefault && item.isActive);
+  if (catalogDefault) return catalogDefault.id;
+  const firstActive = items.find((item) => item.isActive);
+  return firstActive?.id ?? null;
+}
+
 function syncPageStructureFromTemplate(detail: DiTemplateDetail) {
   defaultLetterheadId.value =
     detail.defaultLetterheadId ?? resolveCatalogDefaultLetterheadId(letterheads.value);
+  defaultCoverPageId.value =
+    detail.defaultCoverPageId ?? resolveCatalogDefaultCoverPageId(coverPages.value);
+}
+
+async function loadCoverPages() {
+  coverPagesLoading.value = true;
+  try {
+    const res = await diListCoverPages(true);
+    coverPages.value = res.items;
+  } catch {
+    coverPages.value = [];
+  } finally {
+    coverPagesLoading.value = false;
+  }
 }
 
 async function loadLetterheads() {
@@ -151,6 +186,7 @@ async function applyPageStructure() {
   try {
     template.value = await diUpdateTemplatePageStructure(id, {
       defaultLetterheadId: defaultLetterheadId.value,
+      defaultCoverPageId: defaultCoverPageId.value,
     });
     syncPageStructureFromTemplate(template.value);
     notify.value = t('documentIntelligence.designer.pageStructureApplied');
@@ -216,7 +252,7 @@ async function submitUnpublish() {
 }
 
 onMounted(async () => {
-  await loadLetterheads();
+  await Promise.all([loadLetterheads(), loadCoverPages()]);
   await loadEditor();
 });
 </script>
@@ -321,8 +357,10 @@ onMounted(async () => {
         <v-expansion-panel-text>
           <DiTemplatePageStructureForm
             v-model:default-letterhead-id="defaultLetterheadId"
+            v-model:default-cover-page-id="defaultCoverPageId"
             :letterhead-options="letterheadSelectOptions"
-            :loading="letterheadsLoading"
+            :cover-page-options="coverPageSelectOptions"
+            :loading="letterheadsLoading || coverPagesLoading"
             draft-hint
           />
           <div class="d-flex justify-end mt-4">

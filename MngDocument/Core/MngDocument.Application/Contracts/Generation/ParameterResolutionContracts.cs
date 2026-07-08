@@ -6,6 +6,14 @@ public sealed class ParameterResolutionResult
     public Dictionary<string, string> Scalars { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, IReadOnlyList<IReadOnlyDictionary<string, object?>>> Tables { get; init; }
         = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, ResolvedImageParameter> Images { get; init; }
+        = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ResolvedImageParameter
+{
+    public required byte[] Bytes { get; init; }
+    public string Extension { get; init; } = ".png";
 }
 
 /// <summary>Runtime context passed to parameter and data source resolvers.</summary>

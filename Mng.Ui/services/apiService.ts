@@ -1,3 +1,8 @@
+import {
+  documentsApiErrorUserMessage,
+  normalizeDocumentsApiErrorData,
+} from "@/utils/documentsApiError";
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   headers?: Record<string, string>;
@@ -998,29 +1003,13 @@ export function fetchFromDocuments(
         }
       }
 
-      let errorMessage = "İstek başarısız";
-      if (error.data) {
-        const errorData = error.data;
-        if (typeof errorData === "object" && errorData.error && typeof errorData.error === "object") {
-          errorMessage = errorData.error.message || errorData.error.code || errorMessage;
-        } else if (typeof errorData === "object") {
-          errorMessage = errorData.errorDescription || errorData.error || errorData.message || errorMessage;
-        } else if (typeof errorData === "string") {
-          errorMessage = errorData;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (error.statusMessage) {
-        errorMessage = error.statusMessage;
-      }
-      // Hata gövdesini (code/message/details) ve HTTP durumunu koru; çağıranlar guard (409 vb.) ayırt edebilsin.
+      const statusCode = error.statusCode ?? error.status ?? error.response?.status ?? 500;
+      const normalizedData = normalizeDocumentsApiErrorData(error.data, statusCode);
+      const errorMessage = documentsApiErrorUserMessage(normalizedData, statusCode);
       const customError: any = new Error(errorMessage);
-      if (error.data !== undefined) customError.data = error.data;
-      const sc = error.statusCode ?? error.status ?? error.response?.status;
-      if (sc !== undefined) {
-        customError.statusCode = sc;
-        customError.status = sc;
-      }
+      customError.data = normalizedData;
+      customError.statusCode = statusCode;
+      customError.status = statusCode;
       if (error.statusMessage) customError.statusMessage = error.statusMessage;
       reject(customError);
     }

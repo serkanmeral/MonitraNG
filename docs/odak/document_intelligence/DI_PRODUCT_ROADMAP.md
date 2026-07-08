@@ -1,7 +1,7 @@
 # Document Intelligence — Ürün Yol Haritası
 
-**Durum:** Planlama (birleşik roadmap)  
-**Son güncelleme:** 8 Temmuz 2026  
+**Durum:** Planlama (birleşik roadmap) — **Medya paketi Faz 1 ✅**  
+**Son güncelleme:** 8 Temmuz 2026 (akşam · Medya paketi Faz 2 ✅ · DI-FOLDER-UX planlama)  
 **Kapsam:** Sayfa · Döküman · Sheet · Sunum · Parametreler · Kurumsal kimlik (D-BR) · Zamanlama · Bildirim · Collabora oturum yönetimi · Workflow entegrasyonu (D-WF) · AI  
 **İlişkili:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md) · [DEVAM.md](./DEVAM.md) · [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md) · [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
@@ -89,6 +89,9 @@ Dosya    → type = file AND origin = upload
 | **Faz P — Sayfa** (keşif, editör, etiket, changeNote, backlink, alan giriş) | ✅ **Faz P** (6–7 Tem 2026) |
 | Otomatik üretim: CoC + Activity generation profilleri | ✅ |
 | **Odak generation runtime (G0–G5):** RuntimeEnvelope, producer/dataSource katalog, DOCX tablo, XLSX sevkiyat listesi | ✅ **G0–G5** (8 Tem 2026) |
+| **İş paketi medya paketi — kontrol paneli XLSX** (`PACKAGE-DASHBOARD-STD`, KPI + 2 chart + logo param) | ✅ **8 Tem 2026 akşam** |
+| **İş paketi medya paketi — müşteri sunumu PPTX** (`PACKAGE-BRIEF-STD`, 7 slayt executive) | ✅ **8 Tem 2026 akşam** |
+| **XLSX scalar merge (S3-lite)** + dashboard/brief KPI enricher | ✅ |
 | Managed Office: native docx/xlsx/pptx + Collabora + sürüm + PDF | ✅ **O-0→Pr2** (8 Tem 2026) |
 | Manuel şablondan üretim UX + merge/PDF | ✅ **D4** |
 | Sheet / Sunum Collabora (native) | ✅ **S1+S2 / Pr1+Pr2** |
@@ -107,13 +110,15 @@ Dosya    → type = file AND origin = upload
 | Döküman lifecycle (taslak/yayın docx) | ⏸️ **Faz M** — Minimal karar: yalnızca Sayfa |
 | Manuel şablondan üretim UX | ✅ **D4** |
 | Sheet / Sunum Collabora | ✅ **O-0→Pr2** |
-| İş paketi sevkiyat listesi writeback | 🔲 **G5+** |
+| İş paketi sevkiyat listesi writeback | ✅ **G5+** (8 Tem 2026) |
+| İş paketi dashboard + brief writeback (`packageDashboardDiResourceId`, `packageBriefDiResourceId`) | ✅ **Medya paketi** (8 Tem 2026) |
+| XLSX donut chart — kullanıcıda görünürlük | ✅ **Medya paketi Faz 2** (8 Tem 2026) |
 | Work item ↔ üretilen belge (G6) | ⏸️ **G6 — ertelendi** |
 | Zamanlanmış üretim | 🔲 Faz D-S |
 | Döküman bildirimleri | 🔲 Faz D-N |
 | OC WorkItem ↔ doküman (tam UI) | 🔲 Faz D5 |
 | Collabora oturum görünürlüğü / limit (D-E) | ✅ **Faz D-E** (E1–E3 + kilitleme, 7 Tem akşam) |
-| Kapak sayfası kataloğu + üretimde opsiyonel seçim | 🔲 **D-BR2** |
+| Kapak sayfası kataloğu + üretimde opsiyonel seçim | ⚠️ **D-BR2** kısmi — **BR2-FIX backlog** |
 | **`origin` formal dataset + upload fix** | ✅ **D-META** |
 | Workflow entegrasyonu (onaylı yayın, dağıtım) | 🔲 Faz D-WF |
 | AI: extract, tag, özet, benzer, asistan | 🔲 Faz AI |
@@ -221,16 +226,23 @@ flowchart TB
 | ~~1~~ | ~~**D4**~~ | ✅ Manuel üretim, merge, PDF |
 | ~~2~~ | ~~**S → Pr**~~ | ✅ Managed Office O-0→Pr2 |
 | ~~3~~ | ~~**G0–G5**~~ | ✅ Odak generation runtime + XLSX sevkiyat listesi (8 Tem 2026) |
-| 1 | **G5+** | İş paketi writeback + prod deploy |
-| 2 | **D-BR2** | Kapak sayfası |
-| 3 | **CoC/Activity smoke** | Prod verisi ile uçtan uca |
-| 4 | **D-N** | Üretim maili |
-| 5 | **D-S** | Haftalık otomatik rapor |
-| 6 | **D5 / G6** | Operasyon entegrasyonu; G6 work item ⏸️ |
-| 7 | **D-WF** (0–1) | Event publish + CoC kalite onay |
-| 8 | **D-P** (P1–P5) | ⏸️ Ertelendi — chart/card/composite |
-| 9 | **AI** | Extract + tag + özet |
-| 10 | **M** + **D-WF2–4** | Lifecycle; AI onayı |
+| ~~4~~ | ~~**G5+**~~ | ✅ İş paketi writeback + kullanıcı testi (CoC/Activity/XLSX) |
+| ~~5~~ | ~~**CoC/Activity smoke**~~ | ✅ Kullanıcı doğrulaması @ test (8 Tem 2026) |
+| ~~6~~ | ~~**P0+P1**~~ | ✅ Parametre stüdyosu tam sayfa + tablo salt okunur + data-sources API |
+| ~~7~~ | ~~**P2**~~ | ✅ Tablo parametresi düzenlenebilir stüdyo |
+| ~~8~~ | ~~**S3-lite**~~ | ✅ XLSX scalar `{{key}}` merge + stüdyo XLSX/PPTX taraması |
+| ~~9~~ | ~~**PACKAGE-BRIEF Faz 1**~~ | ✅ Dashboard XLSX + Brief PPTX + enricher + UI + test deploy (8 Tem akşam) |
+| ~~10~~ | ~~**Pr3 (PACKAGE-BRIEF-STD)**~~ | ✅ Profil tabanlı PPTX üretim + 7 slayt executive şablon |
+| ~~1~~ | ~~**Medya paketi Faz 2**~~ | ✅ Donut chart · PPTX `domainLogo` · dinamik chart (8 Tem 2026) |
+| **1** | **DI-FOLDER-UX** | Klasör görünümü UX çalışması ([§29](#29-di-folder-ux--klasör-görünümü-8-temmuz-2026)) |
+| **2** | **D-BR2** | Kapak sayfası — ⚠️ kısmi, **BR2-FIX backlog** |
+| **3** | **D-N1** | Üretim maili (`document.generated`) |
+| **4** | **D-S1** | Haftalık otomatik rapor (zamanlanmış üretim) |
+| **5** | **D5 / G6** | Operasyon entegrasyonu; G6 work item ⏸️ |
+| **6** | **D-WF** (0–1) | Event publish + CoC kalite onay |
+| **7** | **D-P chart** | `kind=chart` motoru (Yol B — opsiyonel) |
+| **8** | **AI1** | Extract + tag + özet |
+| **9** | **M** + **D-WF2–4** | Lifecycle; AI onayı |
 
 ---
 
@@ -408,6 +420,21 @@ origin=upload    origin=native     origin=manual      origin=system
 
 **Kullanıcı değeri:** Dış paylaşım belgelerinde «Word’e elle kapak yapıştırma» biter; üretim hattına entegre kalır.
 
+**Uygulama durumu (8 Temmuz 2026):** Katalog + Collabora tasarım + `CoverPageMerger` + Activity/CoC üretim hattı **test ortamında kısmen canlı** (`ODK-COVER-STD`, `LINE-ACTIVITY-STD.defaultCoverPageId`). **Üretimde kapak tasarımının güncel sürümünün yansıması güvenilir değil — fix ertelendi.**
+
+#### 8.2.1 Bilinen hata — BR2-FIX (backlog, P1)
+
+| Alan | Açıklama |
+|------|----------|
+| **ID** | **BR2-FIX** |
+| **Belirti** | Kapak Collabora editöründe yapılan değişiklikler kullanıcıya «kaydedilmiş» gibi görünür; üretilen belgede (ör. `LINE-ACTIVITY-STD` → `ODK-ACT-*`) ise seed + logo iskeleti kullanılır. |
+| **Kök neden (analiz)** | (1) WOPI `GetFileContents` açılışta dosyayı mutate ediyordu (logo enjeksiyonu) — editör ≠ MinIO. (2) Zip içinde **çift `word/document.xml`** (seed + logo kopyası); okuma yanlış parçayı seçebiliyordu. (3) Collabora `PutFile` → DG güncellemesi güvenilir değil; `updatedAt` / `designFile.upload_time` değişmiyor. (4) Sayfa kapanırken `EndSession` oturumu hemen iptal ediyor; UI tarafında kaydetmeden çıkış (Ctrl+S / auto-save) henüz tam devrede değil. |
+| **Kısmi fix (backend, test deploy)** | `DocxZipHelper.DeduplicateParts`, üretimde ham kapak kullanımı, WOPI okumada kayıtlı tasarım round-trip, kapak `Version` = path + `updatedAt`. **Yeterli olmadı — tam fix ertelendi.** |
+| **Tam fix kapsamı (sonra)** | WOPI kayıt güvenilirliği (PutFile doğrulama, `updatedAt` smoke); editörden çıkışta `requestSave` (UI — deploy bekliyor); Collabora autosave (opsiyonel); seed dosyada duplicate part temizliği / migration; üretim smoke: kapak metni eşleşmesi. |
+| **Doğrulama** | `dm_cover_pages` → `designFile.upload_time` kayıttan sonra değişmeli; indirilen DOCX’te tek `word/document.xml` ve kullanıcı metni; Activity üretiminde aynı metin kapak bölümünde. |
+| **Öncelik** | P1 (D-BR2 kabul kriteri tamamlanmadan prod’a alınmamalı) |
+| **Durum** | ⏸️ **Ertelendi** (8 Tem 2026 — kullanıcı kararı) |
+
 ### 8.3 Üretim deneyimi (hedef)
 
 ```text
@@ -425,7 +452,7 @@ Antet değişikliği gerekiyorsa **Belge Tasarımcısı**'nda şablonun `default
 | **D-BR1a** | `dm_letterheads` + API + admin UI + Collabora tasarım + tablo footer skeleton + design merge | P0 | ✅ Sprint A (Odak + prod) |
 | **D-BR1b** | Şablonda varsayılan antet (`defaultLetterheadId`) + prod migration + logo fix | P0 | ✅ (7 Tem 2026) |
 | **D-BR1b (iptal)** | ~~Üretim dialogunda antet seçimi~~ | — | ➖ **Yapılmayacak** — antet Belge Tasarımcısı'nda |
-| **D-BR2** | Kapak kataloğu + üretimde opsiyonel seçim | P1 | 🔲 |
+| **D-BR2** | Kapak kataloğu + üretimde opsiyonel seçim | P1 | ⚠️ Kısmi — **BR2-FIX backlog** |
 | **D-BR3** | Paylaşımlı altbilgi kataloğu (opsiyonel; footer şablonda kalabilir) | P2 | ➖ Tablo footer modeli ile birleşti |
 
 **Bağımlılık:** Faz D üretim kanalları (`manual` / `system`); D-BR2, D-BR1 sonrası. D-S haftalık rapor + kapak = güçlü demo senaryosu.
@@ -636,9 +663,23 @@ Payload: `resourceId`, `generationProfile`, `origin`, `documentNo`, `contextType
 
 ---
 
-## 11. Faz D-P — Parametre sistemi 2.0 ⏸️ (ertelendi)
+## 11. Faz D-P — Parametre sistemi 2.0
 
-**Durum (7 Tem 2026):** Skaler parametreler ve mevcut generation profilleri yeterli; tablo/chart/MO query genişlemesi **ileriki fazlara ertelendi**. **Güncelleme (8 Tem 2026):** Activity DOCX tablo (**G2**) ve XLSX sevkiyat listesi tablo genişlemesi (**G5**) `dataSourceRef` + `DocxTableExpander` / `XlsxTableExpander` ile kısmen karşılandı; tam D-P (chart, card, designer veri sekmesi) hâlâ erteli.
+**Durum (8 Tem 2026 akşam):** Skaler + tablo merge (G2/G5) canlı. **P0–P2 ✅** parametre stüdyosu. **S3-lite ✅** dashboard KPI merge. Chart motoru (`kind=chart`) henüz yok — medya paketinde **Yol A** (gömülü chart + Veri sayfası + patcher) kullanıldı.
+
+**Güncelleme (8 Tem 2026):** Activity DOCX tablo (**G2**) ve XLSX sevkiyat listesi (**G5**) `dataSourceRef` + expander ile kısmen karşılandı. Tam D-P (chart kind, card, aggregate) P2/S3-lite/Pr3 sonrası.
+
+### 11.0 Parametre stüdyosu dilimleri (UI)
+
+| Dilim | Kapsam | Durum |
+|-------|--------|-------|
+| **P0** | Tam sayfa rota; preview `generationProfile`; context path ağacı; producer meta | ✅ |
+| **P1** | Tablo salt okunur; data-sources API; docBinding görüntüleme | ✅ |
+| **P2** | Tablo düzenlenebilir: dataSourceRef picker, kolonlar, docBinding kaydet | ✅ |
+| **P3** | Veri kaynağı oluşturma / aggregate (chart serisi için) | backlog |
+| **P4** | `kind=chart` parametre UI | backlog (D-P chart motoru ile) |
+
+**İlke (8 Tem 2026):** Demo şablonları için statik C# chart factory kullanılmaz; Collabora tasarım + parametre modeli.
 
 **Hedef:** Skaler `{{key}}` modelinin ötesine geçmek; tablo, kart, chart; dataset ve MO query ile veri çekmek.
 
@@ -864,7 +905,7 @@ Yetki: doküman view + WorkItem view birlikte kontrol.
 | **O-1** | Ortak native API + UI `isDi*` / menü iskeleti | ✅ |
 | S1 | Native xlsx + Collabora Calc | ✅ |
 | S2 | Sürüm UX, export/pdf | ✅ |
-| S3 | Şablondan sheet (senaryo; P1) | backlog |
+| S3 | Şablondan sheet (`PACKAGE-DASHBOARD-STD`) | ✅ Faz 1 |
 
 ---
 
@@ -879,7 +920,7 @@ Yetki: doküman view + WorkItem view birlikte kontrol.
 |-------|--------|-------|
 | Pr1 | Native pptx + Collabora Impress | ✅ |
 | Pr2 | Sürüm UX, export/pdf (S2 simetrisi) | ✅ |
-| Pr3 | Şablondan sunum / kurumsal arşiv (P2) | backlog |
+| Pr3 | Şablondan sunum / kurumsal arşiv (P2) | ✅ **PACKAGE-BRIEF-STD** (profil üretimi); Collabora ince ayar opsiyonel |
 
 **Ürün mesajı:** Word · Excel · Sunum — tek platform, aynı kurallar ([KURUMSAL_ICERIK_SUNUM.md](./KURUMSAL_ICERIK_SUNUM.md)).
 
@@ -1011,13 +1052,13 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 
 ## 23. Sonraki adımlar (genel)
 
-1. ~~Faz P~~ ✅ · ~~D-BR1~~ ✅ · ~~D-META / D-CREATE / D-FILE-PREV~~ ✅ · ~~D-PERF-1/2/3~~ ✅ · ~~**D-E**~~ ✅ · ~~**D2**~~ ✅
-2. **D4** — manuel şablondan üretim UX, merge + PDF indirme ← **sıradaki**
-3. **D-BR2** — kapak kataloğu
-4. **CoC/Activity smoke** · **D-N1**
-5. **D-P** ⏸️ · **Faz M** lifecycle ⏸️
-6. **D-E4** — Redis WOPI store (opsiyonel, çoklu replica)
-7. **D2 P1** — Collabora PDF export (opsiyonel)
+1. ~~Faz P~~ ✅ · ~~D-BR1~~ ✅ · ~~D-META / D-CREATE / D-FILE-PREV~~ ✅ · ~~D-PERF-1/2/3~~ ✅ · ~~**D-E**~~ ✅ · ~~**D2**~~ ✅ · ~~**D4**~~ ✅ · ~~**G0–G5+**~~ ✅ · ~~**P0–P2**~~ ✅ · ~~**S3-lite**~~ ✅ · ~~**Medya paketi Faz 1**~~ ✅ · ~~**Medya paketi Faz 2**~~ ✅
+2. **DI-FOLDER-UX** — klasör görünümü UX ([§29](#29-di-folder-ux--klasör-görünümü-8-temmuz-2026))
+3. **D-BR2 (BR2-FIX)** · **D-N1** · **D-S1**
+4. **D-P chart** — `kind=chart` (opsiyonel)
+5. **G6 / D5** — OC work item bağlantısı
+6. **Faz M** lifecycle ⏸️
+7. **D-E4** — Redis WOPI store (opsiyonel)
 
 ---
 
@@ -1097,10 +1138,10 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 
 ### Sıradaki
 
-- **G5+** — iş paketi sevkiyat listesi writeback; prod deploy
-- **G6** ⏸️ — work item bağlantısı
 - **D-BR2** — kapak sayfası kataloğu
-- CoC/Activity uçtan uca smoke
+- **D-N1** — `document.generated` bildirim maili
+- **G6** ⏸️ — work item bağlantısı
+- **S3 / Pr3** — şablondan sheet/sunum
 
 ---
 
@@ -1121,7 +1162,7 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 | **G4** | `dm_data_sources` + `dm_document_producers` · `dataSourceRef` çözümleme | ✅ |
 | **G5** | XLSX: `XlsxPlaceholderScanner/Merger/TableExpander` · `outputFormat: xlsx` · `SHIPMENT-LIST-STD` · Odak UI | ✅ |
 | **G6** | OperationCore work item ↔ üretilen belge | ⏸️ ertelendi |
-| **G5+** | İş paketine `resourceId` writeback (kalıcı listeleme) | 🔲 |
+| **G5+** | İş paketine `resourceId` writeback (kalıcı listeleme) | ✅ |
 
 ### G5 pilot: sevkiyat listesi XLSX
 
@@ -1150,8 +1191,98 @@ Bu doküman **ürün ve yol haritası** için birincil referanstır; teknik API/
 .\scripts\tests\MngDocument\smoke-activity-shipment-table-test.ps1
 ```
 
-### Bilinçli kapsam dışı (G5)
+### Bilinçli kapsam dışı (G5 / G5+)
 
-- Üretim idempotency yok (her çağrı yeni `dm_resources`)
-- İş paketi writeback yok — silme yalnızca DI klasöründen
-- Prod deploy bu fazda test ortamında doğrulandı
+- Sevkiyat listesi üretim idempotency guard yok (her çağrı yeni `dm_resources`; paket son `resourceId`’yi tutar)
+- Prod deploy bu sprint kapsam dışı — test ortamında doğrulandı
+
+---
+
+
+## 27. PACKAGE-BRIEF — Medya paketi ✅ Faz 1 (8 Temmuz 2026)
+
+**Hedef:** Müşteriyi etkileyen, şık, içi dolu belge seti — iş paketi bağlamında dashboard, sunum ve mevcut operasyon belgeleri. **Statik demo chart factory kullanılmaz** (operasyon şablonları için).
+
+### Onaylanan strateji
+
+| Konu | Karar |
+|------|--------|
+| Chart (kısa vade) | **Yol A:** grafik XLSX şablonda gömülü; **Veri** sayfası + enricher + chart patcher |
+| Chart (uzun vade) | **Yol B:** `kind=chart` + aggregate data source (D-P motoru — henüz yok) |
+| PPTX tasarım | C# `PackageBriefTemplatePptxFactory` — 7 slayt executive; Collabora ince ayar opsiyonel |
+| Veri | `PackageDashboardMetricsEnricher` — dashboard + brief profilleri ortak KPI |
+
+### Faz 1 — tamamlanan çıktılar
+
+| Çıktı | Format | Şablon / profil | Durum |
+|-------|--------|-----------------|-------|
+| İş paketi kontrol paneli | XLSX | `PACKAGE-DASHBOARD-STD` · `odak.package.dashboard.fromPackage` | ✅ |
+| Müşteri sunumu | PPTX | `PACKAGE-BRIEF-STD` · `odak.package.brief.fromPackage` | ✅ |
+| CoC / Activity / sevkiyat listesi | DOCX / XLSX | G2 / G5+ | ✅ |
+
+**Teknik özet (Faz 1):** `PackageDashboardTemplateXlsxFactory` · `PackageBriefTemplatePptxFactory` · chart patcher'lar · `domainLogo` (XLSX) · patch script PPTX binary sync · smoke tasarım assert.
+
+### Operasyonel ders (deploy)
+
+Patch yalnızca parametre güncellerse sunucuda **eski şablon binary** kalır — `patch-package-brief-standard-test.ps1` build + seed `-Replace` zorunlu.
+
+### Faz 2 — ✅ tamamlandı (8 Temmuz 2026)
+
+Donut chart görünürlük · PPTX `domainLogo` · veri-güdümlü çubuk grafik · kullanıcı doğrulama.
+
+### Demo / test
+
+- IX04: `2d8aeb0e-6f67-4f3a-a578-21cff682ec17` · test: `192.168.20.20:5040`
+- Smoke: `scripts/tests/MngDocument/smoke-package-media-brief-test.ps1`
+
+---
+
+## 28. Oturum özeti — Medya paketi Faz 1 ✅ (8 Temmuz 2026 akşam)
+
+- [x] Dashboard XLSX + Brief PPTX (7 slayt) — test deploy + kullanıcı onayı
+- [x] Smoke: slayt sayısı, accent banner, KPI kartları
+- [x] Donut chart — görsel doğrulama (**Faz 2** ile tamamlandı)
+
+**Sıradaki:** ~~Medya paketi Faz 2~~ ✅ · **DI-FOLDER-UX** · D-BR2 (BR2-FIX) · D-N1 · D-S1
+
+---
+
+## 29. DI-FOLDER-UX — Klasör görünümü (8 Temmuz 2026)
+
+**Hedef:** Document Intelligence ana ekranında (`/apps/document-intelligence`) klasör gezintisi, içerik listeleme ve keşif deneyimini operasyon kullanıcıları için netleştirmek — «dosya sunucusu + wiki» hissi yerine tutarlı kurumsal arşiv UX.
+
+**Durum:** 🔲 Planlama / tartışma (henüz dilimlenmedi)
+
+### Mevcut baseline (kod)
+
+| Bileşen | Konum | Davranış |
+|---------|--------|----------|
+| Sol panel | `DiResourceTree.vue` + `useDiLazyFolderTree` | Lazy klasör ağacı; kök «Sayfalar / Dökümanlar» alanları |
+| Sağ panel | `pages/.../document-intelligence/index.vue` | Breadcrumb · keşif (`DiDiscoveryHome`) · alan giriş banner |
+| Klasörler | Kart grid (`di-folder-card`, 4 sütun) | Tıkla → klasöre gir |
+| İçerik | Bölümlü liste (Sayfa / Döküman / Dosya) | Satır aksiyonları · toplu seçim / silme |
+| Performans | D-PERF-1/3 | Lazy tree · sayfalı children · arama |
+| URL | `?folder=` deep link | Son klasör localStorage |
+
+### Açık UX soruları (tartışma)
+
+1. **Görünüm modu:** Kart grid (klasör) + liste (içerik) yeterli mi; tek tablo / tek grid / Confluence tarzı birleşik liste?
+2. **Bilgi yoğunluğu:** Satırda meta (tür, etiket, tarih, sahip, sürüm) ne kadar görünsün?
+3. **Filtre / sıralama:** Tür, etiket, tarih, «yalnızca benim» — hangileri öncelik?
+4. **Keşif vs gezinti:** Kök `DiDiscoveryHome` ile klasör içi deneyim arasında görsel tutarlılık.
+5. **Mobil / dar ekran:** Sol ağaç collapse — içerik alanı önceliği.
+6. **Operasyon senaryoları:** Odak klasörleri (CoC, Activity, iş paketi çıktıları) hızlı erişim.
+
+### Önerilen dilimler (taslak — onay bekliyor)
+
+| Dilim | Kapsam | Öncelik |
+|-------|--------|---------|
+| **UX-1** | Bilgi mimarisi + wireframe (kart/liste/tablo kararı) | P0 |
+| **UX-2** | İçerik listesi: sütunlar, sıralama, yoğunluk | P1 |
+| **UX-3** | Klasör kartları + breadcrumb iyileştirme | P1 |
+| **UX-4** | Filtre çubuğu (tür · etiket · arama entegrasyonu) | P2 |
+| **UX-5** | Klavye / erişilebilirlik · dar ekran | P2 |
+
+**Bağımlılık:** Mevcut API (`bootstrap`, `browse`, `children`, `search`) — büyük backend değişikliği beklenmiyor; ağırlık **Mng.Ui**.
+
+**Tahmini süre:** UX-1 ~0,5 sprint · UX-2/3 ~1–2 sprint (kapsama göre)

@@ -18,16 +18,27 @@ import {
   type OdakLineDocumentRow,
 } from '@/utils/odakSiparisLineDocumentService';
 import {
+  generateOdakPackageBrief,
+  generateOdakPackageDashboard,
   generateOdakPackageShipmentList,
+  packageBriefFromRow,
+  packageBriefToGenerateResult,
+  packageDashboardFromRow,
+  packageDashboardToGenerateResult,
   packageDocumentHasParameterWarnings,
+  packageShipmentListFromRow,
+  packageShipmentListToGenerateResult,
 } from '@/utils/odakSiparisPackageDocumentService';
 import type { DiGenerateDocumentResult } from '@/types/apps/documentIntelligence';
+import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import { lineDataId, listLinesForPackage } from '@/utils/odakSiparisLineService';
-import { ExternalLinkIcon, FileSpreadsheetIcon, PlusIcon, RefreshIcon } from 'vue-tabler-icons';
+import { fetchOdakPackageById } from '@/utils/odakSiparisService';
+import { ExternalLinkIcon, FileIcon, FileSpreadsheetIcon, PlusIcon, RefreshIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
   packageId: string;
   packageNo?: string;
+  packageRow?: OdakPackageRow | null;
 }>();
 
 const { t } = useAppI18n();
@@ -43,6 +54,61 @@ const allLines = ref<OdakLineRow[]>([]);
 const createDialogOpen = ref(false);
 const shipmentListLoading = ref(false);
 const shipmentListResult = ref<DiGenerateDocumentResult | null>(null);
+const dashboardLoading = ref(false);
+const dashboardResult = ref<DiGenerateDocumentResult | null>(null);
+const briefLoading = ref(false);
+const briefResult = ref<DiGenerateDocumentResult | null>(null);
+
+function syncShipmentListFromPackage(row?: OdakPackageRow | null) {
+  const persisted = packageShipmentListFromRow(row);
+  shipmentListResult.value = persisted ? packageShipmentListToGenerateResult(persisted) : null;
+}
+
+function syncDashboardFromPackage(row?: OdakPackageRow | null) {
+  const persisted = packageDashboardFromRow(row);
+  dashboardResult.value = persisted ? packageDashboardToGenerateResult(persisted) : null;
+}
+
+function syncBriefFromPackage(row?: OdakPackageRow | null) {
+  const persisted = packageBriefFromRow(row);
+  briefResult.value = persisted ? packageBriefToGenerateResult(persisted) : null;
+}
+
+function syncPackageDocumentsFromRow(row?: OdakPackageRow | null) {
+  syncShipmentListFromPackage(row);
+  syncDashboardFromPackage(row);
+  syncBriefFromPackage(row);
+}
+
+async function refreshPackageDocuments() {
+  const previous = {
+    shipment: shipmentListResult.value,
+    dashboard: dashboardResult.value,
+    brief: briefResult.value,
+  };
+
+  if (!props.packageId?.trim()) {
+    syncPackageDocumentsFromRow(props.packageRow);
+  } else {
+    try {
+      const row = await fetchOdakPackageById(props.packageId);
+      syncPackageDocumentsFromRow(row ?? props.packageRow);
+    } catch {
+      syncPackageDocumentsFromRow(props.packageRow);
+    }
+  }
+
+  // Writeback gecikmesi veya eksik alan durumunda oturum içi sonucu koru.
+  if (!shipmentListResult.value?.resourceId && previous.shipment?.resourceId) {
+    shipmentListResult.value = previous.shipment;
+  }
+  if (!dashboardResult.value?.resourceId && previous.dashboard?.resourceId) {
+    dashboardResult.value = previous.dashboard;
+  }
+  if (!briefResult.value?.resourceId && previous.brief?.resourceId) {
+    briefResult.value = previous.brief;
+  }
+}
 
 const documentRows = computed(() => flattenLineDocuments(allLines.value, lineDataId));
 
@@ -147,6 +213,7 @@ async function generateShipmentList() {
       message: successMessage.value,
       severity: 'success',
     });
+    await refreshPackageDocuments();
   } catch (e: unknown) {
     errorMessage.value = notifyApiError(e, {
       fallbackKey: 'odakSiparis.packageDocuments.shipmentListError',
@@ -156,8 +223,76 @@ async function generateShipmentList() {
   }
 }
 
+async function generateDashboard() {
+  if (!props.packageId?.trim()) return;
+  dashboardLoading.value = true;
+  errorMessage.value = '';
+  try {
+    const result = await generateOdakPackageDashboard(props.packageId);
+    dashboardResult.value = result;
+    successMessage.value = t('odakSiparis.packageDocuments.dashboardSuccess', {
+      fileName: result.fileName?.trim() || result.docNo?.trim() || '—',
+    });
+    if (packageDocumentHasParameterWarnings(result)) {
+      parameterWarningResult.value = result;
+    }
+    push({
+      title: t('odakSiparis.packageDocuments.dashboardTitle'),
+      message: successMessage.value,
+      severity: 'success',
+    });
+    await refreshPackageDocuments();
+  } catch (e: unknown) {
+    errorMessage.value = notifyApiError(e, {
+      fallbackKey: 'odakSiparis.packageDocuments.dashboardError',
+    }).message;
+  } finally {
+    dashboardLoading.value = false;
+  }
+}
+
+async function generateBrief() {
+  if (!props.packageId?.trim()) return;
+  briefLoading.value = true;
+  errorMessage.value = '';
+  try {
+    const result = await generateOdakPackageBrief(props.packageId);
+    briefResult.value = result;
+    successMessage.value = t('odakSiparis.packageDocuments.briefSuccess', {
+      fileName: result.fileName?.trim() || result.docNo?.trim() || '—',
+    });
+    if (packageDocumentHasParameterWarnings(result)) {
+      parameterWarningResult.value = result;
+    }
+    push({
+      title: t('odakSiparis.packageDocuments.briefTitle'),
+      message: successMessage.value,
+      severity: 'success',
+    });
+    await refreshPackageDocuments();
+  } catch (e: unknown) {
+    errorMessage.value = notifyApiError(e, {
+      fallbackKey: 'odakSiparis.packageDocuments.briefError',
+    }).message;
+  } finally {
+    briefLoading.value = false;
+  }
+}
+
 function openShipmentListDi() {
   const id = shipmentListResult.value?.resourceId?.trim();
+  if (!id) return;
+  navigateTo(diResourceUrl(id));
+}
+
+function openDashboardDi() {
+  const id = dashboardResult.value?.resourceId?.trim();
+  if (!id) return;
+  navigateTo(diResourceUrl(id));
+}
+
+function openBriefDi() {
+  const id = briefResult.value?.resourceId?.trim();
   if (!id) return;
   navigateTo(diResourceUrl(id));
 }
@@ -171,12 +306,21 @@ function openDi(row: OdakLineDocumentRow) {
 watch(
   () => props.packageId,
   () => {
-    shipmentListResult.value = null;
+    void refreshPackageDocuments();
     void loadLines();
   }
 );
 
+watch(
+  () => props.packageRow,
+  (row) => {
+    syncPackageDocumentsFromRow(row);
+  },
+  { deep: true }
+);
+
 onMounted(() => {
+  void refreshPackageDocuments();
   void loadLines();
 });
 </script>
@@ -255,6 +399,76 @@ onMounted(() => {
         >
           <FileSpreadsheetIcon class="mr-1" size="16" />
           {{ t('odakSiparis.packageDocuments.shipmentListAction') }}
+        </v-btn>
+      </v-card-text>
+    </v-card>
+
+    <v-card variant="outlined" class="mb-4">
+      <v-card-text class="d-flex flex-wrap align-center ga-3 py-3">
+        <div class="flex-grow-1 min-width-0">
+          <div class="text-subtitle-2 font-weight-medium">
+            {{ t('odakSiparis.packageDocuments.dashboardTitle') }}
+          </div>
+          <div class="text-body-2 text-medium-emphasis">
+            {{ t('odakSiparis.packageDocuments.dashboardHint') }}
+          </div>
+          <div
+            v-if="dashboardResult?.resourceId"
+            class="text-body-2 mt-2 d-flex flex-wrap align-center ga-2"
+          >
+            <span>{{ dashboardResult.fileName || dashboardResult.docNo || '—' }}</span>
+            <v-btn size="small" variant="text" color="primary" class="px-1" @click="openDashboardDi">
+              <ExternalLinkIcon class="mr-1" size="16" />
+              {{ t('odakSiparis.lineDocuments.openDi') }}
+            </v-btn>
+          </div>
+        </div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          size="small"
+          :loading="dashboardLoading"
+          :disabled="!packageId"
+          class="text-none"
+          @click="generateDashboard"
+        >
+          <FileSpreadsheetIcon class="mr-1" size="18" />
+          {{ t('odakSiparis.packageDocuments.dashboardAction') }}
+        </v-btn>
+      </v-card-text>
+    </v-card>
+
+    <v-card variant="outlined" class="mb-4">
+      <v-card-text class="d-flex flex-wrap align-center ga-3 py-3">
+        <div class="flex-grow-1 min-width-0">
+          <div class="text-subtitle-2 font-weight-medium">
+            {{ t('odakSiparis.packageDocuments.briefTitle') }}
+          </div>
+          <div class="text-body-2 text-medium-emphasis">
+            {{ t('odakSiparis.packageDocuments.briefHint') }}
+          </div>
+          <div
+            v-if="briefResult?.resourceId"
+            class="text-body-2 mt-2 d-flex flex-wrap align-center ga-2"
+          >
+            <span>{{ briefResult.fileName || briefResult.docNo || '—' }}</span>
+            <v-btn size="small" variant="text" color="primary" class="px-1" @click="openBriefDi">
+              <ExternalLinkIcon class="mr-1" size="16" />
+              {{ t('odakSiparis.lineDocuments.openDi') }}
+            </v-btn>
+          </div>
+        </div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          size="small"
+          :loading="briefLoading"
+          :disabled="!packageId"
+          class="text-none"
+          @click="generateBrief"
+        >
+          <FileIcon class="mr-1" size="18" />
+          {{ t('odakSiparis.packageDocuments.briefAction') }}
         </v-btn>
       </v-card-text>
     </v-card>

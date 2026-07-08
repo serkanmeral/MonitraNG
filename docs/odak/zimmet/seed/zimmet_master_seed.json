@@ -1,0 +1,162 @@
+{
+  "urunGruplari": [
+    {
+      "kod": "GRP-LAP",
+      "ad": "Laptop",
+      "trackBySerial": true,
+      "isFixedAsset": true,
+      "isConsumable": false,
+      "aciklama": "Tasinabilir bilgisayarlar",
+      "aktif": true
+    },
+    {
+      "kod": "GRP-MON",
+      "ad": "Monitor",
+      "trackBySerial": true,
+      "isFixedAsset": true,
+      "isConsumable": false,
+      "aktif": true
+    },
+    {
+      "kod": "GRP-CNT",
+      "ad": "Canta / cantasi",
+      "trackBySerial": false,
+      "isFixedAsset": true,
+      "isConsumable": false,
+      "aktif": true
+    },
+    {
+      "kod": "GRP-ACC",
+      "ad": "Aksesuar",
+      "trackBySerial": false,
+      "isFixedAsset": true,
+      "isConsumable": true,
+      "aktif": true
+    }
+  ],
+  "urunler": [
+    {
+      "kod": "PRD-DELL-5520",
+      "ad": "Dell Latitude 5520",
+      "urunGrubuKod": "GRP-LAP",
+      "marka": "Dell",
+      "model": "Latitude 5520",
+      "varsayilanGarantiAy": 36,
+      "aktif": true
+    },
+    {
+      "kod": "PRD-HP-840",
+      "ad": "HP EliteBook 840 G9",
+      "urunGrubuKod": "GRP-LAP",
+      "marka": "HP",
+      "model": "EliteBook 840 G9",
+      "varsayilanGarantiAy": 36,
+      "aktif": true
+    },
+    {
+      "kod": "PRD-DELL-U2722D",
+      "ad": "Dell UltraSharp 27 U2722D",
+      "urunGrubuKod": "GRP-MON",
+      "marka": "Dell",
+      "model": "U2722D",
+      "varsayilanGarantiAy": 36,
+      "aktif": true
+    },
+    {
+      "kod": "PRD-LENOVO-BAG",
+      "ad": "Lenovo Professional 15.6 Backpack",
+      "urunGrubuKod": "GRP-CNT",
+      "marka": "Lenovo",
+      "model": "Professional 15.6",
+      "varsayilanGarantiAy": 12,
+      "aktif": true
+    },
+    {
+      "kod": "PRD-LOG-MX",
+      "ad": "Logitech MX Master 3S",
+      "urunGrubuKod": "GRP-ACC",
+      "marka": "Logitech",
+      "model": "MX Master 3S",
+      "varsayilanGarantiAy": 24,
+      "aktif": true
+    }
+  ],
+  "depolar": [
+    {
+      "kod": "DEP-ANA",
+      "ad": "Ana IT Deposu",
+      "adres": "Fabrika — B Blok zemin kat",
+      "aktif": true
+    }
+  ],
+  "lokasyonlar": [
+    { "kod": "A-01", "ad": "Raf A-01 — Laptop", "depoKod": "DEP-ANA", "aktif": true },
+    { "kod": "A-02", "ad": "Raf A-02 — Monitor", "depoKod": "DEP-ANA", "aktif": true },
+    { "kod": "B-01", "ad": "Raf B-01 — Aksesuar", "depoKod": "DEP-ANA", "aktif": true }
+  ],
+  "demirbaslar": [
+    {
+      "seedKey": "DMB-LAP-001",
+      "katalogUrunKod": "PRD-DELL-5520",
+      "seriNo": "DL5520-SN-10001",
+      "marka": "Dell",
+      "model": "Latitude 5520",
+      "durum": "depoda",
+      "depoKod": "DEP-ANA",
+      "lokasyonKod": "A-01",
+      "girisTarihi": "2026-05-01T08:00:00Z",
+      "garantiBitis": "2029-05-01T08:00:00Z",
+      "alisFiyati": 28500,
+      "notlar": "Demo — depoda bekliyor"
+    },
+    {
+      "seedKey": "DMB-LAP-002",
+      "katalogUrunKod": "PRD-DELL-5520",
+      "seriNo": "DL5520-SN-10002",
+      "marka": "Dell",
+      "model": "Latitude 5520",
+      "durum": "depoda",
+      "depoKod": "DEP-ANA",
+      "lokasyonKod": "A-01",
+      "girisTarihi": "2026-05-01T08:00:00Z",
+      "garantiBitis": "2029-05-01T08:00:00Z",
+      "alisFiyati": 28500
+    },
+    {
+      "seedKey": "DMB-LAP-003",
+      "katalogUrunKod": "PRD-HP-840",
+      "seriNo": "HP840-SN-20001",
+      "marka": "HP",
+      "model": "EliteBook 840 G9",
+      "durum": "depoda",
+      "depoKod": "DEP-ANA",
+      "lokasyonKod": "A-01",
+      "girisTarihi": "2026-06-10T08:00:00Z",
+      "garantiBitis": "2029-06-10T08:00:00Z",
+      "alisFiyati": 32000
+    },
+    {
+      "seedKey": "DMB-MON-001",
+      "katalogUrunKod": "PRD-DELL-U2722D",
+      "seriNo": "U2722D-SN-30001",
+      "marka": "Dell",
+      "model": "U2722D",
+      "durum": "depoda",
+      "depoKod": "DEP-ANA",
+      "lokasyonKod": "A-02",
+      "girisTarihi": "2026-06-15T08:00:00Z",
+      "garantiBitis": "2029-06-15T08:00:00Z",
+      "alisFiyati": 12500
+    },
+    {
+      "seedKey": "DMB-BAG-001",
+      "katalogUrunKod": "PRD-LENOVO-BAG",
+      "seriNo": "BAG-LNV-40001",
+      "durum": "depoda",
+      "depoKod": "DEP-ANA",
+      "lokasyonKod": "B-01",
+      "girisTarihi": "2026-06-20T08:00:00Z",
+      "alisFiyati": 850
+    }
+  ]
+}

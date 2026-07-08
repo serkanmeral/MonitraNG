@@ -421,6 +421,12 @@ const sidebarItem: menu[] = [
     icon: FileTextIcon,
     to: "/apps/document-intelligence",
   },
+  {
+    title: "Belge Tasarımcısı",
+    pageCode: "documentIntelligence.designer.menuTitle",
+    icon: EditCircleIcon,
+    to: "/apps/document-intelligence/designer",
+  },
   { header: "Pages" },
   {
     title: 'Pricing',

@@ -25,5 +25,7 @@ public interface IDocumentGenerationService
     Task<IReadOnlyList<DocumentContextTypeDto>> ListContextTypesAsync(CancellationToken ct = default);
     Task<DocumentContextTypeDto?> GetContextTypeAsync(string type, CancellationToken ct = default);
     Task<IReadOnlyList<DocumentProducerDto>> ListProducersAsync(CancellationToken ct = default);
-    Task<DocumentProducerDto?> GetProducerAsync(string code, CancellationToken ct = default);
+    Task<DocumentProducerDetailDto?> GetProducerAsync(string code, CancellationToken ct = default);
+    Task<IReadOnlyList<DocumentDataSourceSummaryDto>> ListDataSourcesAsync(CancellationToken ct = default);
+    Task<DocumentDataSourceDetailDto?> GetDataSourceAsync(string code, CancellationToken ct = default);
 }

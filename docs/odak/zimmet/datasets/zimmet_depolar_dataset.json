@@ -1,0 +1,61 @@
+{
+  "name": "zimmet_depolar",
+  "description": "Zimmet — depo tanimlari",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "indexList": [
+    { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true }
+  ],
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Depo kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 20,
+        "pattern": "^DEP-[A-Z0-9]+$",
+        "message": "Kod DEP-XXX formatinda olmalidir"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Depo adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "adres",
+      "title": "Adres",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 300 }
+    },
+    {
+      "fieldType": "persons",
+      "name": "sorumluId",
+      "title": "Depo sorumlusu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ]
+}

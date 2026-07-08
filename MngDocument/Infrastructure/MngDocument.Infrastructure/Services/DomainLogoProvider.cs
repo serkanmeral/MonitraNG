@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -39,8 +40,8 @@ public sealed class DomainLogoProvider : IDomainLogoProvider
 
     public async Task<DomainLogoResult?> GetCurrentDomainLogoAsync(string? bearerToken, CancellationToken ct = default)
     {
-        var domainId = _ctx.DomainId;
         var token = bearerToken ?? _ctx.BearerToken;
+        var domainId = _ctx.DomainId ?? TryReadDomainIdFromToken(token);
         if (string.IsNullOrWhiteSpace(domainId) || string.IsNullOrWhiteSpace(token))
             return null;
 
@@ -100,6 +101,9 @@ public sealed class DomainLogoProvider : IDomainLogoProvider
         var ext = GuessExtension(bytes, response.Content.Headers.ContentType?.MediaType);
         return new DomainLogoResult { Bytes = bytes, Extension = ext };
     }
+
+    /// <summary>Base64 veya data-URL logo yükünden görsel çözümler (statik image parametreleri).</summary>
+    public static DomainLogoResult? TryDecodePayload(string? raw) => DecodeLogoString(raw);
 
     private static DomainLogoResult? DecodeLogoString(string? raw)
     {
@@ -166,5 +170,43 @@ public sealed class DomainLogoProvider : IDomainLogoProvider
 
         value = default;
         return false;
+    }
+
+    /// <summary>WOPI isteklerinde HTTP User claim yok; oturum DG token'ından domain_id okunur.</summary>
+    internal static string? TryReadDomainIdFromToken(string? bearerToken)
+    {
+        if (string.IsNullOrWhiteSpace(bearerToken))
+            return null;
+
+        var parts = bearerToken.Split('.');
+        if (parts.Length < 2)
+            return null;
+
+        try
+        {
+            var payload = parts[1]
+                .Replace('-', '+')
+                .Replace('_', '/');
+            var padding = (4 - payload.Length % 4) % 4;
+            if (padding > 0)
+                payload = payload.PadRight(payload.Length + padding, '=');
+
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (TryReadProperty(root, "domain_id", out var domainIdProp))
+            {
+                var domainId = domainIdProp.GetString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(domainId))
+                    return domainId;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
     }
 }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onActivated, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
+import DiBrowseToolbar from '@/components/apps/document-intelligence/DiBrowseToolbar.vue';
 import DiDiscoveryHome from '@/components/apps/document-intelligence/DiDiscoveryHome.vue';
 import DiAreaIndexBanner from '@/components/apps/document-intelligence/DiAreaIndexBanner.vue';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
@@ -20,7 +21,6 @@ import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/
 import DiResourceInfoDialog from '@/components/apps/document-intelligence/DiResourceInfoDialog.vue';
 import DiCloneResourceDialog from '@/components/apps/document-intelligence/DiCloneResourceDialog.vue';
 import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligence/DiGenerateFromTemplateDialog.vue';
-import DiEditorSessionsPanel from '@/components/apps/document-intelligence/DiEditorSessionsPanel.vue';
 import DiEditorLockDialog from '@/components/apps/document-intelligence/DiEditorLockDialog.vue';
 import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
@@ -28,6 +28,7 @@ import { isDiPreviewable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManag
 import { useDiLazyFolderTree } from '@/composables/useDiLazyFolderTree';
 import {
   DI_HOME_PATH,
+  DI_LAST_FOLDER_STORAGE_KEY,
   buildDiResourceUrl,
   buildDiResourceEditorUrl,
   parseFolderIdQuery,
@@ -41,7 +42,6 @@ import { useApiErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAuthStore } from '@/stores/auth';
 import {
   LayoutSidebarLeftCollapseIcon,
-  LayoutSidebarLeftExpandIcon,
 } from 'vue-tabler-icons';
 import {
   DI_CHILDREN_PAGE_SIZE,
@@ -134,7 +134,13 @@ const {
 } = useDiLazyFolderTree();
 const treeExpandedIds = ref<string[]>([]);
 const treeLoading = ref(false);
-const selectedFolderId = ref<string | null>(null);
+
+function readFolderIdFromRoute(): string | null {
+  const parsed = parseFolderIdQuery(route.query as Record<string, unknown>);
+  return parsed === undefined ? null : parsed;
+}
+
+const selectedFolderId = ref<string | null>(readFolderIdFromRoute());
 const selectedFolder = ref<DiResource | null>(null);
 const children = ref<DiResource[]>([]);
 const childrenTotal = ref(0);
@@ -220,6 +226,8 @@ const cloneTarget = ref<DiResource | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<DiResource | null>(null);
 const deleteForce = ref(false);
+const selectedResourceIds = ref<string[]>([]);
+const bulkDeleteDialog = ref(false);
 const busy = ref(false);
 
 // Sürüm geçmişi
@@ -336,8 +344,30 @@ const contentSections = computed<BrowseContentSection[]>(() => {
   return sections;
 });
 
+const selectableResources = computed(() =>
+  filteredChildren.value.filter((c) => c.type !== 'folder' && c.permissions.canDelete)
+);
+
+const selectedResourceCount = computed(() => selectedResourceIds.value.length);
+
+const allSelectableSelected = computed(() => {
+  const selectable = selectableResources.value;
+  if (!selectable.length) return false;
+  return selectable.every((r) => selectedResourceIds.value.includes(r.id));
+});
+
+const someSelectableSelected = computed(() =>
+  selectableResources.value.some((r) => selectedResourceIds.value.includes(r.id))
+);
+
+const urlFolderId = computed(() => readFolderIdFromRoute());
+
 const showDiscovery = computed(
-  () => !searchActive.value && mainMode.value === 'browse' && selectedFolderId.value === null
+  () =>
+    !searchActive.value
+    && mainMode.value === 'browse'
+    && selectedFolderId.value === null
+    && urlFolderId.value === null,
 );
 
 const childrenSkip = computed(() => (childrenPage.value - 1) * childrenPageSize.value);
@@ -446,6 +476,7 @@ async function refreshListing() {
 
 async function onChildrenPageChange(page: number) {
   childrenPage.value = page;
+  clearResourceSelection();
   await refreshListing();
 }
 
@@ -453,6 +484,7 @@ async function onChildrenPageSizeChange(size: number) {
   if (!size || size === childrenPageSize.value) return;
   childrenPageSize.value = size;
   childrenPage.value = 1;
+  clearResourceSelection();
   await refreshListing();
 }
 
@@ -472,8 +504,10 @@ async function selectFolder(folderId: string | null, options?: { syncUrl?: boole
   searchActive.value = false;
   activeTagFilter.value = null;
   mainMode.value = 'browse';
+  clearResourceSelection();
   selectedFolderId.value = folderId;
   openDoc.value = null;
+  rememberBrowseFolder(folderId);
   childrenPage.value = 1;
   childrenLoading.value = true;
   try {
@@ -489,11 +523,29 @@ async function selectFolder(folderId: string | null, options?: { syncUrl?: boole
   }
 
   if (options?.syncUrl !== false && route.path === DI_HOME_PATH) {
-    await router.replace({
-      path: DI_HOME_PATH,
-      query: folderId ? { folderId } : {},
-    });
+    const nextQuery = folderId ? { folderId } : {};
+    const currentFolderId = parseFolderIdQuery(route.query as Record<string, unknown>);
+    if (currentFolderId !== folderId) {
+      await router.push({
+        path: DI_HOME_PATH,
+        query: nextQuery,
+      });
+    }
   }
+}
+
+function rememberBrowseFolder(folderId: string | null) {
+  if (!import.meta.client) return;
+  if (folderId) {
+    sessionStorage.setItem(DI_LAST_FOLDER_STORAGE_KEY, folderId);
+  } else {
+    sessionStorage.removeItem(DI_LAST_FOLDER_STORAGE_KEY);
+  }
+}
+
+function buildResourceNavUrl(resourceId: string): string {
+  const fromFolder = selectedFolderId.value;
+  return buildDiResourceUrl(resourceId, fromFolder ? { fromFolderId: fromFolder } : undefined);
 }
 
 async function openResource(resource: DiResource) {
@@ -501,15 +553,19 @@ async function openResource(resource: DiResource) {
     await selectFolder(resource.id);
     return;
   }
-  await navigateTo(buildDiResourceUrl(resource.id));
+  const fromFolder = selectedFolderId.value;
+  if (fromFolder) {
+    rememberBrowseFolder(fromFolder);
+  }
+  await router.push(buildResourceNavUrl(resource.id));
 }
 
 function openFilePreview(resource: DiResource) {
-  void navigateTo(buildDiResourceUrl(resource.id));
+  void openResource(resource);
 }
 
 function openFileEditor(resource: DiResource) {
-  void navigateTo(buildDiResourceUrl(resource.id));
+  void openResource(resource);
 }
 
 async function openFileEditorInNewTab(resource: DiResource) {
@@ -930,6 +986,29 @@ async function onCloned(created: DiResource) {
 }
 
 // --- Sil ---
+function clearResourceSelection() {
+  selectedResourceIds.value = [];
+}
+
+function isResourceSelected(id: string): boolean {
+  return selectedResourceIds.value.includes(id);
+}
+
+function toggleResourceSelection(id: string, selected: boolean | null) {
+  const set = new Set(selectedResourceIds.value);
+  if (selected) set.add(id);
+  else set.delete(id);
+  selectedResourceIds.value = [...set];
+}
+
+function toggleSelectAllOnPage() {
+  if (allSelectableSelected.value) {
+    clearResourceSelection();
+    return;
+  }
+  selectedResourceIds.value = selectableResources.value.map((r) => r.id);
+}
+
 function openDelete(resource: DiResource) {
   deleteTarget.value = resource;
   deleteForce.value = false;
@@ -962,6 +1041,45 @@ async function submitDelete() {
   }
 }
 
+function openBulkDelete() {
+  if (!selectedResourceIds.value.length) return;
+  bulkDeleteDialog.value = true;
+}
+
+async function submitBulkDelete() {
+  const ids = [...selectedResourceIds.value];
+  if (!ids.length) return;
+  busy.value = true;
+  let ok = 0;
+  let fail = 0;
+  try {
+    for (const id of ids) {
+      try {
+        await diDelete(id, false);
+        ok += 1;
+        if (openDoc.value?.id === id) {
+          openDoc.value = null;
+          mainMode.value = 'browse';
+        }
+      } catch {
+        fail += 1;
+      }
+    }
+    bulkDeleteDialog.value = false;
+    clearResourceSelection();
+    if (fail === 0) {
+      notify(t('documentIntelligence.bulkDeleted', { count: ok }), 'success');
+    } else if (ok > 0) {
+      notify(t('documentIntelligence.bulkDeletePartial', { ok, fail }), 'warning');
+    } else {
+      notify(t('documentIntelligence.errors.delete'), 'error');
+    }
+    await refreshWorkspace();
+  } finally {
+    busy.value = false;
+  }
+}
+
 // --- Yetkiler ---
 function openPermissions(resource: DiResource) {
   if (resource.type !== 'folder') return;
@@ -979,6 +1097,10 @@ async function onPermissionsChanged() {
       /* açık doküman artık görünmüyor olabilir */
     }
   }
+}
+
+function onToolbarPermissions() {
+  if (selectedFolder.value) openPermissions(selectedFolder.value);
 }
 
 // --- Dosya yükleme ---
@@ -1173,24 +1295,63 @@ onMounted(async () => {
     return;
   }
 
-  treeLoading.value = true;
-  childrenLoading.value = true;
-  try {
-    const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
-    const initialFolder = folderId === undefined ? null : folderId;
-    childrenPage.value = 1;
-    const boot = await diGetBootstrap(initialFolder, { skip: 0, limit: childrenPageSize.value });
-    applyBootstrap(boot);
-    selectedFolderId.value = initialFolder;
-    if (initialFolder) {
-      await hydrateDeepLinkTree(initialFolder);
-    }
-  } catch (e) {
-    notifyError(e, 'documentIntelligence.errors.treeLoad');
-  } finally {
-    treeLoading.value = false;
-    childrenLoading.value = false;
+  await syncBrowseRouteContext({ initial: true });
+});
+
+async function syncBrowseRouteContext(options?: { initial?: boolean; forceRefresh?: boolean }) {
+  if (route.path !== DI_HOME_PATH) return;
+
+  const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
+  if (folderId === undefined) return;
+
+  const needsRefresh = options?.forceRefresh || route.query.refresh === '1';
+  const folderChanged = selectedFolderId.value !== folderId;
+
+  if (folderChanged) {
+    selectedFolderId.value = folderId;
   }
+  if (folderId) {
+    rememberBrowseFolder(folderId);
+  }
+
+  if (options?.initial) {
+    treeLoading.value = true;
+    childrenLoading.value = true;
+    try {
+      childrenPage.value = 1;
+      const boot = await diGetBootstrap(folderId, { skip: 0, limit: childrenPageSize.value });
+      applyBootstrap(boot);
+      selectedFolderId.value = folderId;
+      if (folderId) {
+        await hydrateDeepLinkTree(folderId);
+      }
+    } catch (e) {
+      notifyError(e, 'documentIntelligence.errors.treeLoad');
+    } finally {
+      treeLoading.value = false;
+      childrenLoading.value = false;
+    }
+    return;
+  }
+
+  if (folderChanged) {
+    await selectFolder(folderId, { syncUrl: false });
+    if (folderId) {
+      await hydrateDeepLinkTree(folderId);
+    }
+  } else if (needsRefresh) {
+    await refreshListing();
+  }
+
+  if (route.query.refresh === '1') {
+    const q = { ...route.query };
+    delete q.refresh;
+    await router.replace({ path: DI_HOME_PATH, query: q });
+  }
+}
+
+onActivated(() => {
+  void syncBrowseRouteContext();
 });
 
 watch(activeTagFilter, async () => {
@@ -1200,17 +1361,10 @@ watch(activeTagFilter, async () => {
 });
 
 watch(
-  () => route.query.folderId,
+  () => [route.query.folderId, route.query.refresh] as const,
   async () => {
-    if (route.path !== DI_HOME_PATH) return;
-    const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
-    if (folderId === undefined) return;
-    if (selectedFolderId.value === folderId) return;
-    await selectFolder(folderId, { syncUrl: false });
-    if (folderId) {
-      await hydrateDeepLinkTree(folderId);
-    }
-  }
+    await syncBrowseRouteContext();
+  },
 );
 </script>
 
@@ -1218,19 +1372,6 @@ watch(
   <DiResourcePreviewProvider :on-download="downloadFile">
   <div>
     <BaseBreadcrumb :title="t('documentIntelligence.title')" :breadcrumbs="breadcrumbs" />
-
-    <div class="d-flex justify-end mb-3">
-      <v-btn
-        to="/apps/document-intelligence/designer"
-        variant="tonal"
-        color="primary"
-        size="small"
-        class="text-none"
-        prepend-icon="mdi-file-document-edit-outline"
-      >
-        {{ t('documentIntelligence.designer.openDesigner') }}
-      </v-btn>
-    </div>
 
     <v-card elevation="10" rounded="lg" class="overflow-hidden">
       <div class="d-flex di-layout">
@@ -1270,129 +1411,29 @@ watch(
 
         <!-- Sağ panel: içerik -->
         <div class="di-content-panel flex-grow-1">
-          <!-- Üst bar -->
-          <div class="d-flex align-center ga-2 px-4 py-2 border-b flex-wrap">
-            <v-btn
-              v-if="treeCollapsed"
-              icon
-              size="small"
-              variant="text"
-              :title="t('documentIntelligence.expand')"
-              @click="toggleTreeCollapse"
-            >
-              <LayoutSidebarLeftExpandIcon size="18" />
-            </v-btn>
-
-            <v-text-field
-              v-model="searchQuery"
-              density="compact"
-              variant="solo-filled"
-              flat
-              hide-details
-              clearable
-              prepend-inner-icon="mdi-magnify"
-              :placeholder="t('documentIntelligence.searchPlaceholder')"
-              class="di-search flex-grow-1"
-              style="max-width: 420px"
-              @update:model-value="onSearchInput"
-              @keydown.enter="runSearch"
-              @click:clear="clearSearch"
-            />
-
-            <v-spacer />
-
-            <DiEditorSessionsPanel v-if="canViewEditorSessions" compact class="mr-2" />
-
-            <v-btn
-              v-if="selectedFolder && canManage(selectedFolder)"
-              color="primary"
-              variant="text"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-shield-account-outline"
-              :title="t('documentIntelligence.permissions.title')"
-              @click="openPermissions(selectedFolder)"
-            >
-              {{ t('documentIntelligence.permissions.menuTitle') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canCreate"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-folder-plus-outline"
-              @click="openFolderDialog"
-            >
-              {{ t('documentIntelligence.newFolder') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canCreate"
-              color="primary"
-              variant="flat"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-book-plus-outline"
-              @click="openDocDialog"
-            >
-              {{ t('documentIntelligence.newPage') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canCreate"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-file-word-box"
-              @click="openNativeDocDialog"
-            >
-              {{ t('documentIntelligence.newNativeDocument') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canCreate"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-file-excel-box"
-              @click="openNativeSheetDialog"
-            >
-              {{ t('documentIntelligence.newNativeSheet') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canCreate"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-file-powerpoint-box"
-              @click="openNativePresentationDialog"
-            >
-              {{ t('documentIntelligence.newNativePresentation') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canCreate"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-file-document-plus-outline"
-              @click="openGenerateFromTemplateDialog"
-            >
-              {{ t('documentIntelligence.generateFromTemplate.menu') }}
-            </v-btn>
-            <v-btn
-              v-if="currentPerm.canUpload"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              prepend-icon="mdi-upload"
-              @click="openFileDialog"
-            >
-              {{ t('documentIntelligence.uploadFile') }}
-            </v-btn>
-          </div>
+          <DiBrowseToolbar
+            v-model:search-query="searchQuery"
+            :tree-collapsed="treeCollapsed"
+            :show-refresh="!searchActive && mainMode === 'browse'"
+            :refresh-loading="childrenLoading || treeLoading"
+            :can-view-editor-sessions="canViewEditorSessions"
+            :show-permissions="!!(selectedFolder && canManage(selectedFolder))"
+            :can-create="currentPerm.canCreate"
+            :can-upload="currentPerm.canUpload"
+            @toggle-tree="toggleTreeCollapse"
+            @search-input="onSearchInput"
+            @search-enter="runSearch"
+            @search-clear="clearSearch"
+            @refresh="refreshWorkspace"
+            @permissions="onToolbarPermissions"
+            @new-folder="openFolderDialog"
+            @new-page="openDocDialog"
+            @new-native-document="openNativeDocDialog"
+            @new-native-sheet="openNativeSheetDialog"
+            @new-native-presentation="openNativePresentationDialog"
+            @generate-from-template="openGenerateFromTemplateDialog"
+            @upload="openFileDialog"
+          />
 
           <div class="di-content-scroll pa-4">
             <!-- Arama sonuçları -->
@@ -1619,6 +1660,45 @@ watch(
                   </div>
 
                   <template v-else-if="filteredChildren.length">
+                <div
+                  v-if="selectableResources.length"
+                  class="d-flex flex-wrap align-center ga-2 mb-3"
+                >
+                  <v-checkbox-btn
+                    :model-value="allSelectableSelected"
+                    :indeterminate="someSelectableSelected && !allSelectableSelected"
+                    density="compact"
+                    hide-details
+                    @update:model-value="toggleSelectAllOnPage"
+                  />
+                  <span class="text-body-2 text-medium-emphasis">
+                    {{ t('documentIntelligence.selectAllOnPage') }}
+                  </span>
+                  <template v-if="selectedResourceCount">
+                    <v-chip size="small" variant="tonal" color="primary">
+                      {{ t('documentIntelligence.selectedCount', { count: selectedResourceCount }) }}
+                    </v-chip>
+                    <v-btn
+                      size="small"
+                      variant="text"
+                      class="text-none"
+                      @click="clearResourceSelection"
+                    >
+                      {{ t('documentIntelligence.clearSelection') }}
+                    </v-btn>
+                    <v-btn
+                      size="small"
+                      variant="flat"
+                      color="error"
+                      class="text-none"
+                      prepend-icon="mdi-delete-outline"
+                      @click="openBulkDelete"
+                    >
+                      {{ t('documentIntelligence.bulkDelete') }}
+                    </v-btn>
+                  </template>
+                </div>
+
                 <!-- Klasörler -->
                 <div v-if="folderChildren.length" class="mb-4">
                   <div class="text-caption text-medium-emphasis mb-2">{{ t('documentIntelligence.folders') }}</div>
@@ -1658,6 +1738,15 @@ watch(
                         @click="openResource(d)"
                       >
                         <template #prepend>
+                          <v-checkbox-btn
+                            v-if="d.permissions.canDelete"
+                            :model-value="isResourceSelected(d.id)"
+                            density="compact"
+                            hide-details
+                            class="mr-1 flex-shrink-0"
+                            @click.stop
+                            @update:model-value="(value) => toggleResourceSelection(d.id, value)"
+                          />
                           <v-icon :icon="resourceIcon(d)" color="primary" />
                         </template>
                         <v-list-item-title>
@@ -2121,6 +2210,25 @@ watch(
           <v-btn variant="text" class="text-none" @click="deleteDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
           <v-btn color="error" variant="flat" class="text-none" :loading="busy" @click="submitDelete">
             {{ deleteForce ? t('documentIntelligence.deleteAnyway') : t('documentIntelligence.delete') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Toplu sil -->
+    <v-dialog v-model="bulkDeleteDialog" max-width="440">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.bulkDelete') }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-0">
+            {{ t('documentIntelligence.bulkDeleteConfirm', { count: selectedResourceCount }) }}
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="bulkDeleteDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="error" variant="flat" class="text-none" :loading="busy" @click="submitBulkDelete">
+            {{ t('documentIntelligence.delete') }}
           </v-btn>
         </v-card-actions>
       </v-card>

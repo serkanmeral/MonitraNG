@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using MngDocument.Application.Contracts.Generation;
 using MngDocument.Application.Contracts.Templates;
 using MngDocument.Application.Interfaces;
+using MngDocument.Infrastructure.Services;
 using MngDocument.Infrastructure.Services.Generation.DataSources;
 
 namespace MngDocument.Infrastructure.Services.Generation;
@@ -12,15 +13,18 @@ public sealed class DocumentParameterResolver
     private readonly DocumentIncrementalAllocator _incremental;
     private readonly IDataSourceExecutor _dataSources;
     private readonly DocumentDataSourceCatalogProvider _dataSourceCatalog;
+    private readonly IDomainLogoProvider _logoProvider;
 
     public DocumentParameterResolver(
         DocumentIncrementalAllocator incremental,
         IDataSourceExecutor dataSources,
-        DocumentDataSourceCatalogProvider dataSourceCatalog)
+        DocumentDataSourceCatalogProvider dataSourceCatalog,
+        IDomainLogoProvider logoProvider)
     {
         _incremental = incremental;
         _dataSources = dataSources;
         _dataSourceCatalog = dataSourceCatalog;
+        _logoProvider = logoProvider;
     }
 
     public async Task<ParameterResolutionResult> ResolveAsync(
@@ -45,13 +49,21 @@ public sealed class DocumentParameterResolver
             if (TemplateModelSerializer.IsHeaderBoundLetterheadCreatePerson(param))
                 continue;
 
+            var kind = param.Kind?.Trim().ToLowerInvariant() ?? "scalar";
+            if (string.Equals(kind, "image", StringComparison.OrdinalIgnoreCase))
+            {
+                var image = await ResolveImageParameterAsync(param, token, ct);
+                if (image is not null)
+                    result.Images[key] = image;
+                continue;
+            }
+
             if (overrides is not null && overrides.TryGetValue(key, out var overrideValue))
             {
                 result.Scalars[key] = overrideValue ?? string.Empty;
                 continue;
             }
 
-            var kind = param.Kind?.Trim().ToLowerInvariant() ?? "scalar";
             var valueSource = await ResolveValueSourceAsync(param, ct);
             if (valueSource is not null)
             {
@@ -279,5 +291,35 @@ public sealed class DocumentParameterResolver
             return dt.ToString(format ?? "dd.MM.yyyy", CultureInfo.InvariantCulture);
 
         return raw;
+    }
+
+    private async Task<ResolvedImageParameter?> ResolveImageParameterAsync(
+        TemplateParameterModel param,
+        string? token,
+        CancellationToken ct)
+    {
+        var mode = param.ValueSourceMode?.Trim().ToLowerInvariant() ?? "manual";
+        return mode switch
+        {
+            "domain" => await ResolveDomainLogoAsync(token, ct),
+            "static" => ResolveStaticLogo(param.DefaultValue),
+            _ => null
+        };
+    }
+
+    private async Task<ResolvedImageParameter?> ResolveDomainLogoAsync(string? token, CancellationToken ct)
+    {
+        var logo = await _logoProvider.GetCurrentDomainLogoAsync(token, ct);
+        return logo is null
+            ? null
+            : new ResolvedImageParameter { Bytes = logo.Bytes, Extension = logo.Extension };
+    }
+
+    private static ResolvedImageParameter? ResolveStaticLogo(string? raw)
+    {
+        var logo = DomainLogoProvider.TryDecodePayload(raw);
+        return logo is null
+            ? null
+            : new ResolvedImageParameter { Bytes = logo.Bytes, Extension = logo.Extension };
     }
 }

@@ -2,16 +2,26 @@ import { getDataGatewayProxyUrlWithAuth } from '@/services/apiService';
 
 export const DI_HOME_PATH = '/apps/document-intelligence';
 
+/** sessionStorage — son gezilen klasör (belge sayfasına geri dönüş yedeği). */
+export const DI_LAST_FOLDER_STORAGE_KEY = 'di-last-folder-id';
+
 /** Markdown görsel embed: DG filePath (di-fp: encoded path). */
 export const DI_FILE_PATH_MARKDOWN_PREFIX = 'di-fp:';
 
 const DI_RESOURCE_PATH_RE = /\/apps\/document-intelligence\/r\/([^/?#]+)/i;
 
 /** Paylaşılabilir belge deep link URL'si. */
-export function buildDiResourceUrl(resourceId: string): string {
+export function buildDiResourceUrl(
+  resourceId: string,
+  options?: { fromFolderId?: string | null },
+): string {
   const id = resourceId.trim();
   if (!id) return DI_HOME_PATH;
-  return `${DI_HOME_PATH}/r/${encodeURIComponent(id)}`;
+  const params = new URLSearchParams();
+  const fromFolder = options?.fromFolderId?.trim();
+  if (fromFolder) params.set('fromFolder', fromFolder);
+  const query = params.toString();
+  return `${DI_HOME_PATH}/r/${encodeURIComponent(id)}${query ? `?${query}` : ''}`;
 }
 
 /** Tam ekran Collabora editör sayfası (yeni sekme). */
@@ -123,9 +133,24 @@ export function parseDiResourceIdFromAnchor(anchor: HTMLAnchorElement): string |
 }
 
 /** Klasör gezintisi için URL (opsiyonel deep link). */
-export function buildDiFolderUrl(folderId: string | null): string {
+export function buildDiFolderUrl(
+  folderId: string | null,
+  options?: { refresh?: boolean },
+): string {
   if (!folderId?.trim()) return DI_HOME_PATH;
-  return `${DI_HOME_PATH}?folderId=${encodeURIComponent(folderId.trim())}`;
+  const params = new URLSearchParams({ folderId: folderId.trim() });
+  if (options?.refresh) params.set('refresh', '1');
+  return `${DI_HOME_PATH}?${params.toString()}`;
+}
+
+/** Belge sayfasındaki `fromFolder` query — gezgin bağlamını korur. */
+export function parseFromFolderQuery(query: Record<string, unknown>): string | null | undefined {
+  if (!('fromFolder' in query)) return undefined;
+  const raw = query.fromFolder;
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'string') return raw.trim() || null;
+  if (Array.isArray(raw) && typeof raw[0] === 'string') return raw[0].trim() || null;
+  return null;
 }
 
 /** Eski `?resourceId=` query parametresi (geriye dönük uyumluluk). */

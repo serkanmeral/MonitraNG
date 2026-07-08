@@ -372,6 +372,11 @@ const horizontalItems: menu[] = [
     icon: FileDescriptionIcon,
     to: "/apps/document-intelligence",
   },
+  {
+    title: "Belge Tasarımcısı",
+    icon: FileCheckIcon,
+    to: "/apps/document-intelligence/designer",
+  },
 
   {
     title: "Pages",

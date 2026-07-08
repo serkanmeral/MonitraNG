@@ -25,4 +25,7 @@ internal static class DgFileFieldReader
 
     internal static (string? Path, string? Name) Read(DmLetterhead row) =>
         Read(row.designFile);
+
+    internal static (string? Path, string? Name) Read(DmCoverPage row) =>
+        Read(row.designFile);
 }

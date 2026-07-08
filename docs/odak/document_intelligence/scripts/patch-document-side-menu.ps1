@@ -1,6 +1,7 @@
 # Document Intelligence — @side_menu kaydi (Odak DG uzerinden)
 # Header: Kaynaklar
 #   - Dokümanlar (user) → /apps/document-intelligence
+#   - Belge Tasarımcısı (user) → /apps/document-intelligence/designer
 #
 # Token: once OC token scriptini calistirin ya da $env:DI_TOKEN set edin.
 # Usage (repo kokunden):
@@ -37,25 +38,74 @@ $headers = @{
 $dataPath = "/data/api/v1/data/@side_menu"
 $listUri = "$BaseUrl$dataPath`?limit=10000&sort=order:asc"
 
-function Get-ItemId($row) {
+function Get-RowValue($row, [string]$Key) {
     if ($null -eq $row) { return $null }
-    if ($row.__dataId) { return [string]$row.__dataId }
-    if ($row.dataId) { return [string]$row.dataId }
-    if ($row.DataId) { return [string]$row.DataId }
-    if ($row.id) { return [string]$row.id }
+    if ($row -is [System.Collections.IDictionary]) {
+        foreach ($candidate in @($Key, $Key.ToLowerInvariant(), $Key.ToUpperInvariant())) {
+            if ($row.ContainsKey($candidate) -and $null -ne $row[$candidate]) {
+                return $row[$candidate]
+            }
+        }
+        return $null
+    }
+    $prop = $row.PSObject.Properties[$Key]
+    if ($null -ne $prop) { return $prop.Value }
     return $null
 }
 
-function Get-MenuItems($response) {
-    if ($null -eq $response) { return @() }
-    if ($response -is [System.Array]) { return , $response }
-    if ($null -ne $response.items) { return , @($response.items) }
-    return , @($response)
+function Get-ItemId($row) {
+    foreach ($key in @("__dataId", "dataId", "DataId", "id")) {
+        $val = Get-RowValue $row $key
+        if (-not [string]::IsNullOrEmpty([string]$val)) { return [string]$val }
+    }
+    return $null
+}
+
+function ConvertTo-MenuRow($raw) {
+    if ($null -eq $raw) { return $null }
+    if ($raw -is [System.Collections.IDictionary]) {
+        return [pscustomobject]@{
+            __dataId = Get-RowValue $raw "__dataId"
+            order    = Get-RowValue $raw "order"
+            itemType = Get-RowValue $raw "itemType"
+            pageType = Get-RowValue $raw "pageType"
+            pageCode = Get-RowValue $raw "pageCode"
+            header   = Get-RowValue $raw "header"
+            title    = Get-RowValue $raw "title"
+            icon     = Get-RowValue $raw "icon"
+            iconType = Get-RowValue $raw "iconType"
+            to       = Get-RowValue $raw "to"
+            type     = Get-RowValue $raw "type"
+            parentId = Get-RowValue $raw "parentId"
+            level    = Get-RowValue $raw "level"
+            disabled = Get-RowValue $raw "disabled"
+        }
+    }
+    return $raw
+}
+
+# DG @side_menu JSON bazen ayni alanin farkli casing'ini icerir; ConvertFrom-Json (default) fail/eksik parse eder.
+function Get-SideMenuItems {
+    $response = Invoke-WebRequest -Uri $listUri -Headers $headers -Method GET
+    $parsed = $response.Content | ConvertFrom-Json -AsHashtable
+    if ($null -eq $parsed) { return @() }
+
+    $rawRows = @()
+    if ($parsed -is [System.Collections.IDictionary] -and $parsed.ContainsKey("items")) {
+        $rawRows = @($parsed["items"])
+    }
+    elseif ($parsed -is [System.Collections.IEnumerable] -and -not ($parsed -is [string])) {
+        $rawRows = @($parsed)
+    }
+    else {
+        $rawRows = @($parsed)
+    }
+
+    return @($rawRows | ForEach-Object { ConvertTo-MenuRow $_ } | Where-Object { $null -ne $_ })
 }
 
 Write-Host "Side menu listeleniyor..." -ForegroundColor Cyan
-$list = Invoke-RestMethod -Uri $listUri -Headers $headers -Method GET
-$items = Get-MenuItems $list
+$items = Get-SideMenuItems
 Write-Host "  $($items.Count) kayit" -ForegroundColor Gray
 
 function Invoke-MenuPut {
@@ -94,8 +144,7 @@ function Upsert-MenuItem {
         $created = Invoke-MenuPost -Body $Body
         $newId = Get-ItemId $created
         if ([string]::IsNullOrEmpty($newId) -and $Body.pageCode) {
-            $refreshed = Invoke-RestMethod -Uri $listUri -Headers $headers -Method GET
-            $refreshedItems = Get-MenuItems $refreshed
+            $refreshedItems = Get-SideMenuItems
             $createdRow = $refreshedItems | Where-Object { $_.pageCode -eq $Body.pageCode } | Select-Object -First 1
             $newId = Get-ItemId $createdRow
             $created = $createdRow
@@ -135,8 +184,17 @@ foreach ($row in $items) {
     }
 }
 
-$headerOrder = $maxOrder + 1
+# Mevcut Kaynaklar header order'ini koru; yoksa sona ekle.
+$existingHeader = $items | Where-Object {
+    $_.itemType -eq "header" -and (
+        $_.pageCode -eq "documentIntelligence.menuHeader" -or
+        ($_.header -and ($_.header -eq "Kaynaklar" -or $_.header -eq "Resources"))
+    )
+} | Select-Object -First 1
+
+$headerOrder = if ($null -ne $existingHeader.order) { [int]$existingHeader.order } else { $maxOrder + 1 }
 $documentsItemOrder = $headerOrder + 1
+$designerItemOrder = $headerOrder + 2
 
 # --- Header: Kaynaklar ---
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Kaynaklar header" -FindExisting {
@@ -161,6 +219,9 @@ if ([string]::IsNullOrEmpty($headerId)) {
     exit 1
 }
 
+# Listeyi yenile (yeni header id'si / sibling items icin)
+$items = Get-SideMenuItems
+
 # --- Dokümanlar ---
 Upsert-MenuItem -AllItems $items -Label "Dokumanlar" -FindExisting {
     $_.pageCode -eq "documentIntelligence.menuTitle" -or $_.to -eq "/apps/document-intelligence"
@@ -175,6 +236,26 @@ Upsert-MenuItem -AllItems $items -Label "Dokumanlar" -FindExisting {
     icon     = "FileTextIcon"
     iconType = "tabler"
     to       = "/apps/document-intelligence"
+    type     = "internal"
+    disabled = $false
+} | Out-Null
+
+# --- Belge Tasarımcısı (DI'dan ayrı menü satiri; route ayni agacta kalir) ---
+Upsert-MenuItem -AllItems $items -Label "Belge Tasarimcisi" -FindExisting {
+    $_.pageCode -eq "documentIntelligence.designer.menuTitle" -or
+    $_.pageCode -eq "documentIntelligence.designer.title" -or
+    $_.to -eq "/apps/document-intelligence/designer"
+} -Body @{
+    order    = $designerItemOrder
+    itemType = "item"
+    level    = 1
+    parentId = $headerId
+    pageType = "user"
+    pageCode = "documentIntelligence.designer.menuTitle"
+    title    = "Belge Tasarımcısı"
+    icon     = "EditCircleIcon"
+    iconType = "tabler"
+    to       = "/apps/document-intelligence/designer"
     type     = "internal"
     disabled = $false
 } | Out-Null

@@ -104,7 +104,12 @@ public static class DocumentContextCatalog
                     Field("beginDate", "Başlangıç", "date"),
                     Field("deliveryDate", "Termin", "date"),
                     Field("deliveryAddress", "Teslimat adresi"),
-                    Field("customerId.unvan", "Müşteri unvan")
+                    Field("lineCount", "Kalem sayısı", "number"),
+                    Field("partCount", "Parça sayısı", "number"),
+                    Field("stockCount", "Stok sayısı", "number"),
+                    Field("shippedCount", "Sevk sayısı", "number"),
+                    Field("customerId.unvan", "Müşteri unvan"),
+                    Field("notes", "Notlar")
                 }
             }
         };

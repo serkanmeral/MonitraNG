@@ -1,0 +1,211 @@
+{
+  "categoryPath": ["Operasyon Belgeleri", "Medya Paketi"],
+  "template": {
+    "name": "İş Paketi Kontrol Paneli",
+    "code": "PACKAGE-DASHBOARD-STD",
+    "description": "İş paketi executive dashboard XLSX — KPI band, kalem tablosu, sipariş/sevk + tamamlanma grafikleri.",
+    "primaryContextType": "odak.siparis.package",
+    "generationProfile": "odak.package.dashboard.fromPackage",
+    "xlsxFile": "ODK-PACKAGE-DASHBOARD-template-seed.xlsx",
+    "letterhead": {
+      "enabled": true,
+      "showLogo": false,
+      "showDocumentName": false,
+      "showDocumentNumber": false,
+      "showGeneratedAt": false
+    },
+    "parameters": [
+      {
+        "key": "domainLogo",
+        "label": "Logo",
+        "kind": "image",
+        "dataType": "image",
+        "valueSourceMode": "domain",
+        "docBinding": {
+          "regionKind": "xlsxLogo"
+        }
+      },
+      {
+        "key": "packageNo",
+        "label": "İş Paketi No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "packageNo" }
+      },
+      {
+        "key": "packageName",
+        "label": "İş Paketi Adı",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "name" }
+      },
+      {
+        "key": "customerName",
+        "label": "Müşteri",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "customerId.unvan" }
+      },
+      {
+        "key": "statusLabel",
+        "label": "Durum",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "status", "defaultValue": "—" }
+      },
+      {
+        "key": "deliveryDate",
+        "label": "Termin",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "deliveryDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "beginDate",
+        "label": "Başlangıç",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "beginDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "lineCount",
+        "label": "Kalem Sayısı",
+        "dataType": "number",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "lineCount" }
+      },
+      {
+        "key": "partCount",
+        "label": "Parça Sayısı",
+        "dataType": "number",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "partCount" }
+      },
+      {
+        "key": "stockCount",
+        "label": "Stok",
+        "dataType": "number",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "stockCount" }
+      },
+      {
+        "key": "shippedCount",
+        "label": "Sevk",
+        "dataType": "number",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "shippedCount" }
+      },
+      {
+        "key": "remainingQuantity",
+        "label": "Kalan Miktar",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "fulfillmentPct",
+        "label": "Tamamlanma %",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "fulfillmentPctLabel",
+        "label": "Tamamlanma etiketi",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "shipmentSummary",
+        "label": "Sevkiyat özeti",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "0/0"
+      },
+      {
+        "key": "openNcrCount",
+        "label": "Açık NCR",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "openCapaCount",
+        "label": "Açık CAPA",
+        "dataType": "number",
+        "valueSourceMode": "manual",
+        "defaultValue": "0"
+      },
+      {
+        "key": "deliveryUrgencyLabel",
+        "label": "Termin uyarısı",
+        "dataType": "text",
+        "valueSourceMode": "manual",
+        "defaultValue": "—"
+      },
+      {
+        "key": "deliveryAddress",
+        "label": "Sevkiyat Adresi",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "deliveryAddress" }
+      },
+      {
+        "key": "issueDate",
+        "label": "Liste Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy"
+      },
+      {
+        "key": "generatedAt",
+        "label": "Üretim Zamanı",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy HH:mm"
+      },
+      {
+        "key": "packageLines",
+        "label": "Sipariş kalemleri",
+        "kind": "table",
+        "dataType": "table",
+        "valueSourceMode": "manual",
+        "dataSourceRef": "odak.packageLines.byPackage",
+        "docBinding": {
+          "regionKind": "sheet",
+          "tableIndex": 1,
+          "headerRowIndex": 0,
+          "templateRowIndex": 1
+        }
+      },
+      {
+        "key": "chartLines",
+        "label": "Grafik kalemleri",
+        "kind": "table",
+        "dataType": "table",
+        "valueSourceMode": "manual",
+        "dataSourceRef": "odak.packageLines.byPackage",
+        "docBinding": {
+          "regionKind": "sheet",
+          "tableIndex": 2,
+          "headerRowIndex": 2,
+          "templateRowIndex": 3
+        }
+      },
+      {
+        "key": "donutSlices",
+        "label": "Tamamlanma dilimleri",
+        "kind": "table",
+        "dataType": "table",
+        "valueSourceMode": "manual",
+        "docBinding": {
+          "regionKind": "sheet",
+          "tableIndex": 2,
+          "headerRowIndex": 0,
+          "templateRowIndex": 1
+        }
+      }
+    ]
+  }
+}

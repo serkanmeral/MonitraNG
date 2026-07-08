@@ -1,5 +1,9 @@
 import { defineEventHandler, readBody, getQuery, getMethod, getRouterParam } from 'h3';
 import { getCookie } from 'h3';
+import {
+  documentsApiErrorUserMessage,
+  normalizeDocumentsApiErrorData,
+} from '@/utils/documentsApiError';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -10,7 +14,11 @@ export default defineEventHandler(async (event) => {
   if (!token) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'Unauthorized: Token bulunamadı',
+      statusMessage: 'Oturum süresi dolmuş olabilir. Lütfen tekrar giriş yapın.',
+      data: {
+        code: 'UNAUTHORIZED',
+        messageTr: 'Oturum süresi dolmuş olabilir. Lütfen tekrar giriş yapın.',
+      },
     });
   }
 
@@ -76,21 +84,13 @@ export default defineEventHandler(async (event) => {
     });
   } catch (error: any) {
     const statusCode = error.statusCode || error.status || 500;
-    const statusMessage = error.statusMessage || error.message || 'MngDocument API hatası';
-    let errorData = error.data;
-
-    if (errorData && typeof errorData === 'object' && 'error' in errorData) {
-      throw createError({
-        statusCode,
-        statusMessage,
-        data: errorData,
-      });
-    }
+    const normalizedData = normalizeDocumentsApiErrorData(error.data, statusCode);
+    const statusMessage = documentsApiErrorUserMessage(normalizedData, statusCode);
 
     throw createError({
       statusCode,
       statusMessage,
-      data: errorData || { error: statusMessage },
+      data: normalizedData,
     });
   } finally {
     if (originalRejectUnauthorized !== undefined) {

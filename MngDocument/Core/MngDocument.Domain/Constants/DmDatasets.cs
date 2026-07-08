@@ -13,6 +13,7 @@ public static class DmDatasets
     public const string TemplateCategories = "dm_template_categories";
     public const string DocumentTemplates = "dm_document_templates";
     public const string Letterheads = "dm_letterheads";
+    public const string CoverPages = "dm_cover_pages";
     public const string Tags = "dm_tags";
     public const string GenerationCounters = "dm_generation_counters";
 }

@@ -19,7 +19,7 @@ public sealed class DocumentDataSourceCatalogProvider
 
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
-    private IReadOnlyDictionary<string, TemplateValueSourceModel>? _cache;
+    private IReadOnlyDictionary<string, DataSourceCatalogEntry>? _cache;
 
     public DocumentDataSourceCatalogProvider(IMngDataGatewayClient dg, IRequestContext ctx)
     {
@@ -29,21 +29,37 @@ public sealed class DocumentDataSourceCatalogProvider
 
     public async Task<TemplateValueSourceModel?> TryGetValueSourceAsync(string? code, CancellationToken ct = default)
     {
+        var entry = await TryGetEntryAsync(code, ct);
+        return entry is null ? null : CloneValueSource(entry.Definition);
+    }
+
+    public async Task<IReadOnlyList<DataSourceCatalogEntry>> ListEntriesAsync(CancellationToken ct = default)
+    {
+        var map = await GetMapAsync(ct);
+        return map.Values
+            .OrderBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.Code, StringComparer.OrdinalIgnoreCase)
+            .Select(CloneEntry)
+            .ToList();
+    }
+
+    public async Task<DataSourceCatalogEntry?> TryGetEntryAsync(string? code, CancellationToken ct = default)
+    {
         if (string.IsNullOrWhiteSpace(code))
             return null;
 
         var map = await GetMapAsync(ct);
-        return map.TryGetValue(code.Trim(), out var source) ? CloneValueSource(source) : null;
+        return map.TryGetValue(code.Trim(), out var entry) ? CloneEntry(entry) : null;
     }
 
-    private async Task<IReadOnlyDictionary<string, TemplateValueSourceModel>> GetMapAsync(CancellationToken ct)
+    private async Task<IReadOnlyDictionary<string, DataSourceCatalogEntry>> GetMapAsync(CancellationToken ct)
     {
         if (_cache is not null)
             return _cache;
 
-        var merged = new Dictionary<string, TemplateValueSourceModel>(StringComparer.OrdinalIgnoreCase);
-        foreach (var builtin in BuiltInValueSources)
-            merged[builtin.Key] = CloneValueSource(builtin.Value);
+        var merged = new Dictionary<string, DataSourceCatalogEntry>(StringComparer.OrdinalIgnoreCase);
+        foreach (var builtin in BuiltInEntries)
+            merged[builtin.Key] = CloneEntry(builtin.Value);
 
         var token = _ctx.BearerToken;
         if (!string.IsNullOrWhiteSpace(token))
@@ -54,8 +70,8 @@ public sealed class DocumentDataSourceCatalogProvider
                 foreach (var row in rows)
                 {
                     var entry = ParseDatasetRow(row);
-                    if (entry.HasValue)
-                        merged[entry.Value.Code] = entry.Value.ValueSource;
+                    if (entry is not null)
+                        merged[entry.Code] = entry;
                 }
             }
             catch
@@ -68,7 +84,7 @@ public sealed class DocumentDataSourceCatalogProvider
         return merged;
     }
 
-    private static (string Code, TemplateValueSourceModel ValueSource)? ParseDatasetRow(Dictionary<string, object?> row)
+    private static DataSourceCatalogEntry? ParseDatasetRow(Dictionary<string, object?> row)
     {
         var code = ReadString(row, "code");
         var definitionJson = ReadString(row, "definitionJson");
@@ -92,7 +108,14 @@ public sealed class DocumentDataSourceCatalogProvider
                     source.Provider = provider;
             }
 
-            return (code.Trim(), source);
+            var displayName = ReadString(row, "displayName");
+            return new DataSourceCatalogEntry
+            {
+                Code = code.Trim(),
+                DisplayName = string.IsNullOrWhiteSpace(displayName) ? code.Trim() : displayName.Trim(),
+                Provider = string.IsNullOrWhiteSpace(source.Provider) ? "dg" : source.Provider.Trim(),
+                Definition = source
+            };
         }
         catch
         {
@@ -105,6 +128,15 @@ public sealed class DocumentDataSourceCatalogProvider
             JsonSerializer.Serialize(source, JsonOptions),
             JsonOptions) ?? source;
 
+    private static DataSourceCatalogEntry CloneEntry(DataSourceCatalogEntry entry) =>
+        new()
+        {
+            Code = entry.Code,
+            DisplayName = entry.DisplayName,
+            Provider = entry.Provider,
+            Definition = CloneValueSource(entry.Definition)
+        };
+
     private static string? ReadString(Dictionary<string, object?> row, string key)
     {
         if (!row.TryGetValue(key, out var raw) || raw is null)
@@ -112,13 +144,33 @@ public sealed class DocumentDataSourceCatalogProvider
         return raw.ToString()?.Trim();
     }
 
-    private static readonly IReadOnlyDictionary<string, TemplateValueSourceModel> BuiltInValueSources =
-        new Dictionary<string, TemplateValueSourceModel>(StringComparer.OrdinalIgnoreCase)
+    private static readonly IReadOnlyDictionary<string, DataSourceCatalogEntry> BuiltInEntries =
+        new Dictionary<string, DataSourceCatalogEntry>(StringComparer.OrdinalIgnoreCase)
         {
-            ["odak.shipmentLines.byParentLine"] = DeserializeBuiltin(
-                """{"mode":"queryPage","provider":"dg","dataset":"odak_sevkiyat_kalemleri","match":{"parentLineId":"{{runtime.contextId}}"},"query":"sort=lineNo&limit=50"}"""),
-            ["odak.packageShipmentLines.byPackage"] = DeserializeBuiltin(
-                """{"mode":"queryPage","provider":"dg","dataset":"odak_sevkiyat_kalemleri","match":{"parentPackageId":"{{runtime.contextId}}"},"query":"sort=lineNo&limit=200"}""")
+            ["odak.shipmentLines.byParentLine"] = new DataSourceCatalogEntry
+            {
+                Code = "odak.shipmentLines.byParentLine",
+                DisplayName = "Sevkiyat satırları (sipariş kalemi)",
+                Provider = "dg",
+                Definition = DeserializeBuiltin(
+                    """{"mode":"queryPage","provider":"dg","dataset":"odak_sevkiyat_kalemleri","match":{"parentLineId":"{{runtime.contextId}}"},"query":"sort=lineNo&limit=50","columns":[{"sourceField":"lineNo","header":"Kalem No"},{"sourceField":"lineDescription","header":"Tanım"},{"sourceField":"shippedQuantity","header":"Sevk Miktarı","format":"N0"},{"sourceField":"lineMode","header":"Mod"}]}""")
+            },
+            ["odak.packageShipmentLines.byPackage"] = new DataSourceCatalogEntry
+            {
+                Code = "odak.packageShipmentLines.byPackage",
+                DisplayName = "Sevkiyat satırları (iş paketi)",
+                Provider = "dg",
+                Definition = DeserializeBuiltin(
+                    """{"mode":"queryPage","provider":"dg","dataset":"odak_sevkiyat_kalemleri","match":{"parentPackageId":"{{runtime.contextId}}"},"query":"sort=lineNo&limit=200","columns":[{"sourceField":"lineNo","header":"Kalem No"},{"sourceField":"lineDescription","header":"Tanım"},{"sourceField":"shippedQuantity","header":"Sevk Miktarı","format":"N0"},{"sourceField":"lineMode","header":"Mod"}]}""")
+            },
+            ["odak.packageLines.byPackage"] = new DataSourceCatalogEntry
+            {
+                Code = "odak.packageLines.byPackage",
+                DisplayName = "Sipariş kalemleri (iş paketi)",
+                Provider = "dg",
+                Definition = DeserializeBuiltin(
+                    """{"mode":"queryPage","provider":"dg","dataset":"odak_siparis_kalemleri","match":{"parentPackageId":"{{runtime.contextId}}"},"query":"sort=lineNo&limit=500","columns":[{"sourceField":"lineNo","header":"Kalem No"},{"sourceField":"customerPoItemNo","header":"PO Kalem"},{"sourceField":"description","header":"Tanım"},{"sourceField":"quantity","header":"Miktar","format":"N0"},{"sourceField":"shippedQuantity","header":"Sevk","format":"N0"},{"sourceField":"deliveryDate","header":"Termin"},{"sourceField":"cocDocNo","header":"CoC No"}]}""")
+            }
         };
 
     private static TemplateValueSourceModel DeserializeBuiltin(string json) =>

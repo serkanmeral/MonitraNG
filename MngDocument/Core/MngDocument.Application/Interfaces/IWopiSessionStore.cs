@@ -7,6 +7,8 @@ public sealed class WopiSession
     public string? ResourceId { get; init; }
     /// <summary>Dolu ise WOPI oturumu antet tasarım DOCX içindir.</summary>
     public string? LetterheadId { get; init; }
+    /// <summary>Dolu ise WOPI oturumu kapak sayfası tasarım DOCX içindir.</summary>
+    public string? CoverPageId { get; init; }
     public bool ReadOnly { get; init; }
     public required string UserId { get; init; }
     public required string UserName { get; init; }

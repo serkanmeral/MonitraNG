@@ -2,53 +2,37 @@
 
 ## Son Çalışılan Konu
 
-**8 Temmuz 2026 (sabah):** Odak **G0–G5** generation runtime tamamlandı; XLSX sevkiyat listesi IX04’te canlı doğrulandı; kritik `DataSourceTokenResolver` JsonElement fix.
+**8 Temmuz 2026 (akşam):** **Medya paketi Faz 2 ✅** roadmap’e işlendi. **DI-FOLDER-UX** (klasör görünümü UX) yeni madde olarak eklendi — tartışma aşaması.
 
-**Roadmap:** [DI_PRODUCT_ROADMAP.md §26](../odak/document_intelligence/DI_PRODUCT_ROADMAP.md) · [SHEET_ROADMAP.md](../odak/document_intelligence/SHEET_ROADMAP.md) · Checkpoint: [DEVAM.md](../odak/document_intelligence/DEVAM.md)
+**Roadmap:** [DI_PRODUCT_ROADMAP.md §29 DI-FOLDER-UX](../odak/document_intelligence/DI_PRODUCT_ROADMAP.md)
 
-## Tamamlanan (bu oturum)
+## Tamamlanan (son oturumlar)
 
 | ID | Özet |
 |----|------|
-| **G0** | `POST /generate/run` RuntimeEnvelope; producer/context API |
-| **G1** | `DgDataSourceExecutor`, `DocumentContextLoader`, context katalog |
-| **G2** | DOCX `DocxTableExpander`; Activity `shipmentLines` tablo; smoke |
-| **G3** | `dm_document_context_types` seed + provider |
-| **G4** | `dm_data_sources` + `dm_document_producers` katalog; `dataSourceRef` |
-| **G5** | XLSX renderer; `outputFormat: xlsx`; `SHIPMENT-LIST-STD`; Odak UI «Listeyi üret» |
-| **G5-fix** | `DataSourceTokenResolver` JsonElement; `DocumentParameterResolver` format; `XlsxTemplateBytesResolver` fallback; `PackageShipmentLinesQueryFallback` |
+| **Medya paketi Faz 2** | Donut · PPTX logo · dinamik chart — kullanıcı onayı ✅ |
+| **Medya paketi Faz 1** | Dashboard XLSX + Brief PPTX ✅ |
+| **D-BR2 (kısmi)** | Kapak katalog + merge — **BR2-FIX backlog** ⏸️ |
 
-**Önceki oturum (gece):** Managed Office O-0→Pr2 ✅ (sheet + sunum).
+## Sıradaki (öncelik)
 
-**Deploy test:** `mngdocument` + `mngui` @ `192.168.20.20` ✅ (8 Tem sabah).
-
-## Sıradaki İşler
-
-1. **G5+** — iş paketine sevkiyat listesi writeback (kalıcı listeleme); prod deploy
-2. **G6** — work item bağlantısı ⏸️ ertelendi
-3. **D-BR2** — kapak sayfası kataloğu
-4. **CoC/Activity** uçtan uca smoke (prod verisi)
-5. **D-N1** — `document.generated` bildirim maili
-6. **S3 / Pr3** — şablondan sheet/sunum (senaryo)
+| # | İş | Durum |
+|---|-----|--------|
+| **1** | **DI-FOLDER-UX** | Klasör görünümü UX — planlama / tartışma |
+| 2 | D-N1 | Üretim bildirim maili |
+| 3 | D-S1 | Zamanlanmış üretim |
+| 4 | BR2-FIX | Kapak WOPI kayıt (ertelendi) |
 
 ## Önemli Notlar
 
-- Sevkiyat listesi üretiminde iş paketine **writeback yok**; silme = DI `Odak/Sevkiyat/{packageNo}` klasöründen XLSX silmek yeterli.
-- Her üretim yeni `dm_resources` kaydı oluşturur (idempotency yok).
-- IX04 test paketi: `2d8aeb0e-6f67-4f3a-a578-21cff682ec17` — 34 sevkiyat satırı dolu.
-- Smoke: `scripts/tests/MngDocument/smoke-shipment-list-xlsx-test.ps1 -PackageId <uuid>`
-
-## Ortam
-
-| Ortam | Gateway |
-|-------|---------|
-| **Test** | `192.168.20.20:5040` |
-| **Prod** | `192.168.20.8:5040` |
+- DI ana sayfa: `Mng.Ui/pages/apps/document-intelligence/index.vue`
+- Tree: `DiResourceTree.vue` · lazy: `useDiLazyFolderTree.ts`
+- Performans baseline: D-PERF-1/2/3 ✅
 
 ## Son Güncelleme
 
-**8 Temmuz 2026 (sabah)** — G0–G5 kapatıldı; IX04 XLSX doğrulandı. Sırada writeback / prod / D-BR2.
+**8 Temmuz 2026 (akşam)** — Faz 2 tamam; DI-FOLDER-UX tartışması.
 
 ## Nerede Kalmıştık
 
-Odak generation çekirdeği (DOCX tablo + XLSX sevkiyat listesi) tamam. Sonraki odak: **iş paketi writeback**, **prod deploy**, veya **D-BR2 / CoC smoke**.
+Klasör görünümü UX hedefleri ve dilimler (UX-1…UX-5) kullanıcı ile netleştirilecek.

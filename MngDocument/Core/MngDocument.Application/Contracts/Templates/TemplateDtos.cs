@@ -32,6 +32,7 @@ public sealed class TemplateDetailDto : TemplateSummaryDto
     public string? PrimaryContextType { get; init; }
     public string? GenerationProfile { get; init; }
     public string? DefaultLetterheadId { get; init; }
+    public string? DefaultCoverPageId { get; init; }
     public TemplatePageLayoutDto? PageLayout { get; init; }
     public TemplateLetterheadDto? Letterhead { get; init; }
     public TemplateFooterDto? Footer { get; init; }

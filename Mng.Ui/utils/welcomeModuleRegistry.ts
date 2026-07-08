@@ -155,6 +155,7 @@ export const welcomeModuleRegistry: WelcomeModuleDefinition[] = [
     icon: 'mdi-file-document-outline',
     color: 'indigo',
     links: [
+      { labelKey: 'welcome.modules.documentIntelligence.linkDocuments', to: '/apps/document-intelligence' },
       { labelKey: 'welcome.modules.documentIntelligence.linkDesigner', to: '/apps/document-intelligence/designer' },
     ],
   },

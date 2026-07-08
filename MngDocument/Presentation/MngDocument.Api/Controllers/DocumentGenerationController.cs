@@ -64,12 +64,26 @@ public sealed class DocumentGenerationController : ControllerBase
         Ok(await _generation.ListProducersAsync(ct));
 
     [HttpGet("producers/{code}")]
-    [ProducesResponseType(typeof(DocumentProducerDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DocumentProducerDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProducer(string code, CancellationToken ct)
     {
         var producer = await _generation.GetProducerAsync(code, ct);
         return producer is null ? NotFound() : Ok(producer);
+    }
+
+    [HttpGet("data-sources")]
+    [ProducesResponseType(typeof(IReadOnlyList<DocumentDataSourceSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListDataSources(CancellationToken ct) =>
+        Ok(await _generation.ListDataSourcesAsync(ct));
+
+    [HttpGet("data-sources/{code}")]
+    [ProducesResponseType(typeof(DocumentDataSourceDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDataSource(string code, CancellationToken ct)
+    {
+        var source = await _generation.GetDataSourceAsync(code, ct);
+        return source is null ? NotFound() : Ok(source);
     }
 
     [HttpGet("context-types")]
