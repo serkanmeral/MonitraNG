@@ -1,0 +1,211 @@
+{
+  "generatedAt": "2026-07-05 18:17:05",
+  "baseUrl": "http://192.168.20.8:5040",
+  "compareSource": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\eskiapp\\reports\\legacy-keeper-user-compare_20260702_221921.json",
+  "summary": {
+    "packageCount": 823,
+    "uniqueLegacyPersonIds": 16,
+    "fieldReferenceCounts": {
+      "legacyManufactureResponsibleId": 618,
+      "legacyDesignResponsibleId": 532,
+      "legacyResponsibleId": 674
+    },
+    "alreadyMatchedInKeeper": 2,
+    "toProvision": 11,
+    "unknownLegacyIds": 3,
+    "excluded": 0
+  },
+  "alreadyMatchedInKeeper": [
+    {
+      "legacyKaliteUserId": "3",
+      "legacyKaliteUsername": "okaragul",
+      "legacyName": "Osman Karagül",
+      "legacyActive": true,
+      "keeperStatus": "matched",
+      "keeperUserId": "6a2257d26723c2bd54eec3b4",
+      "packageCount": 479,
+      "fieldsUsed": [
+        "legacyDesignResponsibleId",
+        "legacyManufactureResponsibleId",
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "118",
+      "legacyKaliteUsername": "mkucuk",
+      "legacyName": "Murat Küçük",
+      "legacyActive": true,
+      "keeperStatus": "matched",
+      "keeperUserId": "6a2257d16723c2bd54eec3b2",
+      "packageCount": 68,
+      "fieldsUsed": [
+        "legacyResponsibleId"
+      ]
+    }
+  ],
+  "personsToProvision": [
+    {
+      "legacyKaliteUserId": "9",
+      "legacyKaliteUsername": "hsendil",
+      "legacyName": "Halil Şendil",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 479,
+      "fieldsUsed": [
+        "legacyDesignResponsibleId",
+        "legacyManufactureResponsibleId",
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "10",
+      "legacyKaliteUsername": "eoguz",
+      "legacyName": "Engin Berk Oğuz",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 460,
+      "fieldsUsed": [
+        "legacyDesignResponsibleId",
+        "legacyManufactureResponsibleId",
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "160",
+      "legacyKaliteUsername": "gyildiz",
+      "legacyName": "Gamze Yıldız",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 87,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "180",
+      "legacyKaliteUsername": "gkarakus",
+      "legacyName": "Gülce Karakuş",
+      "legacyActive": true,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 61,
+      "fieldsUsed": [
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "11",
+      "legacyKaliteUsername": "mtarcan",
+      "legacyName": "Murat Tarcan",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 35,
+      "fieldsUsed": [
+        "legacyDesignResponsibleId",
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "12",
+      "legacyKaliteUsername": "edemiroglu",
+      "legacyName": "Emin Demiroğlu",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 19,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId",
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "101",
+      "legacyKaliteUsername": "agunes",
+      "legacyName": "Aylin Güneş",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 5,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId",
+        "legacyResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "17",
+      "legacyKaliteUsername": "okarakadioglu",
+      "legacyName": "Osman Karakadıoğlu",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 4,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "18",
+      "legacyKaliteUsername": "iuzun",
+      "legacyName": "İlhan Uzun",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 3,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "97",
+      "legacyKaliteUsername": "btaban",
+      "legacyName": "Burak Taban",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 3,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "123",
+      "legacyKaliteUsername": "ygulyazi",
+      "legacyName": "Yemliha Gülyazı",
+      "legacyActive": false,
+      "keeperStatus": "legacy_only",
+      "keeperUserId": null,
+      "packageCount": 1,
+      "fieldsUsed": [
+        "legacyManufactureResponsibleId"
+      ]
+    }
+  ],
+  "unknownLegacyIds": [
+    {
+      "legacyKaliteUserId": "220",
+      "packageCount": 61,
+      "fieldsUsed": [
+        "legacyDesignResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "225",
+      "packageCount": 41,
+      "fieldsUsed": [
+        "legacyDesignResponsibleId"
+      ]
+    },
+    {
+      "legacyKaliteUserId": "250",
+      "packageCount": 18,
+      "fieldsUsed": [
+        "legacyResponsibleId"
+      ]
+    }
+  ],
+  "excluded": []
+}

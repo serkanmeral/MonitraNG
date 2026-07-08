@@ -1,0 +1,530 @@
+[
+  {
+    "kind": "user",
+    "legacyUserId": "4",
+    "username": "ntatlakoglu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "5",
+    "username": "gakcay",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "6",
+    "username": "gkarakurt",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "7",
+    "username": "ihisitemiz",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "8",
+    "username": "etopcu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "13",
+    "username": "tkekec",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "14",
+    "username": "mdemir",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "15",
+    "username": "averim",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "16",
+    "username": "bkirikkayaoglu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "19",
+    "username": "bboyraz",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "69",
+    "username": "icinli",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "70",
+    "username": "ekoc",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "71",
+    "username": "gatay",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "72",
+    "username": "aozcan",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "73",
+    "username": "bozben",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "74",
+    "username": "gokutan",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "95",
+    "username": "scakmak",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "96",
+    "username": "zsanlı",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "98",
+    "username": "egencosmanoglu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "100",
+    "username": "syolal",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "102",
+    "username": "bgundogdu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "104",
+    "username": "ccandemir",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "105",
+    "username": "svarol",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "106",
+    "username": "syildiz",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "107",
+    "username": "aerel",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "108",
+    "username": "aaydugdu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "109",
+    "username": "dakkaya",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "110",
+    "username": "agulcu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "111",
+    "username": "myerlitas",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "113",
+    "username": "mcevik",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "114",
+    "username": "lerarslan",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "115",
+    "username": "atiras",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "116",
+    "username": "fkoca",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "117",
+    "username": "okocturk",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "119",
+    "username": "auzun",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "120",
+    "username": "hbilsel",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "121",
+    "username": "rucan",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "122",
+    "username": "akaradas",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "124",
+    "username": "sdelibas",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "125",
+    "username": "rakoz",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "126",
+    "username": "uyuce",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "127",
+    "username": "osimsek",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "128",
+    "username": "eegioglu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "129",
+    "username": "ecurebal",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "130",
+    "username": "eer",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "131",
+    "username": "bsahbaz",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "132",
+    "username": "oagoren",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "133",
+    "username": "ckaratas",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "134",
+    "username": "megioglu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "135",
+    "username": "bcetin",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "136",
+    "username": "tkarabulut",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "137",
+    "username": "aaltintas",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "138",
+    "username": "sbuyukgullu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "139",
+    "username": "eyazdiran",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "140",
+    "username": "osener",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "141",
+    "username": "hkar",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "143",
+    "username": "bkirac",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "144",
+    "username": "mak",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "145",
+    "username": "agulyazi",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "146",
+    "username": "akislalioglu",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "147",
+    "username": "sgulal",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "148",
+    "username": "oozger",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "149",
+    "username": "legacy-e149",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "150",
+    "username": "legacy-e150",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "151",
+    "username": "legacy-e151",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "152",
+    "username": "legacy-e152",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "155",
+    "username": "ksaydin",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "156",
+    "username": "legacy-e156",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "157",
+    "username": "legacy-e157",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "158",
+    "username": "legacy-e158",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "159",
+    "username": "legacy-e159",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "161",
+    "username": "legacy-e161",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "162",
+    "username": "legacy-e162",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "163",
+    "username": "legacy-e163",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "164",
+    "username": "legacy-e164",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "165",
+    "username": "legacy-e165",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "168",
+    "username": "legacy-e168",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "171",
+    "username": "legacy-e171",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "172",
+    "username": "legacy-e172",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "175",
+    "username": "legacy-e175",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "user",
+    "legacyUserId": "153",
+    "username": "mckucuk",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "177",
+    "username": "legacy-e177",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "178",
+    "username": "legacy-e178",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "179",
+    "username": "legacy-e179",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "181",
+    "username": "legacy-e181",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "182",
+    "username": "legacy-e182",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "183",
+    "username": "legacy-e183",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  },
+  {
+    "kind": "employee",
+    "employeeId": "184",
+    "username": "legacy-e184",
+    "error": "Exception calling \"Add\" with \"1\" argument(s): \"Collection was of a fixed size.\""
+  }
+]
