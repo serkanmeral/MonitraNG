@@ -538,6 +538,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         var (templateRow, model, resolved, placeholderAnalysis) = await BuildManualTemplateValuesAsync(
             templateId,
             request?.Overrides,
+            tableOverrides: null,
+            preserveMissingPlaceholders: true,
             allocateCounters: request?.AllocateCounters ?? false,
             documentName: null,
             ct);
@@ -569,6 +571,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         var (templateRow, model, resolved, placeholderAnalysis) = await BuildManualTemplateValuesAsync(
             templateId,
             request?.Overrides,
+            tableOverrides: null,
+            preserveMissingPlaceholders: true,
             allocateCounters: request?.AllocateCounters ?? false,
             documentName,
             ct);
@@ -624,6 +628,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         var (templateRow, model, resolved, placeholderAnalysis) = await BuildManualTemplateValuesAsync(
             templateId,
             request.Overrides,
+            request.TableOverrides,
+            request.PreserveMissingPlaceholders,
             allocateCounters: true,
             documentName,
             ct);
@@ -715,6 +721,19 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         }, ct);
 
         var generatedAt = DateTime.UtcNow;
+        IReadOnlyList<string> folderPath = Array.Empty<string>();
+        try
+        {
+            var crumbs = await _resources.GetBreadcrumbAsync(parentFolderId, ct);
+            folderPath = crumbs
+                .Select(c => c.Name?.Trim() ?? string.Empty)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .ToList();
+        }
+        catch
+        {
+            // Best-effort; client already knows the intended path.
+        }
 
         return new GenerateDocumentResultDto
         {
@@ -732,7 +751,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             DocNo = ResolveBusinessDocNo(values),
             ResourceId = saved.Id,
             FileName = fileName,
-            FolderPath = Array.Empty<string>(),
+            FolderPath = folderPath,
             GeneratedAt = generatedAt,
             ResolvedValues = values,
             UndefinedParameterKeys = placeholderAnalysis.UndefinedParameterKeys,
@@ -744,6 +763,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private async Task<(DmDocumentTemplate Template, TemplateModelDocument Model, ParameterResolutionResult Resolved, DocumentPlaceholderAnalysis.Result PlaceholderAnalysis)> BuildManualTemplateValuesAsync(
         string templateId,
         Dictionary<string, string>? overrides,
+        Dictionary<string, List<Dictionary<string, object?>>>? tableOverrides,
+        bool preserveMissingPlaceholders,
         bool allocateCounters,
         string? documentName,
         CancellationToken ct)
@@ -757,13 +778,15 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             contextId: string.Empty,
             contextTree: new JsonObject(),
             runtime: null);
+        var tableOverrideMap = ToTableOverrideMap(tableOverrides);
         var resolved = await _parameterResolver.ResolveAsync(
             model,
             resolutionContext,
             profileDefaults: null,
             overrides,
             Token,
-            ct);
+            ct,
+            tableOverrideMap);
         var values = resolved.Scalars;
 
         if (!string.IsNullOrWhiteSpace(documentName))
@@ -803,7 +826,37 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             placeholderAnalysis = AnalyzePlaceholders(docxBytes, model, values);
         }
 
+        if (!preserveMissingPlaceholders)
+        {
+            placeholderAnalysis = new DocumentPlaceholderAnalysis.Result(
+                placeholderAnalysis.UndefinedParameterKeys,
+                placeholderAnalysis.UnresolvedParameterKeys,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+
         return (templateRow, model, resolved, placeholderAnalysis);
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, object?>>>? ToTableOverrideMap(
+        Dictionary<string, List<Dictionary<string, object?>>>? tableOverrides)
+    {
+        if (tableOverrides is null || tableOverrides.Count == 0)
+            return null;
+
+        var map = new Dictionary<string, IReadOnlyList<IReadOnlyDictionary<string, object?>>>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var kv in tableOverrides)
+        {
+            var key = kv.Key?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key))
+                continue;
+            var rows = kv.Value ?? new List<Dictionary<string, object?>>();
+            map[key] = rows
+                .Select(r => (IReadOnlyDictionary<string, object?>)(r ?? new Dictionary<string, object?>()))
+                .ToList();
+        }
+
+        return map.Count == 0 ? null : map;
     }
 
     private async Task<byte[]> MergeAndBrandAsync(

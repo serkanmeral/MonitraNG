@@ -1,7 +1,11 @@
 import type { AfListColumnFormat } from '@/utils/afListColumnFormat';
 import { ODAK_EGITIM_CONFIG, ODAK_TRAINING_STATUS_OPTIONS } from '@/utils/odakEgitimConfig';
 import { ReportingCatalogService } from '@/services/reportingCatalogService';
-import type { ReportingCategory, ReportingReportDefinition } from '@/types/apps/reporting';
+import type {
+  ReportingCategory,
+  ReportingDocumentBinding,
+  ReportingReportDefinition,
+} from '@/types/apps/reporting';
 import {
   loadReportingCategories,
   saveReportingCategories,
@@ -17,7 +21,53 @@ import {
   ODAK_EGITIM_REPORTING_CATEGORY_ID,
   ODAK_EGITIM_TRAININGS_REPORT_ID,
 } from '@/utils/reportingOdakEgitimConstants';
+import { newReportingDocumentBindingId } from '@/utils/reportingDocumentBindings';
 
+export const RPT_ODAK_EGITIM_LIST_TEMPLATE_CODE = 'RPT_ODAK_EGITIM_LIST';
+export const RPT_ODAK_EGITIM_PERSON_TEMPLATE_CODE = 'RPT_ODAK_EGITIM_PERSON';
+
+function odakEgitimListDocumentBinding(): ReportingDocumentBinding {
+  return {
+    id: 'docbind_odak_egitim_list',
+    templateId: RPT_ODAK_EGITIM_LIST_TEMPLATE_CODE,
+    templateCode: RPT_ODAK_EGITIM_LIST_TEMPLATE_CODE,
+    label: 'Eğitim listesi (XLSX)',
+    contextType: 'reportRun',
+  };
+}
+
+function odakEgitimPersonDocumentBinding(): ReportingDocumentBinding {
+  return {
+    id: 'docbind_odak_egitim_person',
+    templateId: RPT_ODAK_EGITIM_PERSON_TEMPLATE_CODE,
+    templateCode: RPT_ODAK_EGITIM_PERSON_TEMPLATE_CODE,
+    label: 'Personel eğitim geçmişi (XLSX)',
+    contextType: 'reportRun',
+  };
+}
+
+/** Eksik reportRun belge bağını ekler (idempotent). */
+function ensureDocumentBinding(
+  report: ReportingReportDefinition,
+  binding: ReportingDocumentBinding
+): boolean {
+  const list = report.documentBindings ?? [];
+  const exists = list.some(
+    (b) =>
+      b.templateCode === binding.templateCode ||
+      b.templateId === binding.templateId ||
+      b.templateId === binding.templateCode
+  );
+  if (exists) return false;
+  report.documentBindings = [
+    ...list,
+    {
+      ...binding,
+      id: binding.id || newReportingDocumentBindingId(),
+    },
+  ];
+  return true;
+}
 function col(
   fieldName: string,
   order: number,
@@ -251,6 +301,13 @@ function patchTrainingListSummary(report: ReportingReportDefinition): boolean {
 }
 
 function patchTrainingListReport(report: ReportingReportDefinition): boolean {
+  let changed = false;
+  // ... existing patches continue below via callers
+  if (ensureDocumentBinding(report, odakEgitimListDocumentBinding())) changed = true;
+  return changed || patchTrainingListReportCore(report);
+}
+
+function patchTrainingListReportCore(report: ReportingReportDefinition): boolean {
   const formats = applyTrainingListColumnFormats(report);
   const relations = applyTrainingListRelationDisplayColumns(report);
   const expand = patchTrainingListExpand(report);
@@ -305,7 +362,9 @@ function applyPersonReportRelationDisplay(report: ReportingReportDefinition): bo
 }
 
 function patchPersonReport(report: ReportingReportDefinition): boolean {
-  return applyPersonReportRelationDisplay(report);
+  let changed = applyPersonReportRelationDisplay(report);
+  if (ensureDocumentBinding(report, odakEgitimPersonDocumentBinding())) changed = true;
+  return changed;
 }
 
 function buildTrainingsReport(categoryId: string, now: string): ReportingReportDefinition {
@@ -365,6 +424,7 @@ function buildTrainingsReport(categoryId: string, now: string): ReportingReportD
         { id: 'sure', label: 'Toplam süre (dk)', kind: 'sum', field: 'sureDakika', format: 'integer' },
       ],
     },
+    documentBindings: [odakEgitimListDocumentBinding()],
     parameters: [
       {
         id: 'statusTab',
@@ -473,6 +533,7 @@ function buildPersonTrainingsReport(categoryId: string, now: string): ReportingR
     fieldPolicies: emptyOdakFieldPoliciesBlob(),
     defaultFilters: [],
     visibilityPolicies: [],
+    documentBindings: [odakEgitimPersonDocumentBinding()],
     parameters: [
       {
         id: 'person',

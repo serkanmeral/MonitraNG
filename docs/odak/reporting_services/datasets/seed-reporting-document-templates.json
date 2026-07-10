@@ -1,0 +1,99 @@
+{
+  "categoryName": "Raporlama",
+  "templates": [
+    {
+      "name": "Odak Eğitim Listesi",
+      "code": "RPT_ODAK_EGITIM_LIST",
+      "description": "Eğitim listesi raporu — filtrelenmiş satırlar (reportRun).",
+      "xlsxFile": "ODK-RPT-EGITIM-LIST-template-seed.xlsx",
+      "factoryMethod": "CreateTrainingsList",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        {
+          "key": "reportTitle",
+          "label": "Rapor başlığı",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "filtersSummary",
+          "label": "Filtre özeti",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "generatedAt",
+          "label": "Üretim zamanı",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "rowCount",
+          "label": "Satır sayısı",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "rows",
+          "label": "Rapor satırları",
+          "kind": "table",
+          "dataType": "table",
+          "valueSourceMode": "manual",
+          "docBinding": {
+            "regionKind": "sheet",
+            "tableIndex": 0,
+            "headerRowIndex": 5,
+            "templateRowIndex": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "Odak Personel Eğitim Geçmişi",
+      "code": "RPT_ODAK_EGITIM_PERSON",
+      "description": "Personel eğitim geçmişi raporu — filtrelenmiş satırlar (reportRun).",
+      "xlsxFile": "ODK-RPT-EGITIM-PERSON-template-seed.xlsx",
+      "factoryMethod": "CreatePersonTrainings",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        {
+          "key": "reportTitle",
+          "label": "Rapor başlığı",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "filtersSummary",
+          "label": "Filtre özeti",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "generatedAt",
+          "label": "Üretim zamanı",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "rowCount",
+          "label": "Satır sayısı",
+          "dataType": "text",
+          "valueSourceMode": "manual"
+        },
+        {
+          "key": "rows",
+          "label": "Rapor satırları",
+          "kind": "table",
+          "dataType": "table",
+          "valueSourceMode": "manual",
+          "docBinding": {
+            "regionKind": "sheet",
+            "tableIndex": 0,
+            "headerRowIndex": 5,
+            "templateRowIndex": 6
+          }
+        }
+      ]
+    }
+  ]
+}

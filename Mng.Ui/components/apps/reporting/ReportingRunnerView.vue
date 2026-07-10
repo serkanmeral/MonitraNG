@@ -59,8 +59,22 @@ import {
 import type { ReportingParameterValues } from '@/utils/reportingParameterValueKeys';
 import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
 import { reportingCellDisplayValue } from '@/utils/reportingCellDisplay';
+import {
+  buildReportingFiltersSummary,
+  REPORTING_DOCUMENT_ROW_SOFT_CAP,
+} from '@/utils/reportingDocumentBindings';
+import {
+  listReportingGeneratedDocuments,
+  mapReportingRowsForDocumentTable,
+  reportingDocumentFolderParentId,
+  resolveReportingDiTemplateId,
+} from '@/utils/reportingDocumentGenerate';
+import { diGenerateFromTemplate } from '@/services/documentIntelligenceService';
+import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import type { DiResource } from '@/types/apps/documentIntelligence';
+import type { ReportingDocumentBinding } from '@/types/apps/reporting';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { ArrowLeftIcon, DownloadIcon, RefreshIcon, PencilIcon } from 'vue-tabler-icons';
+import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, FileTextIcon, RefreshIcon, PencilIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
   reportId: string;
@@ -118,6 +132,14 @@ const dgRequestUrl = ref<string | null>(null);
 const showDgQueryPanel = ref(false);
 const dgQueryExpanded = ref<string | undefined>(undefined);
 const exporting = ref(false);
+const documentsDialog = ref(false);
+const documentsGenerating = ref(false);
+const documentsError = ref('');
+const documentsSuccess = ref('');
+const lastGeneratedResourceId = ref<string | null>(null);
+const generatedDocuments = ref<DiResource[]>([]);
+const generatedDocumentsLoading = ref(false);
+const generatedDocumentsError = ref('');
 const tablePage = ref(1);
 const itemsPerPage = ref(50);
 const itemsPerPageOptions = [25, 50, 100];
@@ -158,6 +180,10 @@ const tableItems = computed(() =>
 
 const visibleColumns = computed(() =>
   visibleReportingColumnKeys(listConfig.value, (field) => canViewColumn(field))
+);
+
+const reportRunBindings = computed(() =>
+  (report.value?.documentBindings ?? []).filter((b) => b.contextType === 'reportRun')
 );
 
 function cellRaw(item: Record<string, unknown>, listKey: string): string {
@@ -484,6 +510,144 @@ async function exportCsv() {
   }
 }
 
+function openDocumentsDialog() {
+  documentsError.value = '';
+  documentsSuccess.value = '';
+  generatedDocumentsError.value = '';
+  lastGeneratedResourceId.value = null;
+  documentsDialog.value = true;
+  void loadGeneratedDocuments();
+}
+
+function openResourceInDi(resourceId: string | null | undefined) {
+  if (!resourceId) return;
+  void navigateTo(buildDiResourceUrl(resourceId));
+}
+
+function openGeneratedInDi() {
+  openResourceInDi(lastGeneratedResourceId.value);
+}
+
+function formatDocumentCreatedAt(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString();
+}
+
+async function loadGeneratedDocuments() {
+  generatedDocumentsLoading.value = true;
+  generatedDocumentsError.value = '';
+  try {
+    await authStore.ensureValidToken();
+    generatedDocuments.value = await listReportingGeneratedDocuments(props.reportId);
+  } catch (e: unknown) {
+    generatedDocuments.value = [];
+    generatedDocumentsError.value =
+      e instanceof Error ? e.message : t('reporting.runner.historyLoadFailed');
+  } finally {
+    generatedDocumentsLoading.value = false;
+  }
+}
+
+async function generateReportDocument(binding: ReportingDocumentBinding) {
+  if (!datasetName.value) {
+    documentsError.value = t('reporting.errors.pickDataset');
+    return;
+  }
+  if (!reportingParametersReady(reportParameters.value, parameterValues.value)) {
+    documentsError.value = t('reporting.runner.parametersRequired');
+    return;
+  }
+
+  documentsGenerating.value = true;
+  documentsError.value = '';
+  documentsSuccess.value = '';
+  lastGeneratedResourceId.value = null;
+
+  try {
+    await authStore.ensureValidToken();
+    const query = runtimeQuery();
+    const searchText = reportingParameterSearchText(reportParameters.value, parameterValues.value);
+
+    let preview = await fetchReportingPreview({
+      datasetName: datasetName.value,
+      listConfig: listConfig.value,
+      expandConfig: expandConfig.value,
+      canViewColumn: (field) => canViewColumn(field),
+      advancedFilters: query.filters,
+      mongoMatch: query.mongoMatch,
+      search: searchText,
+      sortField: currentSortField(),
+      sortDesc: currentSortDesc(),
+      skip: 0,
+      limit: REPORTING_DOCUMENT_ROW_SOFT_CAP,
+      expand: true,
+    });
+
+    if (preview.totalCount > REPORTING_DOCUMENT_ROW_SOFT_CAP) {
+      const ok = window.confirm(
+        t('reporting.runner.rowCapConfirm', {
+          count: preview.totalCount,
+          cap: REPORTING_DOCUMENT_ROW_SOFT_CAP,
+        })
+      );
+      if (!ok) return;
+      preview = await fetchReportingPreview({
+        datasetName: datasetName.value,
+        listConfig: listConfig.value,
+        expandConfig: expandConfig.value,
+        canViewColumn: (field) => canViewColumn(field),
+        advancedFilters: query.filters,
+        mongoMatch: query.mongoMatch,
+        search: searchText,
+        sortField: currentSortField(),
+        sortDesc: currentSortDesc(),
+        skip: 0,
+        limit: Math.min(preview.totalCount, 10000),
+        expand: true,
+      });
+    }
+
+    const tableRows = mapReportingRowsForDocumentTable(preview.rows, listConfig.value);
+    const filtersSummary = buildReportingFiltersSummary({
+      parameters: reportParameters.value,
+      parameterValues: parameterValues.value,
+      advancedFilters: query.filters,
+    });
+    const generatedAt = new Date().toISOString();
+    const templateId = await resolveReportingDiTemplateId(binding);
+    const parentFolderId = await reportingDocumentFolderParentId(props.reportId, binding);
+    const documentName = `${title.value || binding.label} ${generatedAt.slice(0, 16).replace('T', ' ')}`;
+
+    const result = await diGenerateFromTemplate(templateId, {
+      parentFolderId,
+      documentName,
+      preserveMissingPlaceholders: true,
+      overrides: {
+        reportTitle: title.value || binding.label,
+        filtersSummary,
+        generatedAt,
+        rowCount: String(tableRows.length),
+      },
+      tableOverrides: {
+        rows: tableRows,
+      },
+    });
+
+    lastGeneratedResourceId.value = result.resourceId || null;
+    documentsSuccess.value = t('reporting.runner.generateSuccess', {
+      fileName: result.fileName || documentName,
+    });
+    await loadGeneratedDocuments();
+  } catch (e: unknown) {
+    documentsError.value =
+      e instanceof Error ? e.message : t('reporting.runner.generateFailed');
+  } finally {
+    documentsGenerating.value = false;
+  }
+}
+
 watch(
   () => catalogDomainKey.value,
   () => {
@@ -551,6 +715,15 @@ onBeforeUnmount(() => {
             variant="tonal"
             size="small"
             class="text-none"
+            @click="openDocumentsDialog"
+          >
+            <FileTextIcon size="16" class="mr-1" />
+            {{ t('reporting.runner.documents') }}
+          </v-btn>
+          <v-btn
+            variant="tonal"
+            size="small"
+            class="text-none"
             :loading="exporting"
             :disabled="!runRows.length"
             @click="exportCsv"
@@ -571,6 +744,140 @@ onBeforeUnmount(() => {
           </v-btn>
         </div>
       </div>
+
+      <v-dialog v-model="documentsDialog" max-width="780">
+        <v-card>
+          <v-card-title>{{ t('reporting.runner.documentsTitle') }}</v-card-title>
+          <v-card-text>
+            <p class="text-caption text-medium-emphasis mb-3">
+              {{ t('reporting.runner.documentsHint') }}
+            </p>
+            <v-alert v-if="documentsError" type="error" variant="tonal" density="compact" class="mb-3">
+              {{ documentsError }}
+            </v-alert>
+            <v-alert v-if="documentsSuccess" type="success" variant="tonal" density="compact" class="mb-3">
+              {{ documentsSuccess }}
+              <v-btn
+                v-if="lastGeneratedResourceId"
+                class="ml-2"
+                size="small"
+                variant="text"
+                @click="openGeneratedInDi"
+              >
+                {{ t('reporting.runner.openInDi') }}
+              </v-btn>
+            </v-alert>
+
+            <div class="text-subtitle-2 mb-2">{{ t('reporting.runner.templatesSection') }}</div>
+            <v-alert
+              v-if="!reportRunBindings.length"
+              type="info"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+            >
+              {{ t('reporting.runner.documentsEmpty') }}
+            </v-alert>
+            <v-list v-else density="compact" class="border rounded mb-4">
+              <v-list-item v-for="b in reportRunBindings" :key="b.id">
+                <v-list-item-title>{{ b.label }}</v-list-item-title>
+                <v-list-item-subtitle>{{ b.templateCode || b.templateId }}</v-list-item-subtitle>
+                <template #append>
+                  <v-btn
+                    size="small"
+                    color="primary"
+                    variant="tonal"
+                    :loading="documentsGenerating"
+                    :disabled="documentsGenerating"
+                    @click="generateReportDocument(b)"
+                  >
+                    {{ t('reporting.runner.generate') }}
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+            <v-progress-linear
+              v-if="documentsGenerating"
+              indeterminate
+              color="primary"
+              class="mb-4"
+            />
+
+            <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
+              <div class="text-subtitle-2">{{ t('reporting.runner.historySection') }}</div>
+              <v-btn
+                size="small"
+                variant="text"
+                class="text-none"
+                :loading="generatedDocumentsLoading"
+                @click="loadGeneratedDocuments"
+              >
+                <RefreshIcon size="16" class="mr-1" />
+                {{ t('reporting.runner.refreshHistory') }}
+              </v-btn>
+            </div>
+            <v-alert
+              v-if="generatedDocumentsError"
+              type="warning"
+              variant="tonal"
+              density="compact"
+              class="mb-3"
+            >
+              {{ generatedDocumentsError }}
+            </v-alert>
+            <v-progress-linear
+              v-if="generatedDocumentsLoading"
+              indeterminate
+              color="primary"
+              class="mb-3"
+            />
+            <v-alert
+              v-else-if="!generatedDocuments.length"
+              type="info"
+              variant="tonal"
+              density="compact"
+            >
+              {{ t('reporting.runner.historyEmpty') }}
+            </v-alert>
+            <v-table v-else density="compact" class="border rounded text-body-2">
+              <thead>
+                <tr>
+                  <th>{{ t('reporting.runner.historyColDocument') }}</th>
+                  <th>{{ t('reporting.runner.historyColTemplate') }}</th>
+                  <th>{{ t('reporting.runner.historyColBy') }}</th>
+                  <th>{{ t('reporting.runner.historyColAt') }}</th>
+                  <th class="text-right">{{ t('reporting.runner.historyColActions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="doc in generatedDocuments" :key="doc.id">
+                  <td class="text-break">{{ doc.name || doc.fileName || doc.id }}</td>
+                  <td>{{ doc.templateCode || doc.templateId || '—' }}</td>
+                  <td>{{ doc.createdBy || '—' }}</td>
+                  <td class="text-no-wrap">{{ formatDocumentCreatedAt(doc.createdAt) }}</td>
+                  <td class="text-right">
+                    <v-btn
+                      size="small"
+                      variant="tonal"
+                      class="text-none"
+                      @click="openResourceInDi(doc.id)"
+                    >
+                      <ExternalLinkIcon size="14" class="mr-1" />
+                      {{ t('reporting.runner.openInDi') }}
+                    </v-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="documentsDialog = false">
+              {{ t('reporting.actions.cancel') }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <v-alert v-if="description" type="info" variant="tonal" density="comfortable" class="mb-4">
         {{ description }}

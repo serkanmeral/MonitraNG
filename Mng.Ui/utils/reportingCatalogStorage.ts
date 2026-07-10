@@ -8,6 +8,7 @@ import { emptyOdakFieldPoliciesBlob, parseOdakFieldPoliciesBlob } from '@/utils/
 import { defaultReportingExpandConfigFromFields } from '@/utils/reportingExpandLayout';
 import { defaultReportingListConfigFromFields } from '@/utils/reportingListConfig';
 import { normalizeReportingSummaryConfig, emptyReportingSummaryConfig } from '@/utils/reportingSummary';
+import { normalizeReportingDocumentBindings } from '@/utils/reportingDocumentBindings';
 
 const STORAGE_PREFIX = 'mng_reporting_catalog';
 
@@ -147,6 +148,7 @@ function parseReport(raw: unknown): ReportingReportDefinition | null {
     visibilityPolicies: Array.isArray(visibilityPolicies) ? visibilityPolicies : [],
     parameters: Array.isArray(parameters) ? parameters : [],
     summary: normalizeReportingSummaryConfig(o.summary ?? o.Summary),
+    documentBindings: normalizeReportingDocumentBindings(o.documentBindings ?? o.DocumentBindings),
     createdAt: String(o.createdAt ?? o.CreatedAt ?? new Date().toISOString()),
     updatedAt: String(o.updatedAt ?? o.UpdatedAt ?? new Date().toISOString()),
   };
@@ -204,6 +206,7 @@ export function createEmptyReportDefinition(title: string, categoryId: string | 
     visibilityPolicies: [],
     parameters: [],
     summary: emptyReportingSummaryConfig(),
+    documentBindings: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -222,6 +225,7 @@ export function draftFromReportDefinition(report: ReportingReportDefinition) {
     visibilityPolicies: JSON.parse(JSON.stringify(report.visibilityPolicies)),
     parameters: JSON.parse(JSON.stringify(report.parameters ?? [])),
     summary: normalizeReportingSummaryConfig(report.summary),
+    documentBindings: JSON.parse(JSON.stringify(report.documentBindings ?? [])),
   };
 }
 
@@ -239,6 +243,7 @@ export function reportFromDraft(
     visibilityPolicies: ReportingReportDefinition['visibilityPolicies'];
     parameters?: ReportingReportDefinition['parameters'];
     summary?: ReportingReportDefinition['summary'];
+    documentBindings?: ReportingReportDefinition['documentBindings'];
   }
 ): ReportingReportDefinition {
   const now = new Date().toISOString();
@@ -255,6 +260,9 @@ export function reportFromDraft(
     visibilityPolicies: JSON.parse(JSON.stringify(draft.visibilityPolicies)),
     parameters: JSON.parse(JSON.stringify(draft.parameters ?? existing?.parameters ?? [])),
     summary: normalizeReportingSummaryConfig(draft.summary ?? existing?.summary),
+    documentBindings: JSON.parse(
+      JSON.stringify(draft.documentBindings ?? existing?.documentBindings ?? [])
+    ),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

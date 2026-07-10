@@ -3,6 +3,7 @@
  * Reporting designer — listConfig, filters, column auth, save to local catalog.
  */
 import ReportingColumnAuthPanel from '@/components/apps/reporting/ReportingColumnAuthPanel.vue';
+import ReportingDocumentBindingsPanel from '@/components/apps/reporting/ReportingDocumentBindingsPanel.vue';
 import ReportingParametersDesignerPanel from '@/components/apps/reporting/ReportingParametersDesignerPanel.vue';
 import ReportingReportVisibilityPanel from '@/components/apps/reporting/ReportingReportVisibilityPanel.vue';
 import { useReportingColumnAccess } from '@/composables/useReportingColumnAccess';
@@ -59,7 +60,7 @@ import {
   reportingDataTableRow,
   visibleReportingColumnKeys,
 } from '@/utils/reportingListConfig';
-import type { ReportingExpandConfig, ReportingReportParameter, ReportingSummaryConfig } from '@/types/apps/reporting';
+import type { ReportingDocumentBinding, ReportingExpandConfig, ReportingReportParameter, ReportingSummaryConfig } from '@/types/apps/reporting';
 import {
   emptyReportingSummaryConfig,
   fetchReportingSummary,
@@ -112,6 +113,7 @@ const contentTabItems = computed(() =>
       'summary',
       'columnAuth',
       'parameters',
+      'documentBindings',
       'reportAuth',
     ] as const
   ).map((key) => ({
@@ -157,6 +159,7 @@ const fieldPolicies = ref(emptyOdakFieldPoliciesBlob());
 const visibilityPolicies = ref<OdakFieldVisibilityPolicy[]>([]);
 const defaultFilters = ref<AfListFilter[]>([]);
 const reportParameters = ref<ReportingReportParameter[]>([]);
+const documentBindings = ref<ReportingDocumentBinding[]>([]);
 const parameterValues = ref<ReportingParameterValues>({});
 const advancedFilters = ref<AfListFilter[]>([]);
 const runtimeFiltersKey = ref(0);
@@ -376,6 +379,7 @@ function hydrateFromReport() {
   fieldPolicies.value = draft.fieldPolicies;
   defaultFilters.value = draft.defaultFilters;
   reportParameters.value = draft.parameters ?? [];
+  documentBindings.value = draft.documentBindings ?? [];
   parameterValues.value = defaultReportingParameterValues(reportParameters.value);
   visibilityPolicies.value = draft.visibilityPolicies;
   datasetName.value = draft.datasetName || null;
@@ -421,6 +425,7 @@ async function saveReport() {
         defaultFilters: defaultFilters.value,
         visibilityPolicies: visibilityPolicies.value,
         parameters: reportParameters.value,
+        documentBindings: documentBindings.value,
         summary: summaryConfig.value,
       })
     );
@@ -1134,6 +1139,18 @@ watch(
                 :disabled="!schemaFields.length"
                 @update:parameters="onReportParametersUpdate"
                 @reset="resetReportParameters"
+              />
+            </v-card-text>
+          </v-window-item>
+
+          <!-- Belge şablonları -->
+          <v-window-item value="documentBindings">
+            <v-card-text>
+              <ReportingDocumentBindingsPanel
+                :bindings="documentBindings"
+                :report-id="resolvedReportId"
+                :domain-key="domainKey"
+                @update:bindings="documentBindings = $event"
               />
             </v-card-text>
           </v-window-item>

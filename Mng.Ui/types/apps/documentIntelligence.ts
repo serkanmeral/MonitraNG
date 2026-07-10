@@ -598,6 +598,10 @@ export interface DiGenerateFromTemplateRequest {
   parentFolderId: string;
   documentName?: string | null;
   overrides?: Record<string, string>;
+  /** Table parameter key → row dictionaries (reporting filtered rows, etc.). */
+  tableOverrides?: Record<string, Record<string, unknown>[]>;
+  /** Default true: keep {{key}} for empty/missing scalars. */
+  preserveMissingPlaceholders?: boolean;
   includeCoverPage?: boolean;
   coverPageId?: string | null;
 }

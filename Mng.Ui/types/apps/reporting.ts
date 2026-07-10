@@ -190,6 +190,20 @@ export interface ReportingSummaryConfig {
   metrics: ReportingSummaryMetric[];
 }
 
+/** Belge üretimi bağlamı — D3/D4 için parentRow/childRow rezerv. */
+export type ReportingDocumentContextType = 'reportRun' | 'parentRow' | 'childRow';
+
+/** Rapor ↔ DI şablon bağı (şablon exclusive: tek rapor). */
+export interface ReportingDocumentBinding {
+  id: string;
+  templateId: string;
+  templateCode?: string;
+  label: string;
+  contextType: ReportingDocumentContextType;
+  /** Varsayılan: ['Reports', reportId] */
+  outputFolderSegments?: string[];
+}
+
 export interface ReportingReportDefinition {
   id: string;
   title: string;
@@ -206,6 +220,8 @@ export interface ReportingReportDefinition {
   parameters: ReportingReportParameter[];
   /** Tablo üstü kart / alt footer özet metrikleri. */
   summary?: ReportingSummaryConfig;
+  /** DI belge şablon bağları. */
+  documentBindings?: ReportingDocumentBinding[];
   createdAt: string;
   updatedAt: string;
 }

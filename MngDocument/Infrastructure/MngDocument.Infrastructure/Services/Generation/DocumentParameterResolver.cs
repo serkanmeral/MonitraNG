@@ -33,7 +33,8 @@ public sealed class DocumentParameterResolver
         IReadOnlyDictionary<string, string>? profileDefaults,
         IReadOnlyDictionary<string, string>? overrides,
         string? token,
-        CancellationToken ct)
+        CancellationToken ct,
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, object?>>>? tableOverrides = null)
     {
         var result = new ParameterResolutionResult();
 
@@ -55,6 +56,14 @@ public sealed class DocumentParameterResolver
                 var image = await ResolveImageParameterAsync(param, token, ct);
                 if (image is not null)
                     result.Images[key] = image;
+                continue;
+            }
+
+            if (string.Equals(kind, "table", StringComparison.OrdinalIgnoreCase)
+                && tableOverrides is not null
+                && TryGetTableOverride(tableOverrides, key, out var tableRows))
+            {
+                result.Tables[key] = tableRows;
                 continue;
             }
 
@@ -95,6 +104,30 @@ public sealed class DocumentParameterResolver
         }
 
         return result;
+    }
+
+    private static bool TryGetTableOverride(
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, object?>>> tableOverrides,
+        string key,
+        out IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
+    {
+        if (tableOverrides.TryGetValue(key, out var direct) && direct is not null)
+        {
+            rows = direct;
+            return true;
+        }
+
+        foreach (var kv in tableOverrides)
+        {
+            if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase) && kv.Value is not null)
+            {
+                rows = kv.Value;
+                return true;
+            }
+        }
+
+        rows = Array.Empty<IReadOnlyDictionary<string, object?>>();
+        return false;
     }
 
     private async Task<TemplateValueSourceModel?> ResolveValueSourceAsync(

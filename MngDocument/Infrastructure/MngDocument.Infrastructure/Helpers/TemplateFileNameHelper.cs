@@ -12,8 +12,21 @@ internal static class TemplateFileNameHelper
             code?.Trim(),
             Path.GetFileNameWithoutExtension(sourceFileName?.Trim()));
 
-        return SanitizeBaseName(baseName) + DefaultExtension;
+        var ext = Path.GetExtension(sourceFileName?.Trim() ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(ext)
+            || !IsOfficeTemplateExtension(ext))
+        {
+            ext = DefaultExtension;
+        }
+
+        return SanitizeBaseName(baseName) + ext.ToLowerInvariant();
     }
+
+    private static bool IsOfficeTemplateExtension(string ext) =>
+        ext.Equals(".docx", StringComparison.OrdinalIgnoreCase)
+        || ext.Equals(".xlsx", StringComparison.OrdinalIgnoreCase)
+        || ext.Equals(".xlsm", StringComparison.OrdinalIgnoreCase)
+        || ext.Equals(".pptx", StringComparison.OrdinalIgnoreCase);
 
     private static string? FirstNonEmpty(params string?[] values)
     {

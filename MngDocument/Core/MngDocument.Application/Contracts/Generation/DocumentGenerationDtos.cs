@@ -157,6 +157,18 @@ public sealed class GenerateFromTemplateRequest
     /// <summary>Parametre anahtar → değer (manual/context override).</summary>
     public Dictionary<string, string>? Overrides { get; set; }
 
+    /// <summary>
+    /// Tablo parametreleri (kind=table) — reporting filtrelenmiş satırlar vb.
+    /// Key = parametre key; value = satır sözlükleri.
+    /// </summary>
+    public Dictionary<string, List<Dictionary<string, object?>>>? TableOverrides { get; set; }
+
+    /// <summary>
+    /// true (varsayılan): boş/eksik skaler placeholder'lar belgede kalır.
+    /// false: boş string ile değiştirilir.
+    /// </summary>
+    public bool PreserveMissingPlaceholders { get; set; } = true;
+
     /// <summary>true ise kapak sayfası birleştirilir (yalnızca DOCX).</summary>
     public bool? IncludeCoverPage { get; set; }
 
