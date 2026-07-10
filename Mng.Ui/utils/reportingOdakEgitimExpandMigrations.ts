@@ -40,6 +40,10 @@ export const ODAK_EGITIM_PARTICIPANTS_EXPAND_TAB: ReportingExpandChildListTab = 
     limit: 500,
     expand: true,
     emptyMessage: 'Bu eğitim için katılımcı kaydı yok.',
+    summary: {
+      placement: 'footer',
+      metrics: [{ id: 'count', label: 'Katılımcı sayısı', kind: 'count', format: 'integer' }],
+    },
     listConfig: {
       enableSearch: false,
       defaultSortBy: 'personelId',
@@ -49,7 +53,7 @@ export const ODAK_EGITIM_PARTICIPANTS_EXPAND_TAB: ReportingExpandChildListTab = 
           title: 'Personel',
           sortable: false,
           width: 220,
-          relationDisplayField: 'displayName',
+          // persons expand: firstName/lastName/username — no displayName; scalar formatter derives label
         }),
         participantCol('katildi', 2, { title: 'Katıldı', width: 90, sortable: false }),
         participantCol('etkin', 3, { title: 'Etkin', width: 90, sortable: false }),
@@ -74,10 +78,31 @@ export function ensureOdakEgitimParticipantsExpandTab(
 
   if (idx >= 0) {
     const current = tabs[idx]!;
-    if (current.childList?.datasetName === desired.childList.datasetName) {
-      return { expand, changed: false };
+    let changed = false;
+
+    if (current.childList?.datasetName !== desired.childList.datasetName) {
+      tabs[idx] = desired;
+      changed = true;
+    } else {
+      // Patch legacy personelId.displayName (persons expand has no displayName)
+      const cols = current.childList.listConfig?.columns ?? [];
+      for (const col of cols) {
+        if (col.fieldName === 'personelId' && col.relationDisplayField === 'displayName') {
+          delete col.relationDisplayField;
+          changed = true;
+        }
+      }
+      if (!current.childList.summary?.metrics?.length) {
+        current.childList.summary = {
+          placement: 'footer',
+          metrics: [{ id: 'count', label: 'Katılımcı sayısı', kind: 'count', format: 'integer' }],
+        };
+        changed = true;
+      }
+      if (!changed) {
+        return { expand, changed: false };
+      }
     }
-    tabs[idx] = desired;
   } else {
     tabs.push(desired);
   }

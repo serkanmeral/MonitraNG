@@ -3544,12 +3544,13 @@
       "design": "Design"
     },
     "tabs": {
+      "design": "Design",
       "view": "Report view",
       "columns": "Column settings",
       "expand": "Expand layout",
+      "summary": "Summary",
       "columnAuth": "Column authorization",
       "parameters": "Report parameters",
-      "defaultFilters": "Default filters",
       "reportAuth": "Report authorization"
     },
     "catalog": {
@@ -3736,7 +3737,61 @@
       "childTabsHint": "Configured via tabs[] in the report definition (designer phase 2).",
       "childListEmpty": "No records found.",
       "childListLoading": "Loading…",
-      "childListCount": "{count} record(s)"
+      "childListCount": "{count} record(s)",
+      "designerTabs": {
+        "settings": "Settings",
+        "tabs": "Tabs"
+      },
+      "childTabs": {
+        "title": "Linked list tabs",
+        "hint": "Add child dataset lists as expand panel tabs. Edit connection and columns for the selected tab.",
+        "add": "Add tab",
+        "addTitle": "New linked list tab",
+        "editTitle": "Edit linked list tab",
+        "edit": "Edit",
+        "remove": "Delete",
+        "empty": "No linked list tabs yet.",
+        "needEnabled": "Enable row expand under Settings before adding tabs.",
+        "detailConnection": "Connection",
+        "detailColumns": "Columns",
+        "detailSummary": "Summary",
+        "noChildSchema": "Child dataset schema is empty or missing.",
+        "childSchemaError": "Failed to load child dataset schema.",
+        "formTitle": "Tab title",
+        "formId": "Tab id",
+        "formIdHint": "Leave empty to derive from the title.",
+        "formDataset": "Child dataset",
+        "formLinkField": "Link field (child)",
+        "formLinkFieldHint": "e.g. parentTrainingId — child field equal to the parent record id.",
+        "formParentField": "Parent field",
+        "formParentFieldHint": "Default __dataId.",
+        "formEmptyMessage": "Empty list message",
+        "formLimit": "Record limit",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "summary": {
+      "hint": "Computed via DG aggregate over the full filtered set (not the current page). Cards appear above the table; footer below.",
+      "placement": "Placement",
+      "placements": {
+        "none": "Hidden",
+        "cards": "Cards above",
+        "footer": "Footer below",
+        "both": "Cards + footer"
+      },
+      "metricsTitle": "Metrics",
+      "addMetric": "Add metric",
+      "removeMetric": "Delete",
+      "empty": "No metrics yet.",
+      "newMetricLabel": "New metric",
+      "formLabel": "Label",
+      "formKind": "Kind",
+      "formField": "Field (sum)",
+      "kinds": {
+        "count": "Record count",
+        "sum": "Sum"
+      }
     },
     "bool": {
       "true": "Yes",

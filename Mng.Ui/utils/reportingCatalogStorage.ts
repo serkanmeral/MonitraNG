@@ -7,6 +7,7 @@ import {
 import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { defaultReportingExpandConfigFromFields } from '@/utils/reportingExpandLayout';
 import { defaultReportingListConfigFromFields } from '@/utils/reportingListConfig';
+import { normalizeReportingSummaryConfig, emptyReportingSummaryConfig } from '@/utils/reportingSummary';
 
 const STORAGE_PREFIX = 'mng_reporting_catalog';
 
@@ -86,6 +87,9 @@ function parseExpandConfig(raw: unknown): ReportingExpandConfig {
           const title = String(t.title ?? t.Title ?? '').trim();
           const childList = (t.childList ?? t.ChildList) as ReportingExpandChildListTab['childList'];
           if (!id || !title || !childList?.datasetName) return null;
+          if (childList.summary != null) {
+            childList.summary = normalizeReportingSummaryConfig(childList.summary);
+          }
           return { id, title, childList };
         })
         .filter((tab): tab is NonNullable<typeof tab> => tab != null)
@@ -132,6 +136,7 @@ function parseReport(raw: unknown): ReportingReportDefinition | null {
     defaultFilters: Array.isArray(defaultFilters) ? defaultFilters : [],
     visibilityPolicies: Array.isArray(visibilityPolicies) ? visibilityPolicies : [],
     parameters: Array.isArray(parameters) ? parameters : [],
+    summary: normalizeReportingSummaryConfig(o.summary ?? o.Summary),
     createdAt: String(o.createdAt ?? o.CreatedAt ?? new Date().toISOString()),
     updatedAt: String(o.updatedAt ?? o.UpdatedAt ?? new Date().toISOString()),
   };
@@ -188,6 +193,7 @@ export function createEmptyReportDefinition(title: string, categoryId: string | 
     defaultFilters: [],
     visibilityPolicies: [],
     parameters: [],
+    summary: emptyReportingSummaryConfig(),
     createdAt: now,
     updatedAt: now,
   };
@@ -205,6 +211,7 @@ export function draftFromReportDefinition(report: ReportingReportDefinition) {
     defaultFilters: JSON.parse(JSON.stringify(report.defaultFilters)),
     visibilityPolicies: JSON.parse(JSON.stringify(report.visibilityPolicies)),
     parameters: JSON.parse(JSON.stringify(report.parameters ?? [])),
+    summary: normalizeReportingSummaryConfig(report.summary),
   };
 }
 
@@ -221,6 +228,7 @@ export function reportFromDraft(
     defaultFilters: ReportingReportDefinition['defaultFilters'];
     visibilityPolicies: ReportingReportDefinition['visibilityPolicies'];
     parameters?: ReportingReportDefinition['parameters'];
+    summary?: ReportingReportDefinition['summary'];
   }
 ): ReportingReportDefinition {
   const now = new Date().toISOString();
@@ -236,6 +244,7 @@ export function reportFromDraft(
     defaultFilters: JSON.parse(JSON.stringify(draft.defaultFilters)),
     visibilityPolicies: JSON.parse(JSON.stringify(draft.visibilityPolicies)),
     parameters: JSON.parse(JSON.stringify(draft.parameters ?? existing?.parameters ?? [])),
+    summary: normalizeReportingSummaryConfig(draft.summary ?? existing?.summary),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

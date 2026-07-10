@@ -3459,12 +3459,13 @@
       "design": "Tasarım"
     },
     "tabs": {
+      "design": "Tasarım",
       "view": "Rapor görünümü",
       "columns": "Sütun ayarları",
       "expand": "Expand düzeni",
+      "summary": "Özet",
       "columnAuth": "Sütun yetkilendirme",
       "parameters": "Rapor parametreleri",
-      "defaultFilters": "Varsayılan filtreler",
       "reportAuth": "Rapor yetkilendirme"
     },
     "catalog": {
@@ -3651,7 +3652,61 @@
       "childTabsHint": "Rapor tanımındaki tabs[] ile yapılandırılır (designer Faz 2).",
       "childListEmpty": "Kayıt bulunamadı.",
       "childListLoading": "Yükleniyor…",
-      "childListCount": "{count} kayıt"
+      "childListCount": "{count} kayıt",
+      "designerTabs": {
+        "settings": "Ayarlar",
+        "tabs": "Sekmeler"
+      },
+      "childTabs": {
+        "title": "Bağlı liste sekmeleri",
+        "hint": "Parent satıra bağlı alt dataset listelerini expand panel sekmeleri olarak ekleyin. Seçili sekmede bağlantı ve sütun ayarlarını düzenleyin.",
+        "add": "Sekme ekle",
+        "addTitle": "Yeni bağlı liste sekmesi",
+        "editTitle": "Bağlı liste sekmesini düzenle",
+        "edit": "Düzenle",
+        "remove": "Sil",
+        "empty": "Henüz bağlı liste sekmesi yok.",
+        "needEnabled": "Sekme eklemek için önce Ayarlar’da satır genişletmeyi etkinleştirin.",
+        "detailConnection": "Bağlantı",
+        "detailColumns": "Sütunlar",
+        "detailSummary": "Özet",
+        "noChildSchema": "Child dataset şeması boş veya bulunamadı.",
+        "childSchemaError": "Child dataset şeması yüklenemedi.",
+        "formTitle": "Sekme başlığı",
+        "formId": "Sekme kimliği",
+        "formIdHint": "Boş bırakılırsa başlıktan üretilir.",
+        "formDataset": "Child dataset",
+        "formLinkField": "Link alanı (child)",
+        "formLinkFieldHint": "Örn. parentTrainingId — parent kaydın id’sine eşit olan child alanı.",
+        "formParentField": "Parent alanı",
+        "formParentFieldHint": "Varsayılan __dataId.",
+        "formEmptyMessage": "Boş liste mesajı",
+        "formLimit": "Kayıt limiti",
+        "cancel": "İptal",
+        "save": "Kaydet"
+      }
+    },
+    "summary": {
+      "hint": "Filtreli tüm kayıtlar üzerinden DG aggregate ile hesaplanır (sayfa değil). Kartlar tablonun üstünde, footer altında gösterilir.",
+      "placement": "Gösterim",
+      "placements": {
+        "none": "Gösterme",
+        "cards": "Üst kartlar",
+        "footer": "Alt footer",
+        "both": "Kartlar + footer"
+      },
+      "metricsTitle": "Metrikler",
+      "addMetric": "Metrik ekle",
+      "removeMetric": "Sil",
+      "empty": "Henüz metrik yok.",
+      "newMetricLabel": "Yeni metrik",
+      "formLabel": "Etiket",
+      "formKind": "Tür",
+      "formField": "Alan (sum)",
+      "kinds": {
+        "count": "Kayıt sayısı",
+        "sum": "Toplam (sum)"
+      }
     },
     "bool": {
       "true": "Evet",

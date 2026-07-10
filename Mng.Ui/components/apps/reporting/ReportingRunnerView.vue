@@ -4,6 +4,8 @@
  */
 import ReportingExpandPanel from '@/components/apps/reporting/ReportingExpandPanel.vue';
 import ReportingParametersPanel from '@/components/apps/reporting/ReportingParametersPanel.vue';
+import ReportingSummaryCards from '@/components/apps/reporting/ReportingSummaryCards.vue';
+import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummaryFooter.vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useReportingColumnAccess } from '@/composables/useReportingColumnAccess';
@@ -38,6 +40,14 @@ import {
 } from '@/utils/reportingListConfig';
 import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { reportingRowId, defaultReportingExpandConfigFromFields } from '@/utils/reportingExpandLayout';
+import {
+  emptyReportingSummaryConfig,
+  fetchReportingSummary,
+  reportingSummaryShowCards,
+  reportingSummaryShowFooter,
+  type ReportingSummaryValues,
+} from '@/utils/reportingSummary';
+import type { ReportingSummaryConfig } from '@/types/apps/reporting';
 import { ensureOdakEgitimParticipantsExpandTab } from '@/utils/reportingOdakEgitimExpandMigrations';
 import {
   buildReportingRuntimeQuery,
@@ -83,6 +93,9 @@ const description = ref('');
 const datasetName = ref('');
 const listConfig = ref(report.value?.listConfig ?? { columns: [] });
 const expandConfig = ref(defaultReportingExpandConfigFromFields([]));
+const summaryConfig = ref<ReportingSummaryConfig>(emptyReportingSummaryConfig());
+const summaryValues = ref<ReportingSummaryValues>({});
+const summaryLoading = ref(false);
 const fieldPolicies = ref(emptyOdakFieldPoliciesBlob());
 const defaultFilters = ref<AfListFilter[]>([]);
 const reportParameters = ref(report.value?.parameters ?? []);
@@ -193,6 +206,7 @@ function hydrateFromReport() {
     });
   }
 
+  summaryConfig.value = draft.summary ?? emptyReportingSummaryConfig();
   fieldPolicies.value = draft.fieldPolicies;
   defaultFilters.value = draft.defaultFilters;
   reportParameters.value = draft.parameters ?? [];
@@ -322,21 +336,42 @@ async function runReport() {
     await authStore.ensureValidToken();
     const skip = (tablePage.value - 1) * itemsPerPage.value;
     const query = runtimeQuery();
-    const result = await fetchReportingPreview({
-      datasetName: datasetName.value,
-      listConfig: listConfig.value,
-      expandConfig: expandConfig.value,
-      canViewColumn: (field) => canViewColumn(field),
-      advancedFilters: query.filters,
-      mongoMatch: query.mongoMatch,
-      search: reportingParameterSearchText(reportParameters.value, parameterValues.value),
-      sortField: currentSortField(),
-      sortDesc: currentSortDesc(),
-      skip,
-      limit: itemsPerPage.value,
-      expand: true,
-      showQuery: showDgQueryPanel.value,
-    });
+    const summaryPromise =
+      summaryConfig.value.metrics.length && summaryConfig.value.placement !== 'none'
+        ? (async () => {
+            summaryLoading.value = true;
+            try {
+              summaryValues.value = await fetchReportingSummary({
+                datasetName: datasetName.value,
+                metrics: summaryConfig.value.metrics,
+                filters: query.filters,
+              });
+            } catch {
+              summaryValues.value = {};
+            } finally {
+              summaryLoading.value = false;
+            }
+          })()
+        : Promise.resolve();
+
+    const [result] = await Promise.all([
+      fetchReportingPreview({
+        datasetName: datasetName.value,
+        listConfig: listConfig.value,
+        expandConfig: expandConfig.value,
+        canViewColumn: (field) => canViewColumn(field),
+        advancedFilters: query.filters,
+        mongoMatch: query.mongoMatch,
+        search: reportingParameterSearchText(reportParameters.value, parameterValues.value),
+        sortField: currentSortField(),
+        sortDesc: currentSortDesc(),
+        skip,
+        limit: itemsPerPage.value,
+        expand: true,
+        showQuery: showDgQueryPanel.value,
+      }),
+      summaryPromise,
+    ]);
     runRows.value = result.rows;
     runTotal.value = result.totalCount;
     dgQuery.value = showDgQueryPanel.value ? (result.dgQuery ?? null) : null;
@@ -345,6 +380,7 @@ async function runReport() {
   } catch (e: unknown) {
     runRows.value = [];
     runTotal.value = 0;
+    summaryValues.value = {};
     dgQuery.value = null;
     dgRequestUrl.value = null;
     runError.value = e instanceof Error ? e.message : t('reporting.errors.previewFailed');
@@ -616,24 +652,31 @@ onMounted(async () => {
             {{ t('reporting.hints.emptyPreview') }}
           </div>
 
-          <v-data-table-server
-            v-else-if="reportingParametersReady(reportParameters, parameterValues)"
-            v-model:expanded="expandedIds"
-            :headers="tableHeaders"
-            :items="tableItems"
-            :loading="runLoading"
-            :items-per-page="itemsPerPage"
-            :items-per-page-options="itemsPerPageOptions"
-            :page="tablePage"
-            :items-length="runTotal"
-            :sort-by="tableSortBy"
-            :show-expand="expandConfig.enabled"
-            :expand-on-click="false"
-            item-value="__dataId"
-            density="compact"
-            class="border rounded"
-            @update:options="onTableOptions"
-          >
+          <template v-else-if="reportingParametersReady(reportParameters, parameterValues)">
+            <ReportingSummaryCards
+              v-if="reportingSummaryShowCards(summaryConfig)"
+              :config="summaryConfig"
+              :values="summaryValues"
+              :loading="summaryLoading"
+            />
+
+            <v-data-table-server
+              v-model:expanded="expandedIds"
+              :headers="tableHeaders"
+              :items="tableItems"
+              :loading="runLoading"
+              :items-per-page="itemsPerPage"
+              :items-per-page-options="itemsPerPageOptions"
+              :page="tablePage"
+              :items-length="runTotal"
+              :sort-by="tableSortBy"
+              :show-expand="expandConfig.enabled"
+              :expand-on-click="false"
+              item-value="__dataId"
+              density="compact"
+              class="border rounded"
+              @update:options="onTableOptions"
+            >
             <template v-for="col in visibleColumns" #[`item.${col}`]="{ item }">
               <span
                 :key="col"
@@ -682,6 +725,14 @@ onMounted(async () => {
               </tr>
             </template>
           </v-data-table-server>
+
+            <ReportingSummaryFooter
+              v-if="reportingSummaryShowFooter(summaryConfig)"
+              :config="summaryConfig"
+              :values="summaryValues"
+              :loading="summaryLoading"
+            />
+          </template>
         </v-card-text>
       </v-card>
     </template>

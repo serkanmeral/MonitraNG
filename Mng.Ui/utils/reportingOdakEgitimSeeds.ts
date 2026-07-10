@@ -230,6 +230,18 @@ function stripLegacyVirtualKatilimciColumn(report: ReportingReportDefinition): b
   return report.listConfig.columns.length !== before;
 }
 
+function patchTrainingListSummary(report: ReportingReportDefinition): boolean {
+  if (report.summary?.metrics?.length) return false;
+  report.summary = {
+    placement: 'cards',
+    metrics: [
+      { id: 'count', label: 'Kayıt sayısı', kind: 'count', format: 'integer' },
+      { id: 'sure', label: 'Toplam süre (dk)', kind: 'sum', field: 'sureDakika', format: 'integer' },
+    ],
+  };
+  return true;
+}
+
 function patchTrainingListReport(report: ReportingReportDefinition): boolean {
   const formats = applyTrainingListColumnFormats(report);
   const relations = applyTrainingListRelationDisplayColumns(report);
@@ -238,7 +250,8 @@ function patchTrainingListReport(report: ReportingReportDefinition): boolean {
   const parameters = applyTrainingListParameterModel(report);
   const actions = applyTrainingListExpandActions(report);
   const stripped = stripLegacyVirtualKatilimciColumn(report);
-  return formats || relations || expand || expandTabs || parameters || actions || stripped;
+  const summary = patchTrainingListSummary(report);
+  return formats || relations || expand || expandTabs || parameters || actions || stripped || summary;
 }
 
 function applyTrainingListExpandActions(report: ReportingReportDefinition): boolean {
@@ -337,6 +350,13 @@ function buildTrainingsReport(categoryId: string, now: string): ReportingReportD
     fieldPolicies: emptyOdakFieldPoliciesBlob(),
     defaultFilters: [],
     visibilityPolicies: [],
+    summary: {
+      placement: 'cards',
+      metrics: [
+        { id: 'count', label: 'Kayıt sayısı', kind: 'count', format: 'integer' },
+        { id: 'sure', label: 'Toplam süre (dk)', kind: 'sum', field: 'sureDakika', format: 'integer' },
+      ],
+    },
     parameters: [
       {
         id: 'statusTab',

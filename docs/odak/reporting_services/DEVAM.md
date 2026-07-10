@@ -1,80 +1,68 @@
 # Reporting Services — Devam
 
-**Son güncelleme:** 9 Temmuz 2026 (gece)  
+**Son güncelleme:** 10 Temmuz 2026  
 **Ortam:** Odak test `192.168.20.20` · lokal `npm run dev`  
-**Deploy:** UI (`mngui`) bu oturum sonunda test sunucuya alındı
+**Deploy:** UI deploy kullanıcı talebi ile
 
 ---
 
 ## Nerede kaldık
 
-**Generic raporlama modülü (R2+)** UI’da çalışır durumda. Odak Eğitim **Eğitim listesi** raporu (`rpt_odak_egitim_trainings`) katalog seed ile geliyor; çalıştırıcı + designer + expand panel (Genel + **Katılımcılar** sekmesi) test edildi.
+**Generic raporlama (R2+)** çalışıyor. Bu oturumda Expand designer Faz 2, özet metrikler (count/sum + aggregate), designer UX (sol dikey sekmeler, Tasarım ilk sekme) ve Katılımcılar hücre düzeltmesi (persons label) tamamlandı.
 
-**Sorgu düzeltildi:** Yıl filtresi tekrar tek alan (`gerceklesenTarih`) + GET `?filter=`; gereksiz `$or` (planlananTarih | gerceklesenTarih) ve POST `/query` yolu kaldırıldı.
-
-**Expand Katılımcılar sekmesi** çalışıyor; designer’da **düzenleme UI yok** (Faz 2) — yalnızca salt okunur özet + seed/migration (`expand.tabs[]`).
+Odak Eğitim **Eğitim listesi** + expand **Katılımcılar** POC; özet kartlar (rapor) / footer (katılımcılar) seed ile geliyor.
 
 ---
 
-## Bu oturumda tamamlananlar
+## Bu oturumda tamamlananlar (10 Tem 2026)
 
-### Raporlama çekirdeği (Mng.Ui)
+- Expand designer: Ayarlar / Sekmeler; sekme Bağlantı + Sütunlar + Özet
+- Persons hücre: `displayName` yerine firstName/lastName/username
+- Summary: `ReportingSummaryConfig` (count/sum, cards/footer/both) · DG `POST …/aggregate`
+- Designer: sol dikey sekmeler (OC workspace tanımları gibi); Tasarım ilk sekme; Varsayılan filtreler sekmesi kaldırıldı
+- Seed/migration: eğitim listesi özet kartları; katılımcı footer count
 
-- Katalog: localStorage + `ReportingCatalogService` / kategori ağacı
-- Designer: `/apps/reporting/designer/{id}` — kolonlar, expand düzeni, parametreler, varsayılan filtreler, sütun/rapor yetkisi
-- Runner: `/apps/reporting/run/{id}` — parametre paneli, tablo, CSV, DG sorgu önizleme (`showQuery`)
-- Parametre modeli: bağımsız AND filtreleri (`choiceFilters`, `datePartRange`, `search`, `personPicker`)
-- Yıl combobox: statik `yearRange` (2017–güncel yıl), DG’den çekilmiyor
-- «Tümü» durum sekmesi: `durum in Planlandi,Tamamlandi` (boş filtre değil)
+---
 
-### Expand panel — bağlı liste sekmeleri
+## Mevcut eksikler + major backlog
 
-- `expand.tabs[]` + `ReportingChildListPanel` + `fetchReportingChildList`
-- Odak seed: `ODAK_EGITIM_PARTICIPANTS_EXPAND_TAB` → `odak_egitim_katilimlari` / `parentTrainingId` ← `__dataId`
-- Runtime migration: `ensureOdakEgitimParticipantsExpandTab`
-- Plugin: `reporting-catalog-seeds.client.ts` (uygulama açılışında bootstrap)
+### Kısa vadeli / teknik borç
 
-### Düzeltmeler
+1. **Planlanan + yıl** — yıl filtresi şu an `gerceklesenTarih`; Planlanan sekmesinde `planlananTarih` (coupling olmadan) tartış/uygula
+2. **DG deploy** — `DatetimeMatchFilterExpander` test sunucuya (POST `/query` / aggregate tarih match)
+3. **Personel eğitim geçmişi** (`rpt_odak_egitim_person`) smoke test
+4. **Summary + search** — metin arama henüz aggregate özetine dahil değil
+5. **Sekme sütun yetkisi / sekme görünürlüğü** — child tab `fieldPolicies` / `visibilityPolicies` (konuşuldu, ertelendi)
+6. **Side menu / katalog** — production menü hazırlığı
+7. **UI deploy** — bu oturum değişiklikleri test sunucuya (talep ile)
 
-- `orDateFields` + `$or` yıl filtresi geri alındı → GET filtreleri
-- Vite duplicate import uyarıları (`reportingParameterModel` re-export) temizlendi
-- Expand `tabs` parse: `reportingCatalogStorage.parseExpandConfig`
-- Designer `resetExpandDefaults` → `tabs` korunur
+### Major başlıklar (yol haritası)
 
-### MngDataGateway (tarih filtreleri)
+| # | Başlık | Not |
+|---|--------|-----|
+| 1 | **Dokümantasyon entegrasyonu** | Rapor / alan yardımı, sözlük, DI veya yardım paneli köprüsü |
+| 2 | **Otomatik raporlar** | Zamanlanmış çalıştırma, e-posta / bildirim, abonelik |
+| 3 | **Rapor parametreleri iyileştirmesi** | UX, bağımlı alanlar, search’ün özete yansıması, daha zengin binding’ler |
+| 4 | **Export geliştirmeleri** | CSV ötesi (Excel, PDF, seçili sütun, özet satırları) |
+| 5 | **Rapor linklemeleri** | Raporlar arası / satır → başka rapor / deep link parametreleri |
+| 6 | **Dynamic Form seçenekleri** | Form benzeri parametre / filtre UI; OC form desenleri |
+| 7 | **Viewer sayfası** | Salt okunur / gömülü / paylaşımlı görüntüleyici (designer’dan ayrı) |
 
-- `DatetimeMatchFilterExpander` — POST `/query` match içinde string → BSON Date (`$and`/`$or` içinde)
-- `FilterParser` iyileştirmeleri + test scriptleri (`scripts/tests/MngDataGateway/filter/`)
-- **Not:** Test sunucuda DG yeniden deploy edilmediyse POST match fix canlıda olmayabilir; bu rapor artık GET kullanıyor
-
-### Diğer
-
-- i18n (tr/en), welcome registry, sidebar fallback
-- Side menu script: `docs/odak/reporting_services/scripts/patch-reporting-side-menu.ps1`
+*(Mevcut PLAN fazları R3 named query / R4 dashboard ile birlikte bu major’lar sıraya alınacak.)*
 
 ---
 
 ## Nasıl denerim
 
-1. **Lokal:** `Mng.Ui` → `npm run dev` → `/apps/reporting` veya runner `/apps/reporting/run/rpt_odak_egitim_trainings`
+1. **Lokal:** `Mng.Ui` → `npm run dev` → `/apps/reporting` · designer · runner `rpt_odak_egitim_trainings`
 2. **Test sunucu:** `http://192.168.20.20:3000` (mngui deploy sonrası)
-3. Menü: Raporlama (side menu patch gerekirse script çalıştır)
 
-**Kontrol listesi (smoke):**
+**Smoke:**
 
-- [ ] Tamamlanan + yıl 2017 → `durum=Tamamlandi` AND `gerceklesenTarih` aralığı, **$or yok**
-- [ ] Expand → Genel alanlar + **Katılımcılar** sekmesi
-- [ ] Designer → Expand sekmesinde «Bağlı liste sekmeleri» bilgi kutusu (salt okunur)
-
----
-
-## Sıradaki (yarın)
-
-1. **Expand designer Faz 2** — `tabs[]` UI: dataset seçimi, link alanı, sütun editörü (`ReportingExpandLayoutPanel`)
-2. **Planlanan + yıl** — yıl filtresi şu an her zaman `gerceklesenTarih`; «Planlanan» sekmesinde `planlananTarih` istenirse status’a göre alan seçimi (coupling olmadan) tartışılacak
-3. **DG deploy** — `DatetimeMatchFilterExpander` fix’i test sunucuya (ileride POST match kullanılırsa)
-4. **Side menu / katalog** — raporlama menü kayıtları production hazırlığı
-5. **Personel eğitim geçmişi** raporu (`rpt_odak_egitim_person`) smoke test
+- [ ] Expand → Katılımcılar: personel adları dolu
+- [ ] Rapor özet kartları: kayıt sayısı + süre toplamı (filtreli aggregate)
+- [ ] Katılımcılar footer: katılımcı sayısı
+- [ ] Designer: sol sekmeler · Tasarım / Expand / Özet
 
 ---
 
@@ -83,17 +71,17 @@
 | Alan | Dosya |
 |------|--------|
 | Tipler | `Mng.Ui/types/apps/reporting.ts` |
-| Katalog seed | `Mng.Ui/utils/reportingOdakEgitimSeeds.ts` |
-| Katılımcı expand tab | `Mng.Ui/utils/reportingOdakEgitimExpandMigrations.ts` |
-| Parametre → filtre | `Mng.Ui/utils/reportingParameterModel.ts`, `reportingParameters.ts` |
-| Child liste | `Mng.Ui/utils/reportingChildList.ts`, `ReportingChildListPanel.vue` |
-| Expand UI | `ReportingExpandPanel.vue`, `ReportingExpandLayoutPanel.vue` |
-| DG datetime | `MngDataGateway/.../DatetimeMatchFilterExpander.cs` |
+| Summary | `Mng.Ui/utils/reportingSummary.ts`, `ReportingSummary*.vue` |
+| Expand tabs designer | `ReportingExpandLayoutPanel.vue`, `ReportingExpandChildTabsPanel.vue` |
+| Child liste | `ReportingChildListPanel.vue` |
+| Seed / migration | `reportingOdakEgitimSeeds.ts`, `reportingOdakEgitimExpandMigrations.ts` |
+| Designer | `ReportingDesignerView.vue` |
 
 ---
 
 ## Kurallar
 
 - Test: `192.168.20.20`
-- UI deploy: kullanıcı talebi ile (`deploy-odak-apps.ps1 -Services mngui`)
-- Backend deploy: DG değişiklikleri ayrı (`mngdatagateway` veya tam apps)
+- UI deploy: kullanıcı talebi ile
+- Backend deploy: DG ayrı
+- Commit/push: yalnızca talep edilince

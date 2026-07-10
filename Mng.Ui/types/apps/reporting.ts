@@ -136,6 +136,8 @@ export interface ReportingExpandChildListConfig {
   limit?: number;
   expand?: boolean;
   emptyMessage?: string;
+  /** Bağlı liste özet metrikleri (aggregate). */
+  summary?: ReportingSummaryConfig;
 }
 
 /** Ek expand sekmeleri — varsayılan «Detay» sekmesi expand.sections ile gelir. */
@@ -159,6 +161,25 @@ export interface ReportingExpandConfig {
   defaultTabId?: string;
 }
 
+/** Özet metrik — DG aggregate ($group). */
+export type ReportingSummaryMetricKind = 'count' | 'sum';
+export type ReportingSummaryPlacement = 'cards' | 'footer' | 'both' | 'none';
+export type ReportingSummaryValueFormat = 'number' | 'integer';
+
+export interface ReportingSummaryMetric {
+  id: string;
+  label: string;
+  kind: ReportingSummaryMetricKind;
+  /** sum için zorunlu. */
+  field?: string;
+  format?: ReportingSummaryValueFormat;
+}
+
+export interface ReportingSummaryConfig {
+  placement: ReportingSummaryPlacement;
+  metrics: ReportingSummaryMetric[];
+}
+
 export interface ReportingReportDefinition {
   id: string;
   title: string;
@@ -173,6 +194,8 @@ export interface ReportingReportDefinition {
   visibilityPolicies: OdakFieldVisibilityPolicy[];
   /** Çalıştırıcıda gösterilen parametreler (varsayılan filtrelerden ayrı). */
   parameters: ReportingReportParameter[];
+  /** Tablo üstü kart / alt footer özet metrikleri. */
+  summary?: ReportingSummaryConfig;
   createdAt: string;
   updatedAt: string;
 }

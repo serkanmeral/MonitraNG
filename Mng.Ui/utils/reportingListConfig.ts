@@ -229,7 +229,7 @@ function readReportingCellValue(row: Record<string, unknown>, fieldName: string)
   return cur;
 }
 
-/** Relation expand sonrası hücre ham değeri. */
+/** Relation / persons expand sonrası hücre ham değeri. */
 export function readReportingColumnValue(
   row: Record<string, unknown>,
   col: OdakHubListColumnConfig
@@ -244,6 +244,8 @@ export function readReportingColumnValue(
       const o = rel as Record<string, unknown>;
       const direct = o[display];
       if (direct != null && direct !== '') return direct;
+      // e.g. persons expand has firstName/lastName, not displayName — keep object for scalar label
+      return rel;
     }
     return undefined;
   }
@@ -259,10 +261,23 @@ export function reportingCellRawForColumn(row: Record<string, unknown>, col: Oda
   return formatReportingCellScalar(readReportingColumnValue(row, col));
 }
 
+/** DG persons expand: firstName/lastName/username (no displayName). */
+function personLikeLabel(o: Record<string, unknown>): string {
+  const combined = `${o.firstName ?? o.FirstName ?? ''} ${o.lastName ?? o.LastName ?? ''}`.trim();
+  if (combined) return combined;
+  const username = o.username ?? o.Username;
+  if (username != null && String(username).trim()) return String(username).trim();
+  const email = o.email ?? o.Email;
+  if (email != null && String(email).trim()) return String(email).trim();
+  return '';
+}
+
 function formatReportingCellScalar(val: unknown): string {
   if (val == null) return '';
   if (typeof val === 'object') {
     const o = val as Record<string, unknown>;
+    const person = personLikeLabel(o);
+    if (person) return person;
     const label = o.ad ?? o.displayName ?? o.name ?? o.title ?? o.label ?? o.kod;
     if (label != null && label !== '') return String(label);
     const id = o.__dataId ?? o.dataId ?? o.id;

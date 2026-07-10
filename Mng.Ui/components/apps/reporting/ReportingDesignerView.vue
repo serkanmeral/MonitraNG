@@ -3,7 +3,6 @@
  * Reporting designer — listConfig, filters, column auth, save to local catalog.
  */
 import ReportingColumnAuthPanel from '@/components/apps/reporting/ReportingColumnAuthPanel.vue';
-import ReportingDefaultFiltersPanel from '@/components/apps/reporting/ReportingDefaultFiltersPanel.vue';
 import ReportingParametersDesignerPanel from '@/components/apps/reporting/ReportingParametersDesignerPanel.vue';
 import ReportingReportVisibilityPanel from '@/components/apps/reporting/ReportingReportVisibilityPanel.vue';
 import { useReportingColumnAccess } from '@/composables/useReportingColumnAccess';
@@ -26,11 +25,15 @@ import {
   sanitizeReportingDefaultFilters,
 } from '@/utils/reportingDefaultFilters';
 import { computed, onMounted, ref, watch } from 'vue';
+import { useDisplay } from 'vuetify';
 import ReportingParametersPanel from '@/components/apps/reporting/ReportingParametersPanel.vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import ReportingListColumnsPanel from '@/components/apps/reporting/ReportingListColumnsPanel.vue';
 import ReportingExpandLayoutPanel from '@/components/apps/reporting/ReportingExpandLayoutPanel.vue';
 import ReportingExpandPanel from '@/components/apps/reporting/ReportingExpandPanel.vue';
+import ReportingSummaryCards from '@/components/apps/reporting/ReportingSummaryCards.vue';
+import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummaryFooter.vue';
+import ReportingSummaryDesignerPanel from '@/components/apps/reporting/ReportingSummaryDesignerPanel.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useDatasetStore, type FieldDefinition } from '@/stores/apps/dataset';
@@ -56,7 +59,14 @@ import {
   reportingDataTableRow,
   visibleReportingColumnKeys,
 } from '@/utils/reportingListConfig';
-import type { ReportingExpandConfig, ReportingReportParameter } from '@/types/apps/reporting';
+import type { ReportingExpandConfig, ReportingReportParameter, ReportingSummaryConfig } from '@/types/apps/reporting';
+import {
+  emptyReportingSummaryConfig,
+  fetchReportingSummary,
+  reportingSummaryShowCards,
+  reportingSummaryShowFooter,
+  type ReportingSummaryValues,
+} from '@/utils/reportingSummary';
 import {
   buildReportingRuntimeQuery,
   defaultReportingParameterValues,
@@ -78,6 +88,7 @@ const props = defineProps<{
 
 const route = useRoute();
 const router = useRouter();
+const { mdAndUp } = useDisplay();
 
 const nuxtApp = useNuxtApp();
 const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
@@ -89,6 +100,24 @@ const t = (key: string, params?: Record<string, unknown>) => {
 
 const authStore = useAuthStore();
 const datasetStore = useDatasetStore();
+
+const contentTabItems = computed(() =>
+  (
+    [
+      'design',
+      'view',
+      'columns',
+      'expand',
+      'summary',
+      'columnAuth',
+      'parameters',
+      'reportAuth',
+    ] as const
+  ).map((key) => ({
+    key,
+    label: t(`reporting.tabs.${key}`),
+  }))
+);
 
 const catalogService = computed(() => new ReportingCatalogService(domainKey.value));
 
@@ -120,6 +149,9 @@ const datasetName = ref<string | null>(null);
 const loadedReportDataset = ref<string | null>(null);
 const listConfig = ref<OdakHubListConfig>({ columns: [] });
 const expandConfig = ref<ReportingExpandConfig>(defaultReportingExpandConfigFromFields([]));
+const summaryConfig = ref(emptyReportingSummaryConfig());
+const summaryValues = ref<ReportingSummaryValues>({});
+const summaryLoading = ref(false);
 const fieldPolicies = ref(emptyOdakFieldPoliciesBlob());
 const visibilityPolicies = ref<OdakFieldVisibilityPolicy[]>([]);
 const defaultFilters = ref<AfListFilter[]>([]);
@@ -155,8 +187,15 @@ const itemsPerPageOptions = [25, 50, 100];
 const tableSortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([]);
 const sortInitialized = ref(false);
 const contentTab = ref<
-  'view' | 'columns' | 'expand' | 'columnAuth' | 'parameters' | 'defaultFilters' | 'reportAuth'
->('view');
+  | 'design'
+  | 'view'
+  | 'columns'
+  | 'expand'
+  | 'summary'
+  | 'columnAuth'
+  | 'parameters'
+  | 'reportAuth'
+>('design');
 const expandedIds = ref<string[]>([]);
 
 const datasetItems = computed(() =>
@@ -293,10 +332,6 @@ function resetRuntimeFiltersToDefaults() {
   else if (previewRows.value.length || visibleColumns.value.length) void runPreview();
 }
 
-function onDefaultFiltersUpdate(filters: AfListFilter[]) {
-  defaultFilters.value = filters;
-}
-
 function resetReportVisibilityDefaults() {
   visibilityPolicies.value = [];
 }
@@ -336,6 +371,7 @@ function hydrateFromReport() {
       updatedAt: new Date().toISOString(),
     });
   }
+  summaryConfig.value = draft.summary ?? emptyReportingSummaryConfig();
   fieldPolicies.value = draft.fieldPolicies;
   defaultFilters.value = draft.defaultFilters;
   reportParameters.value = draft.parameters ?? [];
@@ -384,6 +420,7 @@ async function saveReport() {
         defaultFilters: defaultFilters.value,
         visibilityPolicies: visibilityPolicies.value,
         parameters: reportParameters.value,
+        summary: summaryConfig.value,
       })
     );
     saveMessage.value = t('reporting.designer.saved');
@@ -432,6 +469,8 @@ async function loadSchemaFresh(name: string) {
     const fresh = freshReportConfigFromSchema(schemaFields.value);
     listConfig.value = fresh.listConfig;
     expandConfig.value = fresh.expand;
+    summaryConfig.value = emptyReportingSummaryConfig();
+    summaryValues.value = {};
     fieldPolicies.value = fresh.fieldPolicies;
     defaultFilters.value = fresh.defaultFilters;
     loadedReportDataset.value = name;
@@ -477,6 +516,10 @@ function resetColumnDefaults() {
   applyDefaultSortFromConfig();
 }
 
+function onSummaryConfigUpdate(value: ReportingSummaryConfig) {
+  summaryConfig.value = value;
+}
+
 function onAdvancedFiltersUpdate(filters: AfListFilter[]) {
   advancedFilters.value = filters;
   if (tablePage.value !== 1) tablePage.value = 1;
@@ -512,21 +555,42 @@ async function runPreview() {
     await authStore.ensureValidToken();
     const skip = (tablePage.value - 1) * itemsPerPage.value;
     const query = previewRuntimeQuery();
-    const result = await fetchReportingPreview({
-      datasetName: datasetName.value,
-      listConfig: listConfig.value,
-      expandConfig: expandConfig.value,
-      canViewColumn: (field) => canViewColumn(field),
-      advancedFilters: query.filters,
-      mongoMatch: query.mongoMatch,
-      search: reportingParameterSearchText(reportParameters.value, parameterValues.value),
-      sortField: currentSortField(),
-      sortDesc: currentSortDesc(),
-      skip,
-      limit: itemsPerPage.value,
-      expand: true,
-      showQuery: showDgQueryPanel.value,
-    });
+    const summaryPromise =
+      summaryConfig.value.metrics.length && summaryConfig.value.placement !== 'none'
+        ? (async () => {
+            summaryLoading.value = true;
+            try {
+              summaryValues.value = await fetchReportingSummary({
+                datasetName: datasetName.value!,
+                metrics: summaryConfig.value.metrics,
+                filters: query.filters,
+              });
+            } catch {
+              summaryValues.value = {};
+            } finally {
+              summaryLoading.value = false;
+            }
+          })()
+        : Promise.resolve();
+
+    const [result] = await Promise.all([
+      fetchReportingPreview({
+        datasetName: datasetName.value,
+        listConfig: listConfig.value,
+        expandConfig: expandConfig.value,
+        canViewColumn: (field) => canViewColumn(field),
+        advancedFilters: query.filters,
+        mongoMatch: query.mongoMatch,
+        search: reportingParameterSearchText(reportParameters.value, parameterValues.value),
+        sortField: currentSortField(),
+        sortDesc: currentSortDesc(),
+        skip,
+        limit: itemsPerPage.value,
+        expand: true,
+        showQuery: showDgQueryPanel.value,
+      }),
+      summaryPromise,
+    ]);
     previewRows.value = result.rows;
     previewTotal.value = result.totalCount;
     dgQuery.value = showDgQueryPanel.value ? (result.dgQuery ?? null) : null;
@@ -535,6 +599,7 @@ async function runPreview() {
   } catch (e: unknown) {
     previewRows.value = [];
     previewTotal.value = 0;
+    summaryValues.value = {};
     dgQuery.value = null;
     dgRequestUrl.value = null;
     previewError.value = e instanceof Error ? e.message : t('reporting.errors.previewFailed');
@@ -586,10 +651,6 @@ function onTableOptions(options: {
   if (pageChanged || sizeChanged || sortChanged) {
     void runPreview();
   }
-}
-
-function resetDefaultFilters() {
-  defaultFilters.value = [];
 }
 
 function onReportParametersUpdate(parameters: ReportingReportParameter[]) {
@@ -700,73 +761,8 @@ watch(
       </v-alert>
     </v-col>
 
-    <!-- Tasarım (sol) -->
-    <v-col cols="12" lg="3">
-      <v-card elevation="0" class="border">
-        <v-card-title class="text-subtitle-1 font-weight-medium">
-          {{ t('reporting.panel.design') }}
-        </v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="title"
-            :label="t('reporting.fields.title')"
-            density="compact"
-            variant="outlined"
-            hide-details
-            class="mb-3"
-          />
-          <v-textarea
-            v-model="description"
-            :label="t('reporting.fields.description')"
-            density="compact"
-            variant="outlined"
-            rows="2"
-            hide-details
-            class="mb-3"
-          />
-          <v-select
-            v-model="categoryId"
-            :items="categorySelectItems"
-            item-title="title"
-            item-value="value"
-            :label="t('reporting.fields.category')"
-            density="compact"
-            variant="outlined"
-            hide-details
-            class="mb-3"
-            :hint="t('reporting.fields.categoryHint')"
-            persistent-hint
-          />
-          <v-autocomplete
-            v-model="datasetName"
-            :items="datasetItems"
-            item-title="title"
-            item-value="value"
-            :label="t('reporting.fields.dataset')"
-            :loading="datasetStore.loading"
-            density="compact"
-            variant="outlined"
-            clearable
-            hide-details
-            class="mb-3"
-          />
-          <v-progress-linear v-if="schemaLoading" indeterminate class="mb-3" />
-          <v-btn
-            variant="text"
-            size="small"
-            block
-            :loading="datasetStore.loading"
-            @click="loadDatasets"
-          >
-            <RefreshIcon size="16" class="mr-1" />
-            {{ t('reporting.actions.refreshDatasets') }}
-          </v-btn>
-        </v-card-text>
-      </v-card>
-    </v-col>
-
-    <!-- İçerik (sağ) — sekmeli -->
-    <v-col cols="12" lg="9">
+    <!-- İçerik — sekmeli (Tasarım ilk sekme) -->
+    <v-col cols="12">
       <v-card elevation="0" class="border">
         <v-card-title class="d-flex align-center justify-space-between flex-wrap ga-2 py-3">
           <span class="text-subtitle-1 font-weight-medium">
@@ -797,19 +793,90 @@ watch(
           </div>
         </v-card-title>
 
-        <v-tabs v-model="contentTab" color="primary" class="px-4">
-          <v-tab value="view">{{ t('reporting.tabs.view') }}</v-tab>
-          <v-tab value="columns">{{ t('reporting.tabs.columns') }}</v-tab>
-          <v-tab value="expand">{{ t('reporting.tabs.expand') }}</v-tab>
-          <v-tab value="columnAuth">{{ t('reporting.tabs.columnAuth') }}</v-tab>
-          <v-tab value="parameters">{{ t('reporting.tabs.parameters') }}</v-tab>
-          <v-tab value="defaultFilters">{{ t('reporting.tabs.defaultFilters') }}</v-tab>
-          <v-tab value="reportAuth">{{ t('reporting.tabs.reportAuth') }}</v-tab>
-        </v-tabs>
+        <div class="d-flex flex-column flex-md-row">
+          <v-tabs
+            v-model="contentTab"
+            :direction="mdAndUp ? 'vertical' : 'horizontal'"
+            color="primary"
+            class="reporting-side-tabs flex-shrink-0 py-2"
+            show-arrows
+          >
+            <v-tab
+              v-for="tab in contentTabItems"
+              :key="tab.key"
+              :value="tab.key"
+              class="text-none justify-start"
+            >
+              {{ tab.label }}
+            </v-tab>
+          </v-tabs>
+          <v-divider :vertical="mdAndUp" />
+          <v-window v-model="contentTab" class="reporting-content-window flex-grow-1" style="min-width: 0">
+          <!-- Tasarım (başlık, kategori, dataset) -->
+          <v-window-item value="design">
+            <v-card-text>
+              <v-row dense>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="title"
+                    :label="t('reporting.fields.title')"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="mb-3"
+                  />
+                  <v-textarea
+                    v-model="description"
+                    :label="t('reporting.fields.description')"
+                    density="compact"
+                    variant="outlined"
+                    rows="2"
+                    hide-details
+                    class="mb-3"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-select
+                    v-model="categoryId"
+                    :items="categorySelectItems"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('reporting.fields.category')"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="mb-3"
+                    :hint="t('reporting.fields.categoryHint')"
+                    persistent-hint
+                  />
+                  <v-autocomplete
+                    v-model="datasetName"
+                    :items="datasetItems"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('reporting.fields.dataset')"
+                    :loading="datasetStore.loading"
+                    density="compact"
+                    variant="outlined"
+                    clearable
+                    hide-details
+                    class="mb-3"
+                  />
+                  <v-progress-linear v-if="schemaLoading" indeterminate class="mb-3" />
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    :loading="datasetStore.loading"
+                    @click="loadDatasets"
+                  >
+                    <RefreshIcon size="16" class="mr-1" />
+                    {{ t('reporting.actions.refreshDatasets') }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-window-item>
 
-        <v-divider />
-
-        <v-window v-model="contentTab" class="reporting-content-window">
           <!-- Rapor görünümü -->
           <v-window-item value="view">
             <div class="px-4 pt-3">
@@ -899,24 +966,33 @@ watch(
                 {{ t('reporting.hints.emptyPreview') }}
               </div>
 
-              <v-data-table-server
+              <template
                 v-else-if="!reportParameters.length || reportingParametersReady(reportParameters, parameterValues)"
-                v-model:expanded="expandedIds"
-                :headers="tableHeaders"
-                :items="previewTableItems"
-                :loading="previewLoading"
-                :items-per-page="itemsPerPage"
-                :items-per-page-options="itemsPerPageOptions"
-                :page="tablePage"
-                :items-length="previewTotal"
-                :sort-by="tableSortBy"
-                :show-expand="expandConfig.enabled"
-                :expand-on-click="false"
-                item-value="__dataId"
-                density="compact"
-                class="border rounded"
-                @update:options="onTableOptions"
               >
+                <ReportingSummaryCards
+                  v-if="reportingSummaryShowCards(summaryConfig)"
+                  :config="summaryConfig"
+                  :values="summaryValues"
+                  :loading="summaryLoading"
+                />
+
+                <v-data-table-server
+                  v-model:expanded="expandedIds"
+                  :headers="tableHeaders"
+                  :items="previewTableItems"
+                  :loading="previewLoading"
+                  :items-per-page="itemsPerPage"
+                  :items-per-page-options="itemsPerPageOptions"
+                  :page="tablePage"
+                  :items-length="previewTotal"
+                  :sort-by="tableSortBy"
+                  :show-expand="expandConfig.enabled"
+                  :expand-on-click="false"
+                  item-value="__dataId"
+                  density="compact"
+                  class="border rounded"
+                  @update:options="onTableOptions"
+                >
                 <template
                   v-for="col in visibleColumns"
                   #[`item.${col}`]="{ item }"
@@ -970,6 +1046,14 @@ watch(
                   </tr>
                 </template>
               </v-data-table-server>
+
+                <ReportingSummaryFooter
+                  v-if="reportingSummaryShowFooter(summaryConfig)"
+                  :config="summaryConfig"
+                  :values="summaryValues"
+                  :loading="summaryLoading"
+                />
+              </template>
             </v-card-text>
           </v-window-item>
 
@@ -993,6 +1077,18 @@ watch(
                 :fields="schemaFields"
                 :disabled="!schemaFields.length"
                 @reset="resetExpandDefaults"
+              />
+            </v-card-text>
+          </v-window-item>
+
+          <!-- Özet metrikler -->
+          <v-window-item value="summary">
+            <v-card-text>
+              <ReportingSummaryDesignerPanel
+                :summary="summaryConfig"
+                :fields="schemaFields"
+                :disabled="!schemaFields.length"
+                @update:summary="onSummaryConfigUpdate"
               />
             </v-card-text>
           </v-window-item>
@@ -1022,19 +1118,6 @@ watch(
             </v-card-text>
           </v-window-item>
 
-          <!-- Varsayılan filtreler -->
-          <v-window-item value="defaultFilters">
-            <v-card-text>
-              <ReportingDefaultFiltersPanel
-                :default-filters="defaultFilters"
-                :columns="designerFilterColumns"
-                :disabled="!schemaFields.length"
-                @update:default-filters="onDefaultFiltersUpdate"
-                @reset="resetDefaultFilters"
-              />
-            </v-card-text>
-          </v-window-item>
-
           <!-- Rapor yetkilendirme -->
           <v-window-item value="reportAuth">
             <v-card-text>
@@ -1045,6 +1128,7 @@ watch(
             </v-card-text>
           </v-window-item>
         </v-window>
+        </div>
       </v-card>
     </v-col>
     </v-row>
@@ -1053,6 +1137,22 @@ watch(
 </template>
 
 <style scoped>
+.reporting-side-tabs {
+  min-width: 200px;
+  max-width: 240px;
+}
+
+@media (max-width: 959px) {
+  .reporting-side-tabs {
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.reporting-side-tabs :deep(.v-tab) {
+  min-height: 40px;
+}
+
 .reporting-content-window {
   min-height: 320px;
 }
