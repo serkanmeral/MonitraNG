@@ -6,6 +6,7 @@ import ReportingExpandPanel from '@/components/apps/reporting/ReportingExpandPan
 import ReportingParametersPanel from '@/components/apps/reporting/ReportingParametersPanel.vue';
 import ReportingSummaryCards from '@/components/apps/reporting/ReportingSummaryCards.vue';
 import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummaryFooter.vue';
+import ReportingExportDialog from '@/components/apps/reporting/ReportingExportDialog.vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useReportingColumnAccess } from '@/composables/useReportingColumnAccess';
@@ -19,7 +20,13 @@ import { useDatasetStore, type FieldDefinition } from '@/stores/apps/dataset';
 import { draftFromReportDefinition } from '@/utils/reportingCatalogStorage';
 import { canViewReportingReport } from '@/utils/reportingReportAccess';
 import { cloneAfListFilters } from '@/utils/reportingDefaultFilters';
-import { exportReportingRowsToCsv } from '@/utils/reportingExport';
+import {
+  exportReportingRowsToCsv,
+  exportReportingRowsToXlsx,
+  listReportingExportColumnChoices,
+  type ReportingExportFormat,
+} from '@/utils/reportingExport';
+import { fetchReportingExportRows, REPORTING_EXPORT_SOFT_CAP } from '@/utils/reportingExportFetch';
 import { ODAK_DATA_TABLE_EXPAND_COLUMN } from '@/utils/odakSiparisConfig';
 import {
   getListColumnCellStyle,
@@ -77,10 +84,23 @@ import {
 } from '@/utils/reportingDocumentTokens';
 import { diGenerateFromTemplate } from '@/services/documentIntelligenceService';
 import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import {
+  buildReportingShareHref,
+  copyTextToClipboard,
+  REPORTING_BROWSE_SHARE_PATH,
+} from '@/utils/reportingShareLink';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 import type { ReportingDocumentBinding } from '@/types/apps/reporting';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, FileTextIcon, RefreshIcon, PencilIcon } from 'vue-tabler-icons';
+import {
+  ArrowLeftIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  LinkIcon,
+  RefreshIcon,
+  PencilIcon,
+} from 'vue-tabler-icons';
 
 const props = withDefaults(
   defineProps<{
@@ -89,10 +109,13 @@ const props = withDefaults(
     embedded?: boolean;
     /** Designer + DG pipeline gibi admin araçları. */
     showAdminTools?: boolean;
+    /** Paylaşım linki tabanı (browse veya embed). */
+    shareBasePath?: string;
   }>(),
   {
     embedded: false,
     showAdminTools: true,
+    shareBasePath: REPORTING_BROWSE_SHARE_PATH,
   }
 );
 
@@ -148,6 +171,10 @@ const dgRequestUrl = ref<string | null>(null);
 const showDgQueryPanel = ref(false);
 const dgQueryExpanded = ref<string | undefined>(undefined);
 const exporting = ref(false);
+const exportDialogOpen = ref(false);
+const copyLinkBusy = ref(false);
+const copyLinkMessage = ref('');
+const copyLinkSnackbar = ref(false);
 const documentsDialog = ref(false);
 const documentsGenerating = ref(false);
 const documentsError = ref('');
@@ -217,6 +244,12 @@ const columnTitleMap = computed(() => {
   }
   return map;
 });
+
+const exportColumnOptions = computed(() =>
+  listReportingExportColumnChoices(listConfig.value, columnTitleMap.value, (field) =>
+    canViewColumn(field)
+  ).map((c) => ({ key: c.key, title: c.title }))
+);
 
 async function hydrateFromReport() {
   await bootstrapReportingCatalog(catalogDomainKey.value);
@@ -533,12 +566,79 @@ function openDesigner() {
   void router.push(`/apps/reporting/designer/${props.reportId}`);
 }
 
-async function exportCsv() {
-  if (!runRows.value.length) return;
+async function copyShareLink() {
+  const href = buildReportingShareHref({
+    reportId: props.reportId,
+    parameters: reportParameters.value,
+    values: parameterValues.value,
+    basePath: props.shareBasePath,
+  });
+  if (!href) {
+    copyLinkMessage.value = t('reporting.runner.copyLinkFailed');
+    copyLinkSnackbar.value = true;
+    return;
+  }
+  copyLinkBusy.value = true;
+  try {
+    const ok = await copyTextToClipboard(href);
+    copyLinkMessage.value = ok
+      ? t('reporting.runner.copyLinkSuccess')
+      : t('reporting.runner.copyLinkFailed');
+    copyLinkSnackbar.value = true;
+  } finally {
+    copyLinkBusy.value = false;
+  }
+}
+
+function openExportDialog() {
+  if (!runRows.value.length && runTotal.value <= 0) return;
+  exportDialogOpen.value = true;
+}
+
+async function onExportConfirm(payload: { format: ReportingExportFormat; columnKeys: string[] }) {
+  if (!datasetName.value) return;
+  if (!reportingParametersReady(reportParameters.value, parameterValues.value)) {
+    runError.value = t('reporting.runner.parametersRequired');
+    return;
+  }
+
   exporting.value = true;
   try {
+    await authStore.ensureValidToken();
+    const query = runtimeQuery();
+    const searchText = reportingParameterSearchText(reportParameters.value, parameterValues.value);
+    const fetched = await fetchReportingExportRows({
+      datasetName: datasetName.value,
+      listConfig: listConfig.value,
+      expandConfig: expandConfig.value,
+      canViewColumn: (field) => canViewColumn(field),
+      advancedFilters: query.filters,
+      mongoMatch: query.mongoMatch,
+      search: searchText,
+      sortField: currentSortField(),
+      sortDesc: currentSortDesc(),
+      softCap: REPORTING_EXPORT_SOFT_CAP,
+    });
+
     const safeName = title.value.replace(/[^\w\-]+/g, '_').slice(0, 48) || 'report';
-    exportReportingRowsToCsv(runRows.value, listConfig.value, columnTitleMap.value, `${safeName}.csv`);
+    const opts = {
+      columnKeys: payload.columnKeys,
+      canViewColumn: (field: string) => canViewColumn(field),
+    };
+    if (payload.format === 'xlsx') {
+      exportReportingRowsToXlsx(
+        fetched.rows,
+        listConfig.value,
+        columnTitleMap.value,
+        safeName,
+        { ...opts, sheetName: safeName.slice(0, 31) || 'Report' }
+      );
+    } else {
+      exportReportingRowsToCsv(fetched.rows, listConfig.value, columnTitleMap.value, safeName, opts);
+    }
+    exportDialogOpen.value = false;
+  } catch (e: unknown) {
+    runError.value = e instanceof Error ? e.message : t('reporting.export.failed');
   } finally {
     exporting.value = false;
   }
@@ -700,6 +800,19 @@ watch(
 );
 
 watch(
+  () => props.showAdminTools,
+  (admin) => {
+    if (!admin) {
+      showDgQueryPanel.value = false;
+      dgQuery.value = null;
+      dgRequestUrl.value = null;
+      dgQueryExpanded.value = undefined;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
   () => props.reportId,
   () => {
     void hydrateFromReport().then(() =>
@@ -787,6 +900,17 @@ onBeforeUnmount(() => {
             variant="tonal"
             size="small"
             class="text-none"
+            :loading="copyLinkBusy"
+            :title="t('reporting.runner.copyLinkHint')"
+            @click="copyShareLink"
+          >
+            <LinkIcon size="16" class="mr-1" />
+            {{ t('reporting.runner.copyLink') }}
+          </v-btn>
+          <v-btn
+            variant="tonal"
+            size="small"
+            class="text-none"
             @click="openDocumentsDialog"
           >
             <FileTextIcon size="16" class="mr-1" />
@@ -797,14 +921,27 @@ onBeforeUnmount(() => {
             size="small"
             class="text-none"
             :loading="exporting"
-            :disabled="!runRows.length"
-            @click="exportCsv"
+            :disabled="!runRows.length && runTotal <= 0"
+            @click="openExportDialog"
           >
             <DownloadIcon size="16" class="mr-1" />
-            {{ t('reporting.runner.exportCsv') }}
+            {{ t('reporting.export.button') }}
           </v-btn>
         </div>
       </div>
+
+      <ReportingExportDialog
+        v-model="exportDialogOpen"
+        :columns="exportColumnOptions"
+        :estimated-total="runTotal"
+        :soft-cap="REPORTING_EXPORT_SOFT_CAP"
+        :exporting="exporting"
+        @confirm="onExportConfirm"
+      />
+
+      <v-snackbar v-model="copyLinkSnackbar" :timeout="2500" color="primary">
+        {{ copyLinkMessage }}
+      </v-snackbar>
 
       <v-dialog v-model="documentsDialog" max-width="780">
         <v-card>

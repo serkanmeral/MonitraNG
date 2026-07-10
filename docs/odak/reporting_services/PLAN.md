@@ -1,8 +1,8 @@
 # Reporting Services — Plan
 
-**Son güncelleme:** 10 Temmuz 2026  
-**Ortam:** Odak test `192.168.20.20` · DG + UI (oturum kapanışı deploy)  
-**Durum:** R2 + R2b + R2c · kısa vadeli borç kapandı · Odak Eğitim POC canlı
+**Son güncelleme:** 11 Temmuz 2026  
+**Ortam:** Odak test `192.168.20.20` · DG + UI  
+**Durum:** R2–R2c · R3a (DG katalog) · belge D0–D4 · linkleme · Viewer 1–2 · Export B1 · Odak Eğitim POC
 
 ## Amaç
 
@@ -14,28 +14,30 @@ Kullanıcıların DG dataset’lerinden parametreli **tablo raporları** tasarla
 |-------|------------|--------|
 | **Data Source** | DG dataset | ✅ Seçim + şema |
 | **Tablo** | Kolon + sıralama + sayfalama | ✅ |
-| **Parametreler** | Durum sekmesi, yıl (`orDateFields`), arama, kişi | ✅ Bağımsız AND · 🔲 iyileştirme major |
-| **Expand** | Satır detayı + bağlı dataset sekmeleri | ✅ Runtime + designer (Bağlantı/Sütunlar/Özet/Yetki) |
-| **Özet** | count/sum · cards/footer · DG aggregate (+ text search) | ✅ POC |
-| **Katalog** | Rapor tanımı (localStorage) | ✅ · menü: Rapor kataloğu |
+| **Parametreler** | Durum, yıl (`orDateFields`), arama, kişi | ✅ · 🔲 iyileştirme major |
+| **Expand** | Satır detayı + child sekmeler + yetki | ✅ |
+| **Özet** | count/sum · cards/footer · aggregate (+ text search) | ✅ POC |
+| **Katalog** | Rapor tanımı | ✅ **DG** (`@reporting_*`) · LS migrate |
 | **Yetki** | Sütun + rapor + child sekme/sütun | ✅ |
-| **Viewer** | Salt okunur / paylaşımlı görüntüleyici | 🔲 Major |
+| **Belge (DI)** | Şablon bağ + üret (reportRun/parent/child) | ✅ D0–D4 |
+| **Viewer** | Browse + embed + link kopyala | ✅ 1–2. dilim |
+| **Linkleme** | Sütun → rapor deep link | ✅ |
+| **Export** | CSV + Excel + sütun seçimi + soft cap | ✅ B1 · 🔲 B2 (PDF…) |
 | **Otomatik raporlar** | Zamanlama + dağıtım | 🔲 Major |
-| **Export** | CSV ötesi | 🔲 Major (CSV var) |
-| **Linkleme** | Raporlar arası / deep link | 🔲 Major |
 | **Dynamic Form** | Form benzeri parametre UI | 🔲 Major |
-| **Dokümantasyon** | Yardım, alan sözlüğü | 🔲 Major |
-| **Dashboard** | Çoklu rapor / layout | 🔲 Sonra (R4) |
+| **Dokümantasyon** | Yardım, alan sözlüğü | 🔲 (DI belge ayrı kanal) |
+| **Dashboard** | Çoklu rapor / layout | 🔲 R4 |
 
 ## Çalışma prensibi (güncel)
 
 ```
-Report definition (local catalog)
+Report definition (DG @reporting_reports)
   → parameters → AfListFilter[] (+ orDateFields → POST /query match)
-  → expand.tabs[] → child dataset (linkField = parent __dataId)
-  → summary → POST /aggregate ($match + optional search $regex + $group)
+  → expand.tabs[] → child dataset
+  → summary → POST /aggregate
+  → optional: reportLink / share URL / export (csv|xlsx)
         ↓
-Table + expand panel + cards/footer
+Browse | Embed | Runner (+ belgeler DI)
 ```
 
 ## Fazlar
@@ -43,37 +45,36 @@ Table + expand panel + cards/footer
 | Faz | Hedef | Durum |
 |-----|--------|--------|
 | **R0** | Starter designer | ✅ |
-| **R1** | Parametre UX, CSV | ✅ büyük ölçüde |
+| **R1** | Parametre UX, CSV | ✅ |
 | **R2** | Katalog + designer/runner | ✅ |
-| **R2b** | Expand child list tabs + designer | ✅ |
-| **R2c** | Summary aggregate (count/sum) | ✅ POC |
-| **R3** | Named query + merkezi kayıt (DG) | 🔲 |
+| **R2b** | Expand child list tabs | ✅ |
+| **R2c** | Summary aggregate | ✅ POC |
+| **R3a** | Merkezi kayıt (DG) | ✅ |
+| **R3b** | Named query | ⏸ Ertelendi |
 | **R4** | Dashboard köprüsü | 🔲 |
 
-## Major backlog (10 Tem 2026)
+## Major backlog (güncel)
 
-1. Dokümantasyon entegrasyonu  
-2. Otomatik raporlar  
-3. Rapor parametreleri iyileştirmesi  
-4. Export geliştirmeleri  
-5. Rapor linklemeleri  
-6. Dynamic Form seçenekleri  
-7. Viewer sayfası  
+1. Parametre iyileştirmesi  
+2. Export B2 (PDF, özet satırı, …)  
+3. R3a cilası (migrate UX, yazma yetkisi)  
+4. Otomatik raporlar  
+5. Dynamic Form  
+6. R4 Dashboard  
+7. R3b Named query *(ertelendi)*  
 
-Detay ve oturum notları: [DEVAM.md](DEVAM.md)
+Oturum notları: [DEVAM.md](DEVAM.md)
 
 ## Odak Eğitim POC
 
-- Rapor: `rpt_odak_egitim_trainings` — dataset `odak_egitimler`
-- Parametreler: durum, yıl (`orDateFields`: gerceklesen + planlanan), arama
-- Expand: Genel + **Katılımcılar** (yetki paneli dahil)
-- Özet: kartlar (kayıt + süre) · katılımcı footer count · arama yansır
-- Menü: Raporlama → Rapor kataloğu
+- `rpt_odak_egitim_trainings` / `rpt_odak_egitim_person_trainings`
+- Expand Katılımcılar → `personelId` rapor linki (yeni sekme)
+- Menü: **Raporlar** (browse) · **Rapor kataloğu**
 
 ## İlgili kod
 
 - UI: `Mng.Ui/pages/apps/reporting/` · `components/apps/reporting/`
+- Katalog DG: `reportingCatalogDg.ts`
+- Link / share / export: `reportingColumnLink.ts`, `reportingShareLink.ts`, `reportingExport*.ts`
 - Seed: `reportingOdakEgitimSeeds.ts` · `reportingOdakEgitimExpandMigrations.ts`
-- Match / summary: `reportingMongoMatch.ts` · `reportingSummary.ts`
-- DG: `FilterParser`, `DatetimeMatchFilterExpander`, `POST …/query` · `POST …/aggregate`
-- Side menu: `docs/odak/reporting_services/scripts/patch-reporting-side-menu.ps1`
+- DG: `POST …/query` · `POST …/aggregate` · `@reporting_*` dataset’ler

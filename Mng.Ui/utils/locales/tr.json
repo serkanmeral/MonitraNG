@@ -3469,6 +3469,25 @@
       "collapseTree": "Paneli daralt",
       "expandTree": "Paneli genişlet"
     },
+    "embed": {
+      "missingReport": "Rapor seçilmedi. URL’de reportId gerekir.",
+      "accessDenied": "Bu raporu görüntüleme yetkiniz yok."
+    },
+    "export": {
+      "title": "Dışa aktar",
+      "hint": "Filtrelenmiş sonuç dışa aktarılır (tahmini {count} satır; üst sınır {cap}).",
+      "format": "Biçim",
+      "formatCsv": "CSV",
+      "formatXlsx": "Excel (xlsx)",
+      "columns": "Sütunlar",
+      "selectAll": "Tümü",
+      "selectNone": "Hiçbiri",
+      "confirm": "Dışa aktar",
+      "overCapWarning": "Sonuç {count} satır; dışa aktarım en fazla {cap} satır alır.",
+      "overCapConfirm": "İlk {cap} satırı dışa aktarmayı onaylıyorum",
+      "failed": "Dışa aktarım başarısız.",
+      "button": "Dışa aktar"
+    },
     "panel": {
       "design": "Tasarım"
     },
@@ -3561,6 +3580,10 @@
       "parametersRequired": "Zorunlu parametreleri doldurun.",
       "selectParameters": "Raporu görmek için gerekli parametreleri seçin.",
       "personSummary": "{count} kayıt, toplam {hours} saat",
+      "copyLink": "Linki kopyala",
+      "copyLinkHint": "Rapor + parametrelerle paylaşılabilir URL (giriş gerekir)",
+      "copyLinkSuccess": "Link panoya kopyalandı.",
+      "copyLinkFailed": "Link kopyalanamadı.",
       "showDgQuery": "DG pipeline göster (showQuery)",
       "dgQueryTitle": "DG aggregate pipeline (showQuery)"
     },

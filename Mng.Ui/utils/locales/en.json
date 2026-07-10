@@ -3554,6 +3554,25 @@
       "collapseTree": "Collapse panel",
       "expandTree": "Expand panel"
     },
+    "embed": {
+      "missingReport": "No report selected. reportId is required in the URL.",
+      "accessDenied": "You do not have permission to view this report."
+    },
+    "export": {
+      "title": "Export",
+      "hint": "Exports the filtered result (about {count} rows; cap {cap}).",
+      "format": "Format",
+      "formatCsv": "CSV",
+      "formatXlsx": "Excel (xlsx)",
+      "columns": "Columns",
+      "selectAll": "All",
+      "selectNone": "None",
+      "confirm": "Export",
+      "overCapWarning": "Result has {count} rows; export will include at most {cap}.",
+      "overCapConfirm": "I confirm exporting the first {cap} rows",
+      "failed": "Export failed.",
+      "button": "Export"
+    },
     "panel": {
       "design": "Design"
     },
@@ -3646,6 +3665,10 @@
       "parametersRequired": "Fill in required parameters.",
       "selectParameters": "Select required parameters to view the report.",
       "personSummary": "{count} record(s), {hours} hours total",
+      "copyLink": "Copy link",
+      "copyLinkHint": "Shareable URL with report + parameters (sign-in required)",
+      "copyLinkSuccess": "Link copied to clipboard.",
+      "copyLinkFailed": "Could not copy link.",
       "showDgQuery": "Show DG pipeline (showQuery)",
       "dgQueryTitle": "DG aggregate pipeline (showQuery)"
     },
