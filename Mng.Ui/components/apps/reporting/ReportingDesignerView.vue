@@ -24,7 +24,7 @@ import {
   cloneAfListFilters,
   sanitizeReportingDefaultFilters,
 } from '@/utils/reportingDefaultFilters';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useDisplay } from 'vuetify';
 import ReportingParametersPanel from '@/components/apps/reporting/ReportingParametersPanel.vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
@@ -63,6 +63,7 @@ import type { ReportingExpandConfig, ReportingReportParameter, ReportingSummaryC
 import {
   emptyReportingSummaryConfig,
   fetchReportingSummary,
+  reportingSummarySearchableTextFields,
   reportingSummaryShowCards,
   reportingSummaryShowFooter,
   type ReportingSummaryValues,
@@ -520,10 +521,21 @@ function onSummaryConfigUpdate(value: ReportingSummaryConfig) {
   summaryConfig.value = value;
 }
 
+const ADVANCED_FILTERS_DEBOUNCE_MS = 450;
+let advancedFiltersPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleAdvancedFiltersPreview() {
+  if (advancedFiltersPreviewTimer) clearTimeout(advancedFiltersPreviewTimer);
+  advancedFiltersPreviewTimer = setTimeout(() => {
+    advancedFiltersPreviewTimer = null;
+    if (tablePage.value !== 1) tablePage.value = 1;
+    else if (previewRows.value.length || visibleColumns.value.length) void runPreview();
+  }, ADVANCED_FILTERS_DEBOUNCE_MS);
+}
+
 function onAdvancedFiltersUpdate(filters: AfListFilter[]) {
   advancedFilters.value = filters;
-  if (tablePage.value !== 1) tablePage.value = 1;
-  else if (previewRows.value.length || visibleColumns.value.length) void runPreview();
+  scheduleAdvancedFiltersPreview();
 }
 
 function previewRuntimeQuery() {
@@ -555,6 +567,7 @@ async function runPreview() {
     await authStore.ensureValidToken();
     const skip = (tablePage.value - 1) * itemsPerPage.value;
     const query = previewRuntimeQuery();
+    const searchText = reportingParameterSearchText(reportParameters.value, parameterValues.value);
     const summaryPromise =
       summaryConfig.value.metrics.length && summaryConfig.value.placement !== 'none'
         ? (async () => {
@@ -564,6 +577,9 @@ async function runPreview() {
                 datasetName: datasetName.value!,
                 metrics: summaryConfig.value.metrics,
                 filters: query.filters,
+                mongoMatch: query.mongoMatch,
+                search: searchText,
+                textFieldNames: reportingSummarySearchableTextFields(schemaFields.value),
               });
             } catch {
               summaryValues.value = {};
@@ -581,7 +597,7 @@ async function runPreview() {
         canViewColumn: (field) => canViewColumn(field),
         advancedFilters: query.filters,
         mongoMatch: query.mongoMatch,
-        search: reportingParameterSearchText(reportParameters.value, parameterValues.value),
+        search: searchText,
         sortField: currentSortField(),
         sortDesc: currentSortDesc(),
         skip,
@@ -696,6 +712,10 @@ onMounted(async () => {
       categoryId.value = q.trim();
     }
   }
+});
+
+onBeforeUnmount(() => {
+  if (advancedFiltersPreviewTimer) clearTimeout(advancedFiltersPreviewTimer);
 });
 
 watch(

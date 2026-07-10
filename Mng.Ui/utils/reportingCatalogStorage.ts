@@ -4,7 +4,7 @@ import {
   migrateFlatCategoriesToTree,
   saveReportingCategories,
 } from '@/utils/reportingCategoryStorage';
-import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import { emptyOdakFieldPoliciesBlob, parseOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { defaultReportingExpandConfigFromFields } from '@/utils/reportingExpandLayout';
 import { defaultReportingListConfigFromFields } from '@/utils/reportingListConfig';
 import { normalizeReportingSummaryConfig, emptyReportingSummaryConfig } from '@/utils/reportingSummary';
@@ -90,7 +90,17 @@ function parseExpandConfig(raw: unknown): ReportingExpandConfig {
           if (childList.summary != null) {
             childList.summary = normalizeReportingSummaryConfig(childList.summary);
           }
-          return { id, title, childList };
+          const fieldPoliciesRaw = t.fieldPolicies ?? t.FieldPolicies;
+          const visibilityPoliciesRaw = t.visibilityPolicies ?? t.VisibilityPolicies;
+          return {
+            id,
+            title,
+            childList,
+            fieldPolicies: parseOdakFieldPoliciesBlob(fieldPoliciesRaw ?? {}),
+            visibilityPolicies: Array.isArray(visibilityPoliciesRaw)
+              ? (visibilityPoliciesRaw as ReportingExpandChildListTab['visibilityPolicies'])
+              : [],
+          };
         })
         .filter((tab): tab is NonNullable<typeof tab> => tab != null)
     : [];

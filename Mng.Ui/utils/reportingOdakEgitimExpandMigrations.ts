@@ -1,6 +1,7 @@
 import type { AfListColumnFormat } from '@/utils/afListColumnFormat';
 import type { ReportingExpandChildListTab, ReportingExpandConfig } from '@/types/apps/reporting';
 import { ODAK_EGITIM_CONFIG } from '@/utils/odakEgitimConfig';
+import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 
 const TRUNCATE_100: AfListColumnFormat = { type: 'truncate', maxLength: 100, ellipsis: '...' };
 
@@ -32,6 +33,8 @@ function participantCol(
 export const ODAK_EGITIM_PARTICIPANTS_EXPAND_TAB: ReportingExpandChildListTab = {
   id: 'participants',
   title: 'Katılımcılar',
+  fieldPolicies: emptyOdakFieldPoliciesBlob(),
+  visibilityPolicies: [],
   childList: {
     datasetName: ODAK_EGITIM_CONFIG.participationsDataset,
     linkField: 'parentTrainingId',
@@ -97,6 +100,14 @@ export function ensureOdakEgitimParticipantsExpandTab(
           placement: 'footer',
           metrics: [{ id: 'count', label: 'Katılımcı sayısı', kind: 'count', format: 'integer' }],
         };
+        changed = true;
+      }
+      if (!current.fieldPolicies) {
+        current.fieldPolicies = emptyOdakFieldPoliciesBlob();
+        changed = true;
+      }
+      if (!current.visibilityPolicies) {
+        current.visibilityPolicies = [];
         changed = true;
       }
       if (!changed) {

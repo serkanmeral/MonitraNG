@@ -100,10 +100,10 @@ public static class DatetimeMatchFilterExpander
 
         return operatorStr switch
         {
-            "lte" => $"{valueStr}T23:59:59.999Z",
-            "gt" => $"{valueStr}T23:59:59.999Z",
-            "gte" => $"{valueStr}T00:00:00.000Z",
-            "lt" => $"{valueStr}T00:00:00.000Z",
+            "$lte" or "lte" => $"{valueStr}T23:59:59.999Z",
+            "$gt" or "gt" => $"{valueStr}T23:59:59.999Z",
+            "$gte" or "gte" => $"{valueStr}T00:00:00.000Z",
+            "$lt" or "lt" => $"{valueStr}T00:00:00.000Z",
             _ => valueStr,
         };
     }

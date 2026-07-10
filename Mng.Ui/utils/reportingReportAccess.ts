@@ -23,3 +23,17 @@ export function filterVisibleReportingReports<T extends { visibilityPolicies: Od
 ): T[] {
   return reports.filter((r) => canViewReportingReport(r.visibilityPolicies, userGroups));
 }
+
+/** Expand child sekmesi — politika yoksa görünür. */
+export function canViewReportingExpandChildTab(
+  policies: OdakFieldVisibilityPolicy[] | null | undefined,
+  userGroups: string[]
+): boolean {
+  return canViewReportingReport(policies ?? [], userGroups);
+}
+
+export function filterVisibleReportingExpandChildTabs<
+  T extends { visibilityPolicies?: OdakFieldVisibilityPolicy[] },
+>(tabs: T[], userGroups: string[]): T[] {
+  return tabs.filter((tab) => canViewReportingExpandChildTab(tab.visibilityPolicies, userGroups));
+}

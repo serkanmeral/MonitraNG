@@ -3,18 +3,20 @@ import { computed, ref, watch } from 'vue';
 import ReportingChildListPanel from '@/components/apps/reporting/ReportingChildListPanel.vue';
 import ReportingDetailView from '@/components/apps/reporting/ReportingDetailView.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAuthStore } from '@/stores/auth';
 import type { FieldDefinition } from '@/stores/apps/dataset';
 import type { ReportingExpandAction, ReportingExpandConfig } from '@/types/apps/reporting';
 import type { OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
+import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import {
   parsedReportingExpandLayout,
   reportingExpandChildTabs,
   reportingExpandFieldsTabTitle,
-  reportingExpandHasChildTabs,
   reportingRowId,
   resolveReportingExpandNavigatePath,
 } from '@/utils/reportingExpandLayout';
 import { ensureOdakEgitimParticipantsExpandTab } from '@/utils/reportingOdakEgitimExpandMigrations';
+import { filterVisibleReportingExpandChildTabs } from '@/utils/reportingReportAccess';
 
 const props = defineProps<{
   row: Record<string, unknown>;
@@ -28,14 +30,20 @@ const props = defineProps<{
 
 const router = useRouter();
 const { t } = useAppI18n();
+const authStore = useAuthStore();
 
 const effectiveExpandConfig = computed(() =>
   ensureOdakEgitimParticipantsExpandTab(props.expandConfig, props.datasetName ?? '').expand
 );
 
 const layout = computed(() => parsedReportingExpandLayout(effectiveExpandConfig.value));
-const childTabs = computed(() => reportingExpandChildTabs(effectiveExpandConfig.value));
-const hasTabs = computed(() => reportingExpandHasChildTabs(effectiveExpandConfig.value));
+const allChildTabs = computed(() => reportingExpandChildTabs(effectiveExpandConfig.value));
+const childTabs = computed(() =>
+  filterVisibleReportingExpandChildTabs(allChildTabs.value, authStore.userGroups)
+);
+
+/** Child sekmeler tanımlıysa şerit göster (gizli sekmeler filtrelenir). */
+const showTabStrip = computed(() => allChildTabs.value.length > 0);
 
 const fieldsTabTitle = computed(
   () => reportingExpandFieldsTabTitle(effectiveExpandConfig.value) || t('reporting.expand.fieldsTab')
@@ -57,6 +65,16 @@ watch(
     activeTab.value = initialTab.value;
   }
 );
+
+watch(childTabs, (tabs) => {
+  if (activeTab.value !== 'fields' && !tabs.some((tab) => tab.id === activeTab.value)) {
+    activeTab.value = 'fields';
+  }
+});
+
+function tabFieldPolicies(tab: (typeof childTabs.value)[number]) {
+  return tab.fieldPolicies ?? emptyOdakFieldPoliciesBlob();
+}
 
 function navigateActionPath(action: ReportingExpandAction): string | null {
   if (action.type !== 'navigate') return null;
@@ -95,7 +113,7 @@ function actionDisabled(action: ReportingExpandAction): boolean {
     </div>
 
     <v-tabs
-      v-if="hasTabs"
+      v-if="showTabStrip"
       v-model="activeTab"
       density="compact"
       color="primary"
@@ -108,7 +126,7 @@ function actionDisabled(action: ReportingExpandAction): boolean {
       </v-tab>
     </v-tabs>
 
-    <v-window v-if="hasTabs" v-model="activeTab">
+    <v-window v-if="showTabStrip" v-model="activeTab">
       <v-window-item value="fields">
         <ReportingDetailView
           :layout="layout"
@@ -123,6 +141,7 @@ function actionDisabled(action: ReportingExpandAction): boolean {
         <ReportingChildListPanel
           :parent-row="row"
           :child-list="tab.childList"
+          :field-policies="tabFieldPolicies(tab)"
           :active="activeTab === tab.id"
         />
       </v-window-item>

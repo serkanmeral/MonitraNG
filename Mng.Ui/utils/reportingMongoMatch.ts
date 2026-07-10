@@ -22,12 +22,15 @@ function parseInValues(value: string): string[] {
   return trimmed.split(',').map((v) => v.trim()).filter(Boolean);
 }
 
-/** Single AfListFilter → MongoDB match fragment. */
+/** Single AfListFilter → MongoDB match fragment (FilterParser parity for text ops). */
 export function afListFilterToMongoCondition(filter: AfListFilter): Record<string, unknown> {
   const { field, operator, value } = filter;
-  switch (operator) {
+  const op = (operator ?? '').trim().toLowerCase();
+
+  switch (op) {
     case 'eq':
       return { [field]: value };
+    case 'ne':
     case 'neq':
       return { [field]: { $ne: value } };
     case 'gte':
@@ -42,6 +45,24 @@ export function afListFilterToMongoCondition(filter: AfListFilter): Record<strin
       return { [field]: { $in: parseInValues(value) } };
     case 'nin':
       return { [field]: { $nin: parseInValues(value) } };
+    case 'contains':
+      return {
+        [field]: { $regex: escapeReportingSearchRegex(String(value)), $options: 'i' },
+      };
+    case 'startswith':
+      return {
+        [field]: {
+          $regex: `^${escapeReportingSearchRegex(String(value))}`,
+          $options: 'i',
+        },
+      };
+    case 'endswith':
+      return {
+        [field]: {
+          $regex: `${escapeReportingSearchRegex(String(value))}$`,
+          $options: 'i',
+        },
+      };
     default:
       return { [field]: { [`$${operator}`]: value } };
   }
@@ -51,6 +72,30 @@ export function yearOrDateRangeMongoMatch(range: ReportingYearOrDateRange): Reco
   return {
     $or: range.fields.map((field) => ({
       [field]: { $gte: range.from, $lte: range.to },
+    })),
+  };
+}
+
+/** Escape user search for Mongo $regex (DG AddSearch parity on main text fields). */
+export function escapeReportingSearchRegex(term: string): string {
+  return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Pre-expansion text search $match — same idea as DG AddSearch on schema text fields.
+ * Relation/person search is not included (requires DG pre-lookup).
+ */
+export function buildReportingSearchMongoMatch(
+  search: string | null | undefined,
+  textFieldNames: string[] | null | undefined
+): Record<string, unknown> | null {
+  const term = (search ?? '').trim();
+  const fields = (textFieldNames ?? []).map((f) => f.trim()).filter(Boolean);
+  if (!term || !fields.length) return null;
+  const pattern = escapeReportingSearchRegex(term);
+  return {
+    $or: fields.map((field) => ({
+      [field]: { $regex: pattern, $options: 'i' },
     })),
   };
 }

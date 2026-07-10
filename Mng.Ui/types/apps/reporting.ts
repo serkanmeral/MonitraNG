@@ -145,6 +145,16 @@ export interface ReportingExpandChildListTab {
   id: string;
   title: string;
   childList: ReportingExpandChildListConfig;
+  /**
+   * Child liste sütun görünürlüğü (ana rapor fieldPolicies ile aynı model).
+   * Yok / boş = tüm sütunlar herkese açık.
+   */
+  fieldPolicies?: OdakFieldPoliciesBlob;
+  /**
+   * Sekmenin kendisinin görünürlüğü (rapor visibilityPolicies ile aynı model).
+   * Yok / boş = sekme herkese görünür.
+   */
+  visibilityPolicies?: OdakFieldVisibilityPolicy[];
 }
 
 export interface ReportingExpandConfig {

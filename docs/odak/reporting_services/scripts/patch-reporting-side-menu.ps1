@@ -1,6 +1,6 @@
 # Reporting — @side_menu kaydi (Odak DG uzerinden)
 # Header: Raporlama
-#   - Rapor tasarımcısı (user) → /apps/reporting
+#   - Rapor kataloğu (user) → /apps/reporting
 #
 # Usage (repo kokunden):
 #   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
@@ -218,7 +218,7 @@ if ([string]::IsNullOrEmpty($headerId)) {
 
 $items = Get-SideMenuItems
 
-Upsert-MenuItem -AllItems $items -Label "Rapor tasarimcisi" -FindExisting {
+Upsert-MenuItem -AllItems $items -Label "Rapor katalogu" -FindExisting {
     $_.pageCode -eq "reporting.menuTitle" -or
     $_.pageCode -eq "reporting.designer.menuTitle" -or
     $_.to -eq "/apps/reporting"
@@ -229,7 +229,7 @@ Upsert-MenuItem -AllItems $items -Label "Rapor tasarimcisi" -FindExisting {
     parentId = $headerId
     pageType = "user"
     pageCode = "reporting.menuTitle"
-    title    = "Rapor tasarımcısı"
+    title    = "Rapor kataloğu"
     icon     = "ChartBarIcon"
     iconType = "tabler"
     to       = "/apps/reporting"

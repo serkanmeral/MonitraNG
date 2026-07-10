@@ -5,8 +5,8 @@ import type {
   ReportingParameterWidget,
   ReportingReportParameter,
 } from '@/types/apps/reporting';
+import type { ReportingYearOrDateRange } from '@/utils/reportingMongoMatch';
 import {
-  formatReportingQuarterValue,
   parseReportingQuarterValue,
   reportingParamRangeFromKey,
   reportingParamRangeToKey,
@@ -170,49 +170,76 @@ function quarterBounds(year: number, quarter: number): { from: string; to: strin
   };
 }
 
-function datePartRangeFilters(
+function resolveDatePartBounds(
   binding: Extract<ReportingParameterBinding, { kind: 'datePartRange' }>,
   raw: string
-): AfListFilter[] {
-  if (!raw && binding.emptyMeans === 'noFilter') return [];
-
-  const field = resolveBoundDateField(binding);
-  if (!field) return [];
+): { from: string; to: string } | null {
+  if (!raw && binding.emptyMeans === 'noFilter') return null;
 
   if (binding.part === 'year') {
     const year = Number(raw);
-    if (!Number.isFinite(year) || year < 1900) return [];
-    return [
-      { field, operator: 'gte', value: `${year}-01-01` },
-      { field, operator: 'lte', value: `${year}-12-31` },
-    ];
+    if (!Number.isFinite(year) || year < 1900) return null;
+    return { from: `${year}-01-01`, to: `${year}-12-31` };
   }
 
   if (binding.part === 'month') {
     const m = /^(\d{4})-(\d{2})$/.exec(raw.trim());
-    if (!m) return [];
+    if (!m) return null;
     const year = Number(m[1]);
     const month = Number(m[2]);
-    if (!Number.isFinite(year) || month < 1 || month > 12) return [];
+    if (!Number.isFinite(year) || month < 1 || month > 12) return null;
     const lastDay = lastDayOfMonth(year, month);
     const mm = String(month).padStart(2, '0');
-    return [
-      { field, operator: 'gte', value: `${year}-${mm}-01` },
-      { field, operator: 'lte', value: `${year}-${mm}-${String(lastDay).padStart(2, '0')}` },
-    ];
+    return {
+      from: `${year}-${mm}-01`,
+      to: `${year}-${mm}-${String(lastDay).padStart(2, '0')}`,
+    };
   }
 
   if (binding.part === 'quarter') {
     const parsed = parseReportingQuarterValue(raw);
-    if (!parsed) return [];
-    const { from, to } = quarterBounds(parsed.year, parsed.quarter);
-    return [
-      { field, operator: 'gte', value: from },
-      { field, operator: 'lte', value: to },
-    ];
+    if (!parsed) return null;
+    return quarterBounds(parsed.year, parsed.quarter);
   }
 
-  return [];
+  return null;
+}
+
+/** Multi-field year/month/quarter → POST /query $or (no parameter coupling). */
+export function datePartRangeToYearOrDateRange(
+  binding: Extract<ReportingParameterBinding, { kind: 'datePartRange' }>,
+  raw: string
+): ReportingYearOrDateRange | null {
+  if (!binding.orDateFields?.length) return null;
+  const bounds = resolveDatePartBounds(binding, raw);
+  if (!bounds) return null;
+  const fields = [
+    ...new Set(
+      [...binding.orDateFields, binding.field]
+        .map((f) => (f ?? '').trim())
+        .filter(Boolean)
+    ),
+  ];
+  if (!fields.length) return null;
+  return { fields, from: bounds.from, to: bounds.to };
+}
+
+function datePartRangeFilters(
+  binding: Extract<ReportingParameterBinding, { kind: 'datePartRange' }>,
+  raw: string
+): AfListFilter[] {
+  if (binding.orDateFields?.length) return [];
+
+  const bounds = resolveDatePartBounds(binding, raw);
+  if (!bounds) return [];
+
+  const field = resolveBoundDateField(binding);
+  if (!field) return [];
+
+  return [
+    { field, operator: 'gte', value: bounds.from },
+    { field, operator: 'lte', value: bounds.to },
+  ];
 }
 
 function normalizeDateEnd(value: string): string {
@@ -271,6 +298,8 @@ function bindingToFilters(
 
 export interface ReportingParameterFilterResolution {
   filters: AfListFilter[];
+  /** datePartRange + orDateFields — AND ile diğer filtrelerle birleşir. */
+  yearOrDateRange: ReportingYearOrDateRange | null;
 }
 
 export function resolveReportingParameterFilterResolution(
@@ -278,16 +307,23 @@ export function resolveReportingParameterFilterResolution(
   values: Record<string, string>
 ): ReportingParameterFilterResolution {
   const filters: AfListFilter[] = [];
+  let yearOrDateRange: ReportingYearOrDateRange | null = null;
   for (const param of normalizeReportingParameters(parameters)) {
     if (param.binding.kind === 'dateRange') {
       filters.push(...bindingToFilters(param, '', values));
       continue;
     }
     const raw = reportingParameterRawValue(values, param.id);
+    if (param.binding.kind === 'datePartRange' && param.binding.orDateFields?.length) {
+      if (!raw && param.binding.emptyMeans === 'noFilter') continue;
+      const range = datePartRangeToYearOrDateRange(param.binding, raw);
+      if (range) yearOrDateRange = range;
+      continue;
+    }
     if (!raw && param.binding.kind !== 'choiceFilters') continue;
     filters.push(...bindingToFilters(param, raw, values));
   }
-  return { filters };
+  return { filters, yearOrDateRange };
 }
 
 export function resolveReportingParametersToFilters(

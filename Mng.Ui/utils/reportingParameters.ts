@@ -7,6 +7,7 @@ import {
   resolveReportingParameterSearch,
   resolveReportingParametersToFilters,
 } from '@/utils/reportingParameterModel';
+import { buildReportingMongoMatch } from '@/utils/reportingMongoMatch';
 
 export function defaultReportingParameterValues(
   parameters: ReportingReportParameter[]
@@ -53,10 +54,11 @@ export function mergeReportingRuntimeFilters(
 
 export interface ReportingRuntimeQuery {
   filters: AfListFilter[];
+  /** orDateFields yılı aktifken POST /query match; aksi halde null (GET filter). */
   mongoMatch: Record<string, unknown> | null;
 }
 
-/** Parametre + gelişmiş filtreleri birleştirir. */
+/** Parametre + gelişmiş filtreleri birleştirir; orDateFields varsa mongoMatch üretir. */
 export function buildReportingRuntimeQuery(
   parameters: ReportingReportParameter[],
   values: ReportingParameterValues,
@@ -69,5 +71,8 @@ export function buildReportingRuntimeQuery(
     resolution.filters,
     advancedFilters
   );
-  return { filters, mongoMatch: null };
+  const mongoMatch = resolution.yearOrDateRange
+    ? buildReportingMongoMatch(filters, resolution.yearOrDateRange)
+    : null;
+  return { filters, mongoMatch };
 }

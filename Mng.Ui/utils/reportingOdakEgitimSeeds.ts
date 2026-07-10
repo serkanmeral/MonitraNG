@@ -79,6 +79,9 @@ const ODAK_TRAINING_STATUS_ALL_FILTER = {
   value: 'Planlandi,Tamamlandi',
 };
 
+/** Yıl filtresi — coupling yok; her iki tarih alanında OR. */
+const ODAK_TRAINING_YEAR_OR_DATE_FIELDS = ['gerceklesenTarih', 'planlananTarih'] as const;
+
 function patchTrainingExpandParticipantsTab(report: ReportingReportDefinition): boolean {
   if (!report.expand) return false;
   const result = ensureOdakEgitimParticipantsExpandTab(report.expand, report.datasetName);
@@ -167,7 +170,7 @@ function fixTrainingStatusAllChoice(param: ReportingReportDefinition['parameters
   return changed;
 }
 
-function decoupleTrainingYearParameter(param: ReportingReportDefinition['parameters'][number]): boolean {
+function ensureTrainingYearOrDateFields(param: ReportingReportDefinition['parameters'][number]): boolean {
   if (param.id !== 'year' || param.type !== 'year') return false;
   let changed = false;
 
@@ -176,6 +179,7 @@ function decoupleTrainingYearParameter(param: ReportingReportDefinition['paramet
     param.binding = {
       kind: 'datePartRange',
       field: 'gerceklesenTarih',
+      orDateFields: [...ODAK_TRAINING_YEAR_OR_DATE_FIELDS],
       part: 'year',
       emptyMeans: 'noFilter',
     };
@@ -185,12 +189,16 @@ function decoupleTrainingYearParameter(param: ReportingReportDefinition['paramet
       delete param.binding.fieldFromParameter;
       changed = true;
     }
-    if (param.binding.orDateFields?.length) {
-      delete param.binding.orDateFields;
-      changed = true;
-    }
     if (!param.binding.field || param.binding.field !== 'gerceklesenTarih') {
       param.binding.field = 'gerceklesenTarih';
+      changed = true;
+    }
+    const nextOr = [...ODAK_TRAINING_YEAR_OR_DATE_FIELDS];
+    const cur = param.binding.orDateFields ?? [];
+    const same =
+      cur.length === nextOr.length && nextOr.every((f) => cur.includes(f));
+    if (!same) {
+      param.binding.orDateFields = nextOr;
       changed = true;
     }
   }
@@ -217,7 +225,7 @@ function applyTrainingListParameterModel(report: ReportingReportDefinition): boo
   let changed = false;
   for (const param of report.parameters) {
     if (fixTrainingStatusAllChoice(param)) changed = true;
-    if (decoupleTrainingYearParameter(param)) changed = true;
+    if (ensureTrainingYearOrDateFields(param)) changed = true;
   }
   return changed;
 }
@@ -394,6 +402,7 @@ function buildTrainingsReport(categoryId: string, now: string): ReportingReportD
         binding: {
           kind: 'datePartRange',
           field: 'gerceklesenTarih',
+          orDateFields: [...ODAK_TRAINING_YEAR_OR_DATE_FIELDS],
           part: 'year',
           emptyMeans: 'noFilter',
         },

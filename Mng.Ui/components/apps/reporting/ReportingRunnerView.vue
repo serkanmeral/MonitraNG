@@ -43,6 +43,7 @@ import { reportingRowId, defaultReportingExpandConfigFromFields } from '@/utils/
 import {
   emptyReportingSummaryConfig,
   fetchReportingSummary,
+  reportingSummarySearchableTextFields,
   reportingSummaryShowCards,
   reportingSummaryShowFooter,
   type ReportingSummaryValues,
@@ -58,7 +59,7 @@ import {
 import type { ReportingParameterValues } from '@/utils/reportingParameterValueKeys';
 import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
 import { reportingCellDisplayValue } from '@/utils/reportingCellDisplay';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ArrowLeftIcon, DownloadIcon, RefreshIcon, PencilIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
@@ -336,6 +337,7 @@ async function runReport() {
     await authStore.ensureValidToken();
     const skip = (tablePage.value - 1) * itemsPerPage.value;
     const query = runtimeQuery();
+    const searchText = reportingParameterSearchText(reportParameters.value, parameterValues.value);
     const summaryPromise =
       summaryConfig.value.metrics.length && summaryConfig.value.placement !== 'none'
         ? (async () => {
@@ -345,6 +347,9 @@ async function runReport() {
                 datasetName: datasetName.value,
                 metrics: summaryConfig.value.metrics,
                 filters: query.filters,
+                mongoMatch: query.mongoMatch,
+                search: searchText,
+                textFieldNames: reportingSummarySearchableTextFields(schemaFields.value),
               });
             } catch {
               summaryValues.value = {};
@@ -362,7 +367,7 @@ async function runReport() {
         canViewColumn: (field) => canViewColumn(field),
         advancedFilters: query.filters,
         mongoMatch: query.mongoMatch,
-        search: reportingParameterSearchText(reportParameters.value, parameterValues.value),
+        search: searchText,
         sortField: currentSortField(),
         sortDesc: currentSortDesc(),
         skip,
@@ -413,10 +418,21 @@ function onParametersRun(values: ReportingParameterValues) {
   else void runReport();
 }
 
+const ADVANCED_FILTERS_DEBOUNCE_MS = 450;
+let advancedFiltersRunTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleAdvancedFiltersRun() {
+  if (advancedFiltersRunTimer) clearTimeout(advancedFiltersRunTimer);
+  advancedFiltersRunTimer = setTimeout(() => {
+    advancedFiltersRunTimer = null;
+    if (tablePage.value !== 1) tablePage.value = 1;
+    else void runReport();
+  }, ADVANCED_FILTERS_DEBOUNCE_MS);
+}
+
 function onAdvancedFiltersUpdate(filters: AfListFilter[]) {
   advancedFilters.value = filters;
-  if (tablePage.value !== 1) tablePage.value = 1;
-  else void runReport();
+  scheduleAdvancedFiltersRun();
 }
 
 function onTableOptions(options: {
@@ -495,6 +511,10 @@ onMounted(async () => {
       void runReport();
     }
   });
+});
+
+onBeforeUnmount(() => {
+  if (advancedFiltersRunTimer) clearTimeout(advancedFiltersRunTimer);
 });
 </script>
 

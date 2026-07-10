@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import type { FieldDefinition } from '@/stores/apps/dataset';
 import type { ReportingExpandChildListConfig } from '@/types/apps/reporting';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useReportingColumnAccess } from '@/composables/useReportingColumnAccess';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import ReportingSummaryCards from '@/components/apps/reporting/ReportingSummaryCards.vue';
 import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummaryFooter.vue';
 import { buildReportingChildListFilters, fetchReportingChildList } from '@/utils/reportingChildList';
 import { reportingCellDisplayValue } from '@/utils/reportingCellDisplay';
 import { reportingRowId } from '@/utils/reportingExpandLayout';
+import {
+  emptyOdakFieldPoliciesBlob,
+  type OdakFieldPoliciesBlob,
+} from '@/utils/odakSiparisFieldPolicies';
 import {
   columnConfigByField,
   isReportingBoolField,
@@ -27,14 +32,22 @@ import {
   type ReportingSummaryValues,
 } from '@/utils/reportingSummary';
 
-const props = defineProps<{
-  parentRow: Record<string, unknown>;
-  childList: ReportingExpandChildListConfig;
-  active: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    parentRow: Record<string, unknown>;
+    childList: ReportingExpandChildListConfig;
+    active: boolean;
+    fieldPolicies?: OdakFieldPoliciesBlob;
+  }>(),
+  {
+    fieldPolicies: () => emptyOdakFieldPoliciesBlob(),
+  }
+);
 
 const { t } = useAppI18n();
 const datasetStore = useDatasetStore();
+const fieldPoliciesRef = toRef(props, 'fieldPolicies');
+const { canViewColumn } = useReportingColumnAccess(fieldPoliciesRef);
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -51,7 +64,9 @@ const summaryConfig = computed(
 
 const fieldMap = computed(() => new Map(schemaFields.value.map((f) => [f.name, f])));
 
-const visibleColumns = computed(() => visibleReportingColumnKeys(props.childList.listConfig));
+const visibleColumns = computed(() =>
+  visibleReportingColumnKeys(props.childList.listConfig, (field) => canViewColumn(field))
+);
 
 const headers = computed(() =>
   visibleColumns.value.map((listKey) => {
@@ -125,6 +140,7 @@ async function loadRows() {
       fetchReportingChildList({
         parentRow: props.parentRow,
         childList: props.childList,
+        canViewColumn: (field) => canViewColumn(field),
       }),
       loadSummary(),
     ]);
@@ -213,7 +229,10 @@ function boolCellValue(item: Record<string, unknown>, listKey: string): boolean 
       hide-default-footer
     >
       <template v-for="col in visibleColumns" :key="col" #[`item.${col}`]="{ item }">
-        <template v-if="isBoolColumn(col)">
+        <template v-if="!canViewColumn(col, item)">
+          <span class="text-medium-emphasis">—</span>
+        </template>
+        <template v-else-if="isBoolColumn(col)">
           <v-icon
             v-if="boolCellValue(item, col) === true"
             icon="mdi-check-circle"

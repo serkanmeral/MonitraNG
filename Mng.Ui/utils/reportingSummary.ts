@@ -1,11 +1,15 @@
 import type { AfListFilter } from '@/utils/afListFilters';
-import { buildReportingMongoMatch } from '@/utils/reportingMongoMatch';
+import {
+  buildReportingMongoMatch,
+  buildReportingSearchMongoMatch,
+} from '@/utils/reportingMongoMatch';
 import type {
   ReportingSummaryConfig,
   ReportingSummaryMetric,
   ReportingSummaryPlacement,
   ReportingSummaryValueFormat,
 } from '@/types/apps/reporting';
+import type { FieldDefinition } from '@/stores/apps/dataset';
 import { fetchFromDataGateway } from '@/services/apiService';
 
 export function emptyReportingSummaryConfig(): ReportingSummaryConfig {
@@ -122,9 +126,26 @@ function coerceNode(node: unknown): unknown {
   return out;
 }
 
+export function reportingSummarySearchableTextFields(
+  fields: FieldDefinition[] | null | undefined
+): string[] {
+  if (!fields?.length) return [];
+  return fields
+    .filter(
+      (f) =>
+        f.fieldType === 'text' &&
+        f.name &&
+        !f.name.startsWith('__')
+    )
+    .map((f) => f.name);
+}
+
 export function buildReportingSummaryPipeline(
   metrics: ReportingSummaryMetric[],
-  filters: AfListFilter[]
+  filters: AfListFilter[],
+  mongoMatch?: Record<string, unknown> | null,
+  search?: string | null,
+  textFieldNames?: string[] | null
 ): Record<string, unknown>[] {
   const active = metrics.filter((m) => m.kind === 'count' || (m.kind === 'sum' && m.field?.trim()));
   const groupFields: Record<string, unknown> = { _id: null };
@@ -146,9 +167,15 @@ export function buildReportingSummaryPipeline(
   }
 
   const pipeline: Record<string, unknown>[] = [];
-  const match = coerceReportingAggregateMatchDates(buildReportingMongoMatch(filters));
+  const match = coerceReportingAggregateMatchDates(
+    mongoMatch ?? buildReportingMongoMatch(filters)
+  );
   if (match) {
     pipeline.push({ $match: match });
+  }
+  const searchMatch = buildReportingSearchMongoMatch(search, textFieldNames);
+  if (searchMatch) {
+    pipeline.push({ $match: searchMatch });
   }
   pipeline.push({ $group: groupFields });
   return pipeline;
@@ -173,12 +200,23 @@ export async function fetchReportingSummary(options: {
   datasetName: string;
   metrics: ReportingSummaryMetric[];
   filters: AfListFilter[];
+  /** orDateFields yılı — liste ile aynı match. */
+  mongoMatch?: Record<string, unknown> | null;
+  /** Runner search param — main text fields only (DG AddSearch subset). */
+  search?: string | null;
+  textFieldNames?: string[] | null;
 }): Promise<ReportingSummaryValues> {
   const datasetName = options.datasetName?.trim();
   const metrics = options.metrics ?? [];
   if (!datasetName || !metrics.length) return {};
 
-  const pipeline = buildReportingSummaryPipeline(metrics, options.filters ?? []);
+  const pipeline = buildReportingSummaryPipeline(
+    metrics,
+    options.filters ?? [],
+    options.mongoMatch,
+    options.search,
+    options.textFieldNames
+  );
   const url = `/api/v1/data/${encodeURIComponent(datasetName)}/aggregate`;
   const raw = await fetchFromDataGateway(url, 'POST', { pipeline });
   const rows = Array.isArray(raw) ? raw : raw != null ? [raw] : [];

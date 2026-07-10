@@ -78,6 +78,8 @@ export async function fetchReportingPreview(options: {
 
   const sort = buildReportingSort(options.sortField ?? '', options.sortDesc ?? true);
   const includeDgQuery = options.showQuery === true;
+  // Keep date operands as ISO date strings — DG DatetimeMatchFilterExpander coerces them.
+  // Do not send Extended JSON $date here (BsonValue.Create leaves them as subdocs → empty results).
   const mongoMatch = options.mongoMatch ?? null;
 
   if (mongoMatch) {

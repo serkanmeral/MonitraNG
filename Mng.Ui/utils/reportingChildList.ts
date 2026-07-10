@@ -25,6 +25,7 @@ export function buildReportingChildListFilters(
 export async function fetchReportingChildList(options: {
   parentRow: Record<string, unknown>;
   childList: ReportingExpandChildListConfig;
+  canViewColumn?: (fieldName: string) => boolean;
 }): Promise<{ rows: Record<string, unknown>[]; totalCount: number }> {
   const filters = buildReportingChildListFilters(options.parentRow, options.childList);
   if (!filters.length) {
@@ -37,6 +38,7 @@ export async function fetchReportingChildList(options: {
   const result = await fetchReportingPreview({
     datasetName: options.childList.datasetName,
     listConfig: options.childList.listConfig,
+    canViewColumn: options.canViewColumn,
     advancedFilters: filters,
     sortField,
     sortDesc,

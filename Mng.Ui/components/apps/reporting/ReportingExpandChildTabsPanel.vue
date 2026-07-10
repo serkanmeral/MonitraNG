@@ -2,9 +2,12 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import ReportingListColumnsPanel from '@/components/apps/reporting/ReportingListColumnsPanel.vue';
 import ReportingSummaryDesignerPanel from '@/components/apps/reporting/ReportingSummaryDesignerPanel.vue';
+import ReportingColumnAuthPanel from '@/components/apps/reporting/ReportingColumnAuthPanel.vue';
+import ReportingReportVisibilityPanel from '@/components/apps/reporting/ReportingReportVisibilityPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useDatasetStore, type FieldDefinition } from '@/stores/apps/dataset';
 import type { ReportingExpandChildListTab, ReportingExpandConfig, ReportingSummaryConfig } from '@/types/apps/reporting';
+import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { defaultReportingListConfigFromFields } from '@/utils/reportingListConfig';
 import { emptyReportingSummaryConfig } from '@/utils/reportingSummary';
 import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
@@ -18,7 +21,7 @@ const { t } = useAppI18n();
 const datasetStore = useDatasetStore();
 
 const selectedIndex = ref<number | null>(null);
-const detailTab = ref<'connection' | 'columns' | 'summary'>('connection');
+const detailTab = ref<'connection' | 'columns' | 'summary' | 'access'>('connection');
 const addDialogOpen = ref(false);
 
 const formTitle = ref('');
@@ -144,21 +147,23 @@ async function createTab() {
   }
 
   const tabs = ensureTabsArray();
-    tabs.push({
-      id,
-      title,
-      childList: {
-        datasetName,
-        linkField,
-        parentField,
-        sort: listConfig.defaultSortBy,
-        limit,
-        expand: true,
-        emptyMessage,
-        listConfig,
-        summary: emptyReportingSummaryConfig(),
-      },
-    });
+  tabs.push({
+    id,
+    title,
+    childList: {
+      datasetName,
+      linkField,
+      parentField,
+      sort: listConfig.defaultSortBy,
+      limit,
+      expand: true,
+      emptyMessage,
+      listConfig,
+      summary: emptyReportingSummaryConfig(),
+    },
+    fieldPolicies: emptyOdakFieldPoliciesBlob(),
+    visibilityPolicies: [],
+  });
 
   addDialogOpen.value = false;
   resetAddForm();
@@ -205,6 +210,24 @@ function onChildSummaryUpdate(value: ReportingSummaryConfig) {
   const tab = selectedTab.value;
   if (!tab) return;
   tab.childList.summary = value;
+}
+
+function ensureTabAccess(tab: ReportingExpandChildListTab) {
+  if (!tab.fieldPolicies) tab.fieldPolicies = emptyOdakFieldPoliciesBlob();
+  if (!tab.visibilityPolicies) tab.visibilityPolicies = [];
+  return tab;
+}
+
+function resetTabColumnAuth() {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  tab.fieldPolicies = emptyOdakFieldPoliciesBlob();
+}
+
+function resetTabVisibility() {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  tab.visibilityPolicies = [];
 }
 
 function ensureChildSummary(): ReportingSummaryConfig {
@@ -357,6 +380,7 @@ onMounted(async () => {
           <v-tab value="connection">{{ t('reporting.expand.childTabs.detailConnection') }}</v-tab>
           <v-tab value="columns">{{ t('reporting.expand.childTabs.detailColumns') }}</v-tab>
           <v-tab value="summary">{{ t('reporting.expand.childTabs.detailSummary') }}</v-tab>
+          <v-tab value="access">{{ t('reporting.expand.childTabs.detailAccess') }}</v-tab>
         </v-tabs>
 
         <v-window v-model="detailTab">
@@ -467,6 +491,37 @@ onMounted(async () => {
               :disabled="disabled || !expandConfig.enabled || childSchemaLoading"
               @update:summary="onChildSummaryUpdate"
             />
+          </v-window-item>
+
+          <v-window-item value="access">
+            <template v-if="selectedTab">
+              <p class="text-body-2 text-medium-emphasis mb-3">
+                {{ t('reporting.expand.childTabs.accessHint') }}
+              </p>
+              <v-card variant="outlined" class="mb-4 pa-3">
+                <div class="text-subtitle-2 mb-2">
+                  {{ t('reporting.expand.childTabs.tabVisibilityTitle') }}
+                </div>
+                <ReportingReportVisibilityPanel
+                  :visibility-policies="ensureTabAccess(selectedTab).visibilityPolicies!"
+                  :disabled="disabled || !expandConfig.enabled"
+                  @reset="resetTabVisibility"
+                />
+              </v-card>
+              <v-card variant="outlined" class="pa-3">
+                <div class="text-subtitle-2 mb-2">
+                  {{ t('reporting.tabs.columnAuth') }}
+                </div>
+                <ReportingColumnAuthPanel
+                  :field-policies="ensureTabAccess(selectedTab).fieldPolicies!"
+                  :fields="childSchemaFields"
+                  :disabled="
+                    disabled || !expandConfig.enabled || !childSchemaFields.length || childSchemaLoading
+                  "
+                  @reset="resetTabColumnAuth"
+                />
+              </v-card>
+            </template>
           </v-window-item>
         </v-window>
       </template>
