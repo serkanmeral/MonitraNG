@@ -1,8 +1,8 @@
 # Reporting Services — Plan
 
 **Son güncelleme:** 10 Temmuz 2026  
-**Ortam:** Odak test · UI test sunucuda deploy edilebilir  
-**Durum:** R2 katalog + Odak Eğitim POC · Expand designer + summary aggregate
+**Ortam:** Odak test `192.168.20.20` · UI deploy edildi (`494635f1`)  
+**Durum:** R2 + R2b (expand designer) + R2c (summary aggregate) · Odak Eğitim POC canlı
 
 ## Amaç
 
@@ -60,14 +60,15 @@ Table + expand panel + cards/footer
 6. Dynamic Form seçenekleri  
 7. Viewer sayfası  
 
-Detay ve kısa vadeli eksikler: [DEVAM.md](DEVAM.md)
+Detay, oturum notları ve kısa vadeli eksikler: [DEVAM.md](DEVAM.md)
 
 ## Odak Eğitim POC
 
 - Rapor: `rpt_odak_egitim_trainings` — dataset `odak_egitimler`
 - Parametreler: durum, yıl (`gerceklesenTarih`), arama
-- Expand: Genel + **Katılımcılar**
+- Expand: Genel + **Katılımcılar** (persons label düzeltildi)
 - Özet: kartlar (kayıt + süre) · katılımcı footer count
+- Designer: sol dikey sekmeler · Tasarım ilk sekme
 
 ## İlgili kod
 
