@@ -122,13 +122,13 @@ function deleteReport(item: unknown) {
   const row = catalogReportRow(item);
   if (!row.id) return;
   if (!confirm(t('reporting.catalog.confirmDelete', { title: row.title }))) return;
-  catalogService.value.deleteReport(row.id);
-  reload();
+  void catalogService.value.deleteReport(row.id).then(() => reload());
 }
 
 onMounted(() => {
-  bootstrapReportingCatalog(domainKey.value);
-  void loadCategoryTree();
+  bootstrapReportingCatalog(domainKey.value).then(() => {
+    void loadCategoryTree();
+  });
 });
 </script>
 

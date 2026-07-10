@@ -12,6 +12,7 @@ const props = defineProps<{
   expandConfig: ReportingExpandConfig;
   fields: FieldDefinition[];
   disabled?: boolean;
+  domainKey?: string;
 }>();
 
 const emit = defineEmits<{ reset: [] }>();
@@ -121,6 +122,7 @@ function resetDefaults() {
         <ReportingExpandChildTabsPanel
           :expand-config="expandConfig"
           :disabled="disabled"
+          :domain-key="domainKey"
         />
       </v-window-item>
     </v-window>

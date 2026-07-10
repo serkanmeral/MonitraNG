@@ -2,8 +2,23 @@ import type { AfListColumnFormat } from '@/utils/afListColumnFormat';
 import type { ReportingExpandChildListTab, ReportingExpandConfig } from '@/types/apps/reporting';
 import { ODAK_EGITIM_CONFIG } from '@/utils/odakEgitimConfig';
 import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import type { ReportingColumnLink } from '@/utils/reportingColumnLink';
+import { ODAK_EGITIM_PERSON_REPORT_ID } from '@/utils/reportingOdakEgitimConstants';
 
 const TRUNCATE_100: AfListColumnFormat = { type: 'truncate', maxLength: 100, ellipsis: '...' };
+
+const PERSON_COLUMN_REPORT_LINK: ReportingColumnLink = {
+  targetReportId: ODAK_EGITIM_PERSON_REPORT_ID,
+  openIn: 'newTab',
+  paramMappings: [
+    {
+      targetParamId: 'person',
+      source: 'rowField',
+      field: 'personelId',
+      queryKey: 'personId',
+    },
+  ],
+};
 
 function participantCol(
   fieldName: string,
@@ -14,6 +29,7 @@ function participantCol(
     width?: number;
     format?: AfListColumnFormat;
     relationDisplayField?: string;
+    reportLink?: ReportingColumnLink;
   }
 ) {
   return {
@@ -26,6 +42,7 @@ function participantCol(
     ...(opts?.width != null ? { width: opts.width } : {}),
     ...(opts?.format ? { format: opts.format } : {}),
     ...(opts?.relationDisplayField ? { relationDisplayField: opts.relationDisplayField } : {}),
+    ...(opts?.reportLink ? { reportLink: opts.reportLink } : {}),
   };
 }
 
@@ -56,7 +73,7 @@ export const ODAK_EGITIM_PARTICIPANTS_EXPAND_TAB: ReportingExpandChildListTab = 
           title: 'Personel',
           sortable: false,
           width: 220,
-          // persons expand: firstName/lastName/username — no displayName; scalar formatter derives label
+          reportLink: PERSON_COLUMN_REPORT_LINK,
         }),
         participantCol('katildi', 2, { title: 'Katıldı', width: 90, sortable: false }),
         participantCol('etkin', 3, { title: 'Etkin', width: 90, sortable: false }),
@@ -90,8 +107,13 @@ export function ensureOdakEgitimParticipantsExpandTab(
       // Patch legacy personelId.displayName (persons expand has no displayName)
       const cols = current.childList.listConfig?.columns ?? [];
       for (const col of cols) {
-        if (col.fieldName === 'personelId' && col.relationDisplayField === 'displayName') {
+        if (col.fieldName !== 'personelId') continue;
+        if (col.relationDisplayField === 'displayName') {
           delete col.relationDisplayField;
+          changed = true;
+        }
+        if (!col.reportLink?.targetReportId) {
+          col.reportLink = { ...PERSON_COLUMN_REPORT_LINK };
           changed = true;
         }
       }

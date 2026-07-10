@@ -6,10 +6,7 @@ import type {
   ReportingDocumentBinding,
   ReportingReportDefinition,
 } from '@/types/apps/reporting';
-import {
-  loadReportingCategories,
-  saveReportingCategories,
-} from '@/utils/reportingCategoryStorage';
+import { getReportingCatalogCache, upsertCategoryToDg } from '@/utils/reportingCatalogDg';
 import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { defaultReportingExpandConfigFromFields } from '@/utils/reportingExpandLayout';
 import {
@@ -610,9 +607,9 @@ function buildPersonTrainingsReport(categoryId: string, now: string): ReportingR
   };
 }
 
-function ensureOdakEgitimCategory(domainKey: string): ReportingCategory {
-  const categories = loadReportingCategories(domainKey);
-  const existing = categories.find((c) => c.id === ODAK_EGITIM_REPORTING_CATEGORY_ID);
+async function ensureOdakEgitimCategory(domainKey: string): Promise<ReportingCategory> {
+  const cache = getReportingCatalogCache(domainKey);
+  const existing = cache.categories.find((c) => c.id === ODAK_EGITIM_REPORTING_CATEGORY_ID);
   if (existing) return existing;
 
   const now = new Date().toISOString();
@@ -628,36 +625,34 @@ function ensureOdakEgitimCategory(domainKey: string): ReportingCategory {
     createdAt: now,
     updatedAt: now,
   };
-  categories.push(created);
-  saveReportingCategories(domainKey, categories);
-  return created;
+  return upsertCategoryToDg(domainKey, created);
 }
 
 /** İdempotent — Odak Eğitim kategorisi ve iki başlangıç raporu. */
-export function ensureOdakEgitimReportingSeeds(domainKey: string): void {
-  const category = ensureOdakEgitimCategory(domainKey);
+export async function ensureOdakEgitimReportingSeeds(domainKey: string): Promise<void> {
+  const category = await ensureOdakEgitimCategory(domainKey);
   const catalogService = new ReportingCatalogService(domainKey);
   const now = new Date().toISOString();
 
   const trainings = catalogService.getReport(ODAK_EGITIM_TRAININGS_REPORT_ID);
   if (!trainings) {
-    catalogService.saveReport(buildTrainingsReport(category.id, now));
+    await catalogService.saveReport(buildTrainingsReport(category.id, now));
   } else if (patchTrainingListReport(trainings)) {
-    catalogService.saveReport({ ...trainings, updatedAt: now });
+    await catalogService.saveReport({ ...trainings, updatedAt: now });
   }
 
   for (const report of catalogService.load().reports) {
     if (report.datasetName !== ODAK_EGITIM_CONFIG.trainingsDataset || !report.expand?.enabled) continue;
     if (report.id === ODAK_EGITIM_TRAININGS_REPORT_ID) continue;
     if (patchTrainingExpandParticipantsTab(report)) {
-      catalogService.saveReport({ ...report, updatedAt: now });
+      await catalogService.saveReport({ ...report, updatedAt: now });
     }
   }
 
   const personReport = catalogService.getReport(ODAK_EGITIM_PERSON_REPORT_ID);
   if (!personReport) {
-    catalogService.saveReport(buildPersonTrainingsReport(category.id, now));
+    await catalogService.saveReport(buildPersonTrainingsReport(category.id, now));
   } else if (patchPersonReport(personReport)) {
-    catalogService.saveReport({ ...personReport, updatedAt: now });
+    await catalogService.saveReport({ ...personReport, updatedAt: now });
   }
 }

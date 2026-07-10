@@ -10,6 +10,7 @@ import {
 import { ReportingCategoryService } from '@/services/reportingCategoryService';
 import type { DiTreeNode } from '@/types/apps/documentIntelligence';
 import { findReportingCategoryNodeName } from '@/utils/reportingCategoryTree';
+import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
 import { ArrowLeftIcon } from 'vue-tabler-icons';
 
 const router = useRouter();
@@ -77,13 +78,13 @@ function openNewCategoryDialog() {
   newCategoryDialog.value = true;
 }
 
-function submitNewCategory() {
+async function submitNewCategory() {
   const name = newCategoryName.value.trim();
   if (!name) return;
   creatingCategory.value = true;
   error.value = '';
   try {
-    const created = categoryService.value.create(
+    const created = await categoryService.value.create(
       { name, parentId: selectedCategoryId.value },
       authStore.userInfo?.username ?? null
     );
@@ -104,14 +105,14 @@ function openRenameCategoryDialog() {
   renameCategoryDialog.value = true;
 }
 
-function submitRenameCategory() {
+async function submitRenameCategory() {
   const id = selectedCategoryId.value;
   const name = renameCategoryName.value.trim();
   if (!id || !name) return;
   renamingCategory.value = true;
   error.value = '';
   try {
-    categoryService.value.rename(id, { name });
+    await categoryService.value.rename(id, { name });
     loadTree();
     renameCategoryDialog.value = false;
     notify.value = t('reporting.categories.renamed');
@@ -127,13 +128,13 @@ function openDeleteCategoryDialog() {
   deleteCategoryDialog.value = true;
 }
 
-function submitDeleteCategory() {
+async function submitDeleteCategory() {
   const id = selectedCategoryId.value;
   if (!id) return;
   deletingCategory.value = true;
   error.value = '';
   try {
-    categoryService.value.delete(id, (categoryId) =>
+    await categoryService.value.delete(id, (categoryId) =>
       catalogService.value.hasReportsInCategory(categoryId)
     );
     loadTree();
@@ -160,7 +161,7 @@ function goBackToCatalog() {
 }
 
 onMounted(() => {
-  loadTree();
+  void bootstrapReportingCatalog(domainKey.value).then(() => loadTree());
 });
 </script>
 

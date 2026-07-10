@@ -12,7 +12,7 @@ const authStore = useAuthStore();
 const reportId = computed(() => String(route.params.id ?? '').trim());
 
 onMounted(() => {
-  bootstrapReportingCatalog(
+  void bootstrapReportingCatalog(
     reportingDomainKey(authStore.userInfo?.domain_id, authStore.userInfo?.domain_name)
   );
 });

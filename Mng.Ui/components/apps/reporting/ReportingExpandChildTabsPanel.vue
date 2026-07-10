@@ -15,6 +15,7 @@ import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
 const props = defineProps<{
   expandConfig: ReportingExpandConfig;
   disabled?: boolean;
+  domainKey?: string;
 }>();
 
 const { t } = useAppI18n();
@@ -480,6 +481,8 @@ onMounted(async () => {
               :disabled="
                 disabled || !expandConfig.enabled || !childSchemaFields.length || childSchemaLoading
               "
+              :domain-key="domainKey"
+              allow-parent-field
               @reset="resetChildColumns"
             />
           </v-window-item>

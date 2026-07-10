@@ -1,0 +1,57 @@
+{
+  "categoryHint": "SystemDatasets (same as @side_menu / @automated_forms)",
+  "datasets": [
+    {
+      "Name": "@reporting_categories",
+      "Description": "Reporting catalog categories (tree). Logical id preserved in id field.",
+      "ForceSchema": true,
+      "Logging": "none",
+      "PublishMode": "none",
+      "Fields": [
+        { "fieldType": "text", "name": "id", "title": "Logical Id", "mandatory": true, "unique": true },
+        { "fieldType": "text", "name": "parentId", "title": "Parent Id", "mandatory": false },
+        { "fieldType": "text", "name": "ancestorIds", "title": "Ancestor Ids", "mandatory": false, "isArray": true },
+        { "fieldType": "text", "name": "name", "title": "Name", "mandatory": true },
+        { "fieldType": "text", "name": "description", "title": "Description", "mandatory": false },
+        { "fieldType": "number", "name": "sortOrder", "title": "Sort Order", "mandatory": false },
+        { "fieldType": "text", "name": "status", "title": "Status", "mandatory": false },
+        { "fieldType": "text", "name": "createdBy", "title": "Created By", "mandatory": false },
+        { "fieldType": "datetime", "name": "createdAt", "title": "Created At", "mandatory": false },
+        { "fieldType": "datetime", "name": "updatedAt", "title": "Updated At", "mandatory": false }
+      ],
+      "IndexList": [
+        { "name": "idx_reporting_cat_id", "fields": { "id": 1 }, "unique": true },
+        { "name": "idx_reporting_cat_parent", "fields": { "parentId": 1, "sortOrder": 1 }, "unique": false }
+      ]
+    },
+    {
+      "Name": "@reporting_reports",
+      "Description": "Reporting catalog definitions. Logical id preserved in id field; definition JSON in object fields.",
+      "ForceSchema": true,
+      "Logging": "none",
+      "PublishMode": "none",
+      "Fields": [
+        { "fieldType": "text", "name": "id", "title": "Logical Id", "mandatory": true, "unique": true },
+        { "fieldType": "text", "name": "title", "title": "Title", "mandatory": true },
+        { "fieldType": "text", "name": "description", "title": "Description", "mandatory": false },
+        { "fieldType": "text", "name": "categoryId", "title": "Category Id", "mandatory": false },
+        { "fieldType": "text", "name": "datasetName", "title": "Source Dataset", "mandatory": false },
+        { "fieldType": "object", "name": "listConfig", "title": "List Config", "mandatory": false },
+        { "fieldType": "object", "name": "expand", "title": "Expand Config", "mandatory": false },
+        { "fieldType": "object", "name": "fieldPolicies", "title": "Field Policies", "mandatory": false },
+        { "fieldType": "object", "name": "defaultFilters", "title": "Default Filters", "mandatory": false },
+        { "fieldType": "object", "name": "visibilityPolicies", "title": "Visibility Policies", "mandatory": false },
+        { "fieldType": "object", "name": "parameters", "title": "Parameters", "mandatory": false },
+        { "fieldType": "object", "name": "summary", "title": "Summary", "mandatory": false },
+        { "fieldType": "object", "name": "documentBindings", "title": "Document Bindings", "mandatory": false },
+        { "fieldType": "datetime", "name": "createdAt", "title": "Created At", "mandatory": false },
+        { "fieldType": "datetime", "name": "updatedAt", "title": "Updated At", "mandatory": false }
+      ],
+      "IndexList": [
+        { "name": "idx_reporting_report_id", "fields": { "id": 1 }, "unique": true },
+        { "name": "idx_reporting_report_category", "fields": { "categoryId": 1 }, "unique": false },
+        { "name": "idx_reporting_report_dataset", "fields": { "datasetName": 1 }, "unique": false }
+      ]
+    }
+  ]
+}

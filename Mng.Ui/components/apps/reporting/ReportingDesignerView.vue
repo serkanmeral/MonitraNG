@@ -340,13 +340,13 @@ function resetReportVisibilityDefaults() {
   visibilityPolicies.value = [];
 }
 
-function hydrateFromReport() {
+async function hydrateFromReport() {
   notFound.value = false;
   accessDenied.value = false;
 
   if (!resolvedReportId.value) return;
 
-  bootstrapReportingCatalog(domainKey.value);
+  await bootstrapReportingCatalog(domainKey.value);
   const report = catalogService.value.getReport(resolvedReportId.value);
   if (!report) {
     notFound.value = true;
@@ -369,7 +369,7 @@ function hydrateFromReport() {
   );
   expandConfig.value = expandMigrated.expand;
   if (expandMigrated.changed) {
-    catalogService.value.saveReport({
+    void catalogService.value.saveReport({
       ...report,
       expand: expandMigrated.expand,
       updatedAt: new Date().toISOString(),
@@ -390,8 +390,7 @@ function hydrateFromReport() {
 async function bootstrapEditMode() {
   if (!resolvedReportId.value) return;
   await authStore.ensureValidToken();
-  bootstrapReportingCatalog(domainKey.value);
-  hydrateFromReport();
+  await hydrateFromReport();
   if (notFound.value || accessDenied.value) return;
   if (datasetName.value) await loadSchemaFieldsOnly(datasetName.value);
 }
@@ -413,7 +412,7 @@ async function saveReport() {
   }
   saving.value = true;
   try {
-    const saved = catalogService.value.saveReport(
+    const saved = await catalogService.value.saveReport(
       reportFromDraft(existingReport.value ?? null, {
         title: title.value,
         description: description.value,
@@ -711,7 +710,7 @@ onMounted(async () => {
   if (resolvedReportId.value) {
     await bootstrapEditMode();
   } else {
-    bootstrapReportingCatalog(domainKey.value);
+    await bootstrapReportingCatalog(domainKey.value);
     const q = route.query.categoryId;
     if (typeof q === 'string' && q.trim()) {
       categoryId.value = q.trim();
@@ -1089,6 +1088,7 @@ watch(
                 :list-config="listConfig"
                 :fields="schemaFields"
                 :disabled="!schemaFields.length"
+                :domain-key="domainKey"
                 @reset="resetColumnDefaults"
               />
             </v-card-text>
@@ -1101,6 +1101,7 @@ watch(
                 :expand-config="expandConfig"
                 :fields="schemaFields"
                 :disabled="!schemaFields.length"
+                :domain-key="domainKey"
                 @reset="resetExpandDefaults"
               />
             </v-card-text>

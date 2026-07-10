@@ -12,8 +12,8 @@ export default defineNuxtPlugin(() => {
   try {
     const raw = localStorage.getItem('userInfo');
     const userInfo = raw ? (JSON.parse(raw) as { domain_id?: string; domain_name?: string }) : null;
-    bootstrapReportingCatalog(reportingDomainKey(userInfo?.domain_id, userInfo?.domain_name));
+    void bootstrapReportingCatalog(reportingDomainKey(userInfo?.domain_id, userInfo?.domain_name));
   } catch {
-    bootstrapReportingCatalog('default');
+    void bootstrapReportingCatalog('default');
   }
 });

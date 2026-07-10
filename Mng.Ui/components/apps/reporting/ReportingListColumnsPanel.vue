@@ -3,17 +3,28 @@ import { computed, ref } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import ReportingListColumnFormatDialog from '@/components/apps/reporting/ReportingListColumnFormatDialog.vue';
 import ReportingListColumnRelationDisplayDialog from '@/components/apps/reporting/ReportingListColumnRelationDisplayDialog.vue';
+import ReportingListColumnReportLinkDialog from '@/components/apps/reporting/ReportingListColumnReportLinkDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { isActiveListColumnFormat, type AfListColumnFormat } from '@/utils/afListColumnFormat';
 import type { OdakHubListColumnConfig, OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
+import type { ReportingColumnLink } from '@/utils/reportingColumnLink';
 import { reportingColumnListKey, reportingFieldLabel } from '@/utils/reportingListConfig';
 import type { FieldDefinition } from '@/stores/apps/dataset';
 
-const props = defineProps<{
-  listConfig: OdakHubListConfig;
-  fields: FieldDefinition[];
-  disabled?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    listConfig: OdakHubListConfig;
+    fields: FieldDefinition[];
+    disabled?: boolean;
+    domainKey?: string;
+    /** Child list: parentField mapping in report link dialog */
+    allowParentField?: boolean;
+  }>(),
+  {
+    domainKey: '',
+    allowParentField: false,
+  }
+);
 
 const { t } = useAppI18n();
 
@@ -21,6 +32,8 @@ const formatDialogOpen = ref(false);
 const formatColumn = ref<OdakHubListColumnConfig | null>(null);
 const relationDialogOpen = ref(false);
 const relationColumn = ref<OdakHubListColumnConfig | null>(null);
+const reportLinkDialogOpen = ref(false);
+const reportLinkColumn = ref<OdakHubListColumnConfig | null>(null);
 
 const fieldMap = computed(() => new Map(props.fields.map((f) => [f.name, f])));
 
@@ -92,6 +105,23 @@ function onFormatSave(format: AfListColumnFormat | undefined) {
   formatColumn.value = null;
 }
 
+function openReportLinkDialog(element: OdakHubListColumnConfig) {
+  reportLinkColumn.value = element;
+  reportLinkDialogOpen.value = true;
+}
+
+function onReportLinkSave(link: ReportingColumnLink | undefined) {
+  if (!reportLinkColumn.value) return;
+  if (link) reportLinkColumn.value.reportLink = link;
+  else delete reportLinkColumn.value.reportLink;
+  reportLinkColumn.value = null;
+}
+
+function reportLinkSummary(element: OdakHubListColumnConfig): string {
+  if (!element.reportLink?.targetReportId) return '';
+  return t('reporting.columns.reportLinkSummary', { id: element.reportLink.targetReportId });
+}
+
 function reorderColumns() {
   props.listConfig.columns.forEach((c, idx) => {
     c.order = idx + 1;
@@ -146,6 +176,9 @@ const emit = defineEmits<{ reset: [] }>();
             <span v-if="isRelationColumn(element)" class="text-caption" :class="element.relationDisplayField ? 'text-primary' : 'text-warning'">
               {{ relationDisplaySummary(element) }}
             </span>
+            <span v-if="element.reportLink" class="text-caption text-primary">
+              {{ reportLinkSummary(element) }}
+            </span>
           </div>
           <v-btn
             v-if="isRelationColumn(element)"
@@ -157,6 +190,16 @@ const emit = defineEmits<{ reset: [] }>();
           >
             <v-icon start size="16">mdi-link-variant</v-icon>
             {{ t('reporting.columns.relationDisplay') }}
+          </v-btn>
+          <v-btn
+            variant="tonal"
+            size="x-small"
+            :color="element.reportLink ? 'primary' : undefined"
+            :disabled="disabled"
+            @click="openReportLinkDialog(element)"
+          >
+            <v-icon start size="16">mdi-file-chart-outline</v-icon>
+            {{ t('reporting.columns.reportLink') }}
           </v-btn>
           <v-btn
             variant="tonal"
@@ -214,6 +257,15 @@ const emit = defineEmits<{ reset: [] }>();
       :source-field="relationColumn ? sourceFieldForColumn(relationColumn) ?? null : null"
       :schema-fields="fields"
       @save="onRelationDisplaySave"
+    />
+
+    <ReportingListColumnReportLinkDialog
+      v-model="reportLinkDialogOpen"
+      :column="reportLinkColumn"
+      :column-label="reportLinkColumn ? columnLabel(reportLinkColumn) : ''"
+      :domain-key="domainKey"
+      :allow-parent-field="allowParentField"
+      @save="onReportLinkSave"
     />
   </div>
 </template>

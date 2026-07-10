@@ -32,6 +32,10 @@ function normalizeCategory(raw: unknown): ReportingCategory | null {
   };
 }
 
+export function normalizeReportingCategory(raw: unknown): ReportingCategory | null {
+  return normalizeCategory(raw);
+}
+
 export function loadReportingCategories(domainKey: string): ReportingCategory[] {
   if (typeof localStorage === 'undefined') return [];
   try {

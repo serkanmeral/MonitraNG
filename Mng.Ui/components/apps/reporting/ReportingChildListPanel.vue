@@ -13,6 +13,7 @@ import ReportingSummaryCards from '@/components/apps/reporting/ReportingSummaryC
 import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummaryFooter.vue';
 import { buildReportingChildListFilters, fetchReportingChildList } from '@/utils/reportingChildList';
 import { reportingCellDisplayValue } from '@/utils/reportingCellDisplay';
+import { openReportingColumnLink } from '@/utils/reportingColumnLink';
 import { reportingRowId } from '@/utils/reportingExpandLayout';
 import {
   emptyOdakFieldPoliciesBlob,
@@ -236,6 +237,20 @@ function cellDisplay(item: Record<string, unknown>, listKey: string): string {
   return reportingCellDisplayValue(cellRaw(item, listKey), col);
 }
 
+function columnReportLink(listKey: string) {
+  return columnConfigByField(props.childList.listConfig, listKey)?.reportLink;
+}
+
+function onColumnLinkClick(listKey: string, item: Record<string, unknown>) {
+  const link = columnReportLink(listKey);
+  if (!link) return;
+  openReportingColumnLink({
+    link,
+    row: reportingDataTableRow(item),
+    parentRow: props.parentRow,
+  });
+}
+
 function isBoolColumn(listKey: string): boolean {
   const col = columnConfigByField(props.childList.listConfig, listKey);
   const fieldName = col?.fieldName ?? listKey;
@@ -346,6 +361,14 @@ async function generateCert(binding: ReportingDocumentBinding, item: Record<stri
           />
           <span v-else class="text-medium-emphasis">—</span>
         </template>
+        <a
+          v-else-if="columnReportLink(col)"
+          href="#"
+          class="text-primary text-decoration-underline"
+          @click.prevent="onColumnLinkClick(col, item)"
+        >
+          {{ cellDisplay(item, col) || '—' }}
+        </a>
         <span v-else>{{ cellDisplay(item, col) || '—' }}</span>
       </template>
 

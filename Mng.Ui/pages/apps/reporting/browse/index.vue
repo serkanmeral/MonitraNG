@@ -128,14 +128,15 @@ function onTreeSelect(nodeId: string | null) {
 }
 
 onMounted(() => {
-  bootstrapReportingCatalog(domainKey.value);
   treeLoading.value = true;
-  try {
-    rebuildTree();
-    syncSelectionFromQuery();
-  } finally {
-    treeLoading.value = false;
-  }
+  void bootstrapReportingCatalog(domainKey.value)
+    .then(() => {
+      rebuildTree();
+      syncSelectionFromQuery();
+    })
+    .finally(() => {
+      treeLoading.value = false;
+    });
 });
 
 watch(
@@ -146,9 +147,10 @@ watch(
 );
 
 watch(domainKey, () => {
-  bootstrapReportingCatalog(domainKey.value);
-  rebuildTree();
-  syncSelectionFromQuery();
+  void bootstrapReportingCatalog(domainKey.value).then(() => {
+    rebuildTree();
+    syncSelectionFromQuery();
+  });
 });
 </script>
 

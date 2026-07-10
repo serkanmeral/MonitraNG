@@ -122,7 +122,7 @@ function parseExpandConfig(raw: unknown): ReportingExpandConfig {
 function parseReport(raw: unknown): ReportingReportDefinition | null {
   if (!raw || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;
-  const id = String(o.id ?? o.Id ?? '').trim();
+  const id = String(o.id ?? o.Id ?? o.reportId ?? o.ReportId ?? '').trim();
   const title = String(o.title ?? o.Title ?? '').trim();
   const datasetName = String(o.datasetName ?? o.DatasetName ?? '').trim();
   if (!id || !title) return null;
@@ -152,6 +152,11 @@ function parseReport(raw: unknown): ReportingReportDefinition | null {
     createdAt: String(o.createdAt ?? o.CreatedAt ?? new Date().toISOString()),
     updatedAt: String(o.updatedAt ?? o.UpdatedAt ?? new Date().toISOString()),
   };
+}
+
+/** DG / LS satırından rapor tanımı. */
+export function parseReportingReportDefinition(raw: unknown): ReportingReportDefinition | null {
+  return parseReport(raw);
 }
 
 export function loadReportingCatalog(domainKey: string): ReportingCatalogSnapshot {

@@ -10,17 +10,25 @@ import {
 } from '@/utils/reportingCategoryTree';
 import {
   createReportingCategoryRecord,
-  loadReportingCategories,
   renameReportingCategoryRecord,
-  saveReportingCategories,
 } from '@/utils/reportingCategoryStorage';
 import { reportingDomainKey } from '@/services/reportingCatalogService';
+import {
+  deleteCategoryFromDg,
+  getReportingCatalogCache,
+  hydrateReportingCatalog,
+  upsertCategoryToDg,
+} from '@/utils/reportingCatalogDg';
 
 export class ReportingCategoryService {
   constructor(private readonly domainKey: string) {}
 
+  async hydrate(): Promise<void> {
+    await hydrateReportingCatalog(this.domainKey);
+  }
+
   list(): ReportingCategory[] {
-    return loadReportingCategories(this.domainKey);
+    return [...getReportingCatalogCache(this.domainKey).categories];
   }
 
   getTree(): DiTreeNode[] {
@@ -31,7 +39,11 @@ export class ReportingCategoryService {
     return this.list().find((c) => c.id === id);
   }
 
-  create(request: ReportingCreateCategoryRequest, createdBy?: string | null): ReportingCategory {
+  async create(
+    request: ReportingCreateCategoryRequest,
+    createdBy?: string | null
+  ): Promise<ReportingCategory> {
+    await hydrateReportingCatalog(this.domainKey);
     const categories = this.list();
     const created = createReportingCategoryRecord(categories, {
       name: request.name,
@@ -39,19 +51,33 @@ export class ReportingCategoryService {
       parentId: request.parentId ?? null,
       createdBy,
     });
-    categories.push(created);
-    saveReportingCategories(this.domainKey, categories);
-    return created;
+    try {
+      return await upsertCategoryToDg(this.domainKey, created);
+    } catch (e) {
+      const cache = getReportingCatalogCache(this.domainKey);
+      cache.categories.push(created);
+      console.warn('[reporting] create category DG failed, cached locally', e);
+      return created;
+    }
   }
 
-  rename(id: string, request: ReportingRenameCategoryRequest): ReportingCategory {
+  async rename(id: string, request: ReportingRenameCategoryRequest): Promise<ReportingCategory> {
+    await hydrateReportingCatalog(this.domainKey);
     const categories = this.list();
     const updated = renameReportingCategoryRecord(categories, id, request.name);
-    saveReportingCategories(this.domainKey, categories);
-    return updated;
+    try {
+      return await upsertCategoryToDg(this.domainKey, updated);
+    } catch (e) {
+      const cache = getReportingCatalogCache(this.domainKey);
+      const idx = cache.categories.findIndex((c) => c.id === id);
+      if (idx >= 0) cache.categories[idx] = updated;
+      console.warn('[reporting] rename category DG failed, cached locally', e);
+      return updated;
+    }
   }
 
-  delete(id: string, hasReportsInCategory: (categoryId: string) => boolean): void {
+  async delete(id: string, hasReportsInCategory: (categoryId: string) => boolean): Promise<void> {
+    await hydrateReportingCatalog(this.domainKey);
     const categories = this.list();
     if (!categories.some((c) => c.id === id)) throw new Error('Category not found');
     if (reportingCategoryHasChild(categories, id)) {
@@ -60,10 +86,14 @@ export class ReportingCategoryService {
     if (hasReportsInCategory(id)) {
       throw new Error('CATEGORY_HAS_REPORTS');
     }
-    saveReportingCategories(
-      this.domainKey,
-      categories.filter((c) => c.id !== id)
-    );
+    try {
+      await deleteCategoryFromDg(this.domainKey, id);
+    } catch (e) {
+      const cache = getReportingCatalogCache(this.domainKey);
+      cache.categories = cache.categories.filter((c) => c.id !== id);
+      cache.categoryDataIds.delete(id);
+      console.warn('[reporting] delete category DG failed, removed from cache', e);
+    }
   }
 }
 

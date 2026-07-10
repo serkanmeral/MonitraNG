@@ -59,6 +59,7 @@ import {
 import type { ReportingParameterValues } from '@/utils/reportingParameterValueKeys';
 import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
 import { reportingCellDisplayValue } from '@/utils/reportingCellDisplay';
+import { openReportingColumnLink } from '@/utils/reportingColumnLink';
 import {
   buildReportingFiltersSummary,
   REPORTING_DOCUMENT_ROW_SOFT_CAP,
@@ -217,8 +218,8 @@ const columnTitleMap = computed(() => {
   return map;
 });
 
-function hydrateFromReport() {
-  bootstrapReportingCatalog(catalogDomainKey.value);
+async function hydrateFromReport() {
+  await bootstrapReportingCatalog(catalogDomainKey.value);
   const r = catalogService.value.getReport(props.reportId);
   if (!r) {
     notFound.value = true;
@@ -241,7 +242,7 @@ function hydrateFromReport() {
   );
   expandConfig.value = expandMigrated.expand;
   if (expandMigrated.changed) {
-    catalogService.value.saveReport({
+    void catalogService.value.saveReport({
       ...r,
       expand: expandMigrated.expand,
       updatedAt: new Date().toISOString(),
@@ -254,13 +255,18 @@ function hydrateFromReport() {
   reportParameters.value = draft.parameters ?? [];
   parameterValues.value = defaultReportingParameterValues(reportParameters.value);
 
-  const personFromQuery = route.query.personId;
-  if (typeof personFromQuery === 'string' && personFromQuery.trim()) {
-    const personParam = reportParameters.value.find((p) => p.type === 'person');
-    if (personParam) {
-      parameterValues.value = { ...parameterValues.value, [personParam.id]: personFromQuery.trim() };
+  // Deep link query → parametreler (personId → person; diğerleri param id)
+  const nextParams = { ...parameterValues.value };
+  for (const param of reportParameters.value) {
+    const fromId = route.query[param.id];
+    const fromPersonAlias =
+      param.type === 'person' || param.id === 'person' ? route.query.personId : undefined;
+    const raw = typeof fromId === 'string' && fromId.trim() ? fromId : fromPersonAlias;
+    if (typeof raw === 'string' && raw.trim()) {
+      nextParams[param.id] = raw.trim();
     }
   }
+  parameterValues.value = nextParams;
 
   applyRuntimeFiltersFromDefaults();
 }
@@ -306,6 +312,19 @@ function currentSortDesc(): boolean {
 function cellDisplay(raw: string, fieldName: string): string {
   const col = columnConfigByField(listConfig.value, fieldName);
   return reportingCellDisplayValue(raw, col);
+}
+
+function columnReportLink(fieldName: string) {
+  return columnConfigByField(listConfig.value, fieldName)?.reportLink;
+}
+
+function onColumnLinkClick(fieldName: string, item: Record<string, unknown>) {
+  const link = columnReportLink(fieldName);
+  if (!link) return;
+  openReportingColumnLink({
+    link,
+    row: reportingDataTableRow(item),
+  });
 }
 
 function cellTitle(item: Record<string, unknown>, listKey: string): string | undefined {
@@ -683,18 +702,19 @@ watch(
 watch(
   () => props.reportId,
   () => {
-    hydrateFromReport();
-    void loadSchema().then(() => {
-      if (reportingParametersReady(reportParameters.value, parameterValues.value)) {
-        void runReport();
-      }
-    });
+    void hydrateFromReport().then(() =>
+      loadSchema().then(() => {
+        if (reportingParametersReady(reportParameters.value, parameterValues.value)) {
+          void runReport();
+        }
+      })
+    );
   }
 );
 
 onMounted(async () => {
   await authStore.ensureValidToken();
-  hydrateFromReport();
+  await hydrateFromReport();
   void loadSchema().then(() => {
     if (reportingParametersReady(reportParameters.value, parameterValues.value)) {
       void runReport();
@@ -1082,7 +1102,16 @@ onBeforeUnmount(() => {
                   <span v-else class="text-medium-emphasis">—</span>
                 </template>
                     <template v-else>
-                      <span :title="cellTitle(item, col)">
+                      <a
+                        v-if="columnReportLink(col)"
+                        href="#"
+                        class="text-primary text-decoration-underline"
+                        :title="cellTitle(item, col)"
+                        @click.prevent="onColumnLinkClick(col, item)"
+                      >
+                        {{ cellDisplay(cellRaw(item, col), col) }}
+                      </a>
+                      <span v-else :title="cellTitle(item, col)">
                         {{ cellDisplay(cellRaw(item, col), col) }}
                       </span>
                     </template>

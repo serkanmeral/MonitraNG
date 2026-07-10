@@ -1,4 +1,8 @@
 import type { AfListColumnFormat } from '@/utils/afListColumnFormat';
+import {
+  normalizeReportingColumnLink,
+  type ReportingColumnLink,
+} from '@/utils/reportingColumnLink';
 
 export interface OdakHubListColumnConfig {
   fieldName: string;
@@ -14,6 +18,8 @@ export interface OdakHubListColumnConfig {
   /** Sanal sütun — DG fields sorgusuna dahil edilmez (ör. katılımcı sayısı). */
   virtual?: boolean;
   format?: AfListColumnFormat;
+  /** Reporting: hücre tıklanınca başka rapora deep link. */
+  reportLink?: ReportingColumnLink;
 }
 
 export interface OdakHubListConfig {
@@ -68,6 +74,7 @@ function normalizeHubListColumn(raw: unknown, fallbackOrder: number): OdakHubLis
   const relationDisplayField = String(o.relationDisplayField ?? o.RelationDisplayField ?? '').trim() || undefined;
   const title = String(o.title ?? o.Title ?? '').trim() || undefined;
   const virtual = o.virtual === true || o.Virtual === true;
+  const reportLink = normalizeReportingColumnLink(o.reportLink ?? o.ReportLink);
   return {
     fieldName,
     visible: o.visible !== false && o.Visible !== false,
@@ -78,6 +85,7 @@ function normalizeHubListColumn(raw: unknown, fallbackOrder: number): OdakHubLis
     ...(title ? { title } : {}),
     ...(relationDisplayField ? { relationDisplayField } : {}),
     ...(virtual ? { virtual: true } : {}),
+    ...(reportLink ? { reportLink } : {}),
     format: (o.format ?? o.Format) as AfListColumnFormat | undefined,
   };
 }
