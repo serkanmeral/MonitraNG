@@ -15,6 +15,7 @@ import {
   findReportingTemplateBindingConflict,
   newReportingDocumentBindingId,
 } from '@/utils/reportingDocumentBindings';
+import { defaultDocumentNamePattern } from '@/utils/reportingDocumentTokens';
 import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
@@ -37,6 +38,7 @@ const addDialog = ref(false);
 const selectedTemplateId = ref<string | null>(null);
 const selectedContextType = ref<ReportingDocumentContextType>('reportRun');
 const addError = ref('');
+const expandedIds = ref<string[]>([]);
 
 const contextTypeItems = computed(() =>
   (['reportRun', 'parentRow', 'childRow'] as const).map((value) => ({
@@ -123,6 +125,8 @@ function confirmAdd() {
     templateCode: tpl.code,
     label: tpl.name,
     contextType: selectedContextType.value,
+    documentNamePattern: defaultDocumentNamePattern(selectedContextType.value),
+    generatedAtPattern: 'yyyy-MM-dd HH:mm',
   };
   emit('update:bindings', [...props.bindings, next]);
   addDialog.value = false;
@@ -133,6 +137,18 @@ function removeBinding(id: string) {
     'update:bindings',
     props.bindings.filter((b) => b.id !== id)
   );
+  expandedIds.value = expandedIds.value.filter((x) => x !== id);
+}
+
+function patchBinding(id: string, patch: Partial<ReportingDocumentBinding>) {
+  emit(
+    'update:bindings',
+    props.bindings.map((b) => (b.id === id ? { ...b, ...patch } : b))
+  );
+}
+
+function namePatternPlaceholder(b: ReportingDocumentBinding): string {
+  return defaultDocumentNamePattern(b.contextType);
 }
 
 onMounted(() => {
@@ -175,15 +191,17 @@ onMounted(() => {
       {{ t('reporting.documentBindings.empty') }}
     </v-alert>
 
-    <v-list v-else density="compact" class="border rounded">
-      <v-list-item v-for="b in bindings" :key="b.id">
-        <v-list-item-title>{{ b.label }}</v-list-item-title>
-        <v-list-item-subtitle>
-          {{ b.templateCode || b.templateId }}
-          ·
-          {{ t(`reporting.documentBindings.contextTypes.${b.contextType}`) }}
-        </v-list-item-subtitle>
-        <template #append>
+    <v-expansion-panels v-else v-model="expandedIds" multiple class="border rounded">
+      <v-expansion-panel v-for="b in bindings" :key="b.id" :value="b.id">
+        <v-expansion-panel-title>
+          <div class="d-flex flex-column align-start flex-grow-1 pr-2">
+            <span class="text-body-2">{{ b.label }}</span>
+            <span class="text-caption text-medium-emphasis">
+              {{ b.templateCode || b.templateId }}
+              ·
+              {{ t(`reporting.documentBindings.contextTypes.${b.contextType}`) }}
+            </span>
+          </div>
           <v-btn
             icon
             variant="text"
@@ -191,13 +209,46 @@ onMounted(() => {
             color="error"
             :disabled="disabled"
             :aria-label="t('reporting.documentBindings.remove')"
-            @click="removeBinding(b.id)"
+            @click.stop="removeBinding(b.id)"
           >
             <TrashIcon size="16" />
           </v-btn>
-        </template>
-      </v-list-item>
-    </v-list>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <v-text-field
+            :model-value="b.documentNamePattern ?? ''"
+            :label="t('reporting.documentBindings.documentNamePattern')"
+            :placeholder="namePatternPlaceholder(b)"
+            :hint="t('reporting.documentBindings.documentNamePatternHint')"
+            persistent-hint
+            density="compact"
+            variant="outlined"
+            :disabled="disabled"
+            class="mb-3"
+            @update:model-value="
+              patchBinding(b.id, {
+                documentNamePattern: String($event ?? '').trim() || undefined,
+              })
+            "
+          />
+          <v-text-field
+            :model-value="b.generatedAtPattern ?? ''"
+            :label="t('reporting.documentBindings.generatedAtPattern')"
+            placeholder="yyyy-MM-dd HH:mm"
+            :hint="t('reporting.documentBindings.generatedAtPatternHint')"
+            persistent-hint
+            density="compact"
+            variant="outlined"
+            :disabled="disabled"
+            @update:model-value="
+              patchBinding(b.id, {
+                generatedAtPattern: String($event ?? '').trim() || undefined,
+              })
+            "
+          />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
 
     <v-dialog v-model="addDialog" max-width="520" persistent>
       <v-card>

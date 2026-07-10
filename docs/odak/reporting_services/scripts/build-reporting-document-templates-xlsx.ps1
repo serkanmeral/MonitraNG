@@ -3,6 +3,8 @@
 # Çıktı:
 #   docs/odak/document_intelligence/sample/ODK-RPT-EGITIM-LIST-template-seed.xlsx
 #   docs/odak/document_intelligence/sample/ODK-RPT-EGITIM-PERSON-template-seed.xlsx
+#   docs/odak/document_intelligence/sample/ODK-RPT-EGITIM-ROW-template-seed.xlsx
+#   docs/odak/document_intelligence/sample/ODK-RPT-EGITIM-CERT-template-seed.docx
 #
 # Kullanım:
 #   .\docs\odak\reporting_services\scripts\build-reporting-document-templates-xlsx.ps1
@@ -48,12 +50,18 @@ Directory.CreateDirectory(outDir);
 
 var listPath = Path.Combine(outDir, "ODK-RPT-EGITIM-LIST-template-seed.xlsx");
 var personPath = Path.Combine(outDir, "ODK-RPT-EGITIM-PERSON-template-seed.xlsx");
+var rowPath = Path.Combine(outDir, "ODK-RPT-EGITIM-ROW-template-seed.xlsx");
+var certPath = Path.Combine(outDir, "ODK-RPT-EGITIM-CERT-template-seed.docx");
 
 File.WriteAllBytes(listPath, ReportingOdakEgitimTemplateXlsxFactory.CreateTrainingsList());
 File.WriteAllBytes(personPath, ReportingOdakEgitimTemplateXlsxFactory.CreatePersonTrainings());
+File.WriteAllBytes(rowPath, ReportingOdakEgitimTemplateXlsxFactory.CreateTrainingDetail());
+File.WriteAllBytes(certPath, ReportingOdakEgitimCertificateDocxFactory.Create());
 
 Console.WriteLine($"OK {listPath} ({new FileInfo(listPath).Length} bytes)");
 Console.WriteLine($"OK {personPath} ({new FileInfo(personPath).Length} bytes)");
+Console.WriteLine($"OK {rowPath} ({new FileInfo(rowPath).Length} bytes)");
+Console.WriteLine($"OK {certPath} ({new FileInfo(certPath).Length} bytes)");
 '@ | Set-Content -Path (Join-Path $runnerDir "Program.cs") -Encoding UTF8
 
 Push-Location $runnerDir

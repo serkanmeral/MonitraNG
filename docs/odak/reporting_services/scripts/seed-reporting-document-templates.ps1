@@ -106,15 +106,20 @@ function Find-TemplateByCode {
     return $null
 }
 
-function Ensure-Xlsx {
-    param([string]$FileName)
-    $xlsxPath = Join-Path $repoRoot "docs/odak/document_intelligence/sample/$FileName"
-    if (Test-Path $xlsxPath) { return $xlsxPath }
+function Ensure-SourceFile {
+    param([object]$Tpl)
+    $fileName = $null
+    if ($Tpl.docxFile) { $fileName = [string]$Tpl.docxFile }
+    elseif ($Tpl.xlsxFile) { $fileName = [string]$Tpl.xlsxFile }
+    elseif ($Tpl.fileName) { $fileName = [string]$Tpl.fileName }
+    if ([string]::IsNullOrWhiteSpace($fileName)) { throw "Sablon dosya adi yok (docxFile/xlsxFile)" }
+    $path = Join-Path $repoRoot "docs/odak/document_intelligence/sample/$fileName"
+    if (Test-Path $path) { return $path }
     $buildScript = Join-Path $scriptDir "build-reporting-document-templates-xlsx.ps1"
-    if (-not (Test-Path $buildScript)) { throw "XLSX yok ve build script bulunamadi: $xlsxPath" }
+    if (-not (Test-Path $buildScript)) { throw "Kaynak yok ve build script bulunamadi: $path" }
     & $buildScript
-    if (-not (Test-Path $xlsxPath)) { throw "XLSX uretilemedi: $xlsxPath" }
-    return $xlsxPath
+    if (-not (Test-Path $path)) { throw "Kaynak uretilemedi: $path" }
+    return $path
 }
 
 Write-Host "Reporting document templates seed -> $BaseUrl" -ForegroundColor Cyan
@@ -125,7 +130,8 @@ $results = @()
 
 foreach ($tpl in @($seed.templates)) {
     $code = [string]$tpl.code
-    $xlsxPath = Ensure-Xlsx -FileName ([string]$tpl.xlsxFile)
+    $sourcePath = Ensure-SourceFile -Tpl $tpl
+    $fileName = [IO.Path]::GetFileName($sourcePath)
     $existing = Find-TemplateByCode -CategoryId $categoryId -Code $code
 
     if ($existing) {
@@ -142,14 +148,14 @@ foreach ($tpl in @($seed.templates)) {
         Invoke-Json -Method DELETE -Uri "$templatesBase/$($existing.id)" | Out-Null
     }
 
-    $bytes = [IO.File]::ReadAllBytes($xlsxPath)
+    $bytes = [IO.File]::ReadAllBytes($sourcePath)
     $contentB64 = [Convert]::ToBase64String($bytes)
     $createBody = @{
         categoryId  = $categoryId
         name        = [string]$tpl.name
         description = [string]$tpl.description
         content     = $contentB64
-        fileName    = [string]$tpl.xlsxFile
+        fileName    = $fileName
         size        = $bytes.Length
     }
 

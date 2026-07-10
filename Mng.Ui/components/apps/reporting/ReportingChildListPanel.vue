@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue';
 import type { FieldDefinition } from '@/stores/apps/dataset';
-import type { ReportingExpandChildListConfig } from '@/types/apps/reporting';
+import type {
+  ReportingDocumentBinding,
+  ReportingExpandChildListConfig,
+} from '@/types/apps/reporting';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useReportingColumnAccess } from '@/composables/useReportingColumnAccess';
+import { useAuthStore } from '@/stores/auth';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import ReportingSummaryCards from '@/components/apps/reporting/ReportingSummaryCards.vue';
 import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummaryFooter.vue';
@@ -31,6 +35,10 @@ import {
   reportingSummaryShowFooter,
   type ReportingSummaryValues,
 } from '@/utils/reportingSummary';
+import { generateReportingChildRowDocument } from '@/utils/reportingChildRowDocument';
+import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import type { OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
+import { FileTextIcon } from 'vue-tabler-icons';
 
 const props = withDefaults(
   defineProps<{
@@ -38,13 +46,26 @@ const props = withDefaults(
     childList: ReportingExpandChildListConfig;
     active: boolean;
     fieldPolicies?: OdakFieldPoliciesBlob;
+    tabId?: string | null;
+    reportId?: string | null;
+    reportTitle?: string | null;
+    parentListConfig?: OdakHubListConfig | null;
+    documentBindings?: ReportingDocumentBinding[];
+    enableChildRowDocuments?: boolean;
   }>(),
   {
     fieldPolicies: () => emptyOdakFieldPoliciesBlob(),
+    tabId: null,
+    reportId: null,
+    reportTitle: null,
+    parentListConfig: null,
+    documentBindings: () => [],
+    enableChildRowDocuments: false,
   }
 );
 
 const { t } = useAppI18n();
+const authStore = useAuthStore();
 const datasetStore = useDatasetStore();
 const fieldPoliciesRef = toRef(props, 'fieldPolicies');
 const { canViewColumn } = useReportingColumnAccess(fieldPoliciesRef);
@@ -57,10 +78,25 @@ const loaded = ref(false);
 const schemaFields = ref<FieldDefinition[]>([]);
 const summaryValues = ref<ReportingSummaryValues>({});
 const summaryLoading = ref(false);
+const docGeneratingKey = ref<string | null>(null);
+const docMessage = ref('');
+const docError = ref('');
+const lastDocResourceId = ref<string | null>(null);
 
 const summaryConfig = computed(
   () => props.childList.summary ?? emptyReportingSummaryConfig()
 );
+
+const childRowBindings = computed(() => {
+  if (!props.enableChildRowDocuments || !props.reportId) return [];
+  return (props.documentBindings ?? []).filter((b) => {
+    if (b.contextType !== 'childRow') return false;
+    if (!b.childTabId) return true;
+    return b.childTabId === props.tabId;
+  });
+});
+
+const showChildDocs = computed(() => childRowBindings.value.length > 0 && !!props.parentListConfig);
 
 const fieldMap = computed(() => new Map(schemaFields.value.map((f) => [f.name, f])));
 
@@ -68,8 +104,8 @@ const visibleColumns = computed(() =>
   visibleReportingColumnKeys(props.childList.listConfig, (field) => canViewColumn(field))
 );
 
-const headers = computed(() =>
-  visibleColumns.value.map((listKey) => {
+const headers = computed(() => {
+  const cols = visibleColumns.value.map((listKey) => {
     const col = columnConfigByField(props.childList.listConfig, listKey);
     const title =
       col?.title?.trim() ||
@@ -80,8 +116,17 @@ const headers = computed(() =>
       width: col?.width,
       sortable: false,
     };
-  })
-);
+  });
+  if (showChildDocs.value) {
+    cols.push({
+      title: t('reporting.runner.historyColActions'),
+      key: '__docs',
+      width: 180,
+      sortable: false,
+    });
+  }
+  return cols;
+});
 
 const tableItems = computed(() =>
   rows.value.map((row, index) => ({
@@ -203,12 +248,66 @@ function boolCellValue(item: Record<string, unknown>, listKey: string): boolean 
   const raw = col ? readReportingColumnValue(row, col) : row[listKey];
   return parseReportingBoolValue(raw);
 }
+
+function openLastDocInDi() {
+  if (!lastDocResourceId.value) return;
+  void navigateTo(buildDiResourceUrl(lastDocResourceId.value));
+}
+
+function genKey(binding: ReportingDocumentBinding, item: Record<string, unknown>) {
+  return `${binding.id}:${reportingRowId(reportingDataTableRow(item))}`;
+}
+
+async function generateCert(binding: ReportingDocumentBinding, item: Record<string, unknown>) {
+  if (!props.reportId || !props.parentListConfig) return;
+  const row = reportingDataTableRow(item);
+  docGeneratingKey.value = genKey(binding, item);
+  docError.value = '';
+  docMessage.value = '';
+  lastDocResourceId.value = null;
+  try {
+    await authStore.ensureValidToken();
+    const result = await generateReportingChildRowDocument({
+      reportId: props.reportId,
+      reportTitle: props.reportTitle ?? '',
+      binding,
+      parentRow: props.parentRow,
+      parentListConfig: props.parentListConfig,
+      childRow: row,
+      childListConfig: props.childList.listConfig,
+    });
+    lastDocResourceId.value = result.resourceId || null;
+    docMessage.value = t('reporting.runner.generateSuccess', {
+      fileName: result.fileName || binding.label,
+    });
+  } catch (e: unknown) {
+    docError.value =
+      e instanceof Error ? e.message : t('reporting.runner.generateFailed');
+  } finally {
+    docGeneratingKey.value = null;
+  }
+}
 </script>
 
 <template>
   <div class="reporting-child-list-panel">
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-3">
       {{ errorMessage }}
+    </v-alert>
+    <v-alert v-if="docError" type="error" variant="tonal" density="compact" class="mb-3">
+      {{ docError }}
+    </v-alert>
+    <v-alert v-if="docMessage" type="success" variant="tonal" density="compact" class="mb-3">
+      {{ docMessage }}
+      <v-btn
+        v-if="lastDocResourceId"
+        class="ml-2"
+        size="small"
+        variant="text"
+        @click="openLastDocInDi"
+      >
+        {{ t('reporting.runner.openInDi') }}
+      </v-btn>
     </v-alert>
 
     <ReportingSummaryCards
@@ -248,6 +347,25 @@ function boolCellValue(item: Record<string, unknown>, listKey: string): boolean 
           <span v-else class="text-medium-emphasis">—</span>
         </template>
         <span v-else>{{ cellDisplay(item, col) || '—' }}</span>
+      </template>
+
+      <template v-if="showChildDocs" #item.__docs="{ item }">
+        <div class="d-flex flex-wrap ga-1 justify-end">
+          <v-btn
+            v-for="b in childRowBindings"
+            :key="b.id"
+            size="x-small"
+            variant="tonal"
+            color="secondary"
+            class="text-none"
+            :loading="docGeneratingKey === genKey(b, item)"
+            :disabled="!!docGeneratingKey"
+            @click="generateCert(b, item)"
+          >
+            <FileTextIcon size="12" class="mr-1" />
+            {{ b.label }}
+          </v-btn>
+        </div>
       </template>
 
       <template #no-data>

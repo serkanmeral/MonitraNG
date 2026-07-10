@@ -42,6 +42,61 @@ public static class ReportingOdakEgitimTemplateXlsxFactory
             },
             colWidths: new[] { 14.0, 36.0, 16.0, 14.0, 12.0, 10.0, 10.0, 10.0 });
 
+    /// <summary>Tek eğitim satırı (parentRow) — skaler placeholder'lar.</summary>
+    public static byte[] CreateTrainingDetail()
+    {
+        var rows = new List<XElement>
+        {
+            Row(1, Cell("A1", "Eğitim kaydı", 1, inline: true)),
+            Row(2,
+                Cell("A2", "Rapor:", 0, inline: true),
+                Cell("B2", "{{reportTitle}}", 0, inline: true)),
+            Row(3,
+                Cell("A3", "Üretim:", 0, inline: true),
+                Cell("B3", "{{generatedAt}}", 0, inline: true)),
+            Row(4),
+            Row(5,
+                Cell("A5", "Eğitim No", 2, inline: true),
+                Cell("B5", "{{egitimNo}}", 0, inline: true)),
+            Row(6,
+                Cell("A6", "Başlık", 2, inline: true),
+                Cell("B6", "{{baslik}}", 0, inline: true)),
+            Row(7,
+                Cell("A7", "Birim", 2, inline: true),
+                Cell("B7", "{{ad}}", 0, inline: true)),
+            Row(8,
+                Cell("A8", "Eğitimi Veren", 2, inline: true),
+                Cell("B8", "{{egitimVeren}}", 0, inline: true)),
+            Row(9,
+                Cell("A9", "Planlanan Tarih", 2, inline: true),
+                Cell("B9", "{{planlananTarih}}", 0, inline: true)),
+            Row(10,
+                Cell("A10", "Gerçekleşen Tarih", 2, inline: true),
+                Cell("B10", "{{gerceklesenTarih}}", 0, inline: true)),
+            Row(11,
+                Cell("A11", "Durum", 2, inline: true),
+                Cell("B11", "{{durum}}", 0, inline: true)),
+            Row(12,
+                Cell("A12", "Süre (dk)", 2, inline: true),
+                Cell("B12", "{{sureDakika}}", 0, inline: true))
+        };
+
+        var sheetXml = BuildWorksheet(rows, new[] { 18.0, 42.0 });
+
+        using var ms = new MemoryStream();
+        using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            WriteEntry(archive, "[Content_Types].xml", ContentTypesXml);
+            WriteEntry(archive, "_rels/.rels", RelsXml);
+            WriteEntry(archive, "xl/workbook.xml", WorkbookXml("EgitimKaydi"));
+            WriteEntry(archive, "xl/_rels/workbook.xml.rels", WorkbookRelsXml);
+            WriteEntry(archive, "xl/worksheets/sheet1.xml", sheetXml);
+            WriteEntry(archive, "xl/styles.xml", StylesXml);
+        }
+
+        return ms.ToArray();
+    }
+
     private static byte[] Create(
         string sheetName,
         string title,

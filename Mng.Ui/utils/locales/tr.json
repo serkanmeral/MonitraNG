@@ -201,6 +201,9 @@
     "siemCenter.dashboard.menuTitle": "SIEM Güvenlik Paneli",
     "documentIntelligence.menuTitle": "Dokümanlar",
     "documentIntelligence.designer.menuTitle": "Belge Tasarımcısı",
+    "reporting.menuHeader": "Raporlama",
+    "reporting.browse.menuTitle": "Raporlar",
+    "reporting.menuTitle": "Rapor kataloğu",
     "book_definitions": "Kitap Tanımlamaları",
     "book-genres": "Kitap Türleri",
     "tst_publishers": "Kitap Yayıncılar",
@@ -3455,6 +3458,17 @@
       "home": "Ana sayfa",
       "reporting": "Raporlama"
     },
+    "browse": {
+      "menuTitle": "Raporlar",
+      "title": "Raporlar",
+      "treeTitle": "Kategoriler ve raporlar",
+      "allReports": "Tüm raporlar",
+      "emptyTree": "Görüntüleyebileceğiniz rapor yok.",
+      "pickReport": "Soldan bir rapor seçin.",
+      "uncategorized": "Kategorisiz",
+      "collapseTree": "Paneli daralt",
+      "expandTree": "Paneli genişlet"
+    },
     "panel": {
       "design": "Tasarım"
     },
@@ -3483,6 +3497,10 @@
       "exclusiveHint": "Başka rapora bağlı şablonlar listede gösterilmez.",
       "exclusiveConflict": "Bu şablon «{report}» raporuna bağlı.",
       "loadTemplatesFailed": "DI şablonları yüklenemedi.",
+      "documentNamePattern": "Belge adı kalıbı",
+      "documentNamePatternHint": "Örn: {{reportTitle}} {{now:yyyy-MM-dd HH:mm}} · Token: reportTitle, bindingLabel, filtersSummary, now, param.<id>, satır alanları, a|b",
+      "generatedAtPattern": "Üretim zamanı kalıbı",
+      "generatedAtPatternHint": "Belge içi generatedAt skalerı. Örn: yyyy-MM-dd HH:mm veya dd.MM.yyyy HH:mm",
       "contextTypes": {
         "reportRun": "Rapor çalıştırma (filtrelenmiş liste)",
         "parentRow": "Ana satır",
@@ -3530,6 +3548,7 @@
       "generateSuccess": "Belge oluşturuldu: {fileName}",
       "generateFailed": "Belge üretilemedi.",
       "openInDi": "DI’da göster",
+      "parentRowDocuments": "Satır belgeleri",
       "rowCapConfirm": "{count} satır soft limit ({cap}) üzerinde. Yine de üretmek istiyor musunuz?",
       "allYears": "Tüm yıllar",
       "dateFrom": "Başlangıç",

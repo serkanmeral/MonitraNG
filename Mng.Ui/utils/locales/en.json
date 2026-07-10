@@ -166,6 +166,9 @@
     "siemCenter.dashboard.menuTitle": "SIEM Security Panel",
     "documentIntelligence.menuTitle": "Documents",
     "documentIntelligence.designer.menuTitle": "Document Designer",
+    "reporting.menuHeader": "Reporting",
+    "reporting.browse.menuTitle": "Reports",
+    "reporting.menuTitle": "Report catalog",
     "book_definitions": "Book Definitions",
     "book-genres": "Book Types",
     "tst_publishers": "Publishers",
@@ -3540,6 +3543,17 @@
       "home": "Home",
       "reporting": "Reporting"
     },
+    "browse": {
+      "menuTitle": "Reports",
+      "title": "Reports",
+      "treeTitle": "Categories and reports",
+      "allReports": "All reports",
+      "emptyTree": "No reports you can view.",
+      "pickReport": "Select a report on the left.",
+      "uncategorized": "Uncategorized",
+      "collapseTree": "Collapse panel",
+      "expandTree": "Expand panel"
+    },
     "panel": {
       "design": "Design"
     },
@@ -3568,6 +3582,10 @@
       "exclusiveHint": "Templates already bound to another report are hidden.",
       "exclusiveConflict": "This template is bound to «{report}».",
       "loadTemplatesFailed": "Could not load DI templates.",
+      "documentNamePattern": "Document name pattern",
+      "documentNamePatternHint": "E.g. {{reportTitle}} {{now:yyyy-MM-dd HH:mm}} · Tokens: reportTitle, bindingLabel, filtersSummary, now, param.<id>, row fields, a|b",
+      "generatedAtPattern": "Generated-at pattern",
+      "generatedAtPatternHint": "Scalar generatedAt inside the document. E.g. yyyy-MM-dd HH:mm or dd.MM.yyyy HH:mm",
       "contextTypes": {
         "reportRun": "Report run (filtered list)",
         "parentRow": "Parent row",
@@ -3615,6 +3633,7 @@
       "generateSuccess": "Document created: {fileName}",
       "generateFailed": "Document generation failed.",
       "openInDi": "Show in DI",
+      "parentRowDocuments": "Row documents",
       "rowCapConfirm": "{count} rows exceed the soft limit ({cap}). Generate anyway?",
       "allYears": "All years",
       "dateFrom": "From",

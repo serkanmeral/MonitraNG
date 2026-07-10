@@ -1,5 +1,6 @@
 # Reporting — @side_menu kaydi (Odak DG uzerinden)
 # Header: Raporlama
+#   - Raporlar (user) → /apps/reporting/browse
 #   - Rapor kataloğu (user) → /apps/reporting
 #
 # Usage (repo kokunden):
@@ -192,7 +193,8 @@ $headerOrder = if ($null -ne $existingHeader -and $null -ne $existingHeader.orde
 } else {
     $maxOrder + 1
 }
-$designerItemOrder = $headerOrder + 1
+$browseItemOrder = $headerOrder + 1
+$catalogItemOrder = $headerOrder + 2
 
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Raporlama header" -FindExisting {
     $_.itemType -eq "header" -and (
@@ -218,12 +220,32 @@ if ([string]::IsNullOrEmpty($headerId)) {
 
 $items = Get-SideMenuItems
 
+Upsert-MenuItem -AllItems $items -Label "Raporlar (browse)" -FindExisting {
+    $_.pageCode -eq "reporting.browse.menuTitle" -or
+    $_.to -eq "/apps/reporting/browse"
+} -Body @{
+    order    = $browseItemOrder
+    itemType = "item"
+    level    = 1
+    parentId = $headerId
+    pageType = "user"
+    pageCode = "reporting.browse.menuTitle"
+    title    = "Raporlar"
+    icon     = "ChartDotsIcon"
+    iconType = "tabler"
+    to       = "/apps/reporting/browse"
+    type     = "internal"
+    disabled = $false
+} | Out-Null
+
+$items = Get-SideMenuItems
+
 Upsert-MenuItem -AllItems $items -Label "Rapor katalogu" -FindExisting {
     $_.pageCode -eq "reporting.menuTitle" -or
     $_.pageCode -eq "reporting.designer.menuTitle" -or
-    $_.to -eq "/apps/reporting"
+    ($_.to -eq "/apps/reporting")
 } -Body @{
-    order    = $designerItemOrder
+    order    = $catalogItemOrder
     itemType = "item"
     level    = 1
     parentId = $headerId
@@ -238,4 +260,4 @@ Upsert-MenuItem -AllItems $items -Label "Rapor katalogu" -FindExisting {
 } | Out-Null
 
 Write-Host "`nTamamlandi. UI'da menu gormek icin sayfayi yenileyin veya cikis/giris yapin." -ForegroundColor Cyan
-Write-Host "Not: Sayfa lokal npm run dev ile acilir; sunucu mngui deploy edilmediyse menü test UI'da görünür ama route lokalde olmalı." -ForegroundColor Gray
+Write-Host "Not: Browse sayfasi mngui deploy edilmeden route 404 verebilir; menü kaydi yine de görünür." -ForegroundColor Gray

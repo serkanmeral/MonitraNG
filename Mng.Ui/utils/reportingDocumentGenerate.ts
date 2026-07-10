@@ -143,3 +143,16 @@ export function mapReportingRowsForDocumentTable(
     return out;
   });
 }
+
+/** Parent satır → skaler override sözlüğü (görünür sütun anahtarları). */
+export function mapReportingParentRowOverrides(
+  row: Record<string, unknown>,
+  listConfig: OdakHubListConfig
+): Record<string, string> {
+  const mapped = mapReportingRowsForDocumentTable([row], listConfig)[0] ?? {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(mapped)) {
+    out[k] = v == null ? '' : String(v);
+  }
+  return out;
+}

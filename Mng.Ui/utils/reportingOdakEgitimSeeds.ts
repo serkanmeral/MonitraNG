@@ -25,6 +25,8 @@ import { newReportingDocumentBindingId } from '@/utils/reportingDocumentBindings
 
 export const RPT_ODAK_EGITIM_LIST_TEMPLATE_CODE = 'RPT_ODAK_EGITIM_LIST';
 export const RPT_ODAK_EGITIM_PERSON_TEMPLATE_CODE = 'RPT_ODAK_EGITIM_PERSON';
+export const RPT_ODAK_EGITIM_ROW_TEMPLATE_CODE = 'RPT_ODAK_EGITIM_ROW';
+export const RPT_ODAK_EGITIM_CERT_TEMPLATE_CODE = 'RPT_ODAK_EGITIM_CERT';
 
 function odakEgitimListDocumentBinding(): ReportingDocumentBinding {
   return {
@@ -33,6 +35,34 @@ function odakEgitimListDocumentBinding(): ReportingDocumentBinding {
     templateCode: RPT_ODAK_EGITIM_LIST_TEMPLATE_CODE,
     label: 'Eğitim listesi (XLSX)',
     contextType: 'reportRun',
+    documentNamePattern: '{{reportTitle}} {{now:yyyy-MM-dd HH:mm}}',
+    generatedAtPattern: 'yyyy-MM-dd HH:mm',
+  };
+}
+
+function odakEgitimRowDocumentBinding(): ReportingDocumentBinding {
+  return {
+    id: 'docbind_odak_egitim_row',
+    templateId: RPT_ODAK_EGITIM_ROW_TEMPLATE_CODE,
+    templateCode: RPT_ODAK_EGITIM_ROW_TEMPLATE_CODE,
+    label: 'Eğitim kaydı (XLSX)',
+    contextType: 'parentRow',
+    documentNamePattern: '{{reportTitle}} · {{egitimNo|baslik|rowId}} {{now:yyyy-MM-dd HH:mm}}',
+    generatedAtPattern: 'yyyy-MM-dd HH:mm',
+  };
+}
+
+function odakEgitimCertDocumentBinding(): ReportingDocumentBinding {
+  return {
+    id: 'docbind_odak_egitim_cert',
+    templateId: RPT_ODAK_EGITIM_CERT_TEMPLATE_CODE,
+    templateCode: RPT_ODAK_EGITIM_CERT_TEMPLATE_CODE,
+    label: 'Katılım sertifikası',
+    contextType: 'childRow',
+    childTabId: 'participants',
+    documentNamePattern:
+      '{{bindingLabel}} · {{personName|rowId}} · {{egitimNo}} {{now:yyyy-MM-dd HH:mm}}',
+    generatedAtPattern: 'dd.MM.yyyy HH:mm',
   };
 }
 
@@ -43,29 +73,53 @@ function odakEgitimPersonDocumentBinding(): ReportingDocumentBinding {
     templateCode: RPT_ODAK_EGITIM_PERSON_TEMPLATE_CODE,
     label: 'Personel eğitim geçmişi (XLSX)',
     contextType: 'reportRun',
+    documentNamePattern: '{{reportTitle}} {{now:yyyy-MM-dd HH:mm}}',
+    generatedAtPattern: 'yyyy-MM-dd HH:mm',
   };
 }
 
-/** Eksik reportRun belge bağını ekler (idempotent). */
+/** Eksik belge bağını ekler; varsa boş kalıpları doldurur (idempotent). */
 function ensureDocumentBinding(
   report: ReportingReportDefinition,
   binding: ReportingDocumentBinding
 ): boolean {
   const list = report.documentBindings ?? [];
-  const exists = list.some(
+  const idx = list.findIndex(
     (b) =>
       b.templateCode === binding.templateCode ||
       b.templateId === binding.templateId ||
       b.templateId === binding.templateCode
   );
-  if (exists) return false;
-  report.documentBindings = [
-    ...list,
-    {
-      ...binding,
-      id: binding.id || newReportingDocumentBindingId(),
-    },
-  ];
+  if (idx < 0) {
+    report.documentBindings = [
+      ...list,
+      {
+        ...binding,
+        id: binding.id || newReportingDocumentBindingId(),
+      },
+    ];
+    return true;
+  }
+
+  const existing = list[idx];
+  let changed = false;
+  const next = { ...existing };
+  if (!next.documentNamePattern?.trim() && binding.documentNamePattern) {
+    next.documentNamePattern = binding.documentNamePattern;
+    changed = true;
+  }
+  if (!next.generatedAtPattern?.trim() && binding.generatedAtPattern) {
+    next.generatedAtPattern = binding.generatedAtPattern;
+    changed = true;
+  }
+  if (!next.childTabId && binding.childTabId) {
+    next.childTabId = binding.childTabId;
+    changed = true;
+  }
+  if (!changed) return false;
+  const copy = [...list];
+  copy[idx] = next;
+  report.documentBindings = copy;
   return true;
 }
 function col(
@@ -304,6 +358,8 @@ function patchTrainingListReport(report: ReportingReportDefinition): boolean {
   let changed = false;
   // ... existing patches continue below via callers
   if (ensureDocumentBinding(report, odakEgitimListDocumentBinding())) changed = true;
+  if (ensureDocumentBinding(report, odakEgitimRowDocumentBinding())) changed = true;
+  if (ensureDocumentBinding(report, odakEgitimCertDocumentBinding())) changed = true;
   return changed || patchTrainingListReportCore(report);
 }
 
@@ -424,7 +480,11 @@ function buildTrainingsReport(categoryId: string, now: string): ReportingReportD
         { id: 'sure', label: 'Toplam süre (dk)', kind: 'sum', field: 'sureDakika', format: 'integer' },
       ],
     },
-    documentBindings: [odakEgitimListDocumentBinding()],
+    documentBindings: [
+      odakEgitimListDocumentBinding(),
+      odakEgitimRowDocumentBinding(),
+      odakEgitimCertDocumentBinding(),
+    ],
     parameters: [
       {
         id: 'statusTab',

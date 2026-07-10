@@ -5,6 +5,7 @@ import {
   BrandTablerIcon,
   CalendarIcon,
   ChartBarIcon,
+  ChartDotsIcon,
   CircleDotIcon,
   ClipboardIcon,
   FileCheckIcon,
@@ -379,7 +380,14 @@ const horizontalItems: menu[] = [
     to: "/apps/document-intelligence/designer",
   },
   {
+    title: "Raporlar",
+    pageCode: "reporting.browse.menuTitle",
+    icon: ChartDotsIcon,
+    to: "/apps/reporting/browse",
+  },
+  {
     title: "Raporlama",
+    pageCode: "reporting.menuTitle",
     icon: ChartBarIcon,
     to: "/apps/reporting",
   },

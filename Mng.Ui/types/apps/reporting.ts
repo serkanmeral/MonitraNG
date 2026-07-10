@@ -202,6 +202,17 @@ export interface ReportingDocumentBinding {
   contextType: ReportingDocumentContextType;
   /** Varsayılan: ['Reports', reportId] */
   outputFolderSegments?: string[];
+  /** childRow: yalnızca bu expand sekmesinde göster (örn. participants). */
+  childTabId?: string;
+  /**
+   * DI kaynak görünen adı kalıbı.
+   * Token: {{reportTitle}}, {{bindingLabel}}, {{filtersSummary}}, {{now}}, {{now:yyyy-MM-dd}},
+   * {{param.<id>}}, {{rowCount}}, {{rowId}}, {{userName}}, satır alanları ({{egitimNo}}),
+   * fallback {{a|b|c}}.
+   */
+  documentNamePattern?: string;
+  /** Üretim zamanı skaler kalıbı (varsayılan: yyyy-MM-dd HH:mm). */
+  generatedAtPattern?: string;
 }
 
 export interface ReportingReportDefinition {

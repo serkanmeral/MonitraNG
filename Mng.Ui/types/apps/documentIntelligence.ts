@@ -104,6 +104,8 @@ export interface DiTreeNode {
   /** Alt klasör var mı (lazy tree). */
   hasChildren: boolean;
   children: DiTreeNode[];
+  /** UI ipucu: rapor yaprağı vb. (DI klasörleri genelde yok). */
+  kind?: 'folder' | 'file';
 }
 
 /** Lazy tree derin link segmenti. */

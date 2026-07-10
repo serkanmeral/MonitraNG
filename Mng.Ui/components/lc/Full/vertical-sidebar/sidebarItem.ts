@@ -428,6 +428,12 @@ const sidebarItem: menu[] = [
     to: "/apps/document-intelligence/designer",
   },
   {
+    title: "Raporlar",
+    pageCode: "reporting.browse.menuTitle",
+    icon: ChartDotsIcon,
+    to: "/apps/reporting/browse",
+  },
+  {
     title: "Raporlama",
     pageCode: "reporting.menuTitle",
     icon: ChartBarIcon,

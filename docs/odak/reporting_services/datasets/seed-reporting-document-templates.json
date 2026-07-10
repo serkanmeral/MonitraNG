@@ -94,6 +94,46 @@
           }
         }
       ]
+    },
+    {
+      "name": "Odak Eğitim Kaydı",
+      "code": "RPT_ODAK_EGITIM_ROW",
+      "description": "Tek eğitim satırı (parentRow) — expand panelden üretim.",
+      "xlsxFile": "ODK-RPT-EGITIM-ROW-template-seed.xlsx",
+      "factoryMethod": "CreateTrainingDetail",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        { "key": "reportTitle", "label": "Rapor başlığı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "generatedAt", "label": "Üretim zamanı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "egitimNo", "label": "Eğitim No", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "baslik", "label": "Başlık", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "ad", "label": "Birim", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "egitimVeren", "label": "Eğitimi Veren", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "planlananTarih", "label": "Planlanan Tarih", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "gerceklesenTarih", "label": "Gerçekleşen Tarih", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "durum", "label": "Durum", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "sureDakika", "label": "Süre (dk)", "dataType": "text", "valueSourceMode": "manual" }
+      ]
+    },
+    {
+      "name": "Odak Eğitim Katılım Sertifikası",
+      "code": "RPT_ODAK_EGITIM_CERT",
+      "description": "Katılımcı satırından (childRow) katılım sertifikası — DOCX.",
+      "docxFile": "ODK-RPT-EGITIM-CERT-template-seed.docx",
+      "factoryMethod": "CreateCertificate",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        { "key": "reportTitle", "label": "Rapor başlığı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "generatedAt", "label": "Üretim zamanı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "personName", "label": "Personel", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "egitimNo", "label": "Eğitim No", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "baslik", "label": "Eğitim", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "egitimVeren", "label": "Eğitimi Veren", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "trainingDate", "label": "Eğitim tarihi", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "durum", "label": "Durum", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "planlananTarih", "label": "Planlanan Tarih", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "gerceklesenTarih", "label": "Gerçekleşen Tarih", "dataType": "text", "valueSourceMode": "manual" }
+      ]
     }
   ]
 }

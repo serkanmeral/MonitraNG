@@ -69,6 +69,11 @@ import {
   reportingDocumentFolderParentId,
   resolveReportingDiTemplateId,
 } from '@/utils/reportingDocumentGenerate';
+import {
+  buildReportingDocumentTokenContext,
+  resolveReportingDocumentName,
+  resolveReportingGeneratedAt,
+} from '@/utils/reportingDocumentTokens';
 import { diGenerateFromTemplate } from '@/services/documentIntelligenceService';
 import { buildDiResourceUrl } from '@/utils/diResourceLink';
 import type { DiResource } from '@/types/apps/documentIntelligence';
@@ -76,9 +81,19 @@ import type { ReportingDocumentBinding } from '@/types/apps/reporting';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, FileTextIcon, RefreshIcon, PencilIcon } from 'vue-tabler-icons';
 
-const props = defineProps<{
-  reportId: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    reportId: string;
+    /** Browse layout: breadcrumb / kataloğa dön gizlenir. */
+    embedded?: boolean;
+    /** Designer + DG pipeline gibi admin araçları. */
+    showAdminTools?: boolean;
+  }>(),
+  {
+    embedded: false,
+    showAdminTools: true,
+  }
+);
 
 const route = useRoute();
 const router = useRouter();
@@ -615,10 +630,20 @@ async function generateReportDocument(binding: ReportingDocumentBinding) {
       parameterValues: parameterValues.value,
       advancedFilters: query.filters,
     });
-    const generatedAt = new Date().toISOString();
+    const now = new Date();
+    const tokenCtx = buildReportingDocumentTokenContext({
+      reportTitle: title.value || binding.label,
+      binding,
+      parameterValues: parameterValues.value,
+      parameters: reportParameters.value,
+      advancedFilters: query.filters,
+      rowCount: tableRows.length,
+      now,
+    });
+    const documentName = resolveReportingDocumentName(binding, tokenCtx);
+    const generatedAt = resolveReportingGeneratedAt(binding, tokenCtx);
     const templateId = await resolveReportingDiTemplateId(binding);
     const parentFolderId = await reportingDocumentFolderParentId(props.reportId, binding);
-    const documentName = `${title.value || binding.label} ${generatedAt.slice(0, 16).replace('T', ' ')}`;
 
     const result = await diGenerateFromTemplate(templateId, {
       parentFolderId,
@@ -684,30 +709,57 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
+    <BaseBreadcrumb v-if="!embedded" :title="page.title" :breadcrumbs="breadcrumbs" />
 
     <v-alert v-if="notFound" type="warning" variant="tonal" class="mb-4">
       {{ t('reporting.runner.notFound') }}
-      <v-btn class="ml-2" size="small" variant="text" @click="goBackToCatalog">
+      <v-btn
+        v-if="!embedded"
+        class="ml-2"
+        size="small"
+        variant="text"
+        @click="goBackToCatalog"
+      >
         {{ t('reporting.catalog.backToList') }}
       </v-btn>
     </v-alert>
 
     <v-alert v-else-if="accessDenied" type="error" variant="tonal" class="mb-4">
       {{ t('reporting.errors.accessDenied') }}
-      <v-btn class="ml-2" size="small" variant="text" @click="goBackToCatalog">
+      <v-btn
+        v-if="!embedded"
+        class="ml-2"
+        size="small"
+        variant="text"
+        @click="goBackToCatalog"
+      >
         {{ t('reporting.catalog.backToList') }}
       </v-btn>
     </v-alert>
 
     <template v-else>
       <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-3">
-        <v-btn variant="text" size="small" class="text-none px-0" @click="goBackToCatalog">
+        <v-btn
+          v-if="!embedded"
+          variant="text"
+          size="small"
+          class="text-none px-0"
+          @click="goBackToCatalog"
+        >
           <ArrowLeftIcon size="16" class="mr-1" />
           {{ t('reporting.catalog.backToList') }}
         </v-btn>
+        <div v-else class="text-subtitle-1 font-weight-medium text-truncate pe-2">
+          {{ title || t('reporting.runner.title') }}
+        </div>
         <div class="d-flex flex-wrap ga-2">
-          <v-btn variant="tonal" size="small" class="text-none" @click="openDesigner">
+          <v-btn
+            v-if="showAdminTools"
+            variant="tonal"
+            size="small"
+            class="text-none"
+            @click="openDesigner"
+          >
             <PencilIcon size="16" class="mr-1" />
             {{ t('reporting.runner.editDesign') }}
           </v-btn>
@@ -730,17 +782,6 @@ onBeforeUnmount(() => {
           >
             <DownloadIcon size="16" class="mr-1" />
             {{ t('reporting.runner.exportCsv') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            size="small"
-            class="text-none"
-            :loading="runLoading"
-            @click="runReport"
-          >
-            <RefreshIcon size="16" class="mr-1" />
-            {{ t('reporting.actions.run') }}
           </v-btn>
         </div>
       </div>
@@ -894,6 +935,18 @@ onBeforeUnmount(() => {
         <v-card-title class="d-flex align-center flex-wrap ga-2 py-3">
           <span class="text-subtitle-1 font-weight-medium">{{ title }}</span>
           <v-spacer />
+          <v-btn
+            v-if="!reportParameters.length"
+            color="primary"
+            variant="tonal"
+            size="small"
+            class="text-none"
+            :loading="runLoading"
+            @click="runReport"
+          >
+            <RefreshIcon size="16" class="mr-1" />
+            {{ t('reporting.actions.run') }}
+          </v-btn>
         </v-card-title>
 
         <v-divider />
@@ -932,7 +985,7 @@ onBeforeUnmount(() => {
           </v-alert>
 
           <div
-            v-if="reportingParametersReady(reportParameters, parameterValues)"
+            v-if="showAdminTools && reportingParametersReady(reportParameters, parameterValues)"
             class="d-flex flex-wrap align-center ga-3 mb-3"
           >
             <v-switch
@@ -947,7 +1000,7 @@ onBeforeUnmount(() => {
           </div>
 
           <v-expansion-panels
-            v-if="showDgQueryPanel && dgQuery != null"
+            v-if="showAdminTools && showDgQueryPanel && dgQuery != null"
             v-model="dgQueryExpanded"
             class="mb-3"
             variant="accordion"
@@ -1047,6 +1100,10 @@ onBeforeUnmount(() => {
                     :fields="schemaFields ?? []"
                     :list-config="listConfig"
                     :can-view-field="canViewColumn"
+                    :report-id="props.reportId"
+                    :report-title="title"
+                    :document-bindings="report?.documentBindings ?? []"
+                    enable-parent-row-documents
                   />
                 </td>
               </tr>

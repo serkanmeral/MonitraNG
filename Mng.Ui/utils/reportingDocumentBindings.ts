@@ -30,6 +30,11 @@ export function normalizeReportingDocumentBinding(raw: unknown): ReportingDocume
   const outputFolderSegments = Array.isArray(segsRaw)
     ? segsRaw.map((s) => String(s).trim()).filter(Boolean)
     : undefined;
+  const childTabId = String(o.childTabId ?? o.ChildTabId ?? '').trim() || undefined;
+  const documentNamePattern =
+    String(o.documentNamePattern ?? o.DocumentNamePattern ?? '').trim() || undefined;
+  const generatedAtPattern =
+    String(o.generatedAtPattern ?? o.GeneratedAtPattern ?? '').trim() || undefined;
   return {
     id,
     templateId,
@@ -37,6 +42,9 @@ export function normalizeReportingDocumentBinding(raw: unknown): ReportingDocume
     label,
     contextType,
     ...(outputFolderSegments?.length ? { outputFolderSegments } : {}),
+    ...(childTabId ? { childTabId } : {}),
+    ...(documentNamePattern ? { documentNamePattern } : {}),
+    ...(generatedAtPattern ? { generatedAtPattern } : {}),
   };
 }
 

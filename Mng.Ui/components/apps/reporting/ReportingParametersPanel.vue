@@ -54,10 +54,6 @@ const quarterItems = [
   { value: 4, title: 'Q4' },
 ];
 
-const hasSearchParam = computed(() =>
-  normalizedParameters.value.some((p) => p.widget === 'search')
-);
-
 function normalizePatch(patch: ReportingParameterValues): ReportingParameterValues {
   const out: ReportingParameterValues = {};
   for (const [key, value] of Object.entries(patch)) {
@@ -313,7 +309,6 @@ function updateRangeTo(paramId: string, value: string) {
       </template>
 
       <v-btn
-        v-if="hasSearchParam"
         color="primary"
         variant="tonal"
         size="small"

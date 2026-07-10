@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ChevronDownIcon, ChevronRightIcon, FolderIcon, FoldersIcon } from 'vue-tabler-icons';
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  FileTextIcon,
+  FolderIcon,
+  FoldersIcon,
+} from 'vue-tabler-icons';
 import type { DiTreeNode } from '@/types/apps/documentIntelligence';
 import { DI_ROOT_ID } from '@/types/apps/documentIntelligence';
 
@@ -79,6 +85,10 @@ const TOP_AREA_FOLDER_NAMES = new Set(['Sayfalar', 'Dökümanlar']);
 function isTopAreaFolder(name: string): boolean {
   return isRoot && TOP_AREA_FOLDER_NAMES.has(name);
 }
+
+function isFileNode(node: DiTreeNode): boolean {
+  return node.kind === 'file';
+}
 </script>
 
 <template>
@@ -131,7 +141,13 @@ function isTopAreaFolder(name: string): boolean {
               <ChevronRightIcon v-else size="18" />
             </v-btn>
             <span v-else class="di-tree__chevron-spacer mr-1" />
+            <FileTextIcon
+              v-if="isFileNode(node)"
+              size="18"
+              class="mr-2 flex-shrink-0 di-tree__icon-file"
+            />
             <FolderIcon
+              v-else
               size="18"
               :class="[
                 'mr-2 flex-shrink-0',
@@ -184,7 +200,12 @@ function isTopAreaFolder(name: string): boolean {
             <ChevronRightIcon v-else size="18" />
           </v-btn>
           <span v-else class="di-tree__chevron-spacer mr-1" />
-          <FolderIcon size="18" class="mr-2 di-tree__icon-folder flex-shrink-0" />
+          <FileTextIcon
+            v-if="isFileNode(node)"
+            size="18"
+            class="mr-2 flex-shrink-0 di-tree__icon-file"
+          />
+          <FolderIcon v-else size="18" class="mr-2 di-tree__icon-folder flex-shrink-0" />
           <span class="text-body-2 text-truncate flex-grow-1">{{ node.name }}</span>
         </div>
         <div v-show="isExpanded(node.id) && (node.children?.length || isNodeLoading(node.id))" class="di-tree__nested">
@@ -257,5 +278,8 @@ function isTopAreaFolder(name: string): boolean {
 }
 .di-tree__icon-folder {
   color: rgba(var(--v-theme-on-surface), 0.6);
+}
+.di-tree__icon-file {
+  color: rgba(var(--v-theme-primary), 0.85);
 }
 </style>
