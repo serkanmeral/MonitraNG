@@ -2,7 +2,7 @@
 
 **Son güncelleme:** 11 Temmuz 2026 (oturum kapanışı)  
 **Ortam:** Odak test `192.168.20.20` · lokal `npm run dev`  
-**Commit:** `7ed97936` — `feat(mng.ui): reporting viewer share/embed and export xlsx`  
+**Commit:** `664b90f5` — `feat(mng.ui): reporting viewer share/embed and export xlsx`  
 **Deploy:** UI (`mngui`) bu kapanışta · DG zaten test’te
 
 ---
