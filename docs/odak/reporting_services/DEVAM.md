@@ -2,57 +2,62 @@
 
 **Son güncelleme:** 10 Temmuz 2026 (oturum kapanışı)  
 **Ortam:** Odak test `192.168.20.20` · lokal `npm run dev`  
-**Commit:** `494635f1` — `feat(mng.ui): reporting expand designer, summary aggregate and designer UX`  
-**Deploy:** UI (`mngui`) Odak test’e alındı (`sync Mng.Ui` + `--no-cache`) · smoke `gateway=200 ui=200 oc_live=200`
+**Commit:** `f096ae36` — `feat(mng.ui,mngdatagateway): reporting year OR, summary search, child tab auth`  
+**Deploy:** DG (`mngdatagateway`) test’te · UI (`mngui`) bu kapanışta deploy
 
 ---
 
 ## Nerede kaldık
 
-**Generic raporlama (R2+ / R2b / R2c)** çalışır durumda ve test sunucuda canlı.
+**Generic raporlama (R2+ / R2b / R2c)** + kısa vadeli teknik borçlar tamam; Odak test’te DG güncel.
 
-Bu oturumda: Expand designer Faz 2, özet metrikler (count/sum + DG aggregate), designer UX (sol dikey sekmeler), Katılımcılar persons hücre düzeltmesi, major backlog kaydı. Commit + push + UI deploy tamam.
+Bu oturumda: Planlanan+yıl (`orDateFields`), DG tarih match deploy, summary+search, child tab yetkisi, side menu «Rapor kataloğu», debounce + `$contains`→`$regex` düzeltmeleri.
 
-**Sıradaki (önerilen):** kısa vadeli teknik borçtan biri (Planlanan+yıl / personel raporu smoke / child tab yetkisi) veya major backlog’dan seçim.
+**Sıradaki (önerilen):** major backlog’dan seçim (dokümantasyon entegrasyonu, otomatik raporlar, parametreler, export, linkleme, Dynamic Form, Viewer).
 
 ---
 
-## Bu oturumda tamamlananlar (10 Tem 2026)
+## Bu oturumda tamamlananlar (10 Tem 2026 — kısa vadeli)
 
-### Expand designer Faz 2
+### Planlanan + yıl (`orDateFields`)
 
-- `ReportingExpandLayoutPanel`: iç sekmeler **Ayarlar** | **Sekmeler**
-- `ReportingExpandChildTabsPanel`: sekme listesi; seçili sekmede **Bağlantı** | **Sütunlar** | **Özet**
-- Bağlantı: title, id, child dataset, linkField, parentField, emptyMessage, limit
-- Sütunlar: `ReportingListColumnsPanel` reuse (child şema)
-- Dataset değişince sütunlar yeni şemadan üretilir
+- Yıl parametresi: `(gerceklesenTarih ∈ yıl) OR (planlananTarih ∈ yıl)` — parametre coupling yok
+- Runtime: `yearOrDateRange` → `mongoMatch` (`POST /query`) + özet aynı match
+- Seed/migration: `orDateFields` artık silinmiyor; Eğitim listesine yazılıyor
 
-### Katılımcılar hücre düzeltmesi
+### DG tarih match
 
-- Kök neden: `personelId` **persons** expand → `firstName`/`lastName`/`username` (displayName yok)
-- `reportingListConfig`: persons label + eksik `relationDisplayField` fallback
-- Seed/migration: `personelId.displayName` kaldırıldı / temizlendi
-- Child tablo satır modeli ana raporla hizalandı (`reportingCellRawForColumn`)
+- `DatetimeMatchFilterExpander` test sunucuya deploy (`--no-cache`)
+- `$gte`/`$lte` gün sonu düzeltmesi (`$lte` → gün sonu)
+- Liste `POST /query`: string tarih (expander); aggregate: Extended JSON `$date` (UI coerce)
 
-### Özet metrikler (R2c POC)
+### Summary + search
 
-- Tipler: `ReportingSummaryConfig` / `ReportingSummaryMetric` (`count` | `sum`, placement: cards/footer/both/none)
-- Yer: rapor `summary` + child `tabs[].childList.summary`
-- Hesaplama: `POST /api/v1/data/{dataset}/aggregate` (`$match` + `$group`); tarih string → Extended JSON `$date`
-- UI: `ReportingSummaryCards`, `ReportingSummaryFooter`, `ReportingSummaryDesignerPanel`
-- Runner + designer önizleme + child liste bağlı
-- Seed: Eğitim listesi → üst kartlar (kayıt sayısı + `sureDakika` toplamı); Katılımcılar → footer count
+- Metin arama özet aggregate’ine yansır (şema `text` alanlarında `$regex`)
+- Relation araması özette yok (liste DG `?search=` ile relation da tarar — küçük sayı farkı olabilir)
 
-### Designer UX
+### Child tab yetkisi
 
-- Sol dikey sekmeler (OC workspace tanımları gibi; md+ dikey, dar ekranda yatay)
-- **Tasarım** ilk sekme (başlık, açıklama, kategori, dataset) — sol kart kaldırıldı
-- **Varsayılan filtreler** sekmesi kaldırıldı (`defaultFilters` modelde kaldı, geriye dönük)
+- `tabs[].visibilityPolicies` — sekme görünürlüğü
+- `tabs[].fieldPolicies` — child sütun yetkisi
+- Designer: Expand → Sekmeler → **Yetki**
+- Runtime: gizli sekme filtresi + child listede sütun gizleme
 
-### Dokümantasyon / backlog
+### Side menu
 
-- Major başlıklar kaydedildi (aşağıda)
-- `PLAN.md` fazları R2b/R2c güncellendi
+- `@side_menu`: **Raporlama** → **Rapor kataloğu** (`/apps/reporting`)
+- Script: `docs/odak/reporting_services/scripts/patch-reporting-side-menu.ps1`
+
+### Düzeltmeler
+
+- Gelişmiş filtre debounce (~450 ms)
+- `contains` / `startsWith` / `endsWith` → `$regex` (yıl aktifken POST match yolu)
+
+### Smoke (doğrulandı)
+
+- Tamamlanan + 2017: liste + kartlar uyumlu
+- Başlık içerir + yıl: 500 yok; debounce çalışıyor
+- Personel raporu / child yetki / menü: kullanıcı onayı
 
 ---
 
@@ -60,12 +65,9 @@ Bu oturumda: Expand designer Faz 2, özet metrikler (count/sum + DG aggregate), 
 
 ### Kısa vadeli / teknik borç
 
-1. **Planlanan + yıl** — yıl filtresi şu an `gerceklesenTarih`; Planlanan sekmesinde `planlananTarih` (coupling olmadan) tartış/uygula
-2. **DG deploy** — `DatetimeMatchFilterExpander` test sunucuya (POST `/query` / aggregate tarih match kalitesi)
-3. **Personel eğitim geçmişi** (`rpt_odak_egitim_person`) smoke test
-4. **Summary + search** — metin arama henüz aggregate özetine dahil değil
-5. **Sekme sütun yetkisi / sekme görünürlüğü** — child tab `fieldPolicies` / `visibilityPolicies` (konuşuldu, ertelendi)
-6. **Side menu / katalog** — production menü hazırlığı
+*(Bu turda kapatıldı.)*
+
+Kalan ince fark: özet araması relation alanlarını kapsamaz (major / parametre iyileştirmesi kapsamında ele alınabilir).
 
 ### Major başlıklar (yol haritası)
 
@@ -73,7 +75,7 @@ Bu oturumda: Expand designer Faz 2, özet metrikler (count/sum + DG aggregate), 
 |---|--------|-----|
 | 1 | **Dokümantasyon entegrasyonu** | Rapor / alan yardımı, sözlük, DI veya yardım paneli köprüsü |
 | 2 | **Otomatik raporlar** | Zamanlanmış çalıştırma, e-posta / bildirim, abonelik |
-| 3 | **Rapor parametreleri iyileştirmesi** | UX, bağımlı alanlar, search’ün özete yansıması, daha zengin binding’ler |
+| 3 | **Rapor parametreleri iyileştirmesi** | UX, bağımlı alanlar, relation search’ün özete yansıması, daha zengin binding’ler |
 | 4 | **Export geliştirmeleri** | CSV ötesi (Excel, PDF, seçili sütun, özet satırları) |
 | 5 | **Rapor linklemeleri** | Raporlar arası / satır → başka rapor / deep link parametreleri |
 | 6 | **Dynamic Form seçenekleri** | Form benzeri parametre / filtre UI; OC form desenleri |
@@ -85,15 +87,18 @@ Bu oturumda: Expand designer Faz 2, özet metrikler (count/sum + DG aggregate), 
 
 ## Nasıl denerim
 
-1. **Lokal:** `Mng.Ui` → `npm run dev` → `/apps/reporting` · designer · runner `rpt_odak_egitim_trainings`
-2. **Test sunucu:** http://192.168.20.20:3000/apps/reporting
+1. **Lokal:** `Mng.Ui` → `npm run dev` → `/apps/reporting`
+2. **Test sunucu:** http://192.168.20.20:3000/apps/reporting (UI deploy sonrası)
+3. Menü: **Raporlama** → **Rapor kataloğu**
 
 **Smoke:**
 
-- [ ] Expand → Katılımcılar: personel adları dolu (tire değil)
-- [ ] Rapor özet kartları: kayıt sayısı + süre toplamı (filtreli aggregate)
-- [ ] Katılımcılar footer: katılımcı sayısı
-- [ ] Designer: sol sekmeler · Tasarım / Expand (Ayarlar+Sekmeler) / Özet
+- [ ] Planlanan + yıl → `planlananTarih` ile kayıtlar
+- [ ] Tamamlanan + yıl → liste + özet kartları uyumlu
+- [ ] Gelişmiş filtre «içerir» + yıl → hata yok; yazarken debounce
+- [ ] Arama → özet kartları da daralsın
+- [ ] Expand → Katılımcılar Yetki (sekme/sütun)
+- [ ] Sol menü: Rapor kataloğu
 
 ---
 
@@ -102,14 +107,13 @@ Bu oturumda: Expand designer Faz 2, özet metrikler (count/sum + DG aggregate), 
 | Alan | Dosya |
 |------|--------|
 | Tipler | `Mng.Ui/types/apps/reporting.ts` |
-| Summary | `Mng.Ui/utils/reportingSummary.ts`, `ReportingSummaryCards/Footer/DesignerPanel.vue` |
-| Expand tabs designer | `ReportingExpandLayoutPanel.vue`, `ReportingExpandChildTabsPanel.vue` |
-| Child liste | `ReportingChildListPanel.vue` |
-| Persons label | `Mng.Ui/utils/reportingListConfig.ts` |
+| Yıl OR / match | `reportingParameterModel.ts`, `reportingMongoMatch.ts`, `reportingParameters.ts` |
+| Summary + search | `reportingSummary.ts` |
+| Child tab yetki | `ReportingExpandPanel.vue`, `ReportingChildListPanel.vue`, `ReportingExpandChildTabsPanel.vue`, `reportingReportAccess.ts` |
 | Seed / migration | `reportingOdakEgitimSeeds.ts`, `reportingOdakEgitimExpandMigrations.ts` |
-| Designer | `ReportingDesignerView.vue` |
-| Katalog parse | `reportingCatalogStorage.ts` |
-| Plan / devam | `docs/odak/reporting_services/PLAN.md`, `DEVAM.md` |
+| DG tarih | `DatetimeMatchFilterExpander.cs` |
+| Side menu | `docs/odak/reporting_services/scripts/patch-reporting-side-menu.ps1` |
+| Plan / devam | `PLAN.md`, `DEVAM.md` |
 
 ---
 
@@ -117,6 +121,6 @@ Bu oturumda: Expand designer Faz 2, özet metrikler (count/sum + DG aggregate), 
 
 - Test: `192.168.20.20`
 - UI deploy: kullanıcı talebi ile (`deploy-odak-apps.ps1 -Services mngui`)
-- Backend deploy: DG ayrı
+- Backend deploy: DG ayrı (bu oturumda yapıldı)
 - Commit/push: yalnızca talep edilince
-- SSH bilgileri: `docs/odak/operationcore` · şifre oturumda verildiğinde kullanılır
+- SSH: `docs/odak/operationcore` · şifre oturumda verildiğinde kullanılır

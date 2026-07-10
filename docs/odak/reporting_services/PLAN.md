@@ -1,8 +1,8 @@
 # Reporting Services — Plan
 
 **Son güncelleme:** 10 Temmuz 2026  
-**Ortam:** Odak test `192.168.20.20` · UI deploy edildi (`494635f1`)  
-**Durum:** R2 + R2b (expand designer) + R2c (summary aggregate) · Odak Eğitim POC canlı
+**Ortam:** Odak test `192.168.20.20` · DG + UI (oturum kapanışı deploy)  
+**Durum:** R2 + R2b + R2c · kısa vadeli borç kapandı · Odak Eğitim POC canlı
 
 ## Amaç
 
@@ -14,11 +14,11 @@ Kullanıcıların DG dataset’lerinden parametreli **tablo raporları** tasarla
 |-------|------------|--------|
 | **Data Source** | DG dataset | ✅ Seçim + şema |
 | **Tablo** | Kolon + sıralama + sayfalama | ✅ |
-| **Parametreler** | Durum sekmesi, yıl, arama, kişi | ✅ Bağımsız AND · 🔲 iyileştirme major |
-| **Expand** | Satır detayı + bağlı dataset sekmeleri | ✅ Runtime + designer (Bağlantı/Sütunlar/Özet) |
-| **Özet** | count/sum · cards/footer · DG aggregate | ✅ POC |
-| **Katalog** | Rapor tanımı (localStorage) | ✅ |
-| **Yetki** | Sütun + rapor görünürlüğü | ✅ · 🔲 child tab yetkisi |
+| **Parametreler** | Durum sekmesi, yıl (`orDateFields`), arama, kişi | ✅ Bağımsız AND · 🔲 iyileştirme major |
+| **Expand** | Satır detayı + bağlı dataset sekmeleri | ✅ Runtime + designer (Bağlantı/Sütunlar/Özet/Yetki) |
+| **Özet** | count/sum · cards/footer · DG aggregate (+ text search) | ✅ POC |
+| **Katalog** | Rapor tanımı (localStorage) | ✅ · menü: Rapor kataloğu |
+| **Yetki** | Sütun + rapor + child sekme/sütun | ✅ |
 | **Viewer** | Salt okunur / paylaşımlı görüntüleyici | 🔲 Major |
 | **Otomatik raporlar** | Zamanlama + dağıtım | 🔲 Major |
 | **Export** | CSV ötesi | 🔲 Major (CSV var) |
@@ -31,9 +31,9 @@ Kullanıcıların DG dataset’lerinden parametreli **tablo raporları** tasarla
 
 ```
 Report definition (local catalog)
-  → parameters → AfListFilter[] (GET ?filter=)
+  → parameters → AfListFilter[] (+ orDateFields → POST /query match)
   → expand.tabs[] → child dataset (linkField = parent __dataId)
-  → summary → POST /aggregate ($match + $group)
+  → summary → POST /aggregate ($match + optional search $regex + $group)
         ↓
 Table + expand panel + cards/footer
 ```
@@ -60,19 +60,20 @@ Table + expand panel + cards/footer
 6. Dynamic Form seçenekleri  
 7. Viewer sayfası  
 
-Detay, oturum notları ve kısa vadeli eksikler: [DEVAM.md](DEVAM.md)
+Detay ve oturum notları: [DEVAM.md](DEVAM.md)
 
 ## Odak Eğitim POC
 
 - Rapor: `rpt_odak_egitim_trainings` — dataset `odak_egitimler`
-- Parametreler: durum, yıl (`gerceklesenTarih`), arama
-- Expand: Genel + **Katılımcılar** (persons label düzeltildi)
-- Özet: kartlar (kayıt + süre) · katılımcı footer count
-- Designer: sol dikey sekmeler · Tasarım ilk sekme
+- Parametreler: durum, yıl (`orDateFields`: gerceklesen + planlanan), arama
+- Expand: Genel + **Katılımcılar** (yetki paneli dahil)
+- Özet: kartlar (kayıt + süre) · katılımcı footer count · arama yansır
+- Menü: Raporlama → Rapor kataloğu
 
 ## İlgili kod
 
 - UI: `Mng.Ui/pages/apps/reporting/` · `components/apps/reporting/`
 - Seed: `reportingOdakEgitimSeeds.ts` · `reportingOdakEgitimExpandMigrations.ts`
-- Summary: `reportingSummary.ts`
-- DG: `FilterParser`, `DatetimeMatchFilterExpander`, `POST …/aggregate`
+- Match / summary: `reportingMongoMatch.ts` · `reportingSummary.ts`
+- DG: `FilterParser`, `DatetimeMatchFilterExpander`, `POST …/query` · `POST …/aggregate`
+- Side menu: `docs/odak/reporting_services/scripts/patch-reporting-side-menu.ps1`
