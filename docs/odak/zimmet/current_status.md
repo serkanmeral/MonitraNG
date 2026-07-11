@@ -1,6 +1,6 @@
 # Zimmet — current_status
 
-**Son güncelleme:** 11 Temmuz 2026 (commit `6403d345` + `mngui` deploy)  
+**Son güncelleme:** 11 Temmuz 2026 (commit `6403d345` + `mngui`/`mngoperations`/`mngdocument` deploy)  
 **Ortam:** Odak test (`192.168.20.20`)  
 **Servis odağı:** MngOperations + Mng.Ui + MngDocument + Reporting / DI
 
@@ -9,7 +9,7 @@
 ## Son çalışılan konu
 
 Zimmet dikeyi kapanış: **OC-1/OC-2**, çoklu iade, **Reporting katalog**, **DI tutanaklar (DOCX)** + “DI’da aç” yeni sekme.  
-Kod: `6403d345` → GitHub `main`. UI Odak deploy: `mngui` (ui=200).
+Kod: `6403d345` → GitHub `main`. Odak deploy: `mngui` + `mngoperations` + `mngdocument` (healthy).
 
 ---
 

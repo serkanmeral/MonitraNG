@@ -3,7 +3,7 @@
 **Son güncelleme:** 11 Temmuz 2026 (commit + UI deploy sonrası)  
 **Durum:** ✅ Uçtan uca çekirdek süreç Odak test’te hazır (GIR → demirbaş → verme → iade → raporlar → DI belgeler)  
 **Commit:** `6403d345` — `feat(odak/zimmet): OC rules, reporting catalog, and DI tutanaklar` (GitHub `main`)  
-**Deploy:** `mngui` Odak test’e alındı (`gateway=200 ui=200`); Ctrl+F5  
+**Deploy:** `mngui` + `mngoperations` + `mngdocument` (NoCache) Odak test’te; `gateway/ui/oc/doc=200`; Ctrl+F5  
 **Sıradaki (önerilen):** OC geçişinden otomatik tutanak · demirbaş expand zimmet WI geçmişi · (isteğe bağlı) F4 satınalma / hurda
 
 **Plan:** [PLAN.md](./PLAN.md) · **Özet:** [README.md](./README.md) · **Durum:** [current_status.md](./current_status.md)
@@ -113,5 +113,4 @@ Script: `scripts/seed-operation-core-zimmet.ps1` · `seed/zimmet-oc-seed.json`
 - Seed ID’leri **Odak test**’e özgü; prod’da yeniden üretilir.  
 - `receive_return` zorunlu alanları boş (formda zaten dolu; geçişte picker kilitlenmesin diye).  
 - Profil layout hem `demirbasIds` hem `demirbasId` içerir; boş alanlar gizlenir.  
-- UI deploy (11 Temmuz): `sync-odak-source.ps1 -Paths Mng.Ui` + `deploy-odak-apps.ps1 -Services mngui` — OK.  
-- Bu commit’te `MngOperations` / `MngDocument` kodu da var; Odak’ta DI factory veya OC executor değiştiyse ilgili servisleri ayrıca deploy etmek gerekir (`mngoperations`, `mngdocument`).
+- Deploy (11 Temmuz): `mngui` + `mngoperations` + `mngdocument` (-NoCache) — OK (`oc=200`, `doc=200`).
