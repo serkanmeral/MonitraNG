@@ -54,6 +54,7 @@
 | ID | İş |
 |----|-----|
 | **R6** | `ruleType: automation` + actions: `addWatcher`, `createNotification`, `sendEmailViaMngNotifiers`, `createActivity` |
+| **R6-CDR** | `createDatasetRows` aksiyon editörü — [OC_UI_CREATE_DATASET_ROWS.md](./OC_UI_CREATE_DATASET_ROWS.md) · MO: [CREATE_DATASET_ROWS_ACTION_SPEC.md](../mngoperations/CREATE_DATASET_ROWS_ACTION_SPEC.md) |
 | **R7** | Liste filtreleri + sıralama (priority, ad) |
 | **R8** | Form «Alan politikaları» → alan bazlı ilgili kurallar chip (F7 backlog ile birleşik) |
 

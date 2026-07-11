@@ -36,6 +36,8 @@ public class WorkItemCommandService : IWorkItemCommandService
     private readonly INotificationOrchestrator _notifications;
     private readonly IMngWorkflowClient _workflowClient;
     private readonly IWorkspaceAutomationService _workspaceAutomations;
+    private readonly ICreateDatasetRowsActionExecutor _createDatasetRows;
+    private readonly IUpdateDatasetRowsActionExecutor _updateDatasetRows;
     private readonly ILogger<WorkItemCommandService> _logger;
 
     private static readonly HashSet<string> PatchForbiddenKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -58,6 +60,8 @@ public class WorkItemCommandService : IWorkItemCommandService
         INotificationOrchestrator notifications,
         IMngWorkflowClient workflowClient,
         IWorkspaceAutomationService workspaceAutomations,
+        ICreateDatasetRowsActionExecutor createDatasetRows,
+        IUpdateDatasetRowsActionExecutor updateDatasetRows,
         ILogger<WorkItemCommandService> logger)
     {
         _requestContext = requestContext;
@@ -73,6 +77,8 @@ public class WorkItemCommandService : IWorkItemCommandService
         _notifications = notifications;
         _workflowClient = workflowClient;
         _workspaceAutomations = workspaceAutomations;
+        _createDatasetRows = createDatasetRows;
+        _updateDatasetRows = updateDatasetRows;
         _logger = logger;
     }
 
@@ -347,6 +353,23 @@ public class WorkItemCommandService : IWorkItemCommandService
             token,
             cancellationToken);
 
+        // createDatasetRows (failTransition): run before WI persist so a failure does not leave Kapalı without rows.
+        await ExecuteAutomationSideEffectsAsync(
+            merged,
+            workspaceId,
+            GetString(existing, "typeId"),
+            GetString(existing, "boardId"),
+            toStateId,
+            RuleTriggers.WorkItemTransitioned,
+            workItemId,
+            GetString(existing, "key") ?? workItemId,
+            token,
+            cancellationToken,
+            transitionKey,
+            currentStateId,
+            toStateId,
+            CreateDatasetRowsEffectFilter.Only);
+
         var now = DateTime.UtcNow;
         merged["stateId"] = toStateId;
         merged["lastStateChangeAt"] = now;
@@ -435,7 +458,8 @@ public class WorkItemCommandService : IWorkItemCommandService
                 cancellationToken,
                 transitionKey,
                 currentStateId,
-                toStateId),
+                toStateId,
+                CreateDatasetRowsEffectFilter.Exclude),
             snapshot);
 
         await RunPipelineSideEffectAsync(
@@ -1828,7 +1852,8 @@ public class WorkItemCommandService : IWorkItemCommandService
         CancellationToken cancellationToken,
         string? transitionKey = null,
         string? fromStateId = null,
-        string? toStateId = null)
+        string? toStateId = null,
+        CreateDatasetRowsEffectFilter createDatasetRowsFilter = CreateDatasetRowsEffectFilter.Include)
     {
         var context = BuildRuleContext(
             workItem,
@@ -1847,7 +1872,16 @@ public class WorkItemCommandService : IWorkItemCommandService
 
         foreach (var effect in result.SideEffects)
         {
-            switch (effect.Type.ToLowerInvariant())
+            var effectType = effect.Type.ToLowerInvariant();
+            var isDatasetRowsMutation =
+                effectType is "createdatasetrows" or "updatedatasetrows";
+
+            if (isDatasetRowsMutation && createDatasetRowsFilter == CreateDatasetRowsEffectFilter.Exclude)
+                continue;
+            if (!isDatasetRowsMutation && createDatasetRowsFilter == CreateDatasetRowsEffectFilter.Only)
+                continue;
+
+            switch (effectType)
             {
                 case "createactivity":
                     var summary = effect.Payload.TryGetValue("summary", out var s) ? s?.ToString() : "Rule automation activity";
@@ -1894,8 +1928,69 @@ public class WorkItemCommandService : IWorkItemCommandService
                         token,
                         cancellationToken);
                     break;
+                case "createdatasetrows":
+                {
+                    var createResult = await _createDatasetRows.ExecuteAsync(
+                        effect.Payload,
+                        workItem,
+                        workItemId,
+                        workItemKey,
+                        token,
+                        cancellationToken);
+
+                    if (!createResult.SkippedIdempotent && createResult.CreatedCount > 0)
+                    {
+                        await WriteActivityAsync(
+                            workItemId,
+                            workItemKey,
+                            "DatasetRowsCreated",
+                            $"createDatasetRows → {createResult.Dataset}: {createResult.CreatedCount} satır",
+                            token,
+                            cancellationToken,
+                            new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                            {
+                                ["dataset"] = createResult.Dataset,
+                                ["createdCount"] = createResult.CreatedCount,
+                                ["createdIds"] = createResult.CreatedIds.Take(20).ToList()
+                            });
+                    }
+
+                    break;
+                }
+                case "updatedatasetrows":
+                {
+                    var updateResult = await _updateDatasetRows.ExecuteAsync(
+                        effect.Payload,
+                        workItem,
+                        workItemId,
+                        workItemKey,
+                        token,
+                        cancellationToken);
+
+                    if (updateResult.UpdatedCount > 0)
+                    {
+                        await WriteActivityAsync(
+                            workItemId,
+                            workItemKey,
+                            "DatasetRowsUpdated",
+                            $"updateDatasetRows → {updateResult.Dataset}: {updateResult.UpdatedCount} satır",
+                            token,
+                            cancellationToken,
+                            new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                            {
+                                ["dataset"] = updateResult.Dataset,
+                                ["updatedCount"] = updateResult.UpdatedCount,
+                                ["updatedIds"] = updateResult.UpdatedIds.Take(20).ToList()
+                            });
+                    }
+
+                    break;
+                }
             }
         }
+
+        if (createDatasetRowsFilter == CreateDatasetRowsEffectFilter.Only)
+            return;
 
         if (result.FieldMutations.Count > 0)
         {
@@ -1912,6 +2007,13 @@ public class WorkItemCommandService : IWorkItemCommandService
                 _logger.LogWarning(ex, "Automation field mutation failed for work item {WorkItemId}", workItemId);
             }
         }
+    }
+
+    private enum CreateDatasetRowsEffectFilter
+    {
+        Include,
+        Only,
+        Exclude
     }
 
     private async Task ExecuteStartWorkflowSideEffectAsync(

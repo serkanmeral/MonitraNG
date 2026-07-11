@@ -1,0 +1,31 @@
+{
+  "name": "Personel Zimmet — Teslimde demirbas zimmetle",
+  "workspaceId": "{{wsZimId}}",
+  "ruleType": "automation",
+  "trigger": "WorkItemTransitioned",
+  "isActive": true,
+  "priority": 100,
+  "typeId": "{{typeZimmetVermeId}}",
+  "transitionKey": "deliver",
+  "actions": [
+    {
+      "type": "updateDatasetRows",
+      "dataset": "zimmet_demirbaslar",
+      "onError": "failTransition",
+      "cardinality": {
+        "mode": "expand",
+        "itemsFrom": "fields.demirbasIds",
+        "itemAs": "id"
+      },
+      "targetId": {
+        "source": "item",
+        "path": "value"
+      },
+      "fieldMappings": [
+        { "target": "durum", "source": "static", "value": "zimmetli" },
+        { "target": "zimmetliPersonelId", "source": "field", "path": "fields.personelId" },
+        { "target": "zimmetRef", "source": "field", "path": "key" }
+      ]
+    }
+  ]
+}

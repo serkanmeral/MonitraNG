@@ -136,6 +136,8 @@ const useReadonlyDisplay = computed(
   () =>
     fieldDisabled.value &&
     !isRichTextWidget.value &&
+    // Dataset picker: keep OcLookupDatasetPickerField so profile shows the same chips as create.
+    !isDatasetPickerWidget.value &&
     // tags HARİÇ: tags readonly'de de OcTagSelector ile renkli chip gösterir (düz metin değil).
     (isGroupField.value ||
       ((isSelectWidget.value || isPersonsWidget.value) && hasFieldDisplay.value) ||
@@ -291,6 +293,9 @@ function onSelectUpdate(value: unknown) {
       :field-class="fieldClass"
       :label-field-key="lookupConfig?.labelField"
       :search-field-keys="lookupConfig?.searchFields ?? []"
+      :lookup-config="lookupConfig"
+      :selection-min="lookupConfig?.selection?.min"
+      :selection-max="lookupConfig?.selection?.max"
     />
     <template #fallback>
       <v-skeleton-loader type="text" />

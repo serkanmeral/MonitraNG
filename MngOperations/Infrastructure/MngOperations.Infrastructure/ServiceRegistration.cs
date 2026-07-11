@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MngOperations.Application.Configuration;
 using MngOperations.Application.Diagnostics;
 using MngOperations.Application.Interfaces;
+using MngOperations.Application.Rules;
 using MngOperations.Infrastructure.Clients;
 using MngOperations.Infrastructure.Services;
 
@@ -70,6 +71,8 @@ public static class ServiceRegistration
         services.AddScoped<IWorkItemKeyGenerator, WorkItemKeyGenerator>();
         services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();
         services.AddScoped<IRuleEngine, RuleEngineService>();
+        services.AddScoped<ICreateDatasetRowsActionExecutor, CreateDatasetRowsActionExecutor>();
+        services.AddScoped<IUpdateDatasetRowsActionExecutor, UpdateDatasetRowsActionExecutor>();
         services.AddScoped<IFieldBehaviorResolver, FieldBehaviorResolverService>();
         services.AddScoped<ISlaCalculator, SlaCalculatorService>();
         services.AddScoped<IWorkItemTimelineService, WorkItemTimelineService>();

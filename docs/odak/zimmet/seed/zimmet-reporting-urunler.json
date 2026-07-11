@@ -1,0 +1,97 @@
+{
+  "category": {
+    "id": "rcat_zimmet",
+    "parentId": null,
+    "ancestorIds": [],
+    "name": "Zimmet",
+    "description": "Zimmet ve demirbaş raporları",
+    "sortOrder": 20,
+    "status": "active",
+    "createdBy": "system"
+  },
+  "report": {
+    "id": "rpt_zimmet_urunler",
+    "title": "Ürün kataloğu",
+    "description": "Zimmet ürün katalog tanımları (marka, model, grup).",
+    "categoryId": "rcat_zimmet",
+    "datasetName": "zimmet_urunler",
+    "listConfig": {
+      "enableSearch": false,
+      "defaultSortBy": "kod",
+      "defaultSortOrder": "asc",
+      "columns": [
+        { "fieldName": "kod", "title": "Ürün kodu", "visible": true, "order": 1, "sortable": true, "filterable": true, "width": 140 },
+        { "fieldName": "ad", "title": "Ürün adı", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        {
+          "fieldName": "urunGrubuId",
+          "title": "Ürün grubu",
+          "visible": true,
+          "order": 3,
+          "sortable": false,
+          "filterable": true,
+          "width": 140,
+          "relationDisplayField": "ad"
+        },
+        { "fieldName": "marka", "title": "Marka", "visible": true, "order": 4, "sortable": true, "filterable": true, "width": 120 },
+        { "fieldName": "model", "title": "Model", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 140 },
+        {
+          "fieldName": "varsayilanGarantiAy",
+          "title": "Garanti (ay)",
+          "visible": true,
+          "order": 6,
+          "sortable": true,
+          "filterable": true,
+          "width": 110
+        },
+        {
+          "fieldName": "aktif",
+          "title": "Aktif",
+          "visible": true,
+          "order": 7,
+          "sortable": true,
+          "filterable": true,
+          "width": 80,
+          "format": { "type": "none", "valueMap": { "true": "Evet", "false": "Hayır" } }
+        }
+      ]
+    },
+    "expand": {
+      "enabled": true,
+      "hideEmptyFields": true,
+      "heading": "Ürün detayı",
+      "intro": "",
+      "sections": [
+        {
+          "key": "detail",
+          "title": "Genel",
+          "cols": 12,
+          "fields": ["kod", "ad", "urunGrubuId", "marka", "model", "varsayilanGarantiAy", "aktif", "aciklama"]
+        }
+      ],
+      "fieldCols": {
+        "kod": 6,
+        "ad": 6,
+        "urunGrubuId": 6,
+        "marka": 6,
+        "model": 6,
+        "varsayilanGarantiAy": 6,
+        "aktif": 6,
+        "aciklama": 12
+      },
+      "actions": [],
+      "tabs": [],
+      "defaultTabId": "fields"
+    },
+    "fieldPolicies": { "policiesByField": {} },
+    "defaultFilters": [],
+    "visibilityPolicies": [],
+    "parameters": [],
+    "summary": {
+      "placement": "cards",
+      "metrics": [
+        { "id": "count", "label": "Ürün sayısı", "kind": "count", "format": "integer" }
+      ]
+    },
+    "documentBindings": []
+  }
+}

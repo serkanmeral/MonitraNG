@@ -9,6 +9,10 @@
     "enableSearch": true,
     "defaultSortBy": "ad",
     "defaultSortOrder": "asc",
+    "listView": {
+      "mode": "report",
+      "reportId": "rpt_zimmet_urunler"
+    },
     "columns": [
       { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
       { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },

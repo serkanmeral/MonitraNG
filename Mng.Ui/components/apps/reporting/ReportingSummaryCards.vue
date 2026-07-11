@@ -9,22 +9,24 @@ defineProps<{
   config: ReportingSummaryConfig;
   values: ReportingSummaryValues;
   loading?: boolean;
+  /** Smaller cards for runner chrome. */
+  dense?: boolean;
 }>();
 </script>
 
 <template>
-  <v-row dense class="mb-3">
+  <v-row dense :class="dense ? 'mb-2' : 'mb-3'">
     <v-col
       v-for="metric in config.metrics"
       :key="metric.id"
-      cols="12"
-      sm="6"
-      md="4"
-      lg="3"
+      :cols="dense ? 6 : 12"
+      :sm="dense ? 4 : 6"
+      :md="dense ? 3 : 4"
+      :lg="dense ? 2 : 3"
     >
-      <v-card variant="outlined" class="pa-3 h-100">
+      <v-card variant="outlined" :class="dense ? 'pa-2 h-100' : 'pa-3 h-100'">
         <div class="text-caption text-medium-emphasis mb-1">{{ metric.label }}</div>
-        <div class="text-h5 font-weight-medium">
+        <div :class="dense ? 'text-h6 font-weight-medium' : 'text-h5 font-weight-medium'">
           <v-skeleton-loader v-if="loading" type="text" width="80" />
           <template v-else>
             {{ formatReportingSummaryValue(values[metric.id], metric.format) }}

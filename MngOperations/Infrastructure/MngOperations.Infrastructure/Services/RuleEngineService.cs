@@ -201,6 +201,30 @@ public sealed class RuleEngineService : IRuleEngine
                     });
                     break;
                 }
+                case "createdatasetrows":
+                {
+                    sideEffects.Add(new RuleSideEffect
+                    {
+                        Type = "createDatasetRows",
+                        Payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["actionJson"] = action.GetRawText()
+                        }
+                    });
+                    break;
+                }
+                case "updatedatasetrows":
+                {
+                    sideEffects.Add(new RuleSideEffect
+                    {
+                        Type = "updateDatasetRows",
+                        Payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["actionJson"] = action.GetRawText()
+                        }
+                    });
+                    break;
+                }
                 default:
                     break;
             }

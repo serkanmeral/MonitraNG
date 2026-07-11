@@ -76,13 +76,33 @@ export default defineEventHandler(async (event) => {
     });
   } catch (error: any) {
     const statusCode = error.statusCode || error.status || 500;
-    const statusMessage = error.statusMessage || error.message || 'MngOperations API hatası';
     let errorData = error.data;
+
+    const resolveUserMessage = (data: unknown, fallback: string): string => {
+      if (!data || typeof data !== 'object') return fallback;
+      const d = data as Record<string, unknown>;
+      if (typeof d.messageTr === 'string' && d.messageTr.trim()) return d.messageTr.trim();
+      if (typeof d.message === 'string' && d.message.trim()) {
+        const m = d.message.trim();
+        const lower = m.toLowerCase();
+        if (lower !== 'bad request' && lower !== 'internal server error') return m;
+      }
+      const nestedError = d.error;
+      if (nestedError && typeof nestedError === 'object') {
+        const e = nestedError as Record<string, unknown>;
+        if (typeof e.message === 'string' && e.message.trim()) return e.message.trim();
+      }
+      return fallback;
+    };
+
+    const fallbackStatus = error.statusMessage || error.message || 'MngOperations API hatası';
+    const statusMessage = resolveUserMessage(errorData, fallbackStatus);
 
     if (errorData && typeof errorData === 'object' && 'error' in errorData) {
       throw createError({
         statusCode,
         statusMessage,
+        message: statusMessage,
         data: errorData,
       });
     }
@@ -90,6 +110,7 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode,
       statusMessage,
+      message: statusMessage,
       data: errorData || { error: statusMessage },
     });
   } finally {

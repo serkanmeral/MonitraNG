@@ -2,6 +2,7 @@
 
 **Son güncelleme:** 9 Haziran 2026  
 **Durum:** L1–L5 uygulandı (dataset lookup, statik select, dependsOn, modal picker, MO readonly labelField)  
+**Sonraki:** Zengin tablo seçici + multiselect — [OC_UI_DATASET_TABLE_PICKER.md](./OC_UI_DATASET_TABLE_PICKER.md) (TP-0…TP-ZIM)  
 **Kod:** `Mng.Ui/utils/ocLookupFieldOptions.ts` · `useOcDynamicFormLookups.ts` · `useOcDatasetPicker.ts` · `OcLookupDatasetPickerField.client.vue`
 
 ---
@@ -113,6 +114,7 @@ Persist: `valueField` değeri (varsayılan `__dataId`). `cardinality: multi` →
 | L3 | `dependsOn` cascade | ✅ UI temel |
 | L4 | `useOcDatasetPicker` modal | ✅ |
 | L5 | MO profil/aktivite `labelField` | ✅ |
+| **TP-*** | Zengin kolonlar + multiselect tablo seçici | 📋 [OC_UI_DATASET_TABLE_PICKER.md](./OC_UI_DATASET_TABLE_PICKER.md) |
 
 ---
 

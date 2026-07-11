@@ -122,11 +122,58 @@ $fieldSeriNoListesi = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Fil
     key = "seriNoListesi"; label = "Seri no listesi"; fieldType = "text"; scope = "pool"; category = "technical"
 }
 
+$demirbasPickerColumns = @(
+    @{ field = "demirbasNo"; title = "Demirbas no"; sortable = $true; filterable = $true; width = 120 }
+    @{ field = "seriNo"; title = "Seri no"; sortable = $true; filterable = $true }
+    @{ field = "durum"; title = "Durum"; filterable = $true; format = "enum"; enumMap = @{
+            depoda = "Depoda"; zimmetli = "Zimmetli"; bakimda = "Bakimda"; hurda = "Hurda"; kayip = "Kayip"
+        }
+    }
+    @{ field = "katalogUrunId"; title = "Urun"; format = "relationLabel" }
+    @{ field = "depoId"; title = "Depo"; format = "relationLabel" }
+)
+
+# Iade: multi demirbas (zimmetli + personel dependsOn). Key stays demirbasId for existing WIs.
 $fieldDemirbasId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:demirbasId" -Label "demirbasId" -Body @{
-    key = "demirbasId"; label = "Demirbas"; fieldType = "relation"; scope = "pool"; category = "reference"
+    key = "demirbasId"; label = "Demirbaslar"; fieldType = "relation"; scope = "pool"; category = "reference"
+    cardinality = "multi"
     relationDatasetName = "zimmet_demirbaslar"
-    options = (New-ZimmetLookupOptions -DatasetName "zimmet_demirbaslar" -LabelField "demirbasNo" -SearchFields @("demirbasNo", "seriNo") -Filter "durum:eq:depoda")
+    options = (New-ZimmetLookupOptions -DatasetName "zimmet_demirbaslar" -LabelField "demirbasNo" `
+        -SearchFields @("demirbasNo", "seriNo") -Filter "durum:eq:zimmetli" -Presentation "picker" `
+        -Columns $demirbasPickerColumns -DefaultSort @{ field = "demirbasNo"; dir = "asc" } `
+        -DependsOn @{ fieldKey = "personelId"; filterTemplate = "zimmetliPersonelId:eq:{{parentValue}}" } `
+        -Selection @{ mode = "multi"; min = 1; max = 50; displayFields = @("katalogUrunId", "demirbasNo"); displaySeparator = " · " })
 }
+# Force-refresh lookup options (Find-ZimmetOrCreate may skip body on existing)
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_fields/$fieldDemirbasId" -Body @{
+    key = "demirbasId"; label = "Demirbaslar"; fieldType = "relation"; scope = "pool"; category = "reference"
+    cardinality = "multi"
+    relationDatasetName = "zimmet_demirbaslar"
+    options = (New-ZimmetLookupOptions -DatasetName "zimmet_demirbaslar" -LabelField "demirbasNo" `
+        -SearchFields @("demirbasNo", "seriNo") -Filter "durum:eq:zimmetli" -Presentation "picker" `
+        -Columns $demirbasPickerColumns -DefaultSort @{ field = "demirbasNo"; dir = "asc" } `
+        -DependsOn @{ fieldKey = "personelId"; filterTemplate = "zimmetliPersonelId:eq:{{parentValue}}" } `
+        -Selection @{ mode = "multi"; min = 1; max = 50; displayFields = @("katalogUrunId", "demirbasNo"); displaySeparator = " · " })
+} | Out-Null
+
+$fieldDemirbasIds = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:demirbasIds" -Label "demirbasIds" -Body @{
+    key = "demirbasIds"; label = "Demirbaslar"; fieldType = "relation"; scope = "pool"; category = "reference"
+    cardinality = "multi"
+    relationDatasetName = "zimmet_demirbaslar"
+    options = (New-ZimmetLookupOptions -DatasetName "zimmet_demirbaslar" -LabelField "demirbasNo" `
+        -SearchFields @("demirbasNo", "seriNo") -Filter "durum:eq:depoda" -Presentation "picker" `
+        -Columns $demirbasPickerColumns -DefaultSort @{ field = "demirbasNo"; dir = "asc" } `
+        -Selection @{ mode = "multi"; min = 1; max = 50; displayFields = @("katalogUrunId", "demirbasNo"); displaySeparator = " · " })
+}
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_fields/$fieldDemirbasIds" -Body @{
+    key = "demirbasIds"; label = "Demirbaslar"; fieldType = "relation"; scope = "pool"; category = "reference"
+    cardinality = "multi"
+    relationDatasetName = "zimmet_demirbaslar"
+    options = (New-ZimmetLookupOptions -DatasetName "zimmet_demirbaslar" -LabelField "demirbasNo" `
+        -SearchFields @("demirbasNo", "seriNo") -Filter "durum:eq:depoda" -Presentation "picker" `
+        -Columns $demirbasPickerColumns -DefaultSort @{ field = "demirbasNo"; dir = "asc" } `
+        -Selection @{ mode = "multi"; min = 1; max = 50; displayFields = @("katalogUrunId", "demirbasNo"); displaySeparator = " · " })
+} | Out-Null
 $fieldPersonelId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:personelId" -Label "personelId" -Body @{
     key = "personelId"; label = "Personel"; fieldType = "persons"; scope = "pool"; category = "assignment"; cardinality = "single"
 }
@@ -157,7 +204,7 @@ $girFieldIds = @(
     $fieldFaturaNo, $fieldGirisTarihi, $fieldKaynak, $fieldSeriNoListesi
 )
 $zimFieldIds = @(
-    $fieldDemirbasId, $fieldPersonelId, $fieldDepartman, $fieldTeslimTarihi, $fieldPlanliIadeTarihi,
+    $fieldDemirbasId, $fieldDemirbasIds, $fieldPersonelId, $fieldDepartman, $fieldTeslimTarihi, $fieldPlanliIadeTarihi,
     $fieldTeslimDurumu, $fieldZimmetNotu, $fieldIadeDurumu, $fieldHasarAciklamasi
 )
 $allFieldIds = @($girFieldIds + $zimFieldIds | Select-Object -Unique)
@@ -241,6 +288,20 @@ $wsZimId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_workspaces" -Filter "na
     enabledPriorityIds    = $sharedPriorityIds
     enabledFieldIds       = $zimFieldIds
 }
+$wsZimBody = @{
+    name                  = $wsZimName
+    workspaceType         = "operational"
+    description           = "Personele demirbas zimmet verme ve iade"
+    workItemKeyPrefix     = "ZIM"
+    workItemKeyFormat     = "{prefix}-{seq:D4}"
+    workItemSequenceStart = 1
+    enabledTypeIds        = @($typeZimmetVermeId, $typeZimmetIadeId)
+    enabledStateIds       = $zimStateIds
+    enabledPriorityIds    = $sharedPriorityIds
+    enabledFieldIds       = $zimFieldIds
+}
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_workspaces/$wsZimId" -Body $wsZimBody | Out-Null
+Write-Host "  UPDATED: WS ZIM enabledFieldIds (demirbasIds)" -ForegroundColor Green
 
 # --- Flows ---
 Write-Host "[7] op_state_flows..." -ForegroundColor Yellow
@@ -259,33 +320,39 @@ $flowGirId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_state_flows" -Filter 
 }
 
 $flowZimVermeName = "$tagZim — Verme"
-$flowZimVermeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_state_flows" -Filter "name:eq:$flowZimVermeName" -Label "ZIM verme flow" -Body @{
+$flowZimVermeBody = @{
     name           = $flowZimVermeName
     workspaceId    = $wsZimId
     initialStateId = $zimRequest
     isDefault      = $true
     isActive       = $true
     transitions    = @(
-        (New-ZimmetTransition "request" $zimRequest $zimApproval "Onaya gonder" 0 @("demirbasId", "personelId")),
+        (New-ZimmetTransition "request" $zimRequest $zimApproval "Onaya gonder" 0 @("demirbasIds", "personelId")),
         (New-ZimmetTransition "approve" $zimApproval $zimDelivered "Onayla" 1),
         (New-ZimmetTransition "reject" $zimApproval $zimClosed "Reddet" 2),
         (New-ZimmetTransition "deliver" $zimDelivered $zimActive "Teslim et" 3 @("teslimTarihi", "teslimDurumu")),
         (New-ZimmetTransition "close" $zimActive $zimClosed "Tamamla" 4)
     )
 }
+$flowZimVermeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_state_flows" -Filter "name:eq:$flowZimVermeName" -Label "ZIM verme flow" -Body $flowZimVermeBody
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_state_flows/$flowZimVermeId" -Body $flowZimVermeBody | Out-Null
+Write-Host "  UPDATED: ZIM verme flow (demirbasIds)" -ForegroundColor Green
 
 $flowZimIadeName = "$tagZim — Iade"
-$flowZimIadeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_state_flows" -Filter "name:eq:$flowZimIadeName" -Label "ZIM iade flow" -Body @{
+$flowZimIadeBody = @{
     name           = $flowZimIadeName
     workspaceId    = $wsZimId
     initialStateId = $zimIadeOpen
     isDefault      = $false
     isActive       = $true
     transitions    = @(
-        (New-ZimmetTransition "receive_return" $zimIadeOpen $zimIadeDone "Iade al" 0 @("demirbasId", "iadeDurumu")),
+        (New-ZimmetTransition "receive_return" $zimIadeOpen $zimIadeDone "Iade al" 0),
         (New-ZimmetTransition "close_return" $zimIadeDone $zimClosed "Kapat" 1)
     )
 }
+$flowZimIadeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_state_flows" -Filter "name:eq:$flowZimIadeName" -Label "ZIM iade flow" -Body $flowZimIadeBody
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_state_flows/$flowZimIadeId" -Body $flowZimIadeBody | Out-Null
+Write-Host "  UPDATED: ZIM iade flow" -ForegroundColor Green
 
 Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_work_item_types/$typeGirisId" -Body @{
     name = "Depo girisi"; category = "operational"; defaultStateFlowId = $flowGirId
@@ -328,13 +395,13 @@ $formGirId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "name:
 }
 
 $formZimVermeName = "$tagZim — Zimmet verme"
-$formZimVermeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "name:eq:$formZimVermeName" -Label "ZIM verme form" -Body @{
+$formZimVermeBody = @{
     name = $formZimVermeName; workspaceId = $wsZimId; defaultTypeId = $typeZimmetVermeId
     defaultStateFlowId = $flowZimVermeId; defaultStateId = $zimRequest; isDefault = $true
     layout = @{
         sections = @(@{
             key = "main"; title = "Zimmet bilgileri"
-            fields = @("title", "description", "typeId", "priorityId", "demirbasId", "personelId", "departman", "teslimTarihi", "planliIadeTarihi", "teslimDurumu", "zimmetNotu")
+            fields = @("title", "description", "typeId", "priorityId", "demirbasIds", "personelId", "departman", "teslimTarihi", "planliIadeTarihi", "teslimDurumu", "zimmetNotu")
         })
     }
     fieldBehaviors = @{
@@ -342,7 +409,7 @@ $formZimVermeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "
         description = @{ visible = $true }
         typeId = @{ visible = $true; readonly = $true }
         priorityId = @{ visible = $true }
-        demirbasId = @{ visible = $true; required = $true }
+        demirbasIds = @{ visible = $true; required = $true }
         personelId = @{ visible = $true; required = $true }
         departman = @{ visible = $true }
         teslimTarihi = @{ visible = $true }
@@ -352,28 +419,34 @@ $formZimVermeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "
     }
     defaultValues = @{ teslimDurumu = "yeni" }
 }
+$formZimVermeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "name:eq:$formZimVermeName" -Label "ZIM verme form" -Body $formZimVermeBody
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_forms/$formZimVermeId" -Body $formZimVermeBody | Out-Null
+Write-Host "  UPDATED: ZIM verme form (demirbasIds picker)" -ForegroundColor Green
 
 $formZimIadeName = "$tagZim — Zimmet iade"
-$formZimIadeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "name:eq:$formZimIadeName" -Label "ZIM iade form" -Body @{
+$formZimIadeBody = @{
     name = $formZimIadeName; workspaceId = $wsZimId; defaultTypeId = $typeZimmetIadeId
     defaultStateFlowId = $flowZimIadeId; defaultStateId = $zimIadeOpen; isDefault = $false
     layout = @{
         sections = @(@{
             key = "main"; title = "Iade bilgileri"
-            fields = @("title", "description", "typeId", "demirbasId", "personelId", "iadeDurumu", "hasarAciklamasi", "zimmetNotu")
+            fields = @("title", "description", "typeId", "personelId", "demirbasId", "iadeDurumu", "hasarAciklamasi", "zimmetNotu")
         })
     }
     fieldBehaviors = @{
         title = @{ visible = $true; required = $true }
         description = @{ visible = $true }
         typeId = @{ visible = $true; readonly = $true }
-        demirbasId = @{ visible = $true; required = $true }
         personelId = @{ visible = $true; required = $true }
+        demirbasId = @{ visible = $true; required = $true }
         iadeDurumu = @{ visible = $true; required = $true }
         hasarAciklamasi = @{ visible = $true }
         zimmetNotu = @{ visible = $true }
     }
 }
+$formZimIadeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_forms" -Filter "name:eq:$formZimIadeName" -Label "ZIM iade form" -Body $formZimIadeBody
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_forms/$formZimIadeId" -Body $formZimIadeBody | Out-Null
+Write-Host "  UPDATED: ZIM iade form (demirbasId picker)" -ForegroundColor Green
 
 # --- Boards ---
 Write-Host "[9] op_boards..." -ForegroundColor Yellow
@@ -426,23 +499,52 @@ $boardZimIadeId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_boards" -Filter 
 
 # --- Profiles ---
 Write-Host "[10] op_profiles..." -ForegroundColor Yellow
-Find-ZimmetOrCreate -Ctx $ctx -Collection "op_profiles" -Filter "name:eq:$tagZim — Kayit profili" -Label "ZIM profile" -Body @{
-    name = "$tagZim — Kayit profili"; workspaceId = $wsZimId; defaultTypeId = $typeZimmetVermeId; isDefault = $true
+$zimProfileName = "$tagZim — Kayit profili"
+# Profile layout drives readonly display (not default verme form). Include both verme
+# (demirbasIds) and iade (demirbasId) fields; UI hideEmptySections hides unused ones.
+$zimProfileBody = @{
+    name = $zimProfileName; workspaceId = $wsZimId; defaultTypeId = $typeZimmetVermeId; isDefault = $true
+    layout = @{
+        sections = @(
+            @{
+                key = "main"; title = "Zimmet ozeti"
+                fields = @(
+                    "title", "description", "typeId", "priorityId",
+                    "personelId", "demirbasIds", "demirbasId",
+                    "teslimTarihi", "planliIadeTarihi", "teslimDurumu",
+                    "iadeDurumu", "hasarAciklamasi", "zimmetNotu", "departman"
+                )
+            }
+        )
+    }
     fieldBehaviors = @{
         title = @{ visible = $true; required = $true }
+        description = @{ visible = $true }
+        typeId = @{ visible = $true }
+        priorityId = @{ visible = $true }
+        demirbasIds = @{ visible = $true }
         demirbasId = @{ visible = $true }
         personelId = @{ visible = $true }
         teslimTarihi = @{ visible = $true }
+        planliIadeTarihi = @{ visible = $true }
         teslimDurumu = @{ visible = $true }
+        iadeDurumu = @{ visible = $true }
+        hasarAciklamasi = @{ visible = $true }
         zimmetNotu = @{ visible = $true }
+        departman = @{ visible = $true }
     }
     actions = @(
         @{ transitionKey = "request"; order = 0; label = "Onaya gonder" },
         @{ transitionKey = "approve"; order = 1; label = "Onayla" },
         @{ transitionKey = "deliver"; order = 2; label = "Teslim et" },
-        @{ transitionKey = "close"; order = 3; label = "Tamamla" }
+        @{ transitionKey = "close"; order = 3; label = "Tamamla" },
+        @{ transitionKey = "receive_return"; order = 10; label = "Iade al" },
+        @{ transitionKey = "close_return"; order = 11; label = "Kapat" }
     )
-} | Out-Null
+}
+$zimProfileId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_profiles" -Filter "name:eq:$zimProfileName" -Label "ZIM profile" -Body $zimProfileBody
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_profiles/$zimProfileId" -Body $zimProfileBody | Out-Null
+Write-Host "  UPDATED: ZIM profile (verme + iade actions)" -ForegroundColor Green
 
 $summary = [ordered]@{
     workspaces = @{
@@ -465,6 +567,134 @@ $summary = [ordered]@{
         zimIade   = $flowZimIadeId
     }
     seededAt = (Get-Date).ToUniversalTime().ToString("o")
+}
+
+# --- AF-1: GIR stock → createDatasetRows (zimmet_demirbaslar) ---
+Write-Host "`n[Rules] GIR createDatasetRows (AF-1)..." -ForegroundColor Yellow
+$ruleAf1Name = "$tagGir — Stokla demirbas uret"
+$ruleAf1Body = @{
+    name           = $ruleAf1Name
+    workspaceId    = $wsGirId
+    ruleType       = "automation"
+    trigger        = "WorkItemTransitioned"
+    isActive       = $true
+    priority       = 100
+    typeId         = $typeGirisId
+    transitionKey  = "stock"
+    actions        = @(
+        @{
+            type         = "createDatasetRows"
+            dataset      = "zimmet_demirbaslar"
+            onError      = "failTransition"
+            cardinality  = @{
+                mode      = "count"
+                countFrom = "fields.miktar"
+            }
+            idempotency  = @{
+                mode        = "one_per_source"
+                lookupField = "girisRef"
+                lookupFrom  = "key"
+            }
+            fieldMappings = @(
+                @{ target = "katalogUrunId"; source = "field"; path = "fields.katalogUrunId" }
+                @{ target = "depoId"; source = "field"; path = "fields.depoId" }
+                @{ target = "lokasyonId"; source = "field"; path = "fields.lokasyonId" }
+                @{ target = "durum"; source = "static"; value = "depoda" }
+                @{ target = "girisTarihi"; source = "field"; path = "fields.girisTarihi" }
+                @{ target = "girisRef"; source = "field"; path = "key" }
+                @{
+                    target    = "seriNo"
+                    source    = "sequence"
+                    template  = "{{source.key}}-{000}"
+                    startFrom = 1
+                }
+                @{ target = "tedarikciId"; source = "field"; path = "fields.tedarikciId" }
+            )
+        }
+    )
+}
+$ruleAf1Id = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_rules" -Filter "name:eq:$ruleAf1Name" -Label "AF-1 rule" -Body $ruleAf1Body
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_rules/$ruleAf1Id" -Body $ruleAf1Body | Out-Null
+Write-Host "  OK: $ruleAf1Name ($ruleAf1Id)" -ForegroundColor Green
+
+# --- OC-1: ZIM deliver → updateDatasetRows (demirbas zimmetli) ---
+Write-Host "`n[Rules] ZIM updateDatasetRows (OC-1)..." -ForegroundColor Yellow
+$ruleOc1Name = "$tagZim — Teslimde demirbas zimmetle"
+$ruleOc1Body = @{
+    name           = $ruleOc1Name
+    workspaceId    = $wsZimId
+    ruleType       = "automation"
+    trigger        = "WorkItemTransitioned"
+    isActive       = $true
+    priority       = 100
+    typeId         = $typeZimmetVermeId
+    transitionKey  = "deliver"
+    actions        = @(
+        @{
+            type         = "updateDatasetRows"
+            dataset      = "zimmet_demirbaslar"
+            onError      = "failTransition"
+            cardinality  = @{
+                mode      = "expand"
+                itemsFrom = "fields.demirbasIds"
+                itemAs    = "id"
+            }
+            targetId     = @{
+                source = "item"
+                path   = "value"
+            }
+            fieldMappings = @(
+                @{ target = "durum"; source = "static"; value = "zimmetli" }
+                @{ target = "zimmetliPersonelId"; source = "field"; path = "fields.personelId" }
+                @{ target = "zimmetRef"; source = "field"; path = "key" }
+            )
+        }
+    )
+}
+$ruleOc1Id = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_rules" -Filter "name:eq:$ruleOc1Name" -Label "OC-1 rule" -Body $ruleOc1Body
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_rules/$ruleOc1Id" -Body $ruleOc1Body | Out-Null
+Write-Host "  OK: $ruleOc1Name ($ruleOc1Id)" -ForegroundColor Green
+
+# --- OC-2: ZIM receive_return → updateDatasetRows (demirbas depoda) ---
+Write-Host "`n[Rules] ZIM updateDatasetRows (OC-2)..." -ForegroundColor Yellow
+$ruleOc2Name = "$tagZim — Iadede demirbas depoya don"
+$ruleOc2Body = @{
+    name           = $ruleOc2Name
+    workspaceId    = $wsZimId
+    ruleType       = "automation"
+    trigger        = "WorkItemTransitioned"
+    isActive       = $true
+    priority       = 100
+    typeId         = $typeZimmetIadeId
+    transitionKey  = "receive_return"
+    actions        = @(
+        @{
+            type         = "updateDatasetRows"
+            dataset      = "zimmet_demirbaslar"
+            onError      = "failTransition"
+            cardinality  = @{
+                mode      = "expand"
+                itemsFrom = "fields.demirbasId"
+                itemAs    = "id"
+            }
+            targetId     = @{
+                source = "item"
+                path   = "value"
+            }
+            fieldMappings = @(
+                @{ target = "durum"; source = "static"; value = "depoda" }
+            )
+            clearFields = @("zimmetliPersonelId", "zimmetRef")
+        }
+    )
+}
+$ruleOc2Id = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_rules" -Filter "name:eq:$ruleOc2Name" -Label "OC-2 rule" -Body $ruleOc2Body
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_rules/$ruleOc2Id" -Body $ruleOc2Body | Out-Null
+Write-Host "  OK: $ruleOc2Name ($ruleOc2Id)" -ForegroundColor Green
+$summary.rules = @{
+    girCreateDemirbas         = $ruleAf1Id
+    zimDeliverUpdateDemirbas  = $ruleOc1Id
+    zimReturnUpdateDemirbas   = $ruleOc2Id
 }
 
 if ($ReloadMetadataCache) {
@@ -523,7 +753,6 @@ if ($SeedDemo) {
             faturaNo      = "FTR-DEMO-2026-001"
             girisTarihi   = $today
             kaynak        = "manuel"
-            seriNoListesi = "DL5520-SN-10001;DL5520-SN-10002"
         }
     }
     $girWi = Invoke-MoPost -Uri "$MoBaseUrl/api/v1/work-items" -Body $girBody
@@ -533,18 +762,16 @@ if ($SeedDemo) {
     foreach ($tk in @("submit", "receive", "stock")) {
         Invoke-MoPost -Uri "$MoBaseUrl/api/v1/work-items/$girWiId/transitions/$tk" -Body "{}" | Out-Null
     }
-    Write-Host "  OK: $girKey kapandi" -ForegroundColor Green
+    Write-Host "  OK: $girKey kapandi (AF-1 createDatasetRows tetiklendi)" -ForegroundColor Green
 
-    # Demirbas girisRef guncelle
-    foreach ($pair in @(
-        @{ id = $dmbLap1; key = "DMB-LAP-001" },
-        @{ id = $dmbLap2; key = "DMB-LAP-002" },
-        @{ id = $dmbMon1; key = "DMB-MON-001" }
-    )) {
-        Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/zimmet_demirbaslar/$($pair.id)" -Body @{
-            girisRef = $girKey
-        } | Out-Null
-        Write-Host "  SYNC: demirbas $($pair.key) girisRef=$girKey" -ForegroundColor Gray
+    # AF-1 uretilen demirbaslari dogrula (girisRef = GIR key)
+    try {
+        $createdDemirbas = Invoke-ZimmetDg -Ctx $ctx -Method GET -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/zimmet_demirbaslar?filter=$([uri]::EscapeDataString("girisRef:eq:$girKey"))&limit=10"
+        $createdCount = @($createdDemirbas).Count
+        Write-Host "  OK: AF-1 demirbas sayisi=$createdCount (beklenen 2)" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "  WARN: AF-1 demirbas dogrulama — $($_.Exception.Message)" -ForegroundColor DarkYellow
     }
 
     # ZIM-1 — laptop personel 1
@@ -555,7 +782,7 @@ if ($SeedDemo) {
         title       = "Demo zimmet — laptop ($person1Name)"
         fields      = @{
             priorityId     = $prioNormalId
-            demirbasId     = $dmbLap1
+            demirbasIds    = @($dmbLap1)
             personelId     = $person1Id
             departman      = "Uretim"
             teslimDurumu   = "yeni"
@@ -589,7 +816,7 @@ if ($SeedDemo) {
         title       = "Demo zimmet — monitor ($person2Name)"
         fields      = @{
             priorityId   = $prioNormalId
-            demirbasId   = $dmbMon1
+            demirbasIds  = @($dmbMon1)
             personelId   = $person2Id
             departman    = "Kalite"
             teslimDurumu = "yeni"

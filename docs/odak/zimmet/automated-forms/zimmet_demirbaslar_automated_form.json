@@ -13,6 +13,10 @@
     "enableSearch": true,
     "defaultSortBy": "demirbasNo",
     "defaultSortOrder": "desc",
+    "listView": {
+      "mode": "report",
+      "reportId": "rpt_zimmet_demirbaslar"
+    },
     "columns": [
       { "fieldName": "demirbasNo", "visible": true, "order": 1, "sortable": true, "filterable": true },
       { "fieldName": "katalogUrunId", "visible": true, "order": 2, "sortable": false, "filterable": false, "displayField": "ad" },

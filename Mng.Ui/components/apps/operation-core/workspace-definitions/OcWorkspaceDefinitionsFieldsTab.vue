@@ -36,7 +36,10 @@ import {
   OC_LOOKUP_DEFAULT_PAGE_SIZE,
   OC_LOOKUP_DEFAULT_VALUE_FIELD,
   parseOcLookupFromFieldOptions,
+  type OcLookupColumn,
+  type OcLookupDefaultSort,
   type OcLookupPresentation,
+  type OcLookupSelection,
   type OcLookupStaticItem,
 } from '@/utils/ocLookupFieldOptions';
 
@@ -91,6 +94,12 @@ const defaultForm = () => ({
   lookupFilter: '',
   lookupDependsOnFieldKey: '',
   lookupDependsOnFilterTemplate: '',
+  /** Preserved on save until TP-3 column editor exists (do not drop seed columns). */
+  lookupColumns: [] as OcLookupColumn[],
+  lookupDefaultSort: null as OcLookupDefaultSort | null,
+  lookupSelection: null as OcLookupSelection | null,
+  lookupDisplayFields: [] as string[],
+  lookupDisplaySeparator: '',
   staticItems: [] as OcLookupStaticItem[],
 });
 
@@ -154,6 +163,19 @@ const relationDatasetFieldItems = computed(() => {
   }
   return buildLookupFieldKeyItems(ds.fields);
 });
+
+/** Chip/summary field picker — prefer configured columns (titles), else dataset schema keys. */
+const chipDisplayFieldItems = computed(() => {
+  if (form.value.lookupColumns.length) {
+    return form.value.lookupColumns.map((c) => ({
+      value: c.field,
+      title: c.title?.trim() || c.field,
+    }));
+  }
+  return relationDatasetFieldItems.value;
+});
+
+const showChipDisplayFields = computed(() => form.value.lookupPresentation === 'picker');
 
 const dependsOnFieldItems = computed(() => {
   const keys = new Set<string>();
@@ -270,6 +292,13 @@ function buildFieldPayload(): Record<string, unknown> | null {
       filter: form.value.lookupFilter.trim() || null,
       dependsOnFieldKey: form.value.lookupDependsOnFieldKey,
       dependsOnFilterTemplate: form.value.lookupDependsOnFilterTemplate,
+      columns: form.value.lookupColumns,
+      defaultSort: form.value.lookupDefaultSort,
+      selection: {
+        ...(form.value.lookupSelection ?? {}),
+        displayFields: form.value.lookupDisplayFields,
+        displaySeparator: form.value.lookupDisplaySeparator.trim() || undefined,
+      },
     });
   } else if (optionsRaw) {
     const parsed = parseOcFieldOptions(optionsRaw);
@@ -355,6 +384,19 @@ function applyLookupToForm(row: OpField) {
   form.value.lookupFilter = lookup?.filter ?? '';
   form.value.lookupDependsOnFieldKey = lookup?.dependsOn?.fieldKey ?? '';
   form.value.lookupDependsOnFilterTemplate = lookup?.dependsOn?.filterTemplate ?? '';
+  form.value.lookupColumns = lookup?.columns?.length
+    ? lookup.columns.map((c) => ({ ...c, enumMap: c.enumMap ? { ...c.enumMap } : undefined }))
+    : [];
+  form.value.lookupDefaultSort = lookup?.defaultSort
+    ? { ...lookup.defaultSort }
+    : null;
+  form.value.lookupSelection = lookup?.selection
+    ? { ...lookup.selection }
+    : null;
+  form.value.lookupDisplayFields = lookup?.selection?.displayFields?.length
+    ? [...lookup.selection.displayFields]
+    : [];
+  form.value.lookupDisplaySeparator = lookup?.selection?.displaySeparator ?? '';
   form.value.staticItems = lookup?.staticItems?.length
     ? lookup.staticItems.map((i) => ({ ...i }))
     : [{ value: '', label: '' }];
@@ -387,6 +429,11 @@ function openEditScoped(row: OpField) {
     lookupFilter: '',
     lookupDependsOnFieldKey: '',
     lookupDependsOnFilterTemplate: '',
+    lookupColumns: [],
+    lookupDefaultSort: null,
+    lookupSelection: null,
+    lookupDisplayFields: [],
+    lookupDisplaySeparator: '',
     staticItems: [{ value: '', label: '' }],
   };
   if (row.fieldType === 'select' || row.fieldType === 'relation') {
@@ -701,6 +748,22 @@ async function confirmDelete() {
                 />
               </v-col>
             </v-row>
+            <v-select
+              v-if="showChipDisplayFields"
+              v-model="form.lookupDisplayFields"
+              class="mt-3"
+              :items="chipDisplayFieldItems"
+              item-title="title"
+              item-value="value"
+              :label="t('operationCore.definitions.fields.lookupDisplayFields')"
+              :hint="t('operationCore.definitions.fields.lookupDisplayFieldsHint')"
+              persistent-hint
+              multiple
+              chips
+              closable-chips
+              clearable
+              density="comfortable"
+            />
             <v-text-field
               v-model.number="form.lookupPageSize"
               class="mt-3"

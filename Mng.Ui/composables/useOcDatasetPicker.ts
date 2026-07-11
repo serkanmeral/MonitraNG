@@ -1,6 +1,11 @@
 import { ref } from 'vue';
 import { ocListDatasetPage } from '@/services/operationCoreService';
-import { recordToDatasetItems } from '@/utils/ocDynamicFormField';
+import {
+  buildLookupColumnFilterClause,
+  formatLookupSelectionLabel,
+  type OcLookupColumn,
+  type OcLookupDefaultSort,
+} from '@/utils/ocLookupFieldOptions';
 
 export type OcDatasetPickerConfig = {
   dataset: string;
@@ -10,6 +15,12 @@ export type OcDatasetPickerConfig = {
   baseFilter?: string | null;
   dependsOnFilter?: string | null;
   searchFields?: string[];
+  defaultSort?: OcLookupDefaultSort | null;
+  /** Used to build column filter clauses (enum → eq, text → contains). */
+  columns?: OcLookupColumn[];
+  /** Chip / summary fields (joined); falls back to labelField. */
+  displayFields?: string[];
+  displaySeparator?: string;
 };
 
 export type OcDatasetPickerRow = {
@@ -18,8 +29,14 @@ export type OcDatasetPickerRow = {
   raw: Record<string, unknown>;
 };
 
+export type OcDatasetPickerTableOptions = {
+  page: number;
+  itemsPerPage: number;
+  sortBy?: Array<{ key: string; order: 'asc' | 'desc' }>;
+};
+
 /**
- * Dataset relation modal picker — arama (debounce), sunucu sayfalama, seçili id etiket önbelleği.
+ * Dataset relation modal picker — arama, kolon filtresi, sunucu sayfalama/sıralama, expand etiketleri.
  */
 export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
   const items = ref<OcDatasetPickerRow[]>([]);
@@ -28,34 +45,63 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
   const page = ref(1);
   const itemsPerPage = ref(20);
   const searchTerm = ref('');
+  const sortBy = ref<Array<{ key: string; order: 'asc' | 'desc' }>>([]);
+  /** field → filter text */
+  const columnFilters = ref<Record<string, string>>({});
   const labelCache = ref<Record<string, string>>({});
 
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let columnFilterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let fetchGeneration = 0;
 
   function buildFilter(): string | undefined {
     const cfg = getConfig();
-    const parts = [cfg.baseFilter, cfg.dependsOnFilter].filter(Boolean);
+    const parts: string[] = [];
+    if (cfg.baseFilter) parts.push(cfg.baseFilter);
+    if (cfg.dependsOnFilter) parts.push(cfg.dependsOnFilter);
+
+    const cols = cfg.columns ?? [];
+    const colByField = new Map(cols.map((c) => [c.field, c]));
+    for (const [field, rawVal] of Object.entries(columnFilters.value)) {
+      const col = colByField.get(field) ?? { field };
+      const clause = buildLookupColumnFilterClause(col, rawVal);
+      if (clause) parts.push(clause);
+    }
+
     return parts.length ? parts.join(',') : undefined;
+  }
+
+  function buildSortParam(): string | undefined {
+    if (sortBy.value.length) {
+      return sortBy.value
+        .map((s) => `${s.key}:${s.order === 'desc' ? 'desc' : 'asc'}`)
+        .join(',');
+    }
+    const def = getConfig().defaultSort;
+    if (def?.field) {
+      return `${def.field}:${def.dir === 'desc' ? 'desc' : 'asc'}`;
+    }
+    return undefined;
   }
 
   function rowsToItems(rows: unknown[]): OcDatasetPickerRow[] {
     const cfg = getConfig();
-    const selectItems = recordToDatasetItems(rows, {
-      idKey: cfg.valueField,
-      labelKey: cfg.labelField,
-    });
-    const rawById = new Map<string, Record<string, unknown>>();
+    const out: OcDatasetPickerRow[] = [];
     for (const row of rows) {
       if (!row || typeof row !== 'object') continue;
       const o = row as Record<string, unknown>;
       const id = String(o[cfg.valueField] ?? o.__dataId ?? o.dataId ?? '').trim();
-      if (id) rawById.set(id, o);
+      if (!id) continue;
+      const title = formatLookupSelectionLabel(o, {
+        labelField: cfg.labelField,
+        columns: cfg.columns,
+        displayFields: cfg.displayFields,
+        displaySeparator: cfg.displaySeparator,
+        fallbackId: id,
+      });
+      out.push({ title: title || id, value: id, raw: o });
     }
-    return selectItems.map((si) => ({
-      ...si,
-      raw: rawById.get(si.value) ?? {},
-    }));
+    return out;
   }
 
   function cacheLabels(rows: OcDatasetPickerRow[]) {
@@ -67,7 +113,12 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
     labelCache.value = next;
   }
 
-  async function fetchPage(options?: { page?: number; itemsPerPage?: number; search?: string }) {
+  async function fetchPage(options?: {
+    page?: number;
+    itemsPerPage?: number;
+    search?: string;
+    sortBy?: Array<{ key: string; order: 'asc' | 'desc' }>;
+  }) {
     if (import.meta.server) return;
 
     const cfg = getConfig();
@@ -82,6 +133,7 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
     const nextPage = options?.page ?? page.value;
     const nextItemsPerPage = options?.itemsPerPage ?? itemsPerPage.value;
     const nextSearch = options?.search ?? searchTerm.value;
+    if (options?.sortBy) sortBy.value = options.sortBy;
 
     loading.value = true;
     try {
@@ -91,6 +143,8 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
         limit: nextItemsPerPage,
         filter: buildFilter(),
         search: nextSearch.trim() || undefined,
+        sort: buildSortParam(),
+        expand: true,
       });
 
       if (generation !== fetchGeneration) return;
@@ -115,6 +169,10 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
 
   async function resetAndFetch(search = '') {
     page.value = 1;
+    const def = getConfig().defaultSort;
+    if (!sortBy.value.length && def?.field) {
+      sortBy.value = [{ key: def.field, order: def.dir === 'desc' ? 'desc' : 'asc' }];
+    }
     await fetchPage({ page: 1, search });
   }
 
@@ -127,8 +185,38 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
     }, 300);
   }
 
-  async function onTableOptionsUpdate(options: { page: number; itemsPerPage: number }) {
-    await fetchPage({ page: options.page, itemsPerPage: options.itemsPerPage });
+  function setColumnFilter(field: string, value: string) {
+    const next = { ...columnFilters.value };
+    const trimmed = value.trim();
+    if (!trimmed) delete next[field];
+    else next[field] = value;
+    columnFilters.value = next;
+
+    if (columnFilterDebounceTimer) clearTimeout(columnFilterDebounceTimer);
+    columnFilterDebounceTimer = setTimeout(() => {
+      page.value = 1;
+      void fetchPage({ page: 1 });
+    }, 300);
+  }
+
+  function clearColumnFilters() {
+    columnFilters.value = {};
+    page.value = 1;
+    void fetchPage({ page: 1 });
+  }
+
+  async function onTableOptionsUpdate(options: OcDatasetPickerTableOptions) {
+    const nextSort = options.sortBy?.length
+      ? options.sortBy.map((s) => ({
+          key: s.key,
+          order: (s.order === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc',
+        }))
+      : sortBy.value;
+    await fetchPage({
+      page: options.page,
+      itemsPerPage: options.itemsPerPage,
+      sortBy: nextSort,
+    });
   }
 
   async function ensureSelectedLabels(ids: string[]) {
@@ -147,6 +235,7 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
           const result = await ocListDatasetPage(dataset, {
             limit: 1,
             filter: `${cfg.valueField}:eq:${id}`,
+            expand: true,
           });
           const mapped = rowsToItems(result.items);
           cacheLabels(mapped);
@@ -171,9 +260,13 @@ export function useOcDatasetPicker(getConfig: () => OcDatasetPickerConfig) {
     page,
     itemsPerPage,
     searchTerm,
+    sortBy,
+    columnFilters,
     labelFor,
     resetAndFetch,
     onSearchUpdate,
+    setColumnFilter,
+    clearColumnFilters,
     onTableOptionsUpdate,
     ensureSelectedLabels,
   };

@@ -387,6 +387,7 @@ function onTriggerChange(v: OcWorkspaceRuleTrigger) {
                 :recipients="draft.recipients ?? ''"
                 :activity-summary="draft.activitySummary ?? ''"
                 :activity-type="draft.activityType ?? 'RuleAction'"
+                :create-dataset-rows="draft.createDatasetRows"
                 :condition-field-items="conditionFields"
                 :workspace-id="workspaceId"
                 :type-items="typeItems"
@@ -405,6 +406,7 @@ function onTriggerChange(v: OcWorkspaceRuleTrigger) {
                 @update:recipients="draft.recipients = $event"
                 @update:activity-summary="draft.activitySummary = $event"
                 @update:activity-type="draft.activityType = $event"
+                @update:create-dataset-rows="draft.createDatasetRows = $event"
               />
             </section>
           </v-col>

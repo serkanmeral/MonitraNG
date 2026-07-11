@@ -2,7 +2,13 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OcDatasetPickerApi } from '@/composables/useOcDatasetPicker';
-import { collectLookupIdsFromValue } from '@/utils/ocLookupFieldOptions';
+import {
+  collectLookupIdsFromValue,
+  formatLookupPickerCell,
+  resolveLookupPickerColumns,
+  type OcLookupColumn,
+  type OcLookupConfig,
+} from '@/utils/ocLookupFieldOptions';
 
 const props = withDefaults(
   defineProps<{
@@ -18,10 +24,14 @@ const props = withDefaults(
     error?: boolean;
     errorMessages?: string | string[];
     fieldClass?: string;
-    /** Tablo başlığı — görünen alan adı. */
+    /** Full lookup config (columns / formats). */
+    lookupConfig?: OcLookupConfig | null;
+    /** @deprecated Prefer lookupConfig.columns */
     labelFieldKey?: string;
-    /** Ek sütunlar (dataset alan anahtarları). */
+    /** @deprecated Prefer lookupConfig.columns */
     searchFieldKeys?: string[];
+    selectionMin?: number;
+    selectionMax?: number;
   }>(),
   {
     multiple: false,
@@ -48,39 +58,96 @@ const tableItemsPerPage = ref(20);
 const tableLoading = computed(() => picker.value.loading.value);
 const tableTotal = computed(() => picker.value.totalItems.value);
 
+const selectedIds = computed(() => collectLookupIdsFromValue(model.value));
+
+/** Multi always uses chips; single uses chips when readonly/disabled (profile). */
+const useChipStrip = computed(() => props.multiple || props.disabled);
+
 const displayText = computed(() => {
-  const ids = collectLookupIdsFromValue(model.value);
+  const ids = selectedIds.value;
   if (!ids.length) return '';
   return ids.map((id) => picker.value.labelFor(id)).join(', ');
 });
 
-const tableHeaders = computed(() => {
-  const cols: { title: string; key: string; sortable: boolean }[] = [
-    {
-      title: props.labelFieldKey || t('operationCore.formUi.datasetPicker.labelColumn'),
-      key: 'title',
-      sortable: false,
-    },
-  ];
-  for (const key of props.searchFieldKeys.slice(0, 2)) {
-    cols.push({ title: key, key: `extra_${key}`, sortable: false });
-  }
-  return cols;
+const effectiveColumns = computed<OcLookupColumn[]>(() => {
+  if (props.lookupConfig) return resolveLookupPickerColumns(props.lookupConfig);
+  const fallback: OcLookupConfig = {
+    source: 'dataset',
+    presentation: 'picker',
+    valueField: '__dataId',
+    labelField: props.labelFieldKey || 'name',
+    staticItems: [],
+    searchFields: props.searchFieldKeys ?? [],
+    pageSize: 50,
+    filter: null,
+    dependsOn: null,
+    columns: [],
+    defaultSort: null,
+    selection: null,
+  };
+  return resolveLookupPickerColumns(fallback);
 });
+
+/** Text/enum/date columns — show filters unless explicitly filterable:false. Relation labels need related-dataset search (later). */
+const filterableColumns = computed(() =>
+  effectiveColumns.value.filter((c) => {
+    if (c.format === 'relationLabel') return false;
+    if (c.filterable === false) return false;
+    // Explicit true, or default-on for ordinary columns (TP-2 UX)
+    return c.filterable === true || c.filterable == null;
+  })
+);
+
+const hasActiveColumnFilters = computed(() =>
+  Object.values(picker.value.columnFilters.value).some((v) => String(v ?? '').trim())
+);
+
+function enumFilterItems(col: OcLookupColumn) {
+  if (!col.enumMap) return [];
+  return Object.entries(col.enumMap).map(([value, title]) => ({ value, title }));
+}
+
+const tableHeaders = computed(() =>
+  effectiveColumns.value.map((col) => ({
+    title: col.title || col.field,
+    key: col.field,
+    sortable: col.sortable === true,
+    width: col.width,
+  }))
+);
 
 const tableItems = computed(() =>
   picker.value.items.value.map((row) => {
     const item: Record<string, unknown> = {
-      title: row.title,
       value: row.value,
+      title: row.title,
     };
-    for (const key of props.searchFieldKeys.slice(0, 2)) {
-      const raw = row.raw[key];
-      item[`extra_${key}`] = raw != null && raw !== '' ? String(raw) : '—';
+    for (const col of effectiveColumns.value) {
+      const raw =
+        col.field === props.lookupConfig?.labelField || col.field === props.labelFieldKey
+          ? (row.raw[col.field] ?? row.title)
+          : row.raw[col.field];
+      item[col.field] = formatLookupPickerCell(raw, col);
+    }
+    // Ensure label column always has something when using L4 fallback key "title"
+    if (!item[effectiveColumns.value[0]?.field ?? '']) {
+      item[effectiveColumns.value[0]?.field ?? 'title'] = row.title;
     }
     return item;
   })
 );
+
+const selectionCountLabel = computed(() =>
+  t('operationCore.formUi.datasetPicker.selectedCount', { count: draftSelection.value.length })
+);
+
+const confirmDisabled = computed(() => {
+  const n = draftSelection.value.length;
+  if (n === 0) return true;
+  if (props.selectionMin != null && n < props.selectionMin) return true;
+  if (props.selectionMax != null && n > props.selectionMax) return true;
+  return false;
+});
 
 async function syncSelectionFromModel() {
   const ids = collectLookupIdsFromValue(model.value);
@@ -100,13 +167,38 @@ async function openDialog() {
   draftSelection.value = collectLookupIdsFromValue(model.value);
   tableSearch.value = picker.value.searchTerm.value;
   tablePage.value = 1;
+  tableItemsPerPage.value = Math.min(
+    50,
+    Math.max(10, props.lookupConfig?.pageSize ?? 25)
+  );
   dialogOpen.value = true;
   await picker.value.resetAndFetch(tableSearch.value);
+}
+
+function onColumnFilterUpdate(field: string, value: unknown) {
+  picker.value.setColumnFilter(field, value == null ? '' : String(value));
+  tablePage.value = 1;
+}
+
+function clearFilters() {
+  picker.value.clearColumnFilters();
+  tableSearch.value = '';
+  picker.value.onSearchUpdate('');
+  tablePage.value = 1;
 }
 
 function clearSelection() {
   if (props.disabled) return;
   model.value = props.multiple ? [] : null;
+}
+
+function removeChip(id: string) {
+  if (props.disabled) return;
+  if (!props.multiple) {
+    model.value = null;
+    return;
+  }
+  model.value = selectedIds.value.filter((x) => x !== id);
 }
 
 function onTableSearchUpdate(query: string) {
@@ -115,12 +207,17 @@ function onTableSearchUpdate(query: string) {
   picker.value.onSearchUpdate(tableSearch.value);
 }
 
-function onTableOptionsUpdate(opts: { page: number; itemsPerPage: number }) {
+function onTableOptionsUpdate(opts: {
+  page: number;
+  itemsPerPage: number;
+  sortBy?: Array<{ key: string; order: 'asc' | 'desc' }>;
+}) {
   tablePage.value = opts.page;
   tableItemsPerPage.value = opts.itemsPerPage > 0 ? opts.itemsPerPage : 20;
   void picker.value.onTableOptionsUpdate({
     page: tablePage.value,
     itemsPerPage: tableItemsPerPage.value,
+    sortBy: opts.sortBy,
   });
 }
 
@@ -133,7 +230,10 @@ function onRowClick(_event: Event, row: { item: { value: string } }) {
   if (props.multiple) {
     const set = new Set(draftSelection.value);
     if (set.has(id)) set.delete(id);
-    else set.add(id);
+    else {
+      if (props.selectionMax != null && set.size >= props.selectionMax) return;
+      set.add(id);
+    }
     draftSelection.value = [...set];
     return;
   }
@@ -141,6 +241,7 @@ function onRowClick(_event: Event, row: { item: { value: string } }) {
 }
 
 async function confirmSelection() {
+  if (confirmDisabled.value) return;
   if (props.multiple) {
     model.value = [...draftSelection.value];
   } else {
@@ -153,113 +254,215 @@ async function confirmSelection() {
 function cancelDialog() {
   dialogOpen.value = false;
 }
+
 function onDraftSelectionUpdate(value: unknown) {
   if (!props.multiple || !Array.isArray(value)) return;
-  draftSelection.value = value.map((v) => String(v));
+  let next = value.map((v) => String(v));
+  if (props.selectionMax != null && next.length > props.selectionMax) {
+    next = next.slice(0, props.selectionMax);
+  }
+  draftSelection.value = next;
 }
 </script>
 
 <template>
   <div class="oc-dataset-picker-field">
-  <v-text-field
-    :model-value="displayText"
-    readonly
-    :disabled="disabled"
-    :placeholder="placeholder ?? t('operationCore.formUi.datasetPicker.placeholder')"
-    :density="density"
-    :variant="variant"
-    :hide-details="hideDetails"
-    :error="error"
-    :error-messages="errorMessages"
-    clearable
-    :class="fieldClass"
-    @click:clear="clearSelection"
-    @click:control="openDialog"
-  >
-    <template v-if="label || showRequiredMark" #label>
-      <span v-if="label">{{ label }}</span>
-      <span v-if="showRequiredMark" class="oc-field-required" aria-hidden="true"> *</span>
-    </template>
-    <template #append-inner>
-      <v-btn
-        icon="mdi-table-search"
-        variant="text"
-        size="small"
-        :disabled="disabled"
-        :aria-label="t('operationCore.formUi.datasetPicker.open')"
-        @click.stop="openDialog"
-      />
-    </template>
-  </v-text-field>
-
-  <v-dialog v-model="dialogOpen" max-width="760" scrollable>
-    <v-card rounded="lg">
-      <v-card-title class="text-subtitle-1 font-weight-semibold pa-4 pb-2">
-        {{ label || t('operationCore.formUi.datasetPicker.dialogTitle') }}
-      </v-card-title>
-
-      <v-card-text class="pa-4 pt-2">
-        <v-text-field
-          :model-value="tableSearch"
-          :placeholder="t('operationCore.formUi.datasetPicker.searchHint')"
-          prepend-inner-icon="mdi-magnify"
-          density="comfortable"
-          variant="outlined"
-          hide-details
-          clearable
-          class="mb-3"
-          @update:model-value="onTableSearchUpdate"
-        />
-
-        <v-data-table-server
-          :page="tablePage"
-          :items-per-page="tableItemsPerPage"
-          :headers="tableHeaders"
-          :items="tableItems"
-          :loading="tableLoading"
-          :items-length="tableTotal"
-          :items-per-page-options="[10, 20, 50]"
-          item-value="value"
-          density="comfortable"
-          class="border rounded-md oc-dataset-picker__table"
-          :show-select="multiple"
-          :model-value="multiple ? draftSelection : undefined"
-          @update:model-value="onDraftSelectionUpdate"
-          @update:options="onTableOptionsUpdate"
-          @click:row="onRowClick"
-        >
-          <template v-if="!multiple" #[`item.title`]="{ item }">
-            <span
-              :class="{
-                'font-weight-semibold text-primary': isRowSelected(item.value),
-              }"
-            >
-              {{ item.title }}
-            </span>
-          </template>
-        </v-data-table-server>
-
-        <p v-if="!tableLoading && !tableItems.length" class="text-caption text-medium-emphasis mt-2 mb-0">
-          {{ t('operationCore.formUi.datasetPicker.empty') }}
-        </p>
-      </v-card-text>
-
-      <v-card-actions class="pa-4 pt-0">
-        <v-spacer />
-        <v-btn variant="text" @click="cancelDialog">
-          {{ t('operationCore.formUi.datasetPicker.cancel') }}
-        </v-btn>
+    <div v-if="useChipStrip" class="oc-dataset-picker-field__multi mb-1">
+      <div class="d-flex align-center justify-space-between ga-2 mb-1">
+        <div class="text-body-2">
+          <span v-if="label">{{ label }}</span>
+          <span v-if="showRequiredMark" class="oc-field-required" aria-hidden="true"> *</span>
+        </div>
         <v-btn
-          color="primary"
-          variant="flat"
-          :disabled="!draftSelection.length"
-          @click="confirmSelection"
+          v-if="!disabled"
+          size="small"
+          variant="tonal"
+          prepend-icon="mdi-table-search"
+          @click="openDialog"
         >
-          {{ t('operationCore.formUi.datasetPicker.select') }}
+          {{ multiple ? t('operationCore.formUi.datasetPicker.add') : t('operationCore.formUi.datasetPicker.open') }}
         </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+      <div v-if="selectedIds.length" class="d-flex flex-wrap ga-1 mb-1">
+        <v-chip
+          v-for="id in selectedIds"
+          :key="id"
+          size="small"
+          :closable="!disabled && multiple"
+          :disabled="disabled"
+          @click:close="removeChip(id)"
+        >
+          {{ picker.labelFor(id) }}
+        </v-chip>
+      </div>
+      <p v-else class="text-caption text-medium-emphasis mb-0">
+        {{
+          placeholder ??
+          (multiple
+            ? t('operationCore.formUi.datasetPicker.placeholderMulti')
+            : t('operationCore.formUi.datasetPicker.placeholder'))
+        }}
+      </p>
+      <div
+        v-if="error && errorMessages"
+        class="text-caption text-error mt-1"
+      >
+        {{ Array.isArray(errorMessages) ? errorMessages.join(' ') : errorMessages }}
+      </div>
+    </div>
+
+    <v-text-field
+      v-else
+      :model-value="displayText"
+      readonly
+      :disabled="disabled"
+      :placeholder="placeholder ?? t('operationCore.formUi.datasetPicker.placeholder')"
+      :density="density"
+      :variant="variant"
+      :hide-details="hideDetails"
+      :error="error"
+      :error-messages="errorMessages"
+      clearable
+      :class="fieldClass"
+      @click:clear="clearSelection"
+      @click:control="openDialog"
+    >
+      <template v-if="label || showRequiredMark" #label>
+        <span v-if="label">{{ label }}</span>
+        <span v-if="showRequiredMark" class="oc-field-required" aria-hidden="true"> *</span>
+      </template>
+      <template #append-inner>
+        <v-btn
+          icon="mdi-table-search"
+          variant="text"
+          size="small"
+          :disabled="disabled"
+          :aria-label="t('operationCore.formUi.datasetPicker.open')"
+          @click.stop="openDialog"
+        />
+      </template>
+    </v-text-field>
+
+    <v-dialog v-model="dialogOpen" max-width="960" scrollable>
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-semibold pa-4 pb-2">
+          {{ label || t('operationCore.formUi.datasetPicker.dialogTitle') }}
+        </v-card-title>
+
+        <v-card-text class="pa-4 pt-2">
+          <div class="d-flex flex-wrap ga-2 mb-3 align-end">
+            <v-text-field
+              :model-value="tableSearch"
+              :placeholder="t('operationCore.formUi.datasetPicker.searchHint')"
+              prepend-inner-icon="mdi-magnify"
+              density="comfortable"
+              variant="outlined"
+              hide-details
+              clearable
+              class="oc-dataset-picker__search flex-grow-1"
+              style="min-width: 200px"
+              @update:model-value="onTableSearchUpdate"
+            />
+            <v-btn
+              v-if="tableSearch || hasActiveColumnFilters"
+              variant="text"
+              size="small"
+              @click="clearFilters"
+            >
+              {{ t('operationCore.formUi.datasetPicker.clearFilters') }}
+            </v-btn>
+          </div>
+
+          <div
+            v-if="filterableColumns.length"
+            class="d-flex flex-wrap ga-2 mb-3"
+          >
+            <template v-for="col in filterableColumns" :key="`f-${col.field}`">
+              <v-select
+                v-if="col.format === 'enum' && col.enumMap"
+                :model-value="picker.columnFilters.value[col.field] || null"
+                :items="enumFilterItems(col)"
+                item-title="title"
+                item-value="value"
+                :label="col.title || col.field"
+                density="compact"
+                variant="outlined"
+                hide-details
+                clearable
+                style="min-width: 140px; max-width: 200px"
+                @update:model-value="onColumnFilterUpdate(col.field, $event)"
+              />
+              <v-text-field
+                v-else
+                :model-value="picker.columnFilters.value[col.field] || ''"
+                :label="col.title || col.field"
+                density="compact"
+                variant="outlined"
+                hide-details
+                clearable
+                style="min-width: 140px; max-width: 200px"
+                @update:model-value="onColumnFilterUpdate(col.field, $event)"
+              />
+            </template>
+          </div>
+
+          <v-data-table-server
+            :page="tablePage"
+            :items-per-page="tableItemsPerPage"
+            :headers="tableHeaders"
+            :items="tableItems"
+            :loading="tableLoading"
+            :items-length="tableTotal"
+            :items-per-page-options="[10, 20, 50]"
+            item-value="value"
+            density="comfortable"
+            class="border rounded-md oc-dataset-picker__table"
+            :show-select="multiple"
+            :model-value="multiple ? draftSelection : undefined"
+            @update:model-value="onDraftSelectionUpdate"
+            @update:options="onTableOptionsUpdate"
+            @click:row="onRowClick"
+          >
+            <template
+              v-for="col in effectiveColumns"
+              :key="col.field"
+              #[`item.${col.field}`]="{ item }"
+            >
+              <span
+                :class="{
+                  'font-weight-semibold text-primary':
+                    !multiple && isRowSelected(String(item.value)),
+                }"
+              >
+                {{ item[col.field] }}
+              </span>
+            </template>
+          </v-data-table-server>
+
+          <p v-if="!tableLoading && !tableItems.length" class="text-caption text-medium-emphasis mt-2 mb-0">
+            {{ t('operationCore.formUi.datasetPicker.empty') }}
+          </p>
+          <p v-if="multiple" class="text-caption text-medium-emphasis mt-2 mb-0">
+            {{ selectionCountLabel }}
+          </p>
+        </v-card-text>
+
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn variant="text" @click="cancelDialog">
+            {{ t('operationCore.formUi.datasetPicker.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :disabled="confirmDisabled"
+            @click="confirmSelection"
+          >
+            {{ t('operationCore.formUi.datasetPicker.select') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

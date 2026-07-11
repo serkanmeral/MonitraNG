@@ -7,6 +7,7 @@
 param(
     [string]$BaseUrl = "http://192.168.20.20:5040",
     [string]$Token = $env:DI_TOKEN,
+    [string]$SeedFile = "",
     [switch]$WhatIf = $false,
     [switch]$Replace = $false
 )
@@ -14,7 +15,12 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
-$seedFile = Join-Path $repoRoot "docs/odak/reporting_services/datasets/seed-reporting-document-templates.json"
+if ([string]::IsNullOrWhiteSpace($SeedFile)) {
+    $seedFile = Join-Path $repoRoot "docs/odak/reporting_services/datasets/seed-reporting-document-templates.json"
+}
+else {
+    $seedFile = if ([IO.Path]::IsPathRooted($SeedFile)) { $SeedFile } else { Join-Path $repoRoot $SeedFile }
+}
 $diScripts = Join-Path $repoRoot "docs/odak/document_intelligence/scripts"
 . (Join-Path $diScripts "lib/Convert-DiTemplateParameters.ps1")
 

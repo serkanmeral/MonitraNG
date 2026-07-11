@@ -37,7 +37,7 @@ import {
   type ReportingSummaryValues,
 } from '@/utils/reportingSummary';
 import { generateReportingChildRowDocument } from '@/utils/reportingChildRowDocument';
-import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import { openDiResourceInNewTab } from '@/utils/diResourceLink';
 import type { OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
 import { FileTextIcon } from 'vue-tabler-icons';
 
@@ -265,8 +265,7 @@ function boolCellValue(item: Record<string, unknown>, listKey: string): boolean 
 }
 
 function openLastDocInDi() {
-  if (!lastDocResourceId.value) return;
-  void navigateTo(buildDiResourceUrl(lastDocResourceId.value));
+  openDiResourceInNewTab(lastDocResourceId.value);
 }
 
 function genKey(binding: ReportingDocumentBinding, item: Record<string, unknown>) {

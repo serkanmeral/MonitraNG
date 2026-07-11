@@ -22,7 +22,7 @@ import {
 import { ensureOdakEgitimParticipantsExpandTab } from '@/utils/reportingOdakEgitimExpandMigrations';
 import { filterVisibleReportingExpandChildTabs } from '@/utils/reportingReportAccess';
 import { generateReportingParentRowDocument } from '@/utils/reportingParentRowDocument';
-import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import { openDiResourceInNewTab } from '@/utils/diResourceLink';
 import { FileTextIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
@@ -126,8 +126,7 @@ function actionDisabled(action: ReportingExpandAction): boolean {
 }
 
 function openLastDocInDi() {
-  if (!lastDocResourceId.value) return;
-  void navigateTo(buildDiResourceUrl(lastDocResourceId.value));
+  openDiResourceInNewTab(lastDocResourceId.value);
 }
 
 async function generateParentRowDocument(binding: ReportingDocumentBinding) {

@@ -31,6 +31,7 @@ MonitraNG **Operation Core (OC)** backend servisi — operasyonel karar ve iş y
 | 11 | [MVP_CHECKLIST.md](./MVP_CHECKLIST.md) | Faz 1 backend kilometre taşları |
 | — | [DEVAM.md](./DEVAM.md) | **Checkpoint** — nerede kaldık, moladan sonra sıra |
 | — | [WORKSPACE_AUTOMATION_PLANNING.md](./WORKSPACE_AUTOMATION_PLANNING.md) | **Workspace otomasyonu** — Otomatik işler planlama (v0.1, 11 Haz 2026) |
+| — | [CREATE_DATASET_ROWS_ACTION_SPEC.md](./CREATE_DATASET_ROWS_ACTION_SPEC.md) | **`createDatasetRows`** — `op_rules` → DG 1…N satır (AF-1 / generic); UI: [OC_UI_CREATE_DATASET_ROWS.md](../ui/OC_UI_CREATE_DATASET_ROWS.md) |
 | — | [PERF_OPTIMIZATION.md](./PERF_OPTIMIZATION.md) | Mayıs board/profil perf + Haziran UI Faz 1/1B özeti |
 | — | [../../diagnostic/README.md](../../diagnostic/README.md) | Odak ölçüm scriptleri, raporlar, yol haritası |
 | — | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Karar logu (tamamlandı) |

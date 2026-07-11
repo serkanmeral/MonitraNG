@@ -20,6 +20,13 @@ const props = defineProps<{
   initialFilters?: AfListFilter[];
   /** Open the advanced filter panel on mount. */
   initialPanelOpen?: boolean;
+  /**
+   * Compact trigger: single Filtre button + badge; no always-visible title row.
+   * Used by reporting runner chrome.
+   */
+  compact?: boolean;
+  /** Compact mode: tooltip / title hint for the filter button. */
+  compactHint?: string;
 }>();
 
 const emit = defineEmits<{
@@ -256,8 +263,48 @@ watch(
 </script>
 
 <template>
-  <div v-if="columns.length" class="af-list-filters mb-4">
-    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
+  <div v-if="columns.length" class="af-list-filters" :class="compact ? 'mb-2' : 'mb-4'">
+    <!-- Compact: single trigger row -->
+    <div v-if="compact" class="d-flex align-center flex-wrap ga-2">
+      <v-btn
+        size="small"
+        :variant="panelOpen || activeCount ? 'tonal' : 'outlined'"
+        :color="activeCount ? 'primary' : undefined"
+        class="text-none"
+        :title="compactHint || undefined"
+        @click="panelOpen = !panelOpen"
+      >
+        <v-icon icon="mdi-filter-variant" size="18" class="mr-1" />
+        {{ t('operationCore.board.filters.advanced.title') }}
+        <v-chip
+          v-if="activeCount"
+          size="x-small"
+          color="primary"
+          variant="flat"
+          class="ml-2"
+        >
+          {{ activeCount }}
+        </v-chip>
+        <v-icon
+          :icon="panelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          size="18"
+          class="ml-1"
+        />
+      </v-btn>
+      <v-btn
+        v-if="activeCount"
+        size="small"
+        variant="text"
+        class="text-none"
+        @click="clearAll"
+      >
+        {{ t('operationCore.board.filters.clear') }}
+      </v-btn>
+      <slot name="compact-append" />
+    </div>
+
+    <!-- Default: title + show/hide -->
+    <div v-else class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
       <div class="text-caption font-weight-medium d-flex align-center ga-1">
         <v-icon icon="mdi-tune-variant" size="18" />
         {{ t('operationCore.board.filters.advanced.title') }}
@@ -288,7 +335,7 @@ watch(
     </div>
 
     <v-expand-transition>
-      <div v-show="panelOpen" class="af-advanced-search pa-3 rounded-lg">
+      <div v-show="panelOpen" class="af-advanced-search pa-3 rounded-lg" :class="compact ? 'mt-2' : ''">
         <p class="text-caption text-medium-emphasis mb-2">
           {{ t('operationCore.board.filters.advanced.andHint') }}
         </p>

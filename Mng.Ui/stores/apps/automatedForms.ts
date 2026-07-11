@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { fetchFromDataGateway } from '@/services/apiService';
+import type { AfListViewConfig } from '@/utils/afListView';
 
 /**
  * Automated Form Interface
@@ -44,6 +45,8 @@ export interface AutomatedForm {
     defaultSortBy?: string;
     defaultSortOrder?: 'asc' | 'desc';
     enableSearch?: boolean;
+    /** Liste yüzeyi: varsayılan AF tablosu veya seçilen rapor. */
+    listView?: AfListViewConfig;
   };
   formConfig?: {
     visibleFields: string[];
@@ -129,6 +132,7 @@ export interface CreateAutomatedFormDto {
     defaultSortBy?: string;
     defaultSortOrder?: 'asc' | 'desc';
     enableSearch?: boolean;
+    listView?: AfListViewConfig;
   };
   formConfig?: {
     visibleFields: string[];
@@ -197,6 +201,7 @@ export interface UpdateAutomatedFormDto {
     defaultSortBy?: string;
     defaultSortOrder?: 'asc' | 'desc';
     enableSearch?: boolean;
+    listView?: AfListViewConfig;
   };
   formConfig?: {
     visibleFields: string[];

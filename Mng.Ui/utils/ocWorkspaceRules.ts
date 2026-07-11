@@ -33,8 +33,40 @@ export const OC_WORKSPACE_AUTOMATION_ACTIONS = [
   'createNotification',
   'sendEmailViaMngNotifiers',
   'createActivity',
+  'createDatasetRows',
 ] as const;
 export type OcWorkspaceAutomationAction = (typeof OC_WORKSPACE_AUTOMATION_ACTIONS)[number];
+
+export type OcCreateDatasetRowsCardinalityMode = 'single' | 'count' | 'expand';
+export type OcCreateDatasetRowsIdempotencyMode = 'none' | 'one_per_source';
+export type OcCreateDatasetRowsOnError = 'failTransition' | 'continue';
+export type OcCreateDatasetRowsMappingSource = 'field' | 'static' | 'token' | 'item' | 'sequence';
+
+export interface OcCreateDatasetRowsFieldMapping {
+  id: string;
+  target: string;
+  source: OcCreateDatasetRowsMappingSource;
+  path?: string;
+  value?: string;
+  template?: string;
+  /** Sequence start (default 1). Ignored when startFromPath is set. */
+  startFrom?: string;
+  /** Optional WI path for sequence start (e.g. fields.seriBaslangic). */
+  startFromPath?: string;
+}
+
+export interface OcCreateDatasetRowsDraft {
+  dataset: string;
+  cardinalityMode: OcCreateDatasetRowsCardinalityMode;
+  countFrom: string;
+  itemsFrom: string;
+  itemAs: string;
+  idempotencyMode: OcCreateDatasetRowsIdempotencyMode;
+  lookupField: string;
+  lookupFrom: string;
+  onError: OcCreateDatasetRowsOnError;
+  fieldMappings: OcCreateDatasetRowsFieldMapping[];
+}
 
 export interface OcWorkspaceRuleScope {
   typeId?: string;
@@ -68,6 +100,7 @@ export interface OcWorkspaceRuleDraft {
   recipients?: string;
   activitySummary?: string;
   activityType?: string;
+  createDatasetRows: OcCreateDatasetRowsDraft;
 }
 
 export interface OcWorkspaceRuleCatalogContext {
@@ -103,6 +136,41 @@ export function newWorkspaceRuleDraft(workspaceId: string, seed?: Partial<OcWork
     recipients: '',
     activitySummary: '',
     activityType: 'RuleAction',
+    createDatasetRows: newCreateDatasetRowsDraft(),
+    ...seed,
+  };
+}
+
+export function newCreateDatasetRowsMapping(
+  seed?: Partial<OcCreateDatasetRowsFieldMapping>
+): OcCreateDatasetRowsFieldMapping {
+  return {
+    id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    target: '',
+    source: 'field',
+    path: '',
+    value: '',
+    template: '',
+    startFrom: '1',
+    startFromPath: '',
+    ...seed,
+  };
+}
+
+export function newCreateDatasetRowsDraft(
+  seed?: Partial<OcCreateDatasetRowsDraft>
+): OcCreateDatasetRowsDraft {
+  return {
+    dataset: '',
+    cardinalityMode: 'expand',
+    countFrom: 'fields.miktar',
+    itemsFrom: 'fields.seriNoListesi',
+    itemAs: 'serial',
+    idempotencyMode: 'one_per_source',
+    lookupField: 'girisRef',
+    lookupFrom: 'key',
+    onError: 'failTransition',
+    fieldMappings: [],
     ...seed,
   };
 }
@@ -121,11 +189,74 @@ function recipientsToString(value: unknown): string {
   return '';
 }
 
+function parseCreateDatasetRowsFromRecord(a: Record<string, unknown>): OcCreateDatasetRowsDraft {
+  const cardinality =
+    a.cardinality && typeof a.cardinality === 'object'
+      ? (a.cardinality as Record<string, unknown>)
+      : {};
+  const idempotency =
+    a.idempotency && typeof a.idempotency === 'object'
+      ? (a.idempotency as Record<string, unknown>)
+      : {};
+  const modeRaw = String(cardinality.mode ?? 'expand').toLowerCase();
+  const cardinalityMode: OcCreateDatasetRowsCardinalityMode =
+    modeRaw === 'single' || modeRaw === 'count' || modeRaw === 'expand' ? modeRaw : 'expand';
+  const idemModeRaw = String(idempotency.mode ?? 'one_per_source').toLowerCase();
+  const idempotencyMode: OcCreateDatasetRowsIdempotencyMode =
+    idemModeRaw === 'none' ? 'none' : 'one_per_source';
+  const onErrorRaw = String(a.onError ?? 'failTransition').toLowerCase();
+  const onError: OcCreateDatasetRowsOnError =
+    onErrorRaw === 'continue' ? 'continue' : 'failTransition';
+
+  const mappingsRaw = Array.isArray(a.fieldMappings) ? a.fieldMappings : [];
+  const fieldMappings: OcCreateDatasetRowsFieldMapping[] = mappingsRaw
+    .filter((m): m is Record<string, unknown> => !!m && typeof m === 'object')
+    .map((m) => {
+      const sourceRaw = String(m.source ?? 'field').toLowerCase();
+      const source: OcCreateDatasetRowsMappingSource =
+        sourceRaw === 'static'
+        || sourceRaw === 'token'
+        || sourceRaw === 'item'
+        || sourceRaw === 'sequence'
+        || sourceRaw === 'field'
+          ? sourceRaw
+          : 'field';
+      return newCreateDatasetRowsMapping({
+        target: String(m.target ?? ''),
+        source,
+        path: String(m.path ?? ''),
+        value: m.value != null ? String(m.value) : '',
+        template: String(m.template ?? ''),
+        startFrom: m.startFrom != null ? String(m.startFrom) : '1',
+        startFromPath: String(m.startFromPath ?? ''),
+      });
+    });
+
+  return newCreateDatasetRowsDraft({
+    dataset: String(a.dataset ?? ''),
+    cardinalityMode,
+    countFrom: String(cardinality.countFrom ?? ''),
+    itemsFrom: String(cardinality.itemsFrom ?? ''),
+    itemAs: String(cardinality.itemAs ?? 'serial'),
+    idempotencyMode,
+    lookupField: String(idempotency.lookupField ?? ''),
+    lookupFrom: String(idempotency.lookupFrom ?? 'key'),
+    onError,
+    fieldMappings,
+  });
+}
+
 function parseAutomationActionFromRecord(
   a: Record<string, unknown>
 ): Partial<Pick<
   OcWorkspaceRuleDraft,
-  'automationAction' | 'watcher' | 'templateKey' | 'recipients' | 'activitySummary' | 'activityType'
+  | 'automationAction'
+  | 'watcher'
+  | 'templateKey'
+  | 'recipients'
+  | 'activitySummary'
+  | 'activityType'
+  | 'createDatasetRows'
 >> | null {
   const type = String(a.type ?? a.Type ?? '').toLowerCase();
   if (type === 'addwatcher') {
@@ -155,7 +286,66 @@ function parseAutomationActionFromRecord(
       activityType: String(a.activityType ?? a.ActivityType ?? 'RuleAction'),
     };
   }
+  if (type === 'createdatasetrows') {
+    return {
+      automationAction: 'createDatasetRows',
+      createDatasetRows: parseCreateDatasetRowsFromRecord(a),
+    };
+  }
   return null;
+}
+
+function buildCreateDatasetRowsPayload(draft: OcCreateDatasetRowsDraft): Record<string, unknown> {
+  const cardinality: Record<string, unknown> = { mode: draft.cardinalityMode };
+  if (draft.cardinalityMode === 'count' || draft.cardinalityMode === 'expand') {
+    if (draft.countFrom.trim()) cardinality.countFrom = draft.countFrom.trim();
+  }
+  if (draft.cardinalityMode === 'expand') {
+    if (draft.itemsFrom.trim()) cardinality.itemsFrom = draft.itemsFrom.trim();
+    if (draft.itemAs.trim()) cardinality.itemAs = draft.itemAs.trim();
+  }
+
+  const fieldMappings = draft.fieldMappings
+    .filter((m) => m.target.trim())
+    .map((m) => {
+      const row: Record<string, unknown> = {
+        target: m.target.trim(),
+        source: m.source,
+      };
+      if (m.source === 'static') row.value = m.value ?? '';
+      else if (m.source === 'token') row.template = m.template ?? m.value ?? '';
+      else if (m.source === 'sequence') {
+        row.template = (m.template || m.value || '').trim();
+        const startPath = (m.startFromPath || '').trim();
+        if (startPath) row.startFromPath = startPath;
+        else {
+          const start = Number.parseInt(String(m.startFrom || '1').trim(), 10);
+          row.startFrom = Number.isFinite(start) ? start : 1;
+        }
+      } else if (m.source === 'item') row.path = (m.path || 'serial').trim();
+      else row.path = (m.path || '').trim();
+      return row;
+    });
+
+  const payload: Record<string, unknown> = {
+    type: 'createDatasetRows',
+    dataset: draft.dataset.trim(),
+    cardinality,
+    onError: draft.onError,
+    fieldMappings,
+  };
+
+  if (draft.idempotencyMode === 'one_per_source') {
+    payload.idempotency = {
+      mode: 'one_per_source',
+      lookupField: draft.lookupField.trim(),
+      lookupFrom: draft.lookupFrom.trim() || 'key',
+    };
+  } else {
+    payload.idempotency = { mode: 'none' };
+  }
+
+  return payload;
 }
 
 function buildAutomationActionPayload(draft: OcWorkspaceRuleDraft): Record<string, unknown> {
@@ -180,6 +370,8 @@ function buildAutomationActionPayload(draft: OcWorkspaceRuleDraft): Record<strin
       if (recipients.length) payload.recipients = recipients;
       return payload;
     }
+    case 'createDatasetRows':
+      return buildCreateDatasetRowsPayload(draft.createDatasetRows ?? newCreateDatasetRowsDraft());
     case 'createActivity':
     default:
       return {
@@ -211,6 +403,7 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
   let recipients = '';
   let activitySummary = '';
   let activityType = 'RuleAction';
+  let createDatasetRows = newCreateDatasetRowsDraft();
 
   for (const raw of actions) {
     if (!raw || typeof raw !== 'object') continue;
@@ -224,6 +417,7 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
       recipients = automation.recipients ?? recipients;
       activitySummary = automation.activitySummary ?? activitySummary;
       activityType = automation.activityType ?? activityType;
+      if (automation.createDatasetRows) createDatasetRows = automation.createDatasetRows;
       continue;
     }
     if (type === 'setassignee') {
@@ -271,6 +465,7 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
     recipients,
     activitySummary,
     activityType,
+    createDatasetRows,
   };
 }
 
@@ -303,6 +498,24 @@ export function validateWorkspaceRuleDraft(draft: OcWorkspaceRuleDraft): string 
       case 'createActivity':
         if (!String(draft.activitySummary ?? '').trim()) return 'activitySummary';
         break;
+      case 'createDatasetRows': {
+        const cdr = draft.createDatasetRows ?? newCreateDatasetRowsDraft();
+        if (!cdr.dataset.trim()) return 'createDatasetRows.dataset';
+        if (cdr.cardinalityMode === 'count' && !cdr.countFrom.trim()) return 'createDatasetRows.countFrom';
+        if (cdr.cardinalityMode === 'expand' && !cdr.itemsFrom.trim()) return 'createDatasetRows.itemsFrom';
+        if (cdr.idempotencyMode === 'one_per_source' && !cdr.lookupField.trim()) {
+          return 'createDatasetRows.lookupField';
+        }
+        if (!cdr.fieldMappings.some((m) => m.target.trim())) return 'createDatasetRows.fieldMappings';
+        if (
+          cdr.fieldMappings.some(
+            (m) => m.source === 'sequence' && m.target.trim() && !(m.template || m.value || '').trim()
+          )
+        ) {
+          return 'createDatasetRows.sequenceTemplate';
+        }
+        break;
+      }
     }
   }
   return null;
@@ -513,6 +726,14 @@ export function formatRuleThenSummary(rule: OpRule, ctx: OcWorkspaceRuleCatalogC
       parts.push(`${type}: ${key}`);
     } else if (type === 'createactivity') {
       parts.push(String(a.summary ?? a.Summary ?? a.message ?? a.Message ?? 'activity'));
+    } else if (type === 'createdatasetrows') {
+      const dataset = String(a.dataset ?? '?');
+      const card =
+        a.cardinality && typeof a.cardinality === 'object'
+          ? (a.cardinality as Record<string, unknown>)
+          : {};
+      const mode = String(card.mode ?? 'single');
+      parts.push(`createDatasetRows → ${dataset} (${mode})`);
     } else if (type) {
       parts.push(type);
     }

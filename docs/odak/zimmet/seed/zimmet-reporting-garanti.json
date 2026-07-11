@@ -1,0 +1,176 @@
+{
+  "category": {
+    "id": "rcat_zimmet",
+    "parentId": null,
+    "ancestorIds": [],
+    "name": "Zimmet",
+    "description": "Zimmet ve demirbaş raporları",
+    "sortOrder": 20,
+    "status": "active",
+    "createdBy": "system"
+  },
+  "report": {
+    "id": "rpt_zimmet_garanti",
+    "title": "Garanti takibi",
+    "description": "Demirbaş garanti bitiş tarihleri — aralık ve durum filtreleri ile süresi dolanları bulun.",
+    "categoryId": "rcat_zimmet",
+    "datasetName": "zimmet_demirbaslar",
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "garantiBitis",
+      "defaultSortOrder": "asc",
+      "columns": [
+        { "fieldName": "demirbasNo", "title": "Demirbaş no", "visible": true, "order": 1, "sortable": true, "filterable": true, "width": 130 },
+        {
+          "fieldName": "katalogUrunId",
+          "title": "Ürün",
+          "visible": true,
+          "order": 2,
+          "sortable": false,
+          "filterable": true,
+          "relationDisplayField": "ad"
+        },
+        {
+          "fieldName": "durum",
+          "title": "Durum",
+          "visible": true,
+          "order": 3,
+          "sortable": true,
+          "filterable": true,
+          "width": 110,
+          "format": {
+            "type": "none",
+            "valueMap": {
+              "depoda": "Depoda",
+              "zimmetli": "Zimmetli",
+              "bakimda": "Bakımda",
+              "hurda": "Hurda",
+              "kayip": "Kayıp"
+            }
+          }
+        },
+        {
+          "fieldName": "zimmetliPersonelId",
+          "title": "Zimmetli personel",
+          "visible": true,
+          "order": 4,
+          "sortable": false,
+          "filterable": true,
+          "width": 160
+        },
+        {
+          "fieldName": "garantiBitis",
+          "title": "Garanti bitiş",
+          "visible": true,
+          "order": 5,
+          "sortable": true,
+          "filterable": true,
+          "width": 140
+        },
+        {
+          "fieldName": "depoId",
+          "title": "Depo",
+          "visible": true,
+          "order": 6,
+          "sortable": false,
+          "filterable": true,
+          "width": 140,
+          "relationDisplayField": "ad"
+        }
+      ]
+    },
+    "expand": {
+      "enabled": true,
+      "hideEmptyFields": true,
+      "heading": "Garanti detayı",
+      "intro": "",
+      "sections": [
+        {
+          "key": "kimlik",
+          "title": "Kimlik",
+          "cols": 12,
+          "fields": ["demirbasNo", "katalogUrunId", "seriNo", "durum"]
+        },
+        {
+          "key": "garanti",
+          "title": "Garanti / konum",
+          "cols": 12,
+          "fields": ["garantiBitis", "girisTarihi", "depoId", "zimmetliPersonelId", "zimmetRef"]
+        }
+      ],
+      "fieldCols": {
+        "demirbasNo": 6,
+        "katalogUrunId": 6,
+        "seriNo": 6,
+        "durum": 6,
+        "garantiBitis": 6,
+        "girisTarihi": 6,
+        "depoId": 6,
+        "zimmetliPersonelId": 6,
+        "zimmetRef": 6
+      },
+      "actions": [],
+      "tabs": [],
+      "defaultTabId": "fields"
+    },
+    "fieldPolicies": { "policiesByField": {} },
+    "defaultFilters": [],
+    "visibilityPolicies": [],
+    "parameters": [
+      {
+        "id": "garantiRange",
+        "type": "search",
+        "widget": "dateRange",
+        "binding": {
+          "kind": "dateRange",
+          "field": "garantiBitis",
+          "emptyMeans": "noFilter"
+        },
+        "label": "Garanti bitiş aralığı",
+        "required": false
+      },
+      {
+        "id": "statusTab",
+        "type": "statusTab",
+        "widget": "buttonGroup",
+        "binding": {
+          "kind": "choiceFilters",
+          "choices": [
+            { "value": "all", "title": "Tümü", "filters": [] },
+            { "value": "depoda", "title": "Depoda", "filters": [{ "field": "durum", "operator": "eq", "value": "depoda" }] },
+            { "value": "zimmetli", "title": "Zimmetli", "filters": [{ "field": "durum", "operator": "eq", "value": "zimmetli" }] },
+            { "value": "bakimda", "title": "Bakımda", "filters": [{ "field": "durum", "operator": "eq", "value": "bakimda" }] },
+            { "value": "hurda", "title": "Hurda", "filters": [{ "field": "durum", "operator": "eq", "value": "hurda" }] },
+            { "value": "kayip", "title": "Kayıp", "filters": [{ "field": "durum", "operator": "eq", "value": "kayip" }] }
+          ]
+        },
+        "label": "Durum",
+        "required": false,
+        "defaultValue": "all",
+        "statusOptions": [
+          { "value": "all", "title": "Tümü", "filter": null },
+          { "value": "depoda", "title": "Depoda", "filter": { "field": "durum", "operator": "eq", "value": "depoda" } },
+          { "value": "zimmetli", "title": "Zimmetli", "filter": { "field": "durum", "operator": "eq", "value": "zimmetli" } },
+          { "value": "bakimda", "title": "Bakımda", "filter": { "field": "durum", "operator": "eq", "value": "bakimda" } },
+          { "value": "hurda", "title": "Hurda", "filter": { "field": "durum", "operator": "eq", "value": "hurda" } },
+          { "value": "kayip", "title": "Kayıp", "filter": { "field": "durum", "operator": "eq", "value": "kayip" } }
+        ]
+      },
+      {
+        "id": "search",
+        "type": "search",
+        "widget": "search",
+        "binding": { "kind": "search" },
+        "label": "Ara",
+        "required": false
+      }
+    ],
+    "summary": {
+      "placement": "cards",
+      "metrics": [
+        { "id": "count", "label": "Kayıt sayısı", "kind": "count", "format": "integer" }
+      ]
+    },
+    "documentBindings": []
+  }
+}

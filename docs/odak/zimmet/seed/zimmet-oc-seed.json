@@ -12,52 +12,24 @@
     }
   },
   "boards": {
-    "zimQueue": "61f7b1fe-7ec0-4658-bb68-46bf78b83eaf",
     "girQueue": "87eef393-debc-4ae7-94ea-40f70a8926c9",
+    "zimQueue": "61f7b1fe-7ec0-4658-bb68-46bf78b83eaf",
     "zimIade": "c0f697cf-2671-4963-9718-86b6e0c543bb"
   },
   "types": {
-    "depoGirisi": "f44d1357-b1c2-4f69-8cb9-47cc91b284be",
     "zimmetVerme": "a7ea7c55-7a2b-452e-a966-c49680d4bc03",
-    "zimmetIade": "5a280880-4d1d-4167-afcd-df23451ad6b2"
+    "zimmetIade": "5a280880-4d1d-4167-afcd-df23451ad6b2",
+    "depoGirisi": "f44d1357-b1c2-4f69-8cb9-47cc91b284be"
   },
   "flows": {
+    "zimIade": "40c1425c-2a84-4dfa-9876-adb1f47ea465",
     "gir": "54572c79-2f1c-4c7c-9423-2c6d0dfd22ca",
-    "zimVerme": "a943f283-f33f-4c93-b1a1-bfad3108065c",
-    "zimIade": "40c1425c-2a84-4dfa-9876-adb1f47ea465"
+    "zimVerme": "a943f283-f33f-4c93-b1a1-bfad3108065c"
   },
-  "seededAt": "2026-07-07T23:58:46.8077455Z",
-  "demo": {
-    "zimmet2": {
-      "id": "040658e8-59dc-46ae-8c15-579f7fe3499f",
-      "key": "ZIM-0006",
-      "status": "active",
-      "demirbas": "DMB-MON-001"
-    },
-    "depoda": [
-      "DMB-LAP-002",
-      "DMB-LAP-003",
-      "DMB-BAG-001"
-    ],
-    "zimmet1": {
-      "id": "9c87b695-cc9a-4774-9eb5-25a45960b070",
-      "key": "ZIM-0005",
-      "status": "closed",
-      "demirbas": "DMB-LAP-001"
-    },
-    "keeperUsers": [
-      {
-        "id": "6a0f8fd13d6ba5d774ee37c7",
-        "name": "odak_admin"
-      },
-      {
-        "id": "6a0f987f3d6ba5d774ee37cb",
-        "name": "test.user1"
-      }
-    ],
-    "gir": {
-      "id": "78103674-76cb-428d-8b1b-eafc0de7dcaf",
-      "key": "GIR-0002"
-    }
+  "seededAt": "2026-07-11T00:34:05.7380962Z",
+  "rules": {
+    "zimDeliverUpdateDemirbas": "bb64a99d-6dfe-4c51-84c8-37266c4a23d5",
+    "girCreateDemirbas": "b39b7bdf-fbdf-452d-9d7e-c734ae1316cc",
+    "zimReturnUpdateDemirbas": "d53653d8-1687-4117-a649-ec96a71da986"
   }
 }

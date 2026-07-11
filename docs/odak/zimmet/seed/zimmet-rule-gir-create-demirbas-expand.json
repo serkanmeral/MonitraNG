@@ -1,0 +1,37 @@
+{
+  "name": "Zimmet Depo — Stokla demirbas uret (expand / uretici seri)",
+  "description": "AF-1 alternatif: gercek uretici seri listesi varsa expand + item. seriNoListesi uzunlugu = miktar olmali.",
+  "ruleType": "automation",
+  "trigger": "WorkItemTransitioned",
+  "isActive": true,
+  "priority": 100,
+  "transitionKey": "stock",
+  "actions": [
+    {
+      "type": "createDatasetRows",
+      "dataset": "zimmet_demirbaslar",
+      "onError": "failTransition",
+      "cardinality": {
+        "mode": "expand",
+        "countFrom": "fields.miktar",
+        "itemsFrom": "fields.seriNoListesi",
+        "itemAs": "serial"
+      },
+      "idempotency": {
+        "mode": "one_per_source",
+        "lookupField": "girisRef",
+        "lookupFrom": "key"
+      },
+      "fieldMappings": [
+        { "target": "katalogUrunId", "source": "field", "path": "fields.katalogUrunId" },
+        { "target": "depoId", "source": "field", "path": "fields.depoId" },
+        { "target": "lokasyonId", "source": "field", "path": "fields.lokasyonId" },
+        { "target": "durum", "source": "static", "value": "depoda" },
+        { "target": "girisTarihi", "source": "field", "path": "fields.girisTarihi" },
+        { "target": "girisRef", "source": "field", "path": "key" },
+        { "target": "seriNo", "source": "item", "path": "serial" },
+        { "target": "tedarikciId", "source": "field", "path": "fields.tedarikciId" }
+      ]
+    }
+  ]
+}

@@ -168,35 +168,40 @@ Keeper personel (Odak domain):
 
 ---
 
-## 8. Geliştirme backlog (kod — henüz yapılmadı)
+## 8. Geliştirme backlog
 
-| ID | Konu | Açıklama |
-|----|------|----------|
-| **OC-1** | ZIM kapanınca demirbaş güncelleme | WI `Kapalı`/`Aktif` geçişinde `zimmet_demirbaslar.durum` ve `personelId` otomatik |
-| **OC-2** | ZIM iade tamamlanınca depoya dönüş | `durum=depoda`, personel temizleme |
-| **OC-3** | Demirbaş lookup filtresi | OC formda `demirbasId` yalnızca `durum=depoda` (seed'te lookup filter var; runtime doğrulama) |
-| **AF-1** | GIR kapanınca demirbaş üretimi | `miktar` ve `seriNoListesi` ile N adet `zimmet_demirbaslar` kaydı |
-| **AF-2** | Ürün görseli | `zimmet_urunler` için `file` alanı + AF file upload |
-| **GEN-5** | MO seed yavaşlığı | WI create/transition ~12 sn; batch veya paralel iyileştirme |
-| **GEN-6** | Token refresh seed içinde | Uzun seed'de MO 401; otomatik token yenileme |
-| **GEN-7** | Metadata cache reload | Workspace bazlı `/api/v1/workspaces/{id}/metadata-cache/reload` seed sonunda |
+| ID | Konu | Durum |
+|----|------|--------|
+| **AF-1** | GIR kapanınca demirbaş üretimi (`createDatasetRows`) | ✅ |
+| **OC-1** | Teslimde demirbaş zimmetle (`updateDatasetRows` / `deliver`) | ✅ |
+| **OC-2** | İadede demirbaş depoya (`receive_return`) | ✅ |
+| **OC-4** | Dataset tablo seçici + çoklu demirbaş | ✅ |
+| **RPT** | Zimmet reporting katalog (6 rapor) | ✅ |
+| **DI** | Personel dökümü + teslim/iade tutanakları | ✅ |
+| **OC-3** | Demirbaş lookup runtime doğrulama | 🔲 (seed filter var) |
+| **AF-2** | Ürün görseli | 🔲 |
+| **DI-OC** | Geçiş sonrası otomatik tutanak | 🔲 sıradaki aday |
+| **RPT-HIST** | Expand zimmet WI geçmişi | 🔲 sıradaki aday |
+| **GEN-5** | MO seed yavaşlığı | 🔲 |
+| **GEN-6** | Token refresh seed içinde | 🔲 |
+| **GEN-7** | Metadata cache reload seed sonunda | ✅ (kısmen seed’de) |
 
 ---
 
 ## 9. Bilinen kısıtlar
 
-1. **Demirbaş ↔ OC senkronu** şu an seed script'inde manuel DG PUT ile yapılıyor.
+1. ~~Demirbaş ↔ OC senkronu yalnızca manuel~~ → OC-1/OC-2 kuralları ile otomatik (Odak).
 2. **Duplicate demo:** `setup-zimmet-all.ps1 -SeedDemo` iki kez çalıştırıldığında GIR/ZIM çiftleri oluşabilir.
 3. **Prod ortam** henüz kurulmadı; tüm ID'ler Odak test'e özgü.
 4. **`indexList` formatı:** DG'de `fields: { "kod": 1 }` (object); array formatı 400 verir.
+5. Tutanaklar şu an **rapor satırından**; OC transition tetikli belge yok.
 
 ---
 
 ## 10. Gelecek genişlemeler (planlama)
 
 - F4 Satınalma workspace + SAT→GIR bağlantısı
-- Amortisman / garanti takibi (AF alanları)
-- Toplu zimmet (çoklu demirbaş tek WI)
+- Amortisman / garanti takibi (AF alanları) — garanti raporu + DI kısmen hazır
 - Barkod/QR ile depo girişi
-- Raporlama: zimmetli envanter, süresi dolan garantiler
+- OC’den tutanak / demirbaş zimmet geçmişi expand
 - Prod deploy: `docs/odak/proddeploy/` sürecine entegrasyon

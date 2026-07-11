@@ -6,12 +6,14 @@
 
 | Doküman | Konu |
 |---------|------|
-| [OC_UI_LOOKUP_FIELDS.md](./OC_UI_LOOKUP_FIELDS.md) | **Lookup / seçim** — dataset relation, statik select, dependsOn, picker (plan) |
+| [OC_UI_LOOKUP_FIELDS.md](./OC_UI_LOOKUP_FIELDS.md) | **Lookup / seçim** — dataset relation, statik select, dependsOn, picker (L1–L5) |
+| [OC_UI_DATASET_TABLE_PICKER.md](./OC_UI_DATASET_TABLE_PICKER.md) | **Tablo seçici** — zengin kolon/sort/filtre + **multiselect** (zimmet çoklu demirbaş; plan) |
 | [OC_UI_FORM_DEFINITIONS.md](./OC_UI_FORM_DEFINITIONS.md) | **Güncel** — `op_forms` editör, önizleme, `OcDynamicForm`, yeni iş sayfası |
 | [OC_UI_FIELD_POLICY.md](./OC_UI_FIELD_POLICY.md) | **Form** alan politikaları (statik) |
 | [OC_UI_WORKSPACE_POLICIES.md](./OC_UI_WORKSPACE_POLICIES.md) | **Workspace** alan politikaları + **Değerler** sekmesi + tamamlanan işler (§0) |
 | [OC_UI_ADMIN_FAZ1_PLAN.md](./OC_UI_ADMIN_FAZ1_PLAN.md) | **Admin Faz 1** — sıra, bugün, kapanış checklist |
 | [OC_UI_RULES_FAZ1.md](./OC_UI_RULES_FAZ1.md) | **Kurallar** (`op_rules`) tamamlama |
+| [OC_UI_CREATE_DATASET_ROWS.md](./OC_UI_CREATE_DATASET_ROWS.md) | **Kurallar aksiyonu** — `createDatasetRows` tanımlama ekranı (plan) |
 | [OC_UI_SCHEDULED_WORK_ITEMS.md](./OC_UI_SCHEDULED_WORK_ITEMS.md) | **Zamanlanmış işler** — workspace tanım + cron (plan) |
 | [OC_UI_STATE_FLOW_UX_PLANNING.md](./OC_UI_STATE_FLOW_UX_PLANNING.md) | **Durum akışı UX** — görsel editör tartışma notları (implementasyon bekliyor) |
 | [OC_UI_PHASE1_PLAN.md](./OC_UI_PHASE1_PLAN.md) | **Ana plan** — route, ekranlar, bileşenler, sprint sırası |

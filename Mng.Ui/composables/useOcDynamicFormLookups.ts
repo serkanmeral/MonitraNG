@@ -221,6 +221,10 @@ export function useOcDynamicFormLookups(
       baseFilter: lookup.filter,
       dependsOnFilter: dependsFilter,
       searchFields: lookup.searchFields,
+      defaultSort: lookup.defaultSort,
+      columns: lookup.columns,
+      displayFields: lookup.selection?.displayFields,
+      displaySeparator: lookup.selection?.displaySeparator,
     };
   }
 
@@ -298,10 +302,15 @@ export function useOcDynamicFormLookups(
   }
 
   async function reload() {
-    if (isReadonly()) return;
     const ws = workspaceId.value?.trim();
     const ctx = context.value;
     if (!ctx) return;
+
+    // Profile (readonly): hydrate dataset-picker chip labels only — skip catalog fetches.
+    if (isReadonly()) {
+      await syncDatasetPickerSelection();
+      return;
+    }
 
     const keys = fieldKeysNeedingLookups();
     const tasks: Promise<void>[] = [];
@@ -454,7 +463,6 @@ export function useOcDynamicFormLookups(
     watch(
       formModel,
       () => {
-        if (isReadonly()) return;
         const pickerKeys = fieldKeysNeedingLookups().filter((key) =>
           isDatasetPickerField(key, context.value?.fields[key])
         );

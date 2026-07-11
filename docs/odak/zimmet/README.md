@@ -1,9 +1,9 @@
 # Zimmet & Demirbaş Yönetimi (Odak)
 
-**Son güncelleme:** 8 Temmuz 2026  
+**Son güncelleme:** 11 Temmuz 2026  
 **Ortam:** Odak test (`192.168.20.20:5040`) — prod henüz kurulmadı
 
-Fabrika personeline laptop, monitör, çanta vb. malzeme zimmeti; depo girişi ve demirbaş envanteri için **Automated Forms (AF)** master veri + **Operation Core (OC)** iş akışı modeli.
+Fabrika personeline laptop, monitör, çanta vb. malzeme zimmeti; depo girişi ve demirbaş envanteri için **Automated Forms (AF)** master veri + **Operation Core (OC)** iş akışı + **Reporting / DI** belgeleri.
 
 ---
 
@@ -12,7 +12,8 @@ Fabrika personeline laptop, monitör, çanta vb. malzeme zimmeti; depo girişi v
 | Dosya | İçerik |
 |-------|--------|
 | [PLAN.md](./PLAN.md) | Mimari kararlar, faz planı (F0–F4), süreç diyagramı, geliştirme backlog |
-| [DEVAM.md](./DEVAM.md) | Tamamlanan işler, seed sonuçları, sıradaki adımlar, kurulum komutları |
+| [DEVAM.md](./DEVAM.md) | Kaldığımız yer, tamamlananlar, sıradaki adımlar, deneme komutları |
+| [current_status.md](./current_status.md) | Oturum durumu özeti |
 
 ---
 

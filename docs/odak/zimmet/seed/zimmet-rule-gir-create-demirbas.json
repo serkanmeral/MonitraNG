@@ -1,0 +1,40 @@
+{
+  "name": "Zimmet Depo — Stokla demirbas uret",
+  "description": "AF-1 varsayilan: GIR stock gecisinde miktar kadar zimmet_demirbaslar satiri; seriNo sequence ile uretilir ({{source.key}}-{000}).",
+  "ruleType": "automation",
+  "trigger": "WorkItemTransitioned",
+  "isActive": true,
+  "priority": 100,
+  "transitionKey": "stock",
+  "actions": [
+    {
+      "type": "createDatasetRows",
+      "dataset": "zimmet_demirbaslar",
+      "onError": "failTransition",
+      "cardinality": {
+        "mode": "count",
+        "countFrom": "fields.miktar"
+      },
+      "idempotency": {
+        "mode": "one_per_source",
+        "lookupField": "girisRef",
+        "lookupFrom": "key"
+      },
+      "fieldMappings": [
+        { "target": "katalogUrunId", "source": "field", "path": "fields.katalogUrunId" },
+        { "target": "depoId", "source": "field", "path": "fields.depoId" },
+        { "target": "lokasyonId", "source": "field", "path": "fields.lokasyonId" },
+        { "target": "durum", "source": "static", "value": "depoda" },
+        { "target": "girisTarihi", "source": "field", "path": "fields.girisTarihi" },
+        { "target": "girisRef", "source": "field", "path": "key" },
+        {
+          "target": "seriNo",
+          "source": "sequence",
+          "template": "{{source.key}}-{000}",
+          "startFrom": 1
+        },
+        { "target": "tedarikciId", "source": "field", "path": "fields.tedarikciId" }
+      ]
+    }
+  ]
+}

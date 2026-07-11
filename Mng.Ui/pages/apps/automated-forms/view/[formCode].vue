@@ -20,6 +20,9 @@ import { fetchFromDataGateway, fetchBlobFromDataGateway, getDataGatewayProxyUrl 
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 import { usePagePermissions } from '@/composables/usePagePermissions';
+import { afListViewReportId, isAfReportListView } from '@/utils/afListView';
+import ReportingRunnerView from '@/components/apps/reporting/ReportingRunnerView.vue';
+import { REPORTING_EMBED_SHARE_PATH } from '@/utils/reportingShareLink';
 
 const { getFieldLabel } = useFieldLabel();
 const { canCreate, canUpdate, canDelete, canExport } = usePagePermissions();
@@ -101,6 +104,16 @@ const filePreviewIsImage = ref(false);
 // Track which item is being edited (for update operation)
 const currentEditingItemId = ref<string | null>(null);
 
+/** Rapor listesi modunda runner yenileme sayacı (CRUD sonrası). */
+const reportRefreshToken = ref(0);
+
+const useReportListView = computed(() => isAfReportListView(form.value?.listConfig));
+const embeddedReportId = computed(() => afListViewReportId(form.value?.listConfig));
+
+function bumpReportRefresh() {
+  reportRefreshToken.value += 1;
+}
+
 // Page info
 const page = computed(() => ({
   title: form.value?.formName || t('automated-forms.view.title'),
@@ -151,8 +164,10 @@ const loadForm = async () => {
 
     await applyHubRouteQuery();
     
-    // Load data items
-    await fetchDataItems();
+    // Load data items (skip when list surface is a report)
+    if (!isAfReportListView(loadedForm.listConfig)) {
+      await fetchDataItems();
+    }
     
     // Mark initial load as complete
     isInitialLoad.value = false;
@@ -680,6 +695,10 @@ onBeforeUnmount(() => {
 
 // Refresh data
 const refreshData = async () => {
+  if (useReportListView.value) {
+    bumpReportRefresh();
+    return;
+  }
   await fetchDataItems();
 };
 
@@ -938,7 +957,11 @@ const saveForm = async () => {
         await router.push(`/apps/odak-siparis/packages/${encodeURIComponent(parentId)}?tab=lines`);
         return;
       }
-      await fetchDataItems();
+      if (useReportListView.value) {
+        bumpReportRefresh();
+      } else {
+        await fetchDataItems();
+      }
     }, 1500);
   } catch (error: any) {
     // Error logging removed - error parsing logic handles all cases
@@ -1301,7 +1324,11 @@ const confirmDelete = async () => {
     // Close dialog and refresh data
     showDeleteDialog.value = false;
     itemToDelete.value = null;
-    await fetchDataItems();
+    if (useReportListView.value) {
+      bumpReportRefresh();
+    } else {
+      await fetchDataItems();
+    }
   } catch (error: any) {
     deleteDialogError.value = error.message || t('automated-forms.view.messages.deleteError');
     console.error('Error deleting item:', error);
@@ -2495,7 +2522,7 @@ const getFormDescription = (): string => {
           </v-btn>
           
           <!-- Export Menu (hidden when no export permission) -->
-          <v-menu v-if="canExport && form && dataset">
+          <v-menu v-if="canExport && form && dataset && !useReportListView">
             <template v-slot:activator="{ props }">
               <v-btn
                 icon
@@ -2526,7 +2553,7 @@ const getFormDescription = (): string => {
         <div class="d-flex ga-3 align-center flex-wrap">
           <!-- Search (if enabled) -->
           <v-text-field
-            v-if="form && dataset && form.listConfig?.enableSearch"
+            v-if="form && dataset && !useReportListView && form.listConfig?.enableSearch"
             v-model="searchQuery"
             prepend-inner-icon="mdi-magnify"
             :placeholder="t('automated-forms.view.search.placeholder')"
@@ -2578,7 +2605,7 @@ const getFormDescription = (): string => {
       </div>
       
       <AfListFilters
-        v-if="form && dataset && filterableColumns.length > 0"
+        v-if="form && dataset && !useReportListView && filterableColumns.length > 0"
         :columns="filterableColumns"
         :relation-options-by-key="relationFilterOptions"
         @update:filters="onListFiltersUpdate"
@@ -2588,7 +2615,7 @@ const getFormDescription = (): string => {
       
       <!-- Empty State -->
       <v-alert
-        v-if="form && dataset && !loading && dataItems.length === 0"
+        v-if="form && dataset && !useReportListView && !loading && dataItems.length === 0"
         type="info"
         variant="tonal"
         density="compact"
@@ -2604,9 +2631,35 @@ const getFormDescription = (): string => {
           </div>
         </div>
       </v-alert>
+
+      <!-- Report list surface -->
+      <div v-if="form && dataset && useReportListView && embeddedReportId" class="af-report-list-surface">
+        <ReportingRunnerView
+          :key="embeddedReportId"
+          :report-id="embeddedReportId"
+          embedded
+          :show-admin-tools="false"
+          :share-base-path="REPORTING_EMBED_SHARE_PATH"
+          :refresh-token="reportRefreshToken"
+          af-row-actions
+          :af-can-update="canUpdate"
+          :af-can-delete="canDelete"
+          @af-edit="editItem"
+          @af-delete="deleteItem"
+        />
+      </div>
+      <v-alert
+        v-else-if="form && dataset && useReportListView && !embeddedReportId"
+        type="warning"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ t('automated-forms.form.listConfig.listView.reportPlaceholder') }}
+      </v-alert>
       
       <!-- Data Table (yatay scroll: .af-automated-form-list-scroll) -->
-      <div v-if="form && dataset" class="af-automated-form-list-scroll">
+      <div v-if="form && dataset && !useReportListView" class="af-automated-form-list-scroll">
         <v-data-table
           v-model="selectedItems"
           v-model:options="tableOptions"
@@ -2850,7 +2903,7 @@ const getFormDescription = (): string => {
       </div>
       
       <!-- Pagination -->
-      <div v-if="form && dataset && totalCount > 0" class="d-flex align-center justify-space-between mt-4 flex-wrap ga-3">
+      <div v-if="form && dataset && !useReportListView && totalCount > 0" class="d-flex align-center justify-space-between mt-4 flex-wrap ga-3">
         <div class="d-flex align-center ga-3">
           <div class="text-caption text-medium-emphasis">
             {{ t('automated-forms.view.table.pagination.total') }} {{ totalCount }} {{ t('automated-forms.view.table.pagination.records') }}
@@ -3170,17 +3223,20 @@ const getFormDescription = (): string => {
 
 .af-automated-form-list-table {
   display: block;
-  width: fit-content;
+  width: 100%;
   min-width: 100%;
 }
 
 .af-automated-form-list-table :deep(.v-table),
 .af-automated-form-list-table :deep(.v-table__wrapper) {
   overflow: visible !important;
+  width: 100%;
 }
 
 .af-automated-form-list-table :deep(table) {
-  width: auto !important;
+  /* Fill container when few columns; grow past 100% (via th min-width) when many → scroll. */
+  width: 100% !important;
+  min-width: 100% !important;
   table-layout: auto !important;
 }
 

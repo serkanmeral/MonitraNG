@@ -1,0 +1,83 @@
+{
+  "category": {
+    "id": "rcat_zimmet",
+    "parentId": null,
+    "ancestorIds": [],
+    "name": "Zimmet",
+    "description": "Zimmet ve demirbaş raporları",
+    "sortOrder": 20,
+    "status": "active",
+    "createdBy": "system"
+  },
+  "report": {
+    "id": "rpt_zimmet_depolar",
+    "title": "Depolar",
+    "description": "Zimmet depo tanımları.",
+    "categoryId": "rcat_zimmet",
+    "datasetName": "zimmet_depolar",
+    "listConfig": {
+      "enableSearch": false,
+      "defaultSortBy": "kod",
+      "defaultSortOrder": "asc",
+      "columns": [
+        { "fieldName": "kod", "title": "Depo kodu", "visible": true, "order": 1, "sortable": true, "filterable": true, "width": 120 },
+        { "fieldName": "ad", "title": "Depo adı", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        {
+          "fieldName": "adres",
+          "title": "Adres",
+          "visible": true,
+          "order": 3,
+          "sortable": false,
+          "filterable": true,
+          "format": { "type": "truncate", "maxLength": 60, "ellipsis": "..." }
+        },
+        { "fieldName": "sorumluId", "title": "Depo sorumlusu", "visible": true, "order": 4, "sortable": false, "filterable": true, "width": 160 },
+        {
+          "fieldName": "aktif",
+          "title": "Aktif",
+          "visible": true,
+          "order": 5,
+          "sortable": true,
+          "filterable": true,
+          "width": 80,
+          "format": { "type": "none", "valueMap": { "true": "Evet", "false": "Hayır" } }
+        }
+      ]
+    },
+    "expand": {
+      "enabled": true,
+      "hideEmptyFields": true,
+      "heading": "Depo detayı",
+      "intro": "",
+      "sections": [
+        {
+          "key": "detail",
+          "title": "Genel",
+          "cols": 12,
+          "fields": ["kod", "ad", "sorumluId", "aktif", "adres"]
+        }
+      ],
+      "fieldCols": {
+        "kod": 6,
+        "ad": 6,
+        "sorumluId": 6,
+        "aktif": 6,
+        "adres": 12
+      },
+      "actions": [],
+      "tabs": [],
+      "defaultTabId": "fields"
+    },
+    "fieldPolicies": { "policiesByField": {} },
+    "defaultFilters": [],
+    "visibilityPolicies": [],
+    "parameters": [],
+    "summary": {
+      "placement": "cards",
+      "metrics": [
+        { "id": "count", "label": "Depo sayısı", "kind": "count", "format": "integer" }
+      ]
+    },
+    "documentBindings": []
+  }
+}

@@ -3,8 +3,10 @@ import { computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import OcFormPolicyDefaultValueInput from '@/components/apps/operation-core/workspace-definitions/OcFormPolicyDefaultValueInput.vue';
+import OcCreateDatasetRowsActionEditor from '@/components/apps/operation-core/workspace-definitions/OcCreateDatasetRowsActionEditor.vue';
 import type { OcConditionFieldOption } from '@/utils/ocConditionClauses';
 import type {
+  OcCreateDatasetRowsDraft,
   OcWorkspaceAutomationAction,
   OcWorkspaceDefaultAction,
   OcWorkspaceRuleApplyMode,
@@ -25,6 +27,7 @@ const props = defineProps<{
   recipients: string;
   activitySummary: string;
   activityType: string;
+  createDatasetRows: OcCreateDatasetRowsDraft;
   conditionFieldItems: OcConditionFieldOption[];
   workspaceId: string;
   typeItems?: { value: string; title: string }[];
@@ -46,6 +49,7 @@ const emit = defineEmits<{
   'update:recipients': [string];
   'update:activitySummary': [string];
   'update:activityType': [string];
+  'update:createDatasetRows': [OcCreateDatasetRowsDraft];
 }>();
 
 const { t } = useAppI18n();
@@ -67,6 +71,10 @@ const automationActionItems = computed(() => [
   {
     value: 'sendEmailViaMngNotifiers',
     title: t('operationCore.workspaceDefinitions.rules.automationSendEmail'),
+  },
+  {
+    value: 'createDatasetRows',
+    title: t('operationCore.workspaceDefinitions.rules.automationCreateDatasetRows'),
   },
 ]);
 
@@ -184,6 +192,12 @@ watch(
           @update:model-value="emit('update:activityType', $event)"
         />
       </template>
+      <OcCreateDatasetRowsActionEditor
+        v-if="automationAction === 'createDatasetRows'"
+        :model-value="createDatasetRows"
+        :condition-field-items="conditionFieldItems"
+        @update:model-value="emit('update:createDatasetRows', $event)"
+      />
     </template>
 
     <template v-else>
@@ -208,30 +222,23 @@ watch(
         class="mb-3"
         @update:model-value="emit('update:defaultField', $event)"
       />
-      <MngDirectoryPickerField
-        v-if="defaultAction === 'setAssignee'"
-        :model-value="assignee"
-        entity="user"
-        density="comfortable"
-        class="mb-3"
-        @update:model-value="emit('update:assignee', $event)"
-      />
       <OcFormPolicyDefaultValueInput
-        v-else-if="defaultAction === 'setField' && defaultFieldMeta"
+        v-if="defaultAction === 'setField' && defaultFieldMeta"
         :model-value="defaultValue"
-        :field-key="defaultField"
-        :field-type="defaultFieldMeta.fieldType"
-        :relation-dataset="defaultFieldMeta.relationDataset"
-        :cardinality="defaultFieldMeta.cardinality"
+        :field="defaultFieldMeta"
         :workspace-id="workspaceId"
         :type-items="typeItems"
         :priority-items="priorityItems"
         :state-items="stateItems"
         :board-items="boardItems"
-        :field-label="t('operationCore.workspaceDefinitions.forms.rulesDefaultValue')"
-        density="comfortable"
-        control-variant="outlined"
         @update:model-value="emit('update:defaultValue', $event)"
+      />
+      <MngDirectoryPickerField
+        v-if="defaultAction === 'setAssignee'"
+        :model-value="assignee"
+        entity="user"
+        density="comfortable"
+        @update:model-value="emit('update:assignee', $event)"
       />
     </template>
   </div>

@@ -1,0 +1,70 @@
+{
+  "categoryName": "Zimmet",
+  "templates": [
+    {
+      "name": "Zimmet Personel Dökümü",
+      "code": "RPT_ZIMMET_PERSONEL",
+      "description": "Personel zimmet dökümü — filtrelenmiş demirbaş satırları (reportRun).",
+      "xlsxFile": "ODK-RPT-ZIMMET-PERSONEL-template-seed.xlsx",
+      "factoryMethod": "CreatePersonelZimmetDokumu",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        { "key": "reportTitle", "label": "Rapor başlığı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "filtersSummary", "label": "Filtre özeti", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "generatedAt", "label": "Üretim zamanı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "rowCount", "label": "Satır sayısı", "dataType": "text", "valueSourceMode": "manual" },
+        {
+          "key": "rows",
+          "label": "Rapor satırları",
+          "kind": "table",
+          "dataType": "table",
+          "valueSourceMode": "manual",
+          "docBinding": {
+            "regionKind": "sheet",
+            "tableIndex": 0,
+            "headerRowIndex": 5,
+            "templateRowIndex": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zimmet Teslim Tutanağı",
+      "code": "RPT_ZIMMET_TESLIM",
+      "description": "Tek demirbaş satırından (parentRow) zimmet teslim tutanağı — DOCX.",
+      "docxFile": "ODK-RPT-ZIMMET-TESLIM-template-seed.docx",
+      "factoryMethod": "CreateTeslim",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        { "key": "reportTitle", "label": "Rapor başlığı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "generatedAt", "label": "Üretim zamanı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "demirbasNo", "label": "Demirbaş no", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "ad", "label": "Ürün", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "seriNo", "label": "Seri no", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "durum", "label": "Durum", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "zimmetliPersonelId", "label": "Zimmetli personel", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "zimmetRef", "label": "Zimmet WI", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "garantiBitis", "label": "Garanti bitiş", "dataType": "text", "valueSourceMode": "manual" }
+      ]
+    },
+    {
+      "name": "Zimmet İade Tutanağı",
+      "code": "RPT_ZIMMET_IADE",
+      "description": "Tek demirbaş satırından (parentRow) zimmet iade tutanağı — DOCX.",
+      "docxFile": "ODK-RPT-ZIMMET-IADE-template-seed.docx",
+      "factoryMethod": "CreateIade",
+      "letterhead": { "enabled": false },
+      "parameters": [
+        { "key": "reportTitle", "label": "Rapor başlığı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "generatedAt", "label": "Üretim zamanı", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "demirbasNo", "label": "Demirbaş no", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "ad", "label": "Ürün", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "seriNo", "label": "Seri no", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "durum", "label": "Durum", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "zimmetliPersonelId", "label": "Zimmetli personel", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "zimmetRef", "label": "Zimmet WI", "dataType": "text", "valueSourceMode": "manual" },
+        { "key": "garantiBitis", "label": "Garanti bitiş", "dataType": "text", "valueSourceMode": "manual" }
+      ]
+    }
+  ]
+}

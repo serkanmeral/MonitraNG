@@ -1,0 +1,30 @@
+{
+  "name": "Personel Zimmet — Iadede demirbas depoya don",
+  "workspaceId": "{{wsZimId}}",
+  "ruleType": "automation",
+  "trigger": "WorkItemTransitioned",
+  "isActive": true,
+  "priority": 100,
+  "typeId": "{{typeZimmetIadeId}}",
+  "transitionKey": "receive_return",
+  "actions": [
+    {
+      "type": "updateDatasetRows",
+      "dataset": "zimmet_demirbaslar",
+      "onError": "failTransition",
+      "cardinality": {
+        "mode": "expand",
+        "itemsFrom": "fields.demirbasId",
+        "itemAs": "id"
+      },
+      "targetId": {
+        "source": "item",
+        "path": "value"
+      },
+      "fieldMappings": [
+        { "target": "durum", "source": "static", "value": "depoda" }
+      ],
+      "clearFields": ["zimmetliPersonelId", "zimmetRef"]
+    }
+  ]
+}

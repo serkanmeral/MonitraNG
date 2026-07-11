@@ -310,11 +310,15 @@ function New-ZimmetLookupOptions {
         [string]$LabelField = "ad",
         [string[]]$SearchFields = @("ad", "kod"),
         [string]$Filter = "aktif:eq:true",
-        [hashtable]$DependsOn = $null
+        [hashtable]$DependsOn = $null,
+        [string]$Presentation = "autocomplete",
+        [array]$Columns = $null,
+        [hashtable]$DefaultSort = $null,
+        [hashtable]$Selection = $null
     )
     $lookup = @{
         source       = "dataset"
-        presentation = "autocomplete"
+        presentation = $Presentation
         valueField   = "__dataId"
         labelField   = $LabelField
         searchFields = $SearchFields
@@ -322,6 +326,9 @@ function New-ZimmetLookupOptions {
     }
     if ($Filter) { $lookup.filter = $Filter }
     if ($DependsOn) { $lookup.dependsOn = $DependsOn }
+    if ($Columns) { $lookup.columns = $Columns }
+    if ($DefaultSort) { $lookup.defaultSort = $DefaultSort }
+    if ($Selection) { $lookup.selection = $Selection }
     return @{ lookup = $lookup }
 }
 

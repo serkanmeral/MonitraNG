@@ -1,0 +1,132 @@
+{
+  "category": {
+    "id": "rcat_zimmet",
+    "parentId": null,
+    "ancestorIds": [],
+    "name": "Zimmet",
+    "description": "Zimmet ve demirbaş raporları",
+    "sortOrder": 20,
+    "status": "active",
+    "createdBy": "system"
+  },
+  "report": {
+    "id": "rpt_zimmet_personel",
+    "title": "Personel zimmet özeti",
+    "description": "Seçilen personelin zimmetindeki demirbaşlar — DI personel dökümü belgesi.",
+    "categoryId": "rcat_zimmet",
+    "datasetName": "zimmet_demirbaslar",
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "demirbasNo",
+      "defaultSortOrder": "asc",
+      "columns": [
+        { "fieldName": "demirbasNo", "title": "Demirbaş no", "visible": true, "order": 1, "sortable": true, "filterable": true, "width": 130 },
+        {
+          "fieldName": "katalogUrunId",
+          "title": "Ürün",
+          "visible": true,
+          "order": 2,
+          "sortable": false,
+          "filterable": true,
+          "relationDisplayField": "ad"
+        },
+        { "fieldName": "seriNo", "title": "Seri no", "visible": true, "order": 3, "sortable": true, "filterable": true, "width": 140 },
+        {
+          "fieldName": "durum",
+          "title": "Durum",
+          "visible": true,
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "width": 110,
+          "format": {
+            "type": "none",
+            "valueMap": {
+              "depoda": "Depoda",
+              "zimmetli": "Zimmetli",
+              "bakimda": "Bakımda",
+              "hurda": "Hurda",
+              "kayip": "Kayıp"
+            }
+          }
+        },
+        { "fieldName": "zimmetRef", "title": "Zimmet WI", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 120 },
+        {
+          "fieldName": "garantiBitis",
+          "title": "Garanti bitiş",
+          "visible": true,
+          "order": 6,
+          "sortable": true,
+          "filterable": true,
+          "width": 130
+        }
+      ]
+    },
+    "expand": {
+      "enabled": true,
+      "hideEmptyFields": true,
+      "heading": "Demirbaş detayı",
+      "intro": "",
+      "sections": [
+        {
+          "key": "kimlik",
+          "title": "Kimlik",
+          "cols": 12,
+          "fields": ["demirbasNo", "katalogUrunId", "seriNo", "durum", "zimmetliPersonelId", "zimmetRef"]
+        }
+      ],
+      "fieldCols": {
+        "demirbasNo": 6,
+        "katalogUrunId": 6,
+        "seriNo": 6,
+        "durum": 6,
+        "zimmetliPersonelId": 6,
+        "zimmetRef": 6
+      },
+      "actions": [],
+      "tabs": [],
+      "defaultTabId": "fields"
+    },
+    "fieldPolicies": { "policiesByField": {} },
+    "defaultFilters": [
+      { "field": "durum", "operator": "eq", "value": "zimmetli" }
+    ],
+    "visibilityPolicies": [],
+    "parameters": [
+      {
+        "id": "person",
+        "type": "person",
+        "widget": "personPicker",
+        "binding": { "kind": "fieldEq", "field": "zimmetliPersonelId" },
+        "label": "Personel",
+        "field": "zimmetliPersonelId",
+        "required": true
+      },
+      {
+        "id": "search",
+        "type": "search",
+        "widget": "search",
+        "binding": { "kind": "search" },
+        "label": "Ara",
+        "required": false
+      }
+    ],
+    "summary": {
+      "placement": "cards",
+      "metrics": [
+        { "id": "count", "label": "Zimmetli demirbaş", "kind": "count", "format": "integer" }
+      ]
+    },
+    "documentBindings": [
+      {
+        "id": "docbind_zimmet_personel",
+        "templateId": "RPT_ZIMMET_PERSONEL",
+        "templateCode": "RPT_ZIMMET_PERSONEL",
+        "label": "Personel zimmet dökümü",
+        "contextType": "reportRun",
+        "documentNamePattern": "{{reportTitle}} {{now:yyyy-MM-dd HH:mm}}",
+        "generatedAtPattern": "yyyy-MM-dd HH:mm"
+      }
+    ]
+  }
+}

@@ -20,7 +20,32 @@ export type ApiErrorNotifyOptions = DgErrorNotifyOptions;
 
 export type ApiErrorNotifyResult = DgErrorNotifyResult;
 
+function asErrorDataRecord(error: unknown): Record<string, unknown> | null {
+  if (!error || typeof error !== 'object') return null;
+  const root = error as Record<string, unknown>;
+  const data = root.data;
+  if (data && typeof data === 'object') return data as Record<string, unknown>;
+  return root;
+}
+
+/** MngOperations: { code, message, messageTr? } — DG'nin { error: { ... } } sarmalayıcısı yok. */
+function isLikelyOperationsError(error: unknown): boolean {
+  const data = asErrorDataRecord(error);
+  if (!data) return false;
+  const nested = data.data && typeof data.data === 'object' ? (data.data as Record<string, unknown>) : null;
+  const candidates = [data, nested].filter(Boolean) as Record<string, unknown>[];
+  for (const d of candidates) {
+    if (d.error && typeof d.error === 'object') continue;
+    const code = d.code;
+    if (typeof code !== 'string' || !code.trim()) continue;
+    if (typeof d.messageTr === 'string' && d.messageTr.trim()) return true;
+    if (typeof d.message === 'string' && d.message.trim()) return true;
+  }
+  return false;
+}
+
 function isLikelyDocumentError(error: unknown): boolean {
+  if (isLikelyOperationsError(error)) return false;
   if (!(error instanceof Error)) return false;
   const data = (error as { data?: unknown }).data;
   if (!data || typeof data !== 'object') return false;
@@ -35,12 +60,16 @@ export function extractApiErrorMessage(error: unknown, fallback: string): string
     return dgExtractMessage(error, fallback);
   }
 
+  if (isLikelyOperationsError(error)) {
+    return ocExtractOperationsMessage(error, fallback);
+  }
+
   if (isLikelyDocumentError(error)) {
     return diExtractMessage(error, fallback);
   }
 
   const moMessage = ocExtractOperationsMessage(error, fallback);
-  if (moMessage) return moMessage;
+  if (moMessage && moMessage !== fallback) return moMessage;
 
   return diExtractMessage(error, fallback);
 }

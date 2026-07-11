@@ -157,6 +157,7 @@ function buildQuery(params: {
   sort?: string;
   filter?: string;
   search?: string;
+  expand?: boolean;
 }): string {
   const q = new URLSearchParams();
   q.set('skip', String(params.skip ?? 0));
@@ -164,6 +165,8 @@ function buildQuery(params: {
   if (params.sort) q.set('sort', params.sort);
   if (params.filter) q.set('filter', params.filter);
   if (params.search) q.set('search', params.search);
+  if (params.expand === true) q.set('expand', 'true');
+  if (params.expand === false) q.set('expand', 'false');
   return q.toString();
 }
 
@@ -1345,16 +1348,52 @@ export function ocErrorCode(error: unknown): string | null {
   return null;
 }
 
+function isGenericHttpStatusMessage(message: string): boolean {
+  const lower = message.trim().toLowerCase();
+  return (
+    lower === 'bad request'
+    || lower === 'unauthorized'
+    || lower === 'forbidden'
+    || lower === 'not found'
+    || lower === 'conflict'
+    || lower === 'internal server error'
+    || lower === 'failed to fetch'
+  );
+}
+
+function readOperationsBodyMessage(body: Record<string, unknown> | null): string | null {
+  if (!body) return null;
+  if (typeof body.messageTr === 'string' && body.messageTr.trim()) return body.messageTr.trim();
+  if (typeof body.message === 'string' && body.message.trim() && !isGenericHttpStatusMessage(body.message)) {
+    return body.message.trim();
+  }
+  return null;
+}
+
 /** MngOperations hata gövdesinden Türkçe mesajı (messageTr) tercih ederek okunabilir mesaj döndürür. */
 export function ocExtractOperationsMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error) {
-    const data = (error as { data?: unknown }).data;
-    if (data && typeof data === 'object') {
-      const d = data as Record<string, unknown>;
-      if (typeof d.messageTr === 'string' && d.messageTr) return d.messageTr;
-      if (typeof d.message === 'string' && d.message) return d.message;
+  const bodies: Record<string, unknown>[] = [];
+  if (error && typeof error === 'object') {
+    const root = error as Record<string, unknown>;
+    if (root.data && typeof root.data === 'object') {
+      const data = root.data as Record<string, unknown>;
+      bodies.push(data);
+      if (data.data && typeof data.data === 'object') {
+        bodies.push(data.data as Record<string, unknown>);
+      }
     }
+    bodies.push(root);
   }
+
+  for (const body of bodies) {
+    const msg = readOperationsBodyMessage(body);
+    if (msg) return msg;
+  }
+
+  if (error instanceof Error && error.message && !isGenericHttpStatusMessage(error.message)) {
+    return error.message;
+  }
+
   return ocExtractDgErrorMessage(error, fallback);
 }
 
@@ -1435,12 +1474,20 @@ export async function ocListDataset(
   return parseListResponse(raw);
 }
 
-/** Sayfalı dataset listesi — modal lookup picker (L4). */
+/** Sayfalı dataset listesi — modal lookup picker (L4 / TP). */
 export async function ocListDatasetPage(
   dataset: string,
-  options?: { skip?: number; limit?: number; sort?: string; filter?: string; search?: string }
+  options?: {
+    skip?: number;
+    limit?: number;
+    sort?: string;
+    filter?: string;
+    search?: string;
+    /** Relation alanlarını nesne olarak getir (etiket gösterimi). */
+    expand?: boolean;
+  }
 ): Promise<{ items: unknown[]; total: number }> {
-  const qs = buildQuery(options ?? {});
+  const qs = buildQuery({ ...options, expand: options?.expand ?? true });
   const url = `/api/v1/data/${encodeURIComponent(dataset)}?${qs}`;
   const raw = await fetchFromDataGateway(url, 'GET');
   return parseListResponseWithTotal(raw);

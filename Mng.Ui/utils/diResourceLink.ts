@@ -24,6 +24,17 @@ export function buildDiResourceUrl(
   return `${DI_HOME_PATH}/r/${encodeURIComponent(id)}${query ? `?${query}` : ''}`;
 }
 
+/** Rapor / belge listesinden DI kaynağını yeni tarayıcı sekmesinde aç. */
+export function openDiResourceInNewTab(
+  resourceId: string | null | undefined,
+  options?: { fromFolderId?: string | null },
+): void {
+  if (!import.meta.client) return;
+  const id = resourceId?.trim();
+  if (!id) return;
+  window.open(buildDiResourceUrl(id, options), '_blank', 'noopener,noreferrer');
+}
+
 /** Tam ekran Collabora editör sayfası (yeni sekme). */
 export function buildDiResourceEditorUrl(
   resourceId: string,

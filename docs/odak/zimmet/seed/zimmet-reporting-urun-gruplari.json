@@ -1,0 +1,114 @@
+{
+  "category": {
+    "id": "rcat_zimmet",
+    "parentId": null,
+    "ancestorIds": [],
+    "name": "Zimmet",
+    "description": "Zimmet ve demirbaş raporları",
+    "sortOrder": 20,
+    "status": "active",
+    "createdBy": "system"
+  },
+  "report": {
+    "id": "rpt_zimmet_urun_gruplari",
+    "title": "Ürün grupları",
+    "description": "Zimmet ürün grubu tanımları (katalog üstü sınıflandırma).",
+    "categoryId": "rcat_zimmet",
+    "datasetName": "zimmet_urun_gruplari",
+    "listConfig": {
+      "enableSearch": false,
+      "defaultSortBy": "kod",
+      "defaultSortOrder": "asc",
+      "columns": [
+        { "fieldName": "kod", "title": "Grup kodu", "visible": true, "order": 1, "sortable": true, "filterable": true, "width": 120 },
+        { "fieldName": "ad", "title": "Grup adı", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        {
+          "fieldName": "trackBySerial",
+          "title": "Seri no ile takip",
+          "visible": true,
+          "order": 3,
+          "sortable": true,
+          "filterable": true,
+          "width": 130,
+          "format": { "type": "none", "valueMap": { "true": "Evet", "false": "Hayır" } }
+        },
+        {
+          "fieldName": "isFixedAsset",
+          "title": "Demirbaş",
+          "visible": true,
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "width": 100,
+          "format": { "type": "none", "valueMap": { "true": "Evet", "false": "Hayır" } }
+        },
+        {
+          "fieldName": "isConsumable",
+          "title": "Sarf malzeme",
+          "visible": true,
+          "order": 5,
+          "sortable": true,
+          "filterable": true,
+          "width": 110,
+          "format": { "type": "none", "valueMap": { "true": "Evet", "false": "Hayır" } }
+        },
+        {
+          "fieldName": "aciklama",
+          "title": "Açıklama",
+          "visible": true,
+          "order": 6,
+          "sortable": false,
+          "filterable": false,
+          "format": { "type": "truncate", "maxLength": 80, "ellipsis": "..." }
+        },
+        {
+          "fieldName": "aktif",
+          "title": "Aktif",
+          "visible": true,
+          "order": 7,
+          "sortable": true,
+          "filterable": true,
+          "width": 80,
+          "format": { "type": "none", "valueMap": { "true": "Evet", "false": "Hayır" } }
+        }
+      ]
+    },
+    "expand": {
+      "enabled": true,
+      "hideEmptyFields": true,
+      "heading": "Ürün grubu detayı",
+      "intro": "",
+      "sections": [
+        {
+          "key": "detail",
+          "title": "Genel",
+          "cols": 12,
+          "fields": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aciklama", "aktif"]
+        }
+      ],
+      "fieldCols": {
+        "kod": 6,
+        "ad": 6,
+        "trackBySerial": 6,
+        "isFixedAsset": 6,
+        "isConsumable": 6,
+        "aktif": 6,
+        "aciklama": 12
+      },
+      "actions": [],
+      "tabs": [],
+      "defaultTabId": "fields"
+    },
+    "fieldPolicies": { "policiesByField": {} },
+    "defaultFilters": [],
+    "visibilityPolicies": [],
+    "parameters": [],
+    "summary": {
+      "placement": "cards",
+      "metrics": [
+        { "id": "count", "label": "Grup sayısı", "kind": "count", "format": "integer" }
+      ]
+    },
+    "documentBindings": []
+  }
+}

@@ -72,8 +72,12 @@ Field Definition → Form/Profile → Workspace → Board → State
 | `createNotification` | `op_notifications` satırı |
 | `sendEmailViaMngNotifiers` | templateKey + recipients resolve |
 | `createActivity` | Ek audit satırı |
+| `startWorkflow` | MngWorkflow run başlat |
+| `createDatasetRows` | DG dataset’e 1…N satır — [CREATE_DATASET_ROWS_ACTION_SPEC.md](./CREATE_DATASET_ROWS_ACTION_SPEC.md) |
 
 **Faz 1 dışı:** webhook, script, MQTT, external HTTP chain.
+
+**UI:** [OC_UI_CREATE_DATASET_ROWS.md](../ui/OC_UI_CREATE_DATASET_ROWS.md)
 
 ---
 

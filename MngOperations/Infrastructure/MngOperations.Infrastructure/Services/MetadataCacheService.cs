@@ -372,6 +372,11 @@ public partial class MetadataCacheService : IMetadataCache
         Remove($"notification-policies:{wsId}");
         Remove($"poolfields:{wsId}");
 
+        // Pool field options (lookup.selection.displayFields, columns, …) live in the global
+        // catalog cache — workspace reload must drop it or form context keeps stale op_fields.
+        InvalidateCatalog(OcDatasets.Fields);
+        removed++;
+
         var filter = $"workspaceId:eq:{wsId}";
         var filterQuery = $"filter={Uri.EscapeDataString(filter)}&limit=200";
 

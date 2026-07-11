@@ -83,7 +83,7 @@ import {
   resolveReportingGeneratedAt,
 } from '@/utils/reportingDocumentTokens';
 import { diGenerateFromTemplate } from '@/services/documentIntelligenceService';
-import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import { openDiResourceInNewTab } from '@/utils/diResourceLink';
 import {
   buildReportingShareHref,
   copyTextToClipboard,
@@ -100,6 +100,7 @@ import {
   LinkIcon,
   RefreshIcon,
   PencilIcon,
+  TrashIcon,
 } from 'vue-tabler-icons';
 
 const props = withDefaults(
@@ -111,13 +112,31 @@ const props = withDefaults(
     showAdminTools?: boolean;
     /** Paylaşım linki tabanı (browse veya embed). */
     shareBasePath?: string;
+    /** Artınca rapor yeniden çalıştırılır (AF CRUD sonrası yenileme). */
+    refreshToken?: number;
+    /**
+     * AF gömülü liste: satır Düzenle/Sil. Yalnızca Dynamic Form view açılışında true;
+     * rapor browse/embed/designer runner'da false kalır.
+     */
+    afRowActions?: boolean;
+    afCanUpdate?: boolean;
+    afCanDelete?: boolean;
   }>(),
   {
     embedded: false,
     showAdminTools: true,
     shareBasePath: REPORTING_BROWSE_SHARE_PATH,
+    refreshToken: 0,
+    afRowActions: false,
+    afCanUpdate: false,
+    afCanDelete: false,
   }
 );
+
+const emit = defineEmits<{
+  'af-edit': [row: Record<string, unknown>];
+  'af-delete': [row: Record<string, unknown>];
+}>();
 
 const route = useRoute();
 const router = useRouter();
@@ -208,11 +227,38 @@ const tableHeaders = computed(() => {
   const headers = buildReportingListHeaders(listConfig.value, schemaFields.value ?? [], (field) =>
     canViewColumn(field)
   );
-  if (expandConfig.value.enabled) {
-    return [{ ...ODAK_DATA_TABLE_EXPAND_COLUMN }, ...headers];
+  const withExpand = expandConfig.value.enabled
+    ? [{ ...ODAK_DATA_TABLE_EXPAND_COLUMN }, ...headers]
+    : headers;
+  if (
+    props.afRowActions &&
+    (props.afCanUpdate || props.afCanDelete)
+  ) {
+    return [
+      ...withExpand,
+      {
+        title: t('automated-forms.view.table.headers.actions'),
+        key: '__afActions',
+        sortable: false,
+        width: '100px',
+        align: 'end' as const,
+      },
+    ];
   }
-  return headers;
+  return withExpand;
 });
+
+const showAfRowActionButtons = computed(
+  () => props.afRowActions && (props.afCanUpdate || props.afCanDelete)
+);
+
+function onAfEditRow(item: Record<string, unknown>) {
+  emit('af-edit', reportingDataTableRow(item));
+}
+
+function onAfDeleteRow(item: Record<string, unknown>) {
+  emit('af-delete', reportingDataTableRow(item));
+}
 
 const tableItems = computed(() =>
   runRows.value.map((row, index) => ({
@@ -654,8 +700,7 @@ function openDocumentsDialog() {
 }
 
 function openResourceInDi(resourceId: string | null | undefined) {
-  if (!resourceId) return;
-  void navigateTo(buildDiResourceUrl(resourceId));
+  openDiResourceInNewTab(resourceId);
 }
 
 function openGeneratedInDi() {
@@ -825,6 +870,15 @@ watch(
   }
 );
 
+watch(
+  () => props.refreshToken,
+  (token, prev) => {
+    if (token == null || token === prev) return;
+    if (!reportingParametersReady(reportParameters.value, parameterValues.value)) return;
+    void runReport();
+  }
+);
+
 onMounted(async () => {
   await authStore.ensureValidToken();
   await hydrateFromReport();
@@ -871,7 +925,7 @@ onBeforeUnmount(() => {
     </v-alert>
 
     <template v-else>
-      <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-3">
+      <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-2">
         <v-btn
           v-if="!embedded"
           variant="text"
@@ -886,6 +940,18 @@ onBeforeUnmount(() => {
           {{ title || t('reporting.runner.title') }}
         </div>
         <div class="d-flex flex-wrap ga-2">
+          <v-btn
+            v-if="!reportParameters.length"
+            color="primary"
+            variant="tonal"
+            size="small"
+            class="text-none"
+            :loading="runLoading"
+            @click="runReport"
+          >
+            <RefreshIcon size="16" class="mr-1" />
+            {{ t('reporting.actions.run') }}
+          </v-btn>
           <v-btn
             v-if="showAdminTools"
             variant="tonal"
@@ -929,6 +995,14 @@ onBeforeUnmount(() => {
           </v-btn>
         </div>
       </div>
+
+      <p
+        v-if="description"
+        class="text-body-2 text-medium-emphasis mb-2 text-truncate"
+        :title="description"
+      >
+        {{ description }}
+      </p>
 
       <ReportingExportDialog
         v-model="exportDialogOpen"
@@ -1077,10 +1151,6 @@ onBeforeUnmount(() => {
         </v-card>
       </v-dialog>
 
-      <v-alert v-if="description" type="info" variant="tonal" density="comfortable" class="mb-4">
-        {{ description }}
-      </v-alert>
-
       <ReportingParametersPanel
         v-model="parameterValues"
         :parameters="reportParameters"
@@ -1089,52 +1159,31 @@ onBeforeUnmount(() => {
       />
 
       <v-card elevation="0" class="border">
-        <v-card-title class="d-flex align-center flex-wrap ga-2 py-3">
-          <span class="text-subtitle-1 font-weight-medium">{{ title }}</span>
-          <v-spacer />
-          <v-btn
-            v-if="!reportParameters.length"
-            color="primary"
-            variant="tonal"
-            size="small"
-            class="text-none"
-            :loading="runLoading"
-            @click="runReport"
-          >
-            <RefreshIcon size="16" class="mr-1" />
-            {{ t('reporting.actions.run') }}
-          </v-btn>
-        </v-card-title>
-
-        <v-divider />
-
-        <div v-if="showAdvancedFilterPanel" class="px-4 pt-3">
-          <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-2">
-            <span class="text-subtitle-2 font-weight-medium">
-              {{ t('reporting.runner.advancedFiltersTitle') }}
-            </span>
-            <v-btn
-              v-if="defaultFilters.length"
-              size="small"
-              variant="tonal"
-              @click="resetRuntimeFiltersToDefaults"
-            >
-              {{ t('reporting.defaultFilters.applyToPreview') }}
-            </v-btn>
-          </div>
-          <p class="text-caption text-medium-emphasis mb-3">
-            {{ t('reporting.runner.advancedFiltersHint') }}
-          </p>
+        <div v-if="showAdvancedFilterPanel" class="px-3 pt-3">
           <AfListFilters
             :key="runtimeFiltersKey"
+            compact
             :columns="filterColumns"
             :initial-filters="cloneAfListFilters(advancedFilters)"
             :initial-panel-open="advancedFilters.length > 0"
+            :compact-hint="t('reporting.runner.advancedFiltersHint')"
             @update:filters="onAdvancedFiltersUpdate"
-          />
+          >
+            <template #compact-append>
+              <v-btn
+                v-if="defaultFilters.length"
+                size="small"
+                variant="text"
+                class="text-none"
+                @click="resetRuntimeFiltersToDefaults"
+              >
+                {{ t('reporting.defaultFilters.applyToPreview') }}
+              </v-btn>
+            </template>
+          </AfListFilters>
         </div>
 
-        <v-card-text>
+        <v-card-text :class="showAdvancedFilterPanel ? 'pt-2' : undefined">
           <v-progress-linear v-if="schemaLoading" indeterminate color="primary" class="mb-3" />
 
           <v-alert v-if="runError" type="error" variant="tonal" class="mb-3">
@@ -1195,6 +1244,7 @@ onBeforeUnmount(() => {
               :config="summaryConfig"
               :values="summaryValues"
               :loading="summaryLoading"
+              dense
             />
 
             <v-data-table-server
@@ -1253,6 +1303,33 @@ onBeforeUnmount(() => {
                       </span>
                     </template>
               </span>
+            </template>
+
+            <template v-if="showAfRowActionButtons" #item.__afActions="{ item }">
+              <div class="d-flex align-center justify-end ga-1">
+                <v-btn
+                  v-if="afCanUpdate"
+                  icon
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :title="t('automated-forms.view.buttons.edit')"
+                  @click.stop="onAfEditRow(item)"
+                >
+                  <PencilIcon size="18" />
+                </v-btn>
+                <v-btn
+                  v-if="afCanDelete"
+                  icon
+                  size="small"
+                  variant="text"
+                  color="error"
+                  :title="t('automated-forms.view.buttons.delete')"
+                  @click.stop="onAfDeleteRow(item)"
+                >
+                  <TrashIcon size="18" />
+                </v-btn>
+              </div>
             </template>
 
             <template v-if="expandConfig.enabled" #expanded-row="{ columns, item }">

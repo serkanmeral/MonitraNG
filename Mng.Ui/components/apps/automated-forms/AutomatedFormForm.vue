@@ -15,6 +15,15 @@ import {
   type AfChoiceWidget,
   type AfTextWidget,
 } from '@/utils/afFormFieldPresentation';
+import type { AfListViewMode } from '@/utils/afListView';
+import { normalizeAfListView } from '@/utils/afListView';
+import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
+import {
+  ReportingCatalogService,
+  reportingDomainKey,
+} from '@/services/reportingCatalogService';
+import { ReportingCategoryService } from '@/services/reportingCategoryService';
+import { canViewReportingReport } from '@/utils/reportingReportAccess';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -123,6 +132,10 @@ const formData = ref({
     defaultSortBy: '' as string | undefined,
     defaultSortOrder: 'asc' as 'asc' | 'desc',
     enableSearch: false,
+    listView: {
+      mode: 'default' as AfListViewMode,
+      reportId: null as string | null,
+    },
   },
   formConfig: {
     visibleFields: [] as string[],
@@ -141,6 +154,99 @@ const formData = ref({
   },
   isActive: true,
 });
+
+const reportingDomain = computed(() =>
+  reportingDomainKey(authStore.userInfo?.domain_id, authStore.userInfo?.domain_name)
+);
+const reportingCatalogReady = ref(false);
+const reportingCatalogLoading = ref(false);
+
+const listViewMode = computed({
+  get: (): AfListViewMode =>
+    normalizeAfListView(formData.value.listConfig.listView).mode,
+  set: (mode: AfListViewMode) => {
+    const current = normalizeAfListView(formData.value.listConfig.listView);
+    formData.value.listConfig.listView = {
+      mode,
+      reportId: current.reportId ?? null,
+    };
+    if (mode === 'report' && !reportingCatalogReady.value) {
+      void loadReportingCatalogForPicker();
+    }
+  },
+});
+
+const listViewReportId = computed({
+  get: (): string | null =>
+    normalizeAfListView(formData.value.listConfig.listView).reportId ?? null,
+  set: (reportId: string | null) => {
+    formData.value.listConfig.listView = {
+      mode: 'report',
+      reportId,
+    };
+  },
+});
+
+const listViewModeItems = computed(() => [
+  {
+    title: t('automated-forms.form.listConfig.listView.modeDefault'),
+    value: 'default' as AfListViewMode,
+  },
+  {
+    title: t('automated-forms.form.listConfig.listView.modeReport'),
+    value: 'report' as AfListViewMode,
+  },
+]);
+
+const reportPickerItems = computed(() => {
+  if (!reportingCatalogReady.value) return [];
+  const catalog = new ReportingCatalogService(reportingDomain.value);
+  const categories = new ReportingCategoryService(reportingDomain.value);
+  const catName = (id: string | null) => {
+    if (!id) return '';
+    return categories.getById(id)?.name ?? '';
+  };
+  return catalog
+    .listReports()
+    .filter((r) => canViewReportingReport(r.visibilityPolicies, authStore.userGroups))
+    .slice()
+    .sort((a, b) => a.title.localeCompare(b.title, 'tr'))
+    .map((r) => {
+      const cat = catName(r.categoryId);
+      return {
+        title: cat ? `${cat} / ${r.title}` : r.title,
+        value: r.id,
+        subtitle: r.datasetName || r.id,
+      };
+    });
+});
+
+async function loadReportingCatalogForPicker() {
+  if (reportingCatalogLoading.value) return;
+  reportingCatalogLoading.value = true;
+  try {
+    await bootstrapReportingCatalog(reportingDomain.value);
+    reportingCatalogReady.value = true;
+  } catch {
+    reportingCatalogReady.value = false;
+  } finally {
+    reportingCatalogLoading.value = false;
+  }
+}
+
+function buildListConfigPayload() {
+  const listView = normalizeAfListView(formData.value.listConfig.listView);
+  return {
+    columns: formData.value.listConfig.columns || [],
+    defaultSortBy: formData.value.listConfig.defaultSortBy || undefined,
+    defaultSortOrder: formData.value.listConfig.defaultSortOrder || undefined,
+    enableSearch: formData.value.listConfig.enableSearch ?? false,
+    listView: {
+      mode: listView.mode,
+      reportId: listView.mode === 'report' ? listView.reportId ?? null : null,
+    },
+  };
+}
 
 // Available datasets for dropdown: admin ise tümü, değilse sistem kategorisindekiler hariç
 const availableDatasets = computed(() => {
@@ -734,12 +840,7 @@ const saveColumnSettings = async () => {
         formCode: formData.value.formCode.trim(),
         description: formData.value.description.trim() || undefined,
         datasetName: formData.value.datasetName,
-        listConfig: {
-          columns: formData.value.listConfig.columns || [],
-          defaultSortBy: formData.value.listConfig.defaultSortBy || undefined,
-          defaultSortOrder: formData.value.listConfig.defaultSortOrder || undefined,
-          enableSearch: formData.value.listConfig.enableSearch ?? false,
-        },
+        listConfig: buildListConfigPayload(),
         formConfig: {
           visibleFields: formData.value.formConfig.visibleFields || [],
           readonlyFields: formData.value.formConfig.readonlyFields || [],
@@ -850,6 +951,7 @@ const loadForm = async () => {
         defaultSortBy: undefined,
         defaultSortOrder: 'asc' as 'asc' | 'desc',
         enableSearch: false,
+        listView: { mode: 'default' as AfListViewMode, reportId: null },
       };
       
       // If old format (defaultColumns), convert to new format
@@ -861,6 +963,12 @@ const loadForm = async () => {
           defaultSortBy: oldConfig.defaultSortBy,
           defaultSortOrder: oldConfig.defaultSortOrder || 'asc',
           enableSearch: oldConfig.enableSearch ?? false,
+          listView: normalizeAfListView(oldConfig.listView),
+        };
+      } else {
+        listConfig = {
+          ...listConfig,
+          listView: normalizeAfListView(listConfig.listView),
         };
       }
       
@@ -964,6 +1072,9 @@ onMounted(async () => {
   // Load form if edit mode
   if (isEditMode.value) {
     await loadForm();
+    if (normalizeAfListView(formData.value.listConfig.listView).mode === 'report') {
+      void loadReportingCatalogForPicker();
+    }
   }
 });
 
@@ -993,12 +1104,7 @@ const handleSubmit = async () => {
       formCode: formData.value.formCode.trim(),
       description: formData.value.description.trim() || undefined,
       datasetName: formData.value.datasetName,
-      listConfig: {
-        columns: formData.value.listConfig.columns || [],
-        defaultSortBy: formData.value.listConfig.defaultSortBy || undefined,
-        defaultSortOrder: formData.value.listConfig.defaultSortOrder || undefined,
-        enableSearch: formData.value.listConfig.enableSearch ?? false,
-      },
+      listConfig: buildListConfigPayload(),
       formConfig: {
         visibleFields: formData.value.formConfig.visibleFields || [],
         readonlyFields: formData.value.formConfig.readonlyFields || [],
@@ -2069,8 +2175,62 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                     {{ t('automated-forms.form.listConfig.description') }}
                   </p>
                 </v-col>
+
+                <v-col cols="12">
+                  <h4 class="text-subtitle-1 mb-2">
+                    {{ t('automated-forms.form.listConfig.listView.title') }}
+                  </h4>
+                  <p class="text-body-2 text-medium-emphasis mb-3">
+                    {{ t('automated-forms.form.listConfig.listView.description') }}
+                  </p>
+                  <v-radio-group
+                    v-model="listViewMode"
+                    :disabled="loading"
+                    hide-details
+                    class="mb-2"
+                  >
+                    <v-radio
+                      v-for="opt in listViewModeItems"
+                      :key="opt.value"
+                      :label="opt.title"
+                      :value="opt.value"
+                      color="primary"
+                    />
+                  </v-radio-group>
+                </v-col>
+
+                <v-col v-if="listViewMode === 'report'" cols="12" md="8">
+                  <v-autocomplete
+                    v-model="listViewReportId"
+                    :items="reportPickerItems"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('automated-forms.form.listConfig.listView.reportLabel')"
+                    :placeholder="t('automated-forms.form.listConfig.listView.reportPlaceholder')"
+                    :hint="t('automated-forms.form.listConfig.listView.reportHint')"
+                    persistent-hint
+                    variant="outlined"
+                    :loading="reportingCatalogLoading"
+                    :disabled="loading || reportingCatalogLoading"
+                    clearable
+                    prepend-inner-icon="mdi-file-chart-outline"
+                  >
+                    <template #item="{ props: itemProps, item }">
+                      <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+                    </template>
+                  </v-autocomplete>
+                  <v-alert
+                    type="info"
+                    variant="tonal"
+                    density="compact"
+                    class="mt-3"
+                  >
+                    {{ t('automated-forms.form.listConfig.listView.reportColumnsHint') }}
+                  </v-alert>
+                </v-col>
                 
-                <!-- Column Config Table -->
+                <!-- Column Config Table (only for default list) -->
+                <template v-if="listViewMode === 'default'">
                 <v-col cols="12">
                   <v-data-table
                     :headers="listColumnConfigHeaders"
@@ -2199,6 +2359,7 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                     persistent-hint
                   ></v-switch>
                 </v-col>
+                </template>
               </v-row>
               <v-row v-else>
                 <v-col cols="12" class="text-center py-12">
