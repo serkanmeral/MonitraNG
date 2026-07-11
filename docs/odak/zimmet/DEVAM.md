@@ -1,7 +1,9 @@
 # Zimmet — Kaldığımız Yer
 
-**Son güncelleme:** 11 Temmuz 2026 (oturum kapanışı)  
+**Son güncelleme:** 11 Temmuz 2026 (commit + UI deploy sonrası)  
 **Durum:** ✅ Uçtan uca çekirdek süreç Odak test’te hazır (GIR → demirbaş → verme → iade → raporlar → DI belgeler)  
+**Commit:** `6403d345` — `feat(odak/zimmet): OC rules, reporting catalog, and DI tutanaklar` (GitHub `main`)  
+**Deploy:** `mngui` Odak test’e alındı (`gateway=200 ui=200`); Ctrl+F5  
 **Sıradaki (önerilen):** OC geçişinden otomatik tutanak · demirbaş expand zimmet WI geçmişi · (isteğe bağlı) F4 satınalma / hurda
 
 **Plan:** [PLAN.md](./PLAN.md) · **Özet:** [README.md](./README.md) · **Durum:** [current_status.md](./current_status.md)
@@ -10,7 +12,7 @@
 
 ## ⭐ Kaldığımız yer (11 Temmuz 2026)
 
-Bu oturumda zimmet dikeyi **operasyon + rapor + DI** ile kapatıldı:
+Bu oturumda zimmet dikeyi **operasyon + rapor + DI** ile kapatıldı; kod commit/push edildi, UI Odak’a deploy edildi.
 
 1. **OC-1 / OC-2** — `updateDatasetRows`: teslimde zimmetle, iadede depoya dön  
 2. **Çoklu demirbaş** — verme `demirbasIds`, iade `demirbasId` (multi) + profil chip görünümü  
@@ -18,7 +20,7 @@ Bu oturumda zimmet dikeyi **operasyon + rapor + DI** ile kapatıldı:
 4. **DI** — personel dökümü (XLSX), teslim/iade tutanakları (**DOCX**); “DI’da aç” yeni sekme  
 5. **UI** — dataset tablo seçici, picker chip, `openDiResourceInNewTab`
 
-**Ortam:** Odak `192.168.20.20` · UI local veya `mngui` deploy  
+**Ortam:** Odak `192.168.20.20` · UI: http://192.168.20.20:3000/  
 **Browse:** `/apps/reporting/browse` → **Zimmet**
 
 ---
@@ -111,4 +113,5 @@ Script: `scripts/seed-operation-core-zimmet.ps1` · `seed/zimmet-oc-seed.json`
 - Seed ID’leri **Odak test**’e özgü; prod’da yeniden üretilir.  
 - `receive_return` zorunlu alanları boş (formda zaten dolu; geçişte picker kilitlenmesin diye).  
 - Profil layout hem `demirbasIds` hem `demirbasId` içerir; boş alanlar gizlenir.  
-- UI deploy: `sync-odak-source.ps1 -Paths Mng.Ui` + `deploy-odak-apps.ps1 -Services mngui -NoCache` ([deploy/README](../deploy/README.md)).
+- UI deploy (11 Temmuz): `sync-odak-source.ps1 -Paths Mng.Ui` + `deploy-odak-apps.ps1 -Services mngui` — OK.  
+- Bu commit’te `MngOperations` / `MngDocument` kodu da var; Odak’ta DI factory veya OC executor değiştiyse ilgili servisleri ayrıca deploy etmek gerekir (`mngoperations`, `mngdocument`).
