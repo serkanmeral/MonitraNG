@@ -33,18 +33,20 @@ public class TranslationException : MngLLMException
         : base(message, innerException) { }
 }
 
-/// <summary>
-/// Validation exceptions
-/// </summary>
-public class ValidationException : MngLLMException
+/// <summary>Document / extract related exceptions.</summary>
+public class DiExtractException : MngLLMException
 {
-    public List<string> ValidationErrors { get; set; } = new();
+    public int StatusCode { get; }
 
-    public ValidationException(string message) : base(message) { }
-    
-    public ValidationException(string message, List<string> validationErrors) 
-        : base(message)
+    public DiExtractException(string message, int statusCode = 400) : base(message)
     {
-        ValidationErrors = validationErrors;
+        StatusCode = statusCode;
+    }
+
+    public DiExtractException(string message, int statusCode, Exception innerException)
+        : base(message, innerException)
+    {
+        StatusCode = statusCode;
     }
 }
+

@@ -23,18 +23,24 @@ public class NotificationController : ControllerBase
     public const string NotifyApiKeyHeaderName = "X-Monitra-Notify-Key";
 
     private readonly IMailProvider _mailProvider;
+    private readonly ITelegramMessageSender _telegramMessageSender;
     private readonly ITemplateRenderService _templateRenderService;
+    private readonly IMessageTemplateRenderService _messageTemplateRenderService;
     private readonly ILogger<NotificationController> _logger;
     private readonly MngNotifierSettings _notifierSettings;
 
     public NotificationController(
         IMailProvider mailProvider,
+        ITelegramMessageSender telegramMessageSender,
         ITemplateRenderService templateRenderService,
+        IMessageTemplateRenderService messageTemplateRenderService,
         ILogger<NotificationController> logger,
         IOptions<MngNotifierSettings> notifierSettings)
     {
         _mailProvider = mailProvider ?? throw new ArgumentNullException(nameof(mailProvider));
+        _telegramMessageSender = telegramMessageSender ?? throw new ArgumentNullException(nameof(telegramMessageSender));
         _templateRenderService = templateRenderService ?? throw new ArgumentNullException(nameof(templateRenderService));
+        _messageTemplateRenderService = messageTemplateRenderService ?? throw new ArgumentNullException(nameof(messageTemplateRenderService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _notifierSettings = notifierSettings?.Value ?? throw new ArgumentNullException(nameof(notifierSettings));
     }
@@ -197,6 +203,109 @@ public class NotificationController : ControllerBase
             _logger.LogError(ex, "Failed to preview template. TemplateKey={TemplateKey}", request.TemplateKey);
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Failed to preview template", message = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Push-only channel message (Telegram MVP). One-way notify — not a chatbot.
+    /// </summary>
+    [HttpPost("send-message")]
+    [ProducesResponseType(typeof(SendMessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest? request, CancellationToken cancellationToken)
+    {
+        if (request == null)
+            return BadRequest(new { error = "Request body is required" });
+
+        var channel = (request.Channel ?? "telegram").Trim().ToLowerInvariant();
+        if (channel != "telegram")
+            return BadRequest(new { error = $"Unsupported channel '{request.Channel}'. MVP supports: telegram" });
+
+        var hasTemplate = !string.IsNullOrWhiteSpace(request.TemplateKey);
+        var text = request.Text?.Trim() ?? string.Empty;
+        var parseMode = request.ParseMode;
+
+        if (hasTemplate)
+        {
+            if (!TryGetBearerToken(out var token))
+                return Unauthorized(new { error = "Authorization Bearer token is required for template rendering" });
+
+            try
+            {
+                var rendered = await _messageTemplateRenderService.RenderAsync(
+                    new MessageTemplateRenderRequest
+                    {
+                        TemplateKey = request.TemplateKey!.Trim(),
+                        Context = request.Context,
+                        ParseModeOverride = request.ParseMode
+                    },
+                    token,
+                    cancellationToken);
+
+                text = rendered.Text;
+                if (string.IsNullOrWhiteSpace(parseMode))
+                    parseMode = rendered.ParseMode;
+            }
+            catch (TemplateRenderException ex)
+            {
+                var status = ex.StatusCode is >= 400 and < 600 ? ex.StatusCode : StatusCodes.Status400BadRequest;
+                return StatusCode(status, new { error = ex.Message });
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+            return BadRequest(new { error = "Text is required (or provide TemplateKey + context)" });
+
+        var tg = _notifierSettings.Telegram ?? new TelegramSettings();
+        if (!tg.Enabled)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Telegram channel is disabled" });
+
+        if (string.IsNullOrWhiteSpace(tg.BotToken))
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Telegram BotToken is not configured" });
+
+        var recipients = (request.To ?? new List<string>())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (recipients.Count == 0 && !string.IsNullOrWhiteSpace(tg.DefaultChatId))
+            recipients.Add(tg.DefaultChatId.Trim());
+
+        if (recipients.Count == 0)
+            return BadRequest(new { error = "At least one 'to' chat_id is required (or configure Telegram:DefaultChatId)" });
+
+        var notificationId = Guid.NewGuid().ToString();
+        var results = new List<SendMessageTargetResult>();
+        foreach (var chatId in recipients)
+        {
+            var result = await _telegramMessageSender.SendTextAsync(
+                chatId,
+                text,
+                parseMode,
+                request.DisableWebPagePreview,
+                cancellationToken);
+            results.Add(result);
+        }
+
+        var sent = results.Count(r => r.Success);
+        var failed = results.Count - sent;
+        var statusLabel = failed == 0 ? "sent" : sent == 0 ? "failed" : "partial";
+
+        _logger.LogInformation(
+            "Send-message {Channel}: NotificationId={NotificationId} Status={Status} Sent={Sent} Failed={Failed} TemplateKey={TemplateKey}",
+            channel, notificationId, statusLabel, sent, failed, request.TemplateKey);
+
+        return Ok(new SendMessageResponse
+        {
+            NotificationId = notificationId,
+            Status = statusLabel,
+            Channel = channel,
+            SentCount = sent,
+            FailedCount = failed,
+            Results = results,
+            QueuedAt = DateTime.UtcNow
+        });
     }
 
     /// <summary>

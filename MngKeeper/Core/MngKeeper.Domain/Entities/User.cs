@@ -41,6 +41,18 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("phoneNumber")]
         public string? PhoneNumber { get; set; }
 
+        /// <summary>Telegram @username without leading @ (display / search). Not enough to send.</summary>
+        [BsonElement("telegramUsername")]
+        public string? TelegramUsername { get; set; }
+
+        /// <summary>Telegram chat_id for Bot API sendMessage (DM). Required for personal notify.</summary>
+        [BsonElement("telegramChatId")]
+        public string? TelegramChatId { get; set; }
+
+        /// <summary>When telegramChatId was last bound.</summary>
+        [BsonElement("telegramLinkedAt")]
+        public DateTime? TelegramLinkedAt { get; set; }
+
         [BsonElement("photoUrl")]
         public string? PhotoUrl { get; set; }
 

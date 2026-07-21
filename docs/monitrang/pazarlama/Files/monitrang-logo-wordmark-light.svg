@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 48" role="img" aria-label="MonitraNG wordmark">
+  <defs>
+    <linearGradient id="ngAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap');
+      .brand { font: 600 34px 'Inter', 'Segoe UI', Arial, sans-serif; fill: #0f172a; letter-spacing: -0.03em; }
+      .brand-ng { font: 700 34px 'Inter', 'Segoe UI', Arial, sans-serif; fill: url(#ngAccent); letter-spacing: -0.03em; }
+    ]]></style>
+  </defs>
+  <text x="0" y="36" class="brand">Monitra</text>
+  <text x="148" y="36" class="brand-ng">NG</text>
+</svg>

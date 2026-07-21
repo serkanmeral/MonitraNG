@@ -32,6 +32,9 @@ export interface User {
   department?: string | null; // Departman
   gender?: Gender | 'NotSpecified' | 'Male' | 'Female'; // Cinsiyet
   phoneNumber?: string | null; // Telefon Numarası
+  telegramUsername?: string | null;
+  telegramChatId?: string | null;
+  telegramLinkedAt?: string | Date | null;
   photoUrl?: string | null; // Profil Fotoğrafı URL (MinIO)
   photoSource?: 'None' | 'Directory' | 'Manual' | string | null;
   isActive: boolean;
@@ -69,6 +72,12 @@ function mapApiUserToUser(user: Record<string, unknown>, existingUser?: User): U
     user.department !== undefined ? user.department : user.Department;
   const phoneNumberFromApi =
     user.phoneNumber !== undefined ? user.phoneNumber : user.PhoneNumber;
+  const telegramUsernameFromApi =
+    user.telegramUsername !== undefined ? user.telegramUsername : user.TelegramUsername;
+  const telegramChatIdFromApi =
+    user.telegramChatId !== undefined ? user.telegramChatId : user.TelegramChatId;
+  const telegramLinkedAtFromApi =
+    user.telegramLinkedAt !== undefined ? user.telegramLinkedAt : user.TelegramLinkedAt;
   const photoUrlFromApi =
     user.photoUrl !== undefined ? user.photoUrl : user.PhotoUrl;
   const photoSourceFromApi =
@@ -90,6 +99,17 @@ function mapApiUserToUser(user: Record<string, unknown>, existingUser?: User): U
     phoneNumber: preserveNullableField(phoneNumberFromApi, existingUser?.phoneNumber) as
       | string
       | null,
+    telegramUsername: preserveNullableField(
+      telegramUsernameFromApi,
+      existingUser?.telegramUsername
+    ) as string | null,
+    telegramChatId: preserveNullableField(
+      telegramChatIdFromApi,
+      existingUser?.telegramChatId
+    ) as string | null,
+    telegramLinkedAt: (telegramLinkedAtFromApi ??
+      existingUser?.telegramLinkedAt ??
+      null) as string | Date | null,
     photoUrl: preserveNullableField(photoUrlFromApi, existingUser?.photoUrl) as string | null,
     photoSource: (photoSourceFromApi ?? existingUser?.photoSource ?? 'None') as User['photoSource'],
     gender:
@@ -330,7 +350,6 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       
       try {
-        // First, try to find user in the current list (if already loaded)
         const uid = String(userId ?? '').trim();
         const ul = uid.toLowerCase();
         const existingUser = this.users.find(
@@ -339,16 +358,8 @@ export const useUserStore = defineStore('user', {
             (u.userId && u.userId.toLowerCase() === ul) ||
             (u.keycloakUserId != null && u.keycloakUserId.toLowerCase() === ul)
         );
-        
-        if (existingUser?.fieldPolicies) {
-          this.$patch({
-            viewingUser: { ...existingUser },
-            loading: false,
-          });
-          return this.viewingUser;
-        }
-        
-        // If not found in list, fetch from API
+
+        // Always fetch detail from API so telegram/domain fields are current.
         const response = await fetchFromMngKeeper(`/user/${userId}`, 'GET');
         
         // API response yapısı: GetUserResponse { IsSuccess, User, ErrorMessage }
@@ -360,7 +371,10 @@ export const useUserStore = defineStore('user', {
         const user = response.User || response.user;
         
         if (user) {
-          const mappedUser = mapApiUserToUser(user as Record<string, unknown>);
+          const mappedUser = mapApiUserToUser(
+            user as Record<string, unknown>,
+            existingUser
+          );
           this.mergeResolvedUserProfile(mappedUser);
           this.$patch({
             viewingUser: mappedUser,
@@ -392,6 +406,8 @@ export const useUserStore = defineStore('user', {
       title?: string | null;
       department?: string | null;
       phoneNumber?: string | null;
+      telegramUsername?: string | null;
+      telegramChatId?: string | null;
       isActive?: boolean;
       groups?: string[];
       roles?: string[];
@@ -424,6 +440,12 @@ export const useUserStore = defineStore('user', {
         if (userData.phoneNumber) {
           requestData.phoneNumber = userData.phoneNumber;
         }
+        if (userData.telegramUsername) {
+          requestData.telegramUsername = userData.telegramUsername;
+        }
+        if (userData.telegramChatId) {
+          requestData.telegramChatId = userData.telegramChatId;
+        }
         if (userData.groups && userData.groups.length > 0) {
           requestData.groupIds = userData.groups;
         }
@@ -446,6 +468,8 @@ export const useUserStore = defineStore('user', {
             title: userData.title || null,
             department: userData.department || null,
             phoneNumber: userData.phoneNumber || null,
+            telegramUsername: userData.telegramUsername || null,
+            telegramChatId: userData.telegramChatId || null,
             isActive: userData.isActive !== undefined ? userData.isActive : true,
             groups: userData.groups || [],
             roles: userData.roles || [],
@@ -522,6 +546,8 @@ export const useUserStore = defineStore('user', {
       department?: string;
       gender?: Gender | 'NotSpecified' | 'Male' | 'Female';
       phoneNumber?: string;
+      telegramUsername?: string | null;
+      telegramChatId?: string | null;
       photoUrl?: string;
       isActive?: boolean;
       includeInApplication?: boolean;
@@ -607,6 +633,17 @@ export const useUserStore = defineStore('user', {
         if (userData.phoneNumber !== undefined) {
           requestData.phoneNumber = userData.phoneNumber;
         }
+        if (userData.telegramUsername !== undefined || userData.telegramChatId !== undefined) {
+          // Round-trip both so omitting chatId does not clear an existing bind.
+          requestData.telegramUsername =
+            userData.telegramUsername !== undefined
+              ? userData.telegramUsername
+              : (userBeingUpdated.telegramUsername ?? null);
+          requestData.telegramChatId =
+            userData.telegramChatId !== undefined
+              ? userData.telegramChatId
+              : (userBeingUpdated.telegramChatId ?? null);
+        }
         if (userData.photoUrl !== undefined) {
           requestData.photoUrl = userData.photoUrl;
         }
@@ -672,11 +709,16 @@ export const useUserStore = defineStore('user', {
           const titleFromResponse = updatedUserData.Title !== undefined ? updatedUserData.Title : updatedUserData.title;
           const departmentFromResponse = updatedUserData.Department !== undefined ? updatedUserData.Department : updatedUserData.department;
           const phoneNumberFromResponse = updatedUserData.PhoneNumber !== undefined ? updatedUserData.PhoneNumber : updatedUserData.phoneNumber;
+          const telegramUsernameFromResponse = updatedUserData.TelegramUsername !== undefined ? updatedUserData.TelegramUsername : updatedUserData.telegramUsername;
+          const telegramChatIdFromResponse = updatedUserData.TelegramChatId !== undefined ? updatedUserData.TelegramChatId : updatedUserData.telegramChatId;
+          const telegramLinkedAtFromResponse = updatedUserData.TelegramLinkedAt !== undefined ? updatedUserData.TelegramLinkedAt : updatedUserData.telegramLinkedAt;
           const photoUrlFromResponse = updatedUserData.PhotoUrl !== undefined ? updatedUserData.PhotoUrl : updatedUserData.photoUrl;
           
           const titleValue = preserveIfNull(titleFromResponse, existingUser.title);
           const departmentValue = preserveIfNull(departmentFromResponse, existingUser.department);
           const phoneNumberValue = preserveIfNull(phoneNumberFromResponse, existingUser.phoneNumber);
+          const telegramUsernameValue = preserveIfNull(telegramUsernameFromResponse, existingUser.telegramUsername);
+          const telegramChatIdValue = preserveIfNull(telegramChatIdFromResponse, existingUser.telegramChatId);
           const photoUrlValue = preserveIfNull(photoUrlFromResponse, existingUser.photoUrl);
           
           this.users[index] = {
@@ -691,6 +733,9 @@ export const useUserStore = defineStore('user', {
             title: titleValue,
             department: departmentValue,
             phoneNumber: phoneNumberValue,
+            telegramUsername: telegramUsernameValue,
+            telegramChatId: telegramChatIdValue,
+            telegramLinkedAt: telegramLinkedAtFromResponse ?? existingUser.telegramLinkedAt ?? null,
             photoUrl: photoUrlValue,
             gender: updatedUserData.Gender !== undefined ? updatedUserData.Gender : (updatedUserData.gender !== undefined ? updatedUserData.gender : existingUser.gender),
             isActive: updatedUserData.IsActive !== undefined ? updatedUserData.IsActive : (updatedUserData.isActive !== undefined ? updatedUserData.isActive : existingUser.isActive),
@@ -733,6 +778,9 @@ export const useUserStore = defineStore('user', {
           const viewingUserTitleFromResponse = updatedUserData.Title !== undefined ? updatedUserData.Title : updatedUserData.title;
           const viewingUserDepartmentFromResponse = updatedUserData.Department !== undefined ? updatedUserData.Department : updatedUserData.department;
           const viewingUserPhoneNumberFromResponse = updatedUserData.PhoneNumber !== undefined ? updatedUserData.PhoneNumber : updatedUserData.phoneNumber;
+          const viewingUserTelegramUsernameFromResponse = updatedUserData.TelegramUsername !== undefined ? updatedUserData.TelegramUsername : updatedUserData.telegramUsername;
+          const viewingUserTelegramChatIdFromResponse = updatedUserData.TelegramChatId !== undefined ? updatedUserData.TelegramChatId : updatedUserData.telegramChatId;
+          const viewingUserTelegramLinkedAtFromResponse = updatedUserData.TelegramLinkedAt !== undefined ? updatedUserData.TelegramLinkedAt : updatedUserData.telegramLinkedAt;
           const viewingUserPhotoUrlFromResponse = updatedUserData.PhotoUrl !== undefined ? updatedUserData.PhotoUrl : updatedUserData.photoUrl;
           
           this.viewingUser = {
@@ -747,6 +795,9 @@ export const useUserStore = defineStore('user', {
             title: preserveIfNull(viewingUserTitleFromResponse, existingViewingUser.title),
             department: preserveIfNull(viewingUserDepartmentFromResponse, existingViewingUser.department),
             phoneNumber: preserveIfNull(viewingUserPhoneNumberFromResponse, existingViewingUser.phoneNumber),
+            telegramUsername: preserveIfNull(viewingUserTelegramUsernameFromResponse, existingViewingUser.telegramUsername),
+            telegramChatId: preserveIfNull(viewingUserTelegramChatIdFromResponse, existingViewingUser.telegramChatId),
+            telegramLinkedAt: viewingUserTelegramLinkedAtFromResponse ?? existingViewingUser.telegramLinkedAt ?? null,
             photoUrl: preserveIfNull(viewingUserPhotoUrlFromResponse, existingViewingUser.photoUrl),
             gender: genderValue,
             isActive: updatedUserData.IsActive !== undefined ? updatedUserData.IsActive : (updatedUserData.isActive !== undefined ? updatedUserData.isActive : existingViewingUser.isActive),
@@ -772,6 +823,9 @@ export const useUserStore = defineStore('user', {
           const currentUserTitleFromResponse = updatedUserData.Title !== undefined ? updatedUserData.Title : updatedUserData.title;
           const currentUserDepartmentFromResponse = updatedUserData.Department !== undefined ? updatedUserData.Department : updatedUserData.department;
           const currentUserPhoneNumberFromResponse = updatedUserData.PhoneNumber !== undefined ? updatedUserData.PhoneNumber : updatedUserData.phoneNumber;
+          const currentUserTelegramUsernameFromResponse = updatedUserData.TelegramUsername !== undefined ? updatedUserData.TelegramUsername : updatedUserData.telegramUsername;
+          const currentUserTelegramChatIdFromResponse = updatedUserData.TelegramChatId !== undefined ? updatedUserData.TelegramChatId : updatedUserData.telegramChatId;
+          const currentUserTelegramLinkedAtFromResponse = updatedUserData.TelegramLinkedAt !== undefined ? updatedUserData.TelegramLinkedAt : updatedUserData.telegramLinkedAt;
           const currentUserPhotoUrlFromResponse = updatedUserData.PhotoUrl !== undefined ? updatedUserData.PhotoUrl : updatedUserData.photoUrl;
           
           this.currentUser = {
@@ -786,6 +840,9 @@ export const useUserStore = defineStore('user', {
             title: preserveIfNull(currentUserTitleFromResponse, existingCurrentUser.title),
             department: preserveIfNull(currentUserDepartmentFromResponse, existingCurrentUser.department),
             phoneNumber: preserveIfNull(currentUserPhoneNumberFromResponse, existingCurrentUser.phoneNumber),
+            telegramUsername: preserveIfNull(currentUserTelegramUsernameFromResponse, existingCurrentUser.telegramUsername),
+            telegramChatId: preserveIfNull(currentUserTelegramChatIdFromResponse, existingCurrentUser.telegramChatId),
+            telegramLinkedAt: currentUserTelegramLinkedAtFromResponse ?? existingCurrentUser.telegramLinkedAt ?? null,
             photoUrl: preserveIfNull(currentUserPhotoUrlFromResponse, existingCurrentUser.photoUrl),
             gender: genderValue,
             isActive: updatedUserData.IsActive !== undefined ? updatedUserData.IsActive : (updatedUserData.isActive !== undefined ? updatedUserData.isActive : existingCurrentUser.isActive),
@@ -851,6 +908,45 @@ export const useUserStore = defineStore('user', {
         const errorMsg = error.message || 'Failed to send password reset email.';
         this.error = errorMsg;
         console.error('Error requesting password reset:', error);
+        return { isSuccess: false, error: errorMsg };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Manager: send Telegram test notification to verify user binding.
+     */
+    async sendTestNotification(
+      userId: string,
+      channel: string = 'telegram'
+    ): Promise<{ isSuccess: boolean; message?: string; error?: string; usedTemplate?: boolean }> {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await fetchFromMngKeeper(`/user/${userId}/test-notification`, 'POST', {
+          channel,
+        });
+        if (response.isSuccess !== false) {
+          return {
+            isSuccess: true,
+            message: response.message || 'Test notification sent.',
+            usedTemplate: response.usedTemplate,
+          };
+        }
+        const errorMsg =
+          response.errorDescription || response.error || response.detail || 'Failed to send test notification.';
+        this.error = errorMsg;
+        return { isSuccess: false, error: errorMsg };
+      } catch (error: any) {
+        const data = error?.data || error?.response?._data;
+        const errorMsg =
+          data?.errorDescription ||
+          data?.error ||
+          data?.detail ||
+          error?.message ||
+          'Failed to send test notification.';
+        this.error = errorMsg;
         return { isSuccess: false, error: errorMsg };
       } finally {
         this.loading = false;

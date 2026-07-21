@@ -84,7 +84,11 @@ export default defineNuxtConfig({
       geoServerTileColOffset: process.env.GEOSERVER_TILE_COL_OFFSET ? parseInt(process.env.GEOSERVER_TILE_COL_OFFSET, 10) : 0,
       geoServerTileRowOffset: process.env.GEOSERVER_TILE_ROW_OFFSET ? parseInt(process.env.GEOSERVER_TILE_ROW_OFFSET, 10) : 0,
       // App version (from package.json)
-      appVersion: process.env.npm_package_version || '6.0.0'
+      appVersion: process.env.npm_package_version || '6.0.0',
+      // Telegram bot username (without @) for deep-link bind
+      telegramBotUsername: (process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME && process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME.trim())
+        ? process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME.trim().replace(/^@/, '')
+        : 'MonitraNGBot',
     },
     // Server-side only (private)
     serverAdminUrl: adminUrl,
@@ -114,8 +118,11 @@ export default defineNuxtConfig({
         { name: 'description', content: 'MonitraNG - IoT Monitoring and Management Platform' }
       ],
       link: [
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16.png' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'alternate icon', type: 'image/svg+xml', href: '/icon-simple.svg' }
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }
       ]
     },
     // Base URL ayarı (port numarasını korumak için)

@@ -1,0 +1,50 @@
+{
+  "domain": "odak",
+  "defaultPassword": "Sm123!?",
+  "adminPassword": "Admin123!",
+  "personas": {
+    "Admin": {
+      "username": "odak_admin",
+      "passwordEnv": "adminPassword",
+      "groups": ["admins"],
+      "role": "Fixture setup and full access control"
+    },
+    "EditorA": {
+      "username": "test.user5",
+      "passwordEnv": "defaultPassword",
+      "groups": ["developers"],
+      "role": "Folder A editor (developers)"
+    },
+    "ViewerB": {
+      "username": "test.user1",
+      "passwordEnv": "defaultPassword",
+      "groups": ["testers"],
+      "role": "Folder B view/download only (testers)"
+    },
+    "Outsider": {
+      "username": "guest",
+      "passwordEnv": "defaultPassword",
+      "groups": ["guests"],
+      "role": "No ACL on fixture folders"
+    },
+    "Cross": {
+      "username": "test.user5",
+      "passwordEnv": "defaultPassword",
+      "groups": ["developers"],
+      "role": "Same as EditorA — must not see Folder B"
+    }
+  },
+  "groups": {
+    "admins": { "name": "admins" },
+    "developers": { "name": "developers" },
+    "testers": { "name": "testers" },
+    "guests": { "name": "guests" }
+  },
+  "fixture": {
+    "rootName": "_di_auth_fixture",
+    "folderAName": "FolderA",
+    "folderBName": "FolderB",
+    "sampleDocAName": "_auth_sample_A",
+    "sampleDocBName": "_auth_sample_B"
+  }
+}

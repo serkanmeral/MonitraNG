@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 960" role="img" aria-label="MonitraNG modul baglanti haritasi">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="55%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowDoc" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrowWf" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#c084fc"/>
+    </marker>
+    <marker id="arrowExt" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#34d399"/>
+    </marker>
+    <marker id="arrowSched" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#fbbf24"/>
+    </marker>
+    <marker id="arrowChannel" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2dd4bf"/>
+    </marker>
+    <style type="text/css"><![CDATA[
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #f8fafc; }
+      .subtitle { font: 400 14px 'Segoe UI', Arial, sans-serif; fill: #94a3b8; }
+      .core-title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #ffffff; }
+      .core-sub { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #dbeafe; }
+      .mod-title { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #f1f5f9; }
+      .mod-sub { font: 400 12px 'Segoe UI', Arial, sans-serif; fill: #94a3b8; }
+      .pill { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #cbd5e1; }
+      .panel-title { font: 700 13px 'Segoe UI', Arial, sans-serif; fill: #f1f5f9; }
+      .panel-item { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #cbd5e1; }
+      .panel-note { font: 400 10px 'Segoe UI', Arial, sans-serif; fill: #64748b; }
+      .legend { font: 500 10px 'Segoe UI', Arial, sans-serif; fill: #94a3b8; }
+      .legend-strong { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #e2e8f0; }
+      .ext-title { font: 700 14px 'Segoe UI', Arial, sans-serif; fill: #ecfdf5; }
+      .ext-sub { font: 400 11px 'Segoe UI', Arial, sans-serif; fill: #86efac; }
+      .flow-label { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #6ee7b7; }
+      .icon { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    ]]></style>
+  </defs>
+
+  <rect width="1200" height="960" fill="url(#bg)"/>
+  <circle cx="620" cy="400" r="300" fill="#1e40af" opacity="0.05"/>
+
+  <text x="600" y="48" text-anchor="middle" class="title">MonitraNG Platform</text>
+  <text x="600" y="72" text-anchor="middle" class="subtitle">Hub&#8217;lar (DI &#183; Workflow) &#183; tetik kaynaklar&#305; &#183; Kanal Ak&#305;&#351;lar&#305; &#183; mod&#252;l ba&#287;lant&#305;lar&#305;</text>
+
+  <!-- Tetik kaynaklari paneli (sol) -->
+  <g transform="translate(24, 96)" filter="url(#shadow)">
+    <rect width="212" height="168" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+    <text x="16" y="24" class="panel-title">Tetik kaynaklar&#305;</text>
+    <text x="16" y="44" class="panel-note">Aksiyon nas&#305;l ba&#351;lar?</text>
+    <circle cx="24" cy="62" r="5" fill="#fbbf24"/>
+    <text x="38" y="66" class="panel-item">Zamanlama (Scheduler)</text>
+    <circle cx="24" cy="84" r="5" fill="#c084fc"/>
+    <text x="38" y="88" class="panel-item">Mod&#252;l olay&#305; / ko&#351;ul</text>
+    <circle cx="24" cy="106" r="5" fill="#34d399"/>
+    <text x="38" y="110" class="panel-item">D&#305;&#351; HTTP flow &#231;a&#287;r&#305;s&#305;</text>
+    <circle cx="24" cy="128" r="5" fill="#2dd4bf"/>
+    <text x="38" y="132" class="panel-item">Kanal mesaj&#305; (Kanal Ak&#305;&#351;lar&#305;)</text>
+    <text x="16" y="152" class="panel-note">WhatsApp &#183; Telegram &#183; ileride SMS</text>
+    <text x="16" y="166" class="panel-note">Sonu&#231;: belge, WorkItem, WF ad&#305;m&#305;&#8230;</text>
+  </g>
+
+  <!-- Zamanlama: Scheduler -> moduller (capraz, omurgadan) -->
+  <g stroke="#fbbf24" stroke-width="1.8" fill="none" opacity="0.55">
+    <path d="M600 548 L600 177" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+    <path d="M600 548 L980 290" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+    <path d="M600 548 L220 290" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+    <path d="M600 548 L220 550" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+    <path d="M600 548 L980 550" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+    <path d="M600 548 L600 670" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+  </g>
+
+  <!-- Omurga baglantilari -->
+  <g stroke="#475569" stroke-width="2" fill="none" opacity="0.8">
+    <path d="M600 400 L600 165" marker-end="url(#arrow)"/>
+    <path d="M600 400 L980 290" marker-end="url(#arrow)"/>
+    <path d="M600 400 L980 550" marker-end="url(#arrow)"/>
+    <path d="M600 400 L600 670" marker-end="url(#arrow)"/>
+    <path d="M600 400 L220 550" marker-end="url(#arrow)"/>
+    <path d="M600 400 L220 290" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Modul olayi -> DI belge -->
+  <g stroke="#38bdf8" stroke-width="2" fill="none" opacity="0.88">
+    <path d="M980 334 L710 131" stroke-dasharray="5 5" marker-end="url(#arrowDoc)"/>
+    <path d="M220 334 L490 131" stroke-dasharray="5 5" marker-end="url(#arrowDoc)"/>
+    <path d="M220 554 L510 131" stroke-dasharray="5 5" marker-end="url(#arrowDoc)"/>
+    <path d="M980 554 L690 131" stroke-dasharray="5 5" marker-end="url(#arrowDoc)"/>
+    <path d="M600 670 L600 177" stroke-dasharray="5 5" marker-end="url(#arrowDoc)"/>
+  </g>
+
+  <!-- Modul olayi -> Workflow -->
+  <g stroke="#c084fc" stroke-width="2" fill="none" opacity="0.88">
+    <path d="M980 334 L680 670" stroke-dasharray="4 6" marker-end="url(#arrowWf)"/>
+    <path d="M220 334 L520 670" stroke-dasharray="4 6" marker-end="url(#arrowWf)"/>
+    <path d="M220 554 L480 670" stroke-dasharray="4 6" marker-end="url(#arrowWf)"/>
+    <path d="M980 554 L720 670" stroke-dasharray="4 6" marker-end="url(#arrowWf)"/>
+    <path d="M600 177 L600 670" stroke-dasharray="4 6" marker-end="url(#arrowWf)"/>
+  </g>
+
+  <!-- WF ic: rapor HTTP/DB -->
+  <g stroke="#34d399" stroke-width="2" fill="none" opacity="0.9">
+    <path d="M770 716 L920 596" stroke-dasharray="3 5" marker-end="url(#arrowExt)"/>
+  </g>
+
+  <!-- Kanal Akislari -> Workflow -->
+  <g stroke="#2dd4bf" stroke-width="2.5" fill="none" opacity="0.95">
+    <path d="M236 128 C320 200 380 620 520 716" marker-end="url(#arrowChannel)"/>
+  </g>
+  <text x="318" y="380" class="flow-label" fill="#5eead4">Kanal Ak&#305;&#351;lar&#305;</text>
+
+  <!-- Dis HTTP flow -> Workflow -->
+  <g stroke="#34d399" stroke-width="2.5" fill="none" opacity="0.95">
+    <path d="M930 716 L770 716" marker-end="url(#arrowExt)"/>
+  </g>
+  <text x="848" y="708" text-anchor="middle" class="flow-label">HTTP flow</text>
+
+  <!-- Olay / veri (soluk) -->
+  <g stroke="#334155" stroke-width="1.5" fill="none" opacity="0.45">
+    <path d="M220 290 L980 290" stroke-dasharray="6 6"/>
+    <path d="M220 550 L980 550" stroke-dasharray="6 6"/>
+  </g>
+
+  <!-- Platform omurgasi + Scheduler rozeti -->
+  <g filter="url(#shadow)">
+    <circle cx="600" cy="400" r="96" fill="url(#coreGrad)"/>
+    <circle cx="600" cy="400" r="96" fill="none" stroke="#93c5fd" stroke-width="2" opacity="0.45"/>
+    <text x="600" y="388" text-anchor="middle" class="core-title">Platform Omurgas&#305;</text>
+    <text x="600" y="408" text-anchor="middle" class="core-sub">Kimlik &#183; Veri &#183; Bildirim</text>
+    <text x="600" y="426" text-anchor="middle" class="core-sub">Keeper &#183; DG &#183; Notifier</text>
+    <rect x="488" y="528" width="224" height="32" rx="8" fill="#422006" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="600" y="549" text-anchor="middle" class="core-sub" fill="#fde68a">Zamanlay&#305;c&#305; (Scheduler)</text>
+  </g>
+
+  <!-- DI hub -->
+  <g transform="translate(430, 85)" filter="url(#shadow)">
+    <rect width="340" height="92" rx="16" fill="url(#cardGrad)" stroke="#38bdf8" stroke-width="2.5"/>
+    <rect x="16" y="16" width="44" height="44" rx="10" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1"/>
+    <g transform="translate(26, 24)" class="icon" stroke="#93c5fd">
+      <rect x="4" y="2" width="24" height="30" rx="2"/>
+      <path d="M10 10h12M10 16h12M10 22h8"/>
+    </g>
+    <text x="74" y="38" class="mod-title">D&#246;k&#252;man Zekas&#305;</text>
+    <text x="74" y="58" class="mod-sub">Belge &#252;retim hub&#8217;i</text>
+    <text x="74" y="76" class="pill">belge &#231;&#305;kt&#305;s&#305; hedefi</text>
+  </g>
+
+  <!-- OC -->
+  <g transform="translate(820, 248)" filter="url(#shadow)">
+    <rect width="320" height="92" rx="16" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+    <rect x="16" y="16" width="44" height="44" rx="10" fill="#134e4a" stroke="#14b8a6" stroke-width="1"/>
+    <g transform="translate(26, 24)" class="icon" stroke="#5eead4">
+      <circle cx="16" cy="16" r="8"/>
+      <path d="M16 8v3M16 21v3M8 16h3M21 16h3"/>
+    </g>
+    <text x="74" y="38" class="mod-title">Operasyon Merkezi</text>
+    <text x="74" y="58" class="mod-sub">S&#252;re&#231; &#183; WorkItem</text>
+    <text x="74" y="76" class="pill">WorkItem / s&#252;re&#231; hedefi</text>
+  </g>
+
+  <!-- Raporlama -->
+  <g transform="translate(820, 508)" filter="url(#shadow)">
+    <rect width="320" height="92" rx="16" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+    <rect x="16" y="16" width="44" height="44" rx="10" fill="#4c1d95" stroke="#8b5cf6" stroke-width="1"/>
+    <g transform="translate(26, 24)" class="icon" stroke="#c4b5fd">
+      <path d="M6 28V18M14 28V12M22 28V8M30 28V16"/>
+    </g>
+    <text x="74" y="38" class="mod-title">Raporlama</text>
+    <text x="74" y="58" class="mod-sub">MNG &#183; HTTP/DB via WF</text>
+    <text x="74" y="76" class="pill">rapor &#231;&#305;kt&#305;s&#305; hedefi</text>
+  </g>
+
+  <!-- Workflow kapisi -->
+  <g transform="translate(430, 670)" filter="url(#shadow)">
+    <rect width="340" height="92" rx="16" fill="url(#cardGrad)" stroke="#c084fc" stroke-width="2.5"/>
+    <rect x="16" y="16" width="44" height="44" rx="10" fill="#4c1d95" stroke="#a855f7" stroke-width="1"/>
+    <g transform="translate(26, 24)" class="icon" stroke="#e9d5ff">
+      <circle cx="8" cy="16" r="4"/>
+      <circle cx="24" cy="8" r="4"/>
+      <circle cx="24" cy="24" r="4"/>
+      <path d="M12 14l8-4M12 18l8 4"/>
+    </g>
+    <text x="74" y="38" class="mod-title">Workflow</text>
+    <text x="74" y="58" class="mod-sub">HTTP flow &#183; Kanal Ak&#305;&#351;lar&#305;</text>
+    <text x="74" y="76" class="pill">d&#305;&#351; kap&#305; &#183; orkestrasyon</text>
+  </g>
+
+  <!-- Dis HTTP flow basvurusu -->
+  <g transform="translate(900, 672)" filter="url(#shadow)">
+    <rect width="260" height="88" rx="14" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+    <text x="130" y="26" text-anchor="middle" class="ext-title">D&#305;&#351; t&#252;ketici / ortak</text>
+    <text x="130" y="46" text-anchor="middle" class="ext-sub">Tan&#305;ml&#305; HTTP flow&#8217;a ba&#351;vuru</text>
+    <text x="130" y="62" text-anchor="middle" class="ext-sub">SDK yok &#183; yetkili eri&#351;im</text>
+    <text x="130" y="78" text-anchor="middle" class="ext-sub">Veri veya i&#351;lem talebi</text>
+  </g>
+
+  <!-- SIEM -->
+  <g transform="translate(60, 508)" filter="url(#shadow)">
+    <rect width="320" height="92" rx="16" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+    <rect x="16" y="16" width="44" height="44" rx="10" fill="#7f1d1d" stroke="#ef4444" stroke-width="1"/>
+    <g transform="translate(26, 22)" class="icon" stroke="#fca5a5">
+      <path d="M16 4L6 9v9c0 7 4.5 11 10 13 5.5-2 10-6 10-13V9L16 4z"/>
+    </g>
+    <text x="74" y="38" class="mod-title">G&#252;venlik Merkezi</text>
+    <text x="74" y="58" class="mod-sub">SIEM &#183; g&#252;venlik olaylar&#305;</text>
+    <text x="74" y="76" class="pill">olay / m&#252;dahale hedefi</text>
+  </g>
+
+  <!-- Monitoring -->
+  <g transform="translate(60, 248)" filter="url(#shadow)">
+    <rect width="320" height="92" rx="16" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+    <rect x="16" y="16" width="44" height="44" rx="10" fill="#78350f" stroke="#f59e0b" stroke-width="1"/>
+    <g transform="translate(26, 24)" class="icon" stroke="#fcd34d">
+      <path d="M4 24c4-8 8-12 12-12s8 4 12 12"/>
+      <circle cx="16" cy="24" r="2" fill="#fcd34d" stroke="none"/>
+      <path d="M16 24V10"/>
+    </g>
+    <text x="74" y="38" class="mod-title">Monitoring</text>
+    <text x="74" y="58" class="mod-sub">Metrik &#183; alarm</text>
+    <text x="74" y="76" class="pill">izleme ad&#305;m&#305; hedefi</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(24, 820)">
+    <rect width="1152" height="120" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+    <text x="16" y="22" class="panel-title">Ba&#287;lant&#305; t&#252;rleri</text>
+
+    <line x1="16" y1="38" x2="48" y2="38" stroke="#fbbf24" stroke-width="1.8" stroke-dasharray="2 6" marker-end="url(#arrowSched)"/>
+    <text x="56" y="42" class="legend">Zamanlama &#8594; mod&#252;l aksiyonu</text>
+
+    <line x1="230" y1="38" x2="262" y2="38" stroke="#38bdf8" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arrowDoc)"/>
+    <text x="270" y="42" class="legend">Olay &#8594; DI belge</text>
+
+    <line x1="400" y1="38" x2="432" y2="38" stroke="#c084fc" stroke-width="2" stroke-dasharray="4 6" marker-end="url(#arrowWf)"/>
+    <text x="440" y="42" class="legend">Olay &#8594; WF ad&#305;m&#305;</text>
+
+    <line x1="560" y1="38" x2="592" y2="38" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrowExt)"/>
+    <text x="600" y="42" class="legend">D&#305;&#351; HTTP flow &#8594; WF</text>
+
+    <line x1="760" y1="38" x2="792" y2="38" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="800" y="42" class="legend">Omurga</text>
+
+    <line x1="920" y1="38" x2="952" y2="38" stroke="#2dd4bf" stroke-width="2.5" marker-end="url(#arrowChannel)"/>
+    <text x="960" y="42" class="legend">Kanal &#8594; WF</text>
+
+    <text x="16" y="66" class="legend-strong">Zamanlama: Scheduler omurgada; periyot/saat ile belge, WorkItem, WF ad&#305;m&#305; vb. tetiklenir.</text>
+    <text x="16" y="84" class="legend-strong">D&#305;&#351; eri&#351;im: HTTP flow (partner) ve Kanal Ak&#305;&#351;lar&#305; (WhatsApp/Telegram) &#8594; Workflow. SDK yok.</text>
+    <text x="16" y="102" class="legend-strong">Mod&#252;l kartlar&#305; hedefi g&#246;sterir; tetik kayna&#287;&#305; sol panelde.</text>
+    <text x="900" y="118" class="legend-strong">www.monitrang.com</text>
+    <text x="1040" y="118" class="legend-strong">MonitraNG &#183; 2026</text>
+  </g>
+</svg>

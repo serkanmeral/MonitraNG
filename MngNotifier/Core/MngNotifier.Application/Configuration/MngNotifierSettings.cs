@@ -6,6 +6,7 @@ public class MngNotifierSettings
     public RabbitMQSettings RabbitMQ { get; set; } = new();
     public MailSettings Mail { get; set; } = new();
     public DataGatewaySettings DataGateway { get; set; } = new();
+    public TelegramSettings Telegram { get; set; } = new();
 
     /// <summary>
     /// Boş değilse, <c>POST .../notifications/chat-mention</c> için <c>X-Monitra-Notify-Key</c> başlığı zorunludur (MngDataGateway ile aynı değer).

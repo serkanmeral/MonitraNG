@@ -19,6 +19,7 @@ public static class ServiceRegistration
             _.CertificateSettings = mngLLMSettings.CertificateSettings;
             _.Actors = mngLLMSettings.Actors;
             _.Documentation = mngLLMSettings.Documentation;
+            _.ServiceAccount = mngLLMSettings.ServiceAccount;
         });
 
         // Add MediatR

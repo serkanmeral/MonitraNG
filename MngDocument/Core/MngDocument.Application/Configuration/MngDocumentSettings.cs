@@ -18,6 +18,8 @@ public class MngDocumentSettings
     /// <summary>When true and footerBlocks empty, applies legacy Odak FooterInjector + FooterProfile.</summary>
     public bool LegacyOdakFooterEnabled { get; set; } = true;
     public DocumentGenerationSettings DocumentGeneration { get; set; } = new();
+    /// <summary>D-N — document notifications (mail via MngNotifier).</summary>
+    public DocumentNotificationsSettings Notifications { get; set; } = new();
 }
 
 public class ServerSettings

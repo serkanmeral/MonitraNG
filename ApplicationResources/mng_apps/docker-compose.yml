@@ -135,6 +135,7 @@ services:
       # Notifier Configuration
       - MngKeeperSettings__Notifier__BaseUrl=http://mngnotifier:5070
       - MngKeeperSettings__Notifier__ApiVersion=v1
+      - MngKeeperSettings__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
       
       # License Configuration
       - MngKeeperSettings__License__MasterKey=your-secure-master-key-change-in-production-min-32-chars
@@ -358,9 +359,10 @@ services:
       
       # Ollama Configuration
       - MngLLMSettings__Ollama__BaseUrl=http://ollama:11434
-      - MngLLMSettings__Ollama__DefaultModel=qwen2.5:3b
-      - MngLLMSettings__Ollama__Timeout=120
-      - MngLLMSettings__Ollama__MaxRetries=2
+      - MngLLMSettings__Ollama__DefaultModel=qwen2.5:7b
+      - MngLLMSettings__Ollama__ExtractModel=qwen2.5:3b
+      - MngLLMSettings__Ollama__Timeout=600
+      - MngLLMSettings__Ollama__MaxRetries=1
       - MngLLMSettings__Ollama__EnableStreaming=false
       
       # Translation Configuration
@@ -375,6 +377,10 @@ services:
       # Actors Configuration
       - MngLLMSettings__Actors__MngKeeper=http://mngkeeper:5001
       - MngLLMSettings__Actors__MngDataGateway=http://mngdatagateway:5010
+      - MngLLMSettings__Actors__MngDocument=http://mngdocument:5095
+      - MngLLMSettings__ServiceAccount__DomainName=odak
+      - MngLLMSettings__ServiceAccount__Username=odak_admin
+      - MngLLMSettings__ServiceAccount__Password=Admin123!
       
       # Documentation Configuration
       - MngLLMSettings__Documentation__MarkdownPath=/app/docs/content
@@ -468,6 +474,20 @@ services:
       - MngNotifierSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
       - MngNotifierSettings__DataGateway__ApiVersion=v1
       - MngNotifierSettings__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
+
+      # Telegram (push-only; default off — set BotToken + Enabled=true for TG-1)
+      - MngNotifierSettings__Telegram__Enabled=${TELEGRAM_ENABLED:-false}
+      - MngNotifierSettings__Telegram__BotToken=${TELEGRAM_BOT_TOKEN:-}
+      - MngNotifierSettings__Telegram__DefaultChatId=${TELEGRAM_DEFAULT_CHAT_ID:-}
+      - MngNotifierSettings__Telegram__BotUsername=${TELEGRAM_BOT_USERNAME:-MonitraNGBot}
+      - MngNotifierSettings__Telegram__ApiBaseUrl=https://api.telegram.org
+      - MngNotifierSettings__Telegram__TimeoutSeconds=30
+      - MngNotifierSettings__Telegram__UsePolling=${TELEGRAM_USE_POLLING:-true}
+      - MngNotifierSettings__Telegram__WebhookPublicUrl=${TELEGRAM_WEBHOOK_PUBLIC_URL:-}
+      - MngNotifierSettings__Telegram__WebhookSecretToken=${TELEGRAM_WEBHOOK_SECRET:-}
+      - MngNotifierSettings__Telegram__KeeperBaseUrl=http://mngkeeper:5001
+      - MngNotifierSettings__Telegram__LinkPayloadPrefix=link_
+      - MngNotifierSettings__Telegram__PollingTimeoutSeconds=25
     
     networks:
       - mng_common_mng_network
@@ -873,6 +893,15 @@ services:
       - MngDocumentSettings__Collabora__EditorPath=/browser/dist/cool.html
       - MngDocumentSettings__Wopi__HostBaseUrl=http://mngdocument:5095
       - MngDocumentSettings__Wopi__SessionMinutes=480
+      - MngDocumentSettings__Notifications__Enabled=${DI_NOTIFICATIONS_ENABLED:-false}
+      - MngDocumentSettings__Notifications__NotifierBaseUrl=http://mngnotifier:5070
+      - MngDocumentSettings__Notifications__UiBaseUrl=http://localhost:3000
+      - MngDocumentSettings__Notifications__Channels__0=${DI_NOTIFY_CHANNEL_0:-email}
+      - MngDocumentSettings__Notifications__KeeperBaseUrl=http://mngkeeper:5001
+      - MngDocumentSettings__Notifications__DomainId=${DI_NOTIFY_DOMAIN_ID:-}
+      - MngDocumentSettings__Notifications__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
+      - MngDocumentSettings__Notifications__DefaultTelegramChatIds__0=${DI_TELEGRAM_CHAT_ID:-}
+      - MngDocumentSettings__Notifications__TelegramUserIds__0=${DI_TELEGRAM_USER_ID:-}
       - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
     networks:
       - mng_common_mng_network
@@ -880,6 +909,7 @@ services:
       - mngdatagateway
       - gotenberg
       - collabora
+      - mngnotifier
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5095/health || exit 1"]
@@ -944,21 +974,26 @@ services:
       - "11434:11434"
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
+      # Keep model loaded between extract calls (CPU 7b load is expensive).
+      - OLLAMA_KEEP_ALIVE=30m
     volumes:
       - ollama_data:/root/.ollama
     networks:
       - mng_common_mng_network
+    # qwen2.5:7b needs ~4.5GB tensors + KV/compute; 4G causes generate 500/timeout.
+    mem_limit: 8g
+    cpus: 4.0
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
           cpus: '4'
         reservations:
-          memory: 2G
+          memory: 4G
           cpus: '2'
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "ollama list || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

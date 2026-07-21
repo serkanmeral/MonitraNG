@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MonitraNG — Yapay zeka destekli, on-prem ve kapalı sistemlerde çalışabilen modüler kurumsal platform. Operasyon, belge, raporlama, monitoring ve güvenlik tek omurgada." />
+  <meta name="theme-color" content="#5d87ff" />
+  <title>MonitraNG — Modüler Kurumsal Platform</title>
+  <link rel="icon" type="image/svg+xml" href="assets/mng-icon.svg" />
+  <link rel="icon" type="image/png" href="assets/monitrang-logo-icon.png" />
+  <link rel="apple-touch-icon" href="assets/monitrang-logo-icon.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- AnnounceBar -->
+  <div class="announce-bar" id="announce-bar" role="region" aria-label="Duyuru">
+    <div class="announce-bar__inner container">
+      <span class="badge badge-new">Yeni</span>
+      <p>MonitraNG platformu modüler kurumsal çözümler için hazır — <a href="https://app.monitrang.com">uygulamayı keşfedin</a></p>
+      <button type="button" class="announce-bar__close" id="announce-close" aria-label="Duyuruyu kapat">&times;</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header" id="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="MonitraNG ana sayfa">
+        <img src="assets/monitrang-logo-light.png" alt="MonitraNG" class="brand-logo" width="270" height="40" />
+      </a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="site-nav">
+        <a href="#yapay-zeka">Yapay Zeka</a>
+        <a href="#moduller">Modüller</a>
+        <a href="#on-prem">On-Prem</a>
+        <a href="#platform">Platform</a>
+        <a href="#iletisim">İletişim</a>
+        <a href="#sss">SSS</a>
+        <a class="btn btn-primary btn-sm nav-cta" href="https://app.monitrang.com">Uygulamaya Git</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Mainbanner / Hero -->
+    <section class="hero" id="hero">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <p class="eyebrow">Yapay zeka destekli · on-prem hazır</p>
+          <h1>Operasyon, içerik ve güvenliği <strong>tek omurgada</strong> birleştirin</h1>
+          <p class="lead">
+            MonitraNG; döküman zekası, operasyon merkezi, raporlama, monitoring ve güvenlik modüllerini
+            modüler bir yapıda sunar. Yapay zeka yetenekleri kurum içinde çalıştırılabilir;
+            verileriniz kapalı ağlarda da platformda kalır.
+          </p>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="hero-stat__value">6+</span>
+              <span class="hero-stat__label">platform modülü</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat__value">AI</span>
+              <span class="hero-stat__label">yerel model desteği</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat__value">On-Prem</span>
+              <span class="hero-stat__label">kapalı sistem uyumlu</span>
+            </div>
+          </div>
+          <div class="module-pills" aria-label="Platform modülleri">
+            <span class="module-pill module-pill--ai">Yapay Zeka</span>
+            <span class="module-pill">Dinamik Form</span>
+            <span class="module-pill">Dashboard</span>
+            <span class="module-pill">Döküman Zekası</span>
+            <span class="module-pill">Operasyon Merkezi</span>
+            <span class="module-pill">Raporlama</span>
+            <span class="module-pill">Monitoring</span>
+            <span class="module-pill">SIEM</span>
+            <span class="module-pill">Workflow</span>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="https://app.monitrang.com">Uygulamaya Git</a>
+            <!-- docs: restore when docs.monitrang.com is ready
+            <a class="btn btn-outline btn-lg" href="https://docs.monitrang.com">Dokümantasyon</a>
+            -->
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-card">
+            <img src="assets/monitrang-modul-baglanti-haritasi.svg" alt="" class="hero-card__map" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Yapay Zeka -->
+    <section class="section section-ai" id="yapay-zeka">
+      <div class="container">
+        <div class="section-head text-center">
+          <span class="section-label section-label--ai">Yapay Zeka</span>
+          <h2>Veriniz kurumda kalır, zeka platformda çalışır</h2>
+          <p>
+            MonitraNG yapay zekayı bulut bağımlılığı olmadan kullanılabilir hale getirir.
+            Modeller kurum içinde (on-prem) çalıştırılabilir; hassas belge ve operasyon verisi
+            dışarı çıkmadan etiketleme, arama, özet ve karar desteği alınır.
+          </p>
+        </div>
+        <div class="ai-grid">
+          <article class="ai-card ai-card--featured">
+            <div class="ai-card__icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M6 10h12v2a6 6 0 0 1-12 0v-2z"/><path d="M9 20h6"/><path d="M10 17h4"/></svg>
+            </div>
+            <h3>Yerel model altyapısı</h3>
+            <p>
+              MngLLM ve Ollama entegrasyonu ile büyük dil modelleri kurum sunucularında çalıştırılabilir.
+              İnternet erişimi olmayan veya dış bulut kullanımı kısıtlı ortamlar için tasarlanmıştır.
+            </p>
+          </article>
+          <article class="ai-card">
+            <h3>Döküman Zekası AI</h3>
+            <p>Otomatik içerik etiketleme, anlamlı arama, özet, benzer kayıt bulma, soru-yanıt (RAG) ve çeviri desteği.</p>
+            <ul class="mini-list">
+              <li>Yüklenen evrak ve üretilen belgelerde AI etiketleme</li>
+              <li>Etiket ve kural eşleşmesinde süreç tetikleme</li>
+              <li>Terim sözlüğü ile tutarlı çeviri</li>
+            </ul>
+          </article>
+          <article class="ai-card">
+            <h3>Operasyonel zeka</h3>
+            <p>Monitoring ve güvenlik modüllerinde anomali, trend ve alarm özetleri ile operatör yükünü azaltma.</p>
+            <ul class="mini-list">
+              <li>Monitoring: anomali ve açıklama *(yol haritası)*</li>
+              <li>SIEM: hedefli senaryo ve alarm özeti *(yol haritası)*</li>
+              <li>Workflow: AI adım desteği *(plan)*</li>
+            </ul>
+          </article>
+          <article class="ai-card">
+            <h3>Kurumsal kontrol</h3>
+            <p>Model yerleşimi proje bazında belirlenir: tamamen on-prem, hibrit veya müşteri onaylı servis.</p>
+            <ul class="mini-list">
+              <li>Veri tenant izolasyonu</li>
+              <li>Hassas içerik için meta etiket (gizlilik sınıfı) ayrımı</li>
+              <li>AI çıktıları onay akışına bağlanabilir</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- OurClients → value props -->
+    <section class="section section-surface" id="neden">
+      <div class="container split-section">
+        <div class="split-section__intro">
+          <h2>Dağınık süreçleri tek platformda toplayın</h2>
+          <p>
+            Dosyalar farklı klasörlerde, süreçler e-postada, alarmlar geç fark ediliyor, raporlar birbirinden kopuk —
+            MonitraNG bu parçaları birbirine bağlayan ortak bir katman sunar.
+          </p>
+          <a class="link-arrow" href="#modul-veri-yuzeyleri">Dinamik Form &amp; Dashboard detayı</a>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-card__icon feature-card__icon--ai">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M6 10h12v2a6 6 0 0 1-12 0v-2z"/></svg>
+            </div>
+            <h3>Yapay zeka dahil</h3>
+            <p>Belge etiketleme, arama ve özet; yerel LLM ile kapalı ağlarda da kullanılabilir.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon feature-card__icon--primary">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3>Modüler büyüme</h3>
+            <p>İhtiyaç duyduğunuz modülleri devreye alın; tam platform birlikte de kullanılabilir.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon feature-card__icon--success">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <h3>On-prem kurulum</h3>
+            <p>Docker tabanlı dağıtım; veri kurum sınırında kalır. Savunma ve regüle sektörler için uygun.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon feature-card__icon--warning">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <h3>Schema tabanlı yüzeyler</h3>
+            <p>Dinamik form, widget ve dashboard motoru — yeni ekranlar için uzun geliştirme döngüsü gerekmez.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modül kataloğu — fonksiyon envanteri -->
+    <section class="section section-surface" id="moduller">
+      <div class="container">
+        <div class="section-head text-center">
+          <h2>Platform yetenekleri ve modülleri</h2>
+          <p>
+            Bu bölüm ürün bilgi referansıdır. Önce schema tabanlı <strong>veri yüzeyleri</strong> (dinamik form,
+            widget, dashboard), ardından her modülün fonksiyon envanteri ve platform bağlantıları anlatılır.
+          </p>
+        </div>
+
+        <nav class="module-toc" aria-label="Modül listesi">
+          <a href="#modul-veri-yuzeyleri">Dinamik Form &amp; Dashboard</a>
+          <a href="#modul-di">Döküman Zekası</a>
+          <a href="#modul-oc">Operasyon Merkezi</a>
+          <a href="#modul-reporting">Raporlama</a>
+          <a href="#modul-monitoring">Monitoring</a>
+          <a href="#modul-siem">Güvenlik Merkezi</a>
+          <a href="#modul-workflow">Workflow</a>
+        </nav>
+
+        <!-- ════════ Dinamik Form & Dashboard ════════ -->
+        <article class="module-catalog module-catalog--platform" id="modul-veri-yuzeyleri">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--platform">Platform yeteneği</span>
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+            </div>
+            <h3>Dinamik Form &amp; Widget / Dashboard</h3>
+            <p class="module-catalog__tagline">Schema tabanlı veri yüzeyleri — kod yazmadan ekran ve panel</p>
+            <p class="module-catalog__intro">
+              Kurum veriniz zaten platformda tanımlıdır; <strong>Dinamik Form</strong> ile aynı veri için liste,
+              arama ve kayıt ekranı kod beklemeden açılır. <strong>Widget ve dashboard</strong> ile açık iş sayısı,
+              güvenlik olay özeti, belge klasörü veya alarm trendi tek panelde toplanır. Ayrı satılabilir modül değil;
+              OC, Raporlama, Monitoring, SIEM ve DI modüllerinde ortak motordur.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> İş birimleri, süreç sahipleri, SOC, yönetim — veri girişi ve özet panel ihtiyacı olan her rol.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Sorun → çözüm</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">Her tablo için ayrı geliştirme</span><span class="problem-row__a">Dataset şemasından otomatik form ekranı</span></div>
+              <div class="problem-row"><span class="problem-row__q">Dağınık Excel ve on ekran</span><span class="problem-row__a">Tek dashboard’da canlı özet</span></div>
+              <div class="problem-row"><span class="problem-row__q">Süreç adımında farklı alanlar</span><span class="problem-row__a">OC süreç formu — geçiş kuralları</span></div>
+              <div class="problem-row"><span class="problem-row__q">Rapor öncesi filtre karmaşası</span><span class="problem-row__a">Parametre paneli (tarih, kişi, durum…)</span></div>
+              <div class="problem-row"><span class="problem-row__q">Her modülde sıfırdan panel</span><span class="problem-row__a">Widget şablon kataloğu — domain bazlı kartlar</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Üç dinamik form yüzeyi</h4>
+            <div class="fn-grid fn-grid--3">
+              <div class="fn-group">
+                <h5>Genel Dinamik Form</h5>
+                <p class="fn-group__lead">Herhangi bir veri tablosu için tam CRUD ekranı — Automated Forms.</p>
+                <ul>
+                  <li>Dataset field’larından otomatik alan üretimi</li>
+                  <li>Liste: arama, sıralama, sayfalama, sütun formatı</li>
+                  <li>Form düzeni: grup, kolon genişliği, zengin metin</li>
+                  <li>Yan menüye bağlama</li>
+                  <li>Liste → rapor görünümü bağlama</li>
+                  <li>Örnek: zimmet, envanter, eğitim katılımcı kaydı</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Süreç Formu (OC)</h5>
+                <p class="fn-group__lead">WorkItem yaşam döngüsüne bağlı alanlar ve geçiş kuralları.</p>
+                <ul>
+                  <li>Oluşturma, düzenleme ve durum geçişi ekranları</li>
+                  <li>Katmanlı alan politikası (workspace → board → state)</li>
+                  <li>Geçişte zorunlu alanlar</li>
+                  <li>Tip, öncelik, board, state seçicileri</li>
+                  <li>Dosya, etiket, çoklu kişi (watchers)</li>
+                  <li>Örnek: IT ticket kapanış notu; onay tutarı alanı</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Rapor parametre paneli</h5>
+                <p class="fn-group__lead">Rapor çalıştırmadan önce filtre ve seçim toplama.</p>
+                <ul>
+                  <li>Tarih aralığı, personel seçici, durum butonları</li>
+                  <li>Arama ve buton grupları</li>
+                  <li>Rapor tanımındaki parametre şeması ile eşleşme</li>
+                  <li>OC ve genel formlarla aynı field type ailesi</li>
+                  <li>Örnek: yıllık eğitim listesi — yıl + durum seçimi</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Desteklenen alan türleri (özet)</h4>
+            <div class="tag-list">
+              <span class="tag-list__item">Metin</span>
+              <span class="tag-list__item">Sayı</span>
+              <span class="tag-list__item">Tarih / saat</span>
+              <span class="tag-list__item">Onay kutusu</span>
+              <span class="tag-list__item">İlişki (relation)</span>
+              <span class="tag-list__item">Kişi seçici</span>
+              <span class="tag-list__item">Grup seçici</span>
+              <span class="tag-list__item">Otomatik numara</span>
+              <span class="tag-list__item">Maskeli alan</span>
+              <span class="tag-list__item">Dosya eki</span>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Widget &amp; dashboard — dört katman</h4>
+            <div class="fn-grid fn-grid--4">
+              <div class="fn-group">
+                <h5>1 — Şablon kataloğu</h5>
+                <ul>
+                  <li>Hazır kart kütüphanesi</li>
+                  <li>Domain bazlı seed şablonlar</li>
+                  <li>Alarm, SIEM, OC, DI domain’leri</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>2 — Widget tanımı</h5>
+                <ul>
+                  <li>Şablondan klon + parametre</li>
+                  <li>«Benim açık alarm kartım»</li>
+                  <li>Stat, chart, table, list, composite</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>3 — Yüzey bağlamı</h5>
+                <ul>
+                  <li>Ortak panel filtresi</li>
+                  <li>Zaman aralığı tüm kartlara yayılır</li>
+                  <li>Grafana variables benzeri model</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>4 — Yerleşim</h5>
+                <ul>
+                  <li>Dashboard grid düzeni</li>
+                  <li>Widget Designer — ne gösterilecek?</li>
+                  <li>Dashboard Designer — nerede duracak?</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>V1 widget şablon kataloğu (domain özeti)</h4>
+            <div class="fn-grid fn-grid--2">
+              <div class="fn-group">
+                <h5>Alarm &amp; SIEM</h5>
+                <ul>
+                  <li>Açık alarm sayısı, severity donut, son alarmlar</li>
+                  <li>Olay sayısı, başarısız giriş, senaryo kartları</li>
+                  <li>Olay tablosu ve güvenlik paneli özeti</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Operasyon &amp; Döküman</h5>
+                <ul>
+                  <li>Duruma göre işler, SLA ihlali, bana atanan</li>
+                  <li>Kuyruk tablosu, workspace dashboard</li>
+                  <li>DI klasör içeriği, arama listesi, hızlı link</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Dashboard nerede görünür?</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">Global panel</span><span class="problem-row__a">Tenant geneli dashboard — yönetim özeti</span></div>
+              <div class="problem-row"><span class="problem-row__q">OC workspace</span><span class="problem-row__a">Süreç odaklı panel — kuyruk ve SLA</span></div>
+              <div class="problem-row"><span class="problem-row__q">SIEM Güvenlik Merkezi</span><span class="problem-row__a">Güvenlik paneli + özet dashboard</span></div>
+              <div class="problem-row"><span class="problem-row__q">Monitoring</span><span class="problem-row__a">Metrik widget’ları, harita, gauge</span></div>
+              <div class="problem-row"><span class="problem-row__q">Vertical / müşteri paketi</span><span class="problem-row__a">Özel domain panelleri</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon envanteri</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>Dinamik Form</h5>
+                <ul>
+                  <li>Automated Forms CRUD (form tanımı)</li>
+                  <li>Dataset’ten otomatik alan eşlemesi</li>
+                  <li>Liste sütun formatı (tarih, para, regex…)</li>
+                  <li>Yan menü entegrasyonu</li>
+                  <li>OC WorkItem dinamik form</li>
+                  <li>Geçiş zorunlu alanları ve validation</li>
+                  <li>Rapor parametre paneli (AfListFilters)</li>
+                  <li>Çoklu dil — form ve alan etiketleri (i18n)</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Widget &amp; Dashboard</h5>
+                <ul>
+                  <li>Widget listesi / oluştur / düzenle</li>
+                  <li>Dashboard listesi ve builder</li>
+                  <li>WidgetRenderer + manifest adapter</li>
+                  <li>queryRef (DataGateway) ve serviceRef (Alarm, SIEM, DI)</li>
+                  <li>OC workspace dashboard runtime</li>
+                  <li>SIEM özet dashboard seed</li>
+                  <li>Surface context — ortak filtre / zaman</li>
+                  <li>Drill-down — panel tıklama → kayıt / olay</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Modül bağlantıları</h5>
+                <ul>
+                  <li><strong>DataGateway</strong> — şema, validation, sorgular</li>
+                  <li><strong>Keeper</strong> — kişi/grup seçici, dashboard yetkisi</li>
+                  <li><strong>OC</strong> — süreç formu, workspace dashboard</li>
+                  <li><strong>Raporlama</strong> — parametre UI, rapor dashboard *(plan)*</li>
+                  <li><strong>SIEM</strong> — özet panel, senaryo kartları</li>
+                  <li><strong>DI</strong> — klasör tablosu, arama widget’ları</li>
+                  <li><strong>Monitoring</strong> — metrik widget’ları</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Örnek senaryolar</h5>
+                <ul>
+                  <li>IT envanter kaydı — Automated Form + menü</li>
+                  <li>SOC sabah brifingi — SIEM özet paneli</li>
+                  <li>IT yöneticisi açık ticket dağılımı — OC donut</li>
+                  <li>Belge yöneticisi klasör özeti — DI widget</li>
+                  <li>Yönetim kurulu tek sayfa özet — global dashboard</li>
+                  <li>Kapanışta «kök neden» zorunlu — OC geçiş alanı</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__note">
+            <strong>Sınır:</strong> Low-code uygulama IDE’si veya Power BI ikamesi değildir — veri odaklı form + panel motorudur.
+            Tam uygulama mantığı Workflow veya özel modülde kalır. Her widget tanımlı sorgu/servis yolundan beslenir; güvenli ve sınırlı veri erişimi esastır.
+          </div>
+        </article>
+
+        <!-- ════════ Döküman Zekası ════════ -->
+        <article class="module-catalog" id="modul-di">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+              <span class="module-card__badge module-card__badge--ai">AI</span>
+            </div>
+            <h3>Döküman Zekası</h3>
+            <p class="module-catalog__tagline">Kurumsal içerik ve otomatik belge üretimi — platformun belge hub'ı</p>
+            <p class="module-catalog__intro">
+              Word, Excel ve sunum dosyalarınızı merkezi platformda barındırın; tarayıcıdan düzenleyin;
+              şablon ve veri ile resmi belgeyi otomatik üretin. Diğer modüller (OC, Raporlama, Workflow)
+              ihtiyaç halinde DI üzerinden resmi çıktı oluşturabilir.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> Kalite, IK, sözleşme yönetimi, proje ofisi, operasyon — resmi çıktı üreten her birim.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Sorun → çözüm</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">Dosyalar dağınık, sürüm belirsiz</span><span class="problem-row__a">Merkezi ağaç, sürüm geçmişi, yetki</span></div>
+              <div class="problem-row"><span class="problem-row__q">Her dil için ayrı dosya kopyası</span><span class="problem-row__a">AI çeviri, dil varyantı, çift dilli sürüm</span></div>
+              <div class="problem-row"><span class="problem-row__q">Antet ve kapak elle hazırlanıyor</span><span class="problem-row__a">Paylaşımlı antet kataloğu (MNG-STD vb.)</span></div>
+              <div class="problem-row"><span class="problem-row__q">Rapor çıktısı elle birleştiriliyor</span><span class="problem-row__a">Belge tasarımcısı — merge + üretim</span></div>
+              <div class="problem-row"><span class="problem-row__q">Diğer modüller belge üretemiyor</span><span class="problem-row__a">Belge hub — OC, Raporlama, Workflow tetikleyebilir</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Üç içerik bandı</h4>
+            <div class="fn-grid fn-grid--3">
+              <div class="fn-group">
+                <h5>Sayfa</h5>
+                <ul>
+                  <li>Markdown bilgi içeriği — rehber, runbook, prosedür, SSS</li>
+                  <li>Taslak → yayın yaşam döngüsü</li>
+                  <li>Markdown editör ve önizleme</li>
+                  <li>Dış web yayını (headless MD) *(plan)*</li>
+                  <li>AI özet, RAG, benzer sayfa *(yol haritası)*</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Dosya</h5>
+                <ul>
+                  <li>Dışarıdan yüklenen arşiv — PDF, tarama, harici DOCX…</li>
+                  <li>Önizleme, metadata, sürüm</li>
+                  <li>AI otomatik içerik etiketleme</li>
+                  <li>İçerik araması / full-text *(yol haritası)*</li>
+                  <li>FTP/SFTP harici kaynak içe alımı *(plan)*</li>
+                  <li>Etiket/kural → OC veya Workflow tetikleme</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Döküman</h5>
+                <ul>
+                  <li>Platformda yaşayan Office — DOCX, XLSX, PPTX</li>
+                  <li>Collabora ile tarayıcıda düzenleme</li>
+                  <li>Antet, belge kodu, kurumsal kimlik</li>
+                  <li>Şablondan parametreli otomatik üretim</li>
+                  <li>Manuel, native veya sistem (olay/API/zamanlama) üretimi</li>
+                  <li>Oluşturma sonrası AI etiketleme</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon grupları</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>İçerik yönetimi</h5>
+                <ul>
+                  <li>Merkezi kaynak ağacı ve klasör yapısı</li>
+                  <li>Yetki ve sürüm geçmişi</li>
+                  <li>İçerik etiketi (AI veya kullanıcı) + meta etiket (gizlilik sınıfı)</li>
+                  <li>Bildirimler (yükleme, yayın, paylaşım)</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Belge tasarımcısı</h5>
+                <ul>
+                  <li>Şablon tanımı ve parametre paneli</li>
+                  <li>Antet kataloğu (paylaşımlı)</li>
+                  <li>Veri birleştirme (merge) ve üretim</li>
+                  <li>OC / Raporlama / Workflow'dan tetiklenebilir üretim</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Yapay zeka</h5>
+                <ul>
+                  <li>Otomatik içerik etiketleme</li>
+                  <li>Anlamlı arama, özet, benzer kayıt</li>
+                  <li>Soru-yanıt (RAG)</li>
+                  <li>Tam belge veya bölüm çevirisi; dil varyantı; terim sözlüğü</li>
+                  <li>On-prem / müşteri onaylı model yerleşimi</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Arşiv ve entegrasyon</h5>
+                <ul>
+                  <li>NAS yedekleme ve arşiv senaryoları</li>
+                  <li>Etiket/kural eşleşmesinde süreç tetikleme</li>
+                  <li>Scheduler ile zamanlanmış belge üretimi</li>
+                  <li>Notifier ile belge hazır bildirimi</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ════════ Operasyon Merkezi ════════ -->
+        <article class="module-catalog" id="modul-oc">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+            </div>
+            <h3>Operasyon Merkezi (OC)</h3>
+            <p class="module-catalog__tagline">Kurumsal süreç ve iş yönetimi — iş ve süreç defteri + görev panosu + denetlenebilir geçmiş</p>
+            <p class="module-catalog__intro">
+              Operasyonel ve iş süreçlerinizi e-posta ve Excel'den çıkarıp numaralı kayıt, pano ve
+              denetlenebilir geçmiş ile platformda yürütün. IT desteğinden üretim emrine, kalite kaydından
+              yönetim onayına — aynı altyapı, sizin süreçlerinize göre kurulur.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> IT destek, üretim operasyonu, kalite, bakım, IK onayları, müşteri hizmetleri.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Sorun → çözüm</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">«Kim ne yaptı?» belli değil</span><span class="problem-row__a">Timeline ve durum akışı</span></div>
+              <div class="problem-row"><span class="problem-row__q">Onay e-postada kayboluyor</span><span class="problem-row__a">WorkItem + geçiş kuralları</span></div>
+              <div class="problem-row"><span class="problem-row__q">IT, üretim, onay ayrı araçlar</span><span class="problem-row__a">Workspace — aynı motor, farklı süreçler</span></div>
+              <div class="problem-row"><span class="problem-row__q">Alarm olunca elle takip</span><span class="problem-row__a">Monitoring / SIEM köprüsü</span></div>
+              <div class="problem-row"><span class="problem-row__q">SLA ve denetim izi yok</span><span class="problem-row__a">Durum, atama, bildirim ve timeline</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Günlük deneyim</h4>
+            <ol class="flow-steps">
+              <li>İş açılır — arıza, talep, onay, iş emri, kalite kaydı…</li>
+              <li>Form doldurulur — öncelik, açıklama, ilgili kişi</li>
+              <li>Kuyruk / panoda görünür — kimde, hangi aşamada</li>
+              <li>Durum ilerler — örn. Yeni → Atandı → İşlemde → Kapalı</li>
+              <li>Geçmiş kalır — yorumlar, sistem notları, zaman çizelgesi</li>
+              <li>Gerekirse haber gelir — e-posta, uygulama içi, Telegram</li>
+            </ol>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon grupları</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>Süreç ve kayıt</h5>
+                <ul>
+                  <li>Workspace tanımı (tip, durum, alan, board)</li>
+                  <li>WorkItem oluşturma / güncelleme</li>
+                  <li>Durum geçişi (state flow) ve transition kuralları</li>
+                  <li>Kanban / liste board</li>
+                  <li>WorkItem profil + timeline (denetim izi)</li>
+                  <li>Yorum ekleme; workspace bazlı anahtar (PREFIX-SEQ)</li>
+                  <li>Aynı tenant'ta çoklu workspace (IT + Üretim + Onay…)</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Form, yetki ve kurallar</h5>
+                <ul>
+                  <li>Dinamik form alanları (lookup, person, tarih…)</li>
+                  <li>Katmanlı alan politikası (workspace → board → state)</li>
+                  <li>Validation / varsayılan alan kuralları</li>
+                  <li>Geçiş öncesi/sonrası kural pipeline</li>
+                  <li>SLA temeli; onay akışları</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Bildirim ve otomasyon</h5>
+                <ul>
+                  <li>In-app, e-posta, Telegram bildirim politikaları</li>
+                  <li>Zamanlanmış iş açılışı (Scheduler)</li>
+                  <li>«Her Pazartesi bakım kontrol listesi» otomatik açılır</li>
+                  <li>Modül olayından WorkItem tetikleme</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Görünürlük ve bağlantılar</h5>
+                <ul>
+                  <li>Workspace dashboard ve predefined query</li>
+                  <li>DI — belgeden inceleme kaydı / kayıtta belge</li>
+                  <li>Monitoring — alarm veya sensör notu</li>
+                  <li>Workflow — çok adımlı otomasyon; OC insan yüzeyi</li>
+                  <li>Raporlama — kurumsal özetler ayrı modülde</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__note">
+            <strong>Sınır:</strong> OC = insanın gördüğü kayıt merkezi. Tek kayıt içi kurallar OC'de;
+            çok sistemli zincir Workflow'da. Kurumsal tablo raporları Raporlama'da.
+          </div>
+        </article>
+
+        <!-- ════════ Raporlama ════════ -->
+        <article class="module-catalog" id="modul-reporting">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+            </div>
+            <h3>Raporlama</h3>
+            <p class="module-catalog__tagline">Veriden karar — güncel, yetkili, paylaşılabilir tablolar</p>
+            <p class="module-catalog__intro">
+              Platform verinizden parametreli raporlar üretin; filtreleyin, dışa aktarın, paylaşın;
+              gerektiğinde resmi belgeye dönüştürün. Dağınık Excel kopyaları yerine tek katalogdan
+              yetkilendirilmiş self-service çıktılar.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> Yönetim, IK, kalite, finans, operasyon liderleri — tablo odaklı karar veren ekipler.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Sorun → çözüm</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">Excel kopyaları güncel değil</span><span class="problem-row__a">Canlı dataset kaynağı</span></div>
+              <div class="problem-row"><span class="problem-row__q">Herkes her sütunu görmemeli</span><span class="problem-row__a">Rapor ve sütun yetkisi</span></div>
+              <div class="problem-row"><span class="problem-row__q">Detay için ayrı ekran</span><span class="problem-row__a">Expand — satır altında alt listeler</span></div>
+              <div class="problem-row"><span class="problem-row__q">Resmi çıktı ayrı iş</span><span class="problem-row__a">DI şablonu ile belge üretimi</span></div>
+              <div class="problem-row"><span class="problem-row__q">IT'den liste çekme talebi</span><span class="problem-row__a">Parametreli self-service runner</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Günlük deneyim</h4>
+            <ol class="flow-steps">
+              <li>Rapor kataloğundan ihtiyacı olan listeyi bulur</li>
+              <li>Parametre girer — yıl, durum, tarih aralığı…</li>
+              <li>Tablo görünür — sıralama, sayfalama, sütun formatları</li>
+              <li>Satıra tıklar — detay alanları ve ilişkili alt listeler</li>
+              <li>Başka rapora geçer — deep link</li>
+              <li>Paylaşır veya gömer — link / embed</li>
+              <li>Dışa aktarır — CSV / Excel</li>
+              <li>Belge üretir — satır veya liste bağlamında DI şablonu</li>
+            </ol>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon grupları</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>Katalog ve çalıştırma</h5>
+                <ul>
+                  <li>Kategori ağacında rapor kataloğu</li>
+                  <li>Rapor tanımı — kolonlar, parametreler, expand, özet</li>
+                  <li>Parametreli filtre paneli (tarih, kişi, durum…)</li>
+                  <li>Anlık çalıştırma; koşul/olay veya zamanlanmış *(plan)*</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Veri ve görünüm</h5>
+                <ul>
+                  <li>MonitraNG dataset kaynağı (canlı)</li>
+                  <li>Dış HTTP/API ve veritabanı kaynağı *(teklif / yol haritası)*</li>
+                  <li>Satır detayı (expand) ve alt listeler</li>
+                  <li>Özet kart / footer</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Yetki, paylaşım, export</h5>
+                <ul>
+                  <li>Rapor, sütun ve alt görünüm seviyesinde yetki</li>
+                  <li>Paylaşım linki, embed URL, raporlar arası deep link</li>
+                  <li>CSV / Excel export (sütun seçimi)</li>
+                  <li>Zamanlanmış dağıtım *(plan)*</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Platform bağlantıları</h5>
+                <ul>
+                  <li>DataGateway — platform kayıtları rapora gelir</li>
+                  <li>OC — açık iş emirleri listesi gibi operasyon raporları</li>
+                  <li>DI — listeden sertifika / tutanak üretimi</li>
+                  <li>Workflow — dış kaynak köprüsü *(plan)*</li>
+                  <li>Notifier — rapor hazır / hata bildirimi</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__note">
+            <strong>Sınır:</strong> Raporlama = veriyi görmek ve dağıtmak. OC = işi yürütmek.
+            DI = antetli Office belgesi (rapor satırından tetiklenebilir). Power BI ikamesi değildir.
+          </div>
+        </article>
+
+        <!-- ════════ Monitoring ════════ -->
+        <article class="module-catalog" id="modul-monitoring">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+              <span class="module-card__badge module-card__badge--ai">AI</span>
+            </div>
+            <h3>Monitoring</h3>
+            <p class="module-catalog__tagline">Operasyonel sağlık — altyapı ve saha nabzı</p>
+            <p class="module-catalog__intro">
+              Sunucu, servis, veritabanı, ağ ve saha cihazlarınızın canlı nabzını tek envanterde toplayın;
+              panel ve eşik alarm ile erken uyarı alın. Operasyonel «sunucu down» ile güvenlik
+              «yetkisiz giriş» aynı üründe karışmaz — güvenlik olayları Güvenlik Merkezi'ndedir.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> NOC, altyapı, tesis yönetimi, üretim operasyonu.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Monitoring ≠ Güvenlik Merkezi</h4>
+            <div class="compare-table">
+              <div class="compare-table__col">
+                <h5>Monitoring</h5>
+                <ul>
+                  <li>Metrik, uptime, sensör, kapasite</li>
+                  <li>Örnek: CPU, sıcaklık, ping, disk</li>
+                  <li>Operasyon alarmı</li>
+                </ul>
+              </div>
+              <div class="compare-table__col">
+                <h5>Güvenlik Merkezi</h5>
+                <ul>
+                  <li>Güvenlik logu, tehdit, uyumluluk</li>
+                  <li>Örnek: başarısız giriş, syslog</li>
+                  <li>Güvenlik alarmı + Alarm Merkezi</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon grupları</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>Envanter ve yapılandırma</h5>
+                <ul>
+                  <li>Organizasyon ağacı</li>
+                  <li>Engine tanımı, durum, config</li>
+                  <li>Agent tanımı ve engine ataması</li>
+                  <li>Toplama periyotları (cron) ve izleme aralıkları</li>
+                  <li>Kontrol merkezi — engine/agent sağlık</li>
+                  <li>Asset type / asset CRUD</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Görselleştirme</h5>
+                <ul>
+                  <li>Monitoring widget'ları (liste, düzenle)</li>
+                  <li>Harita widget</li>
+                  <li>Gauge ve kontrol panelleri</li>
+                  <li>Operasyon dashboard setleri</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Toplama kaynakları</h5>
+                <ul>
+                  <li>Windows / Linux sunucu metrikleri</li>
+                  <li>MongoDB, Oracle, SQL Server, PostgreSQL</li>
+                  <li>Windows Service / systemd / process</li>
+                  <li>HTTP health / ping</li>
+                  <li>MQTT, SNMP, TCP, OPC UA</li>
+                  <li>Güvenlik kamerası alarm yakalama *(protokol keşifte)*</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Alarm, AI ve köprüler</h5>
+                <ul>
+                  <li>Eşik tabanlı operasyon alarmı ve bildirim</li>
+                  <li>Alarm → OC WorkItem notu / iş emri</li>
+                  <li>AI: anomaly, alarm açıklaması, kök neden önerisi</li>
+                  <li>AI: gürültü azaltma, trend/kapasite, NL sorgu</li>
+                  <li>Emir kartında canlı sensör *(senaryo)*</li>
+                  <li>Raporlama ile özet metrik raporları</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ════════ SIEM ════════ -->
+        <article class="module-catalog" id="modul-siem">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+            </div>
+            <h3>Güvenlik Merkezi (SIEM)</h3>
+            <p class="module-catalog__tagline">Güvenlik olayı ve alarm yönetimi — SIEM-hafif, on-prem</p>
+            <p class="module-catalog__intro">
+              Kurumsal güvenlik olaylarını merkezileştirin; hedefli kurallarla alarm üretin;
+              Alarm Merkezi'nde operatör kuyruğunu yönetin. Splunk/QRadar ikamesi iddiası değil —
+              hedefli senaryolar, on-prem dağıtım ve platform bütünleşmesi ile konumlanır.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> SOC, siber güvenlik, uyum ve denetim ekipleri.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Sorun → çözüm</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">Loglar dağınık</span><span class="problem-row__a">Ingest, normalizasyon ve arama</span></div>
+              <div class="problem-row"><span class="problem-row__q">Tehdit geç fark ediliyor</span><span class="problem-row__a">Threshold, korelasyon, sequence kuralları</span></div>
+              <div class="problem-row"><span class="problem-row__q">Operatör süreci belirsiz</span><span class="problem-row__a">Alarm lifecycle — onayla, bastır, çöz</span></div>
+              <div class="problem-row"><span class="problem-row__q">Müdahale elle</span><span class="problem-row__a">OC WorkItem / Workflow playbook</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Günlük deneyim</h4>
+            <ol class="flow-steps">
+              <li>Log kaynağı platforma akar (syslog, WEF→WEC, agent…)</li>
+              <li>Olaylar normalize edilir (sec_events)</li>
+              <li>Kural eşleşir → alarm</li>
+              <li>Operatör Alarm Merkezi'nde listeler, filtreler</li>
+              <li>Detay + timeline; acknowledge / resolve</li>
+              <li>Güvenlik panelinde trend ve özet</li>
+              <li>Olay arama — tarih, filtre, detay inceleme</li>
+            </ol>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon grupları</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>Toplama ve arama</h5>
+                <ul>
+                  <li>Forwarder: syslog, WEF→WEC, agent</li>
+                  <li>Parser / normalizer — ham log → alanlı olay</li>
+                  <li>sec_events — normalize güvenlik olayı kaydı</li>
+                  <li>Olay arama (tarih, filtre, detay)</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Kurallar ve alarm</h5>
+                <ul>
+                  <li>Threshold, correlation, scheduled, sequence kuralları</li>
+                  <li>Hedefli use case paketleri</li>
+                  <li>Alarm üretimi ve operatör kuyruğu</li>
+                  <li>Lifecycle: acknowledge · suppress · resolve</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Alarm Merkezi &amp; panel</h5>
+                <ul>
+                  <li>Alarm Merkezi operatör UI</li>
+                  <li>Listeleme, filtreleme, detay + timeline</li>
+                  <li>Güvenlik paneli (dashboard)</li>
+                  <li>Senaryo kartları</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Platform bağlantıları</h5>
+                <ul>
+                  <li>OC — SOC WorkItem / olay triage</li>
+                  <li>Workflow — olay → otomasyon playbook</li>
+                  <li>Raporlama — güvenlik özet raporu</li>
+                  <li>Notifier — alarm bildirimi</li>
+                  <li>Monitoring ile karıştırılmaz</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ════════ Workflow ════════ -->
+        <article class="module-catalog" id="modul-workflow">
+          <header class="module-catalog__header">
+            <div class="module-catalog__badges">
+              <span class="module-card__badge module-card__badge--live">Canlı</span>
+            </div>
+            <h3>Workflow</h3>
+            <p class="module-catalog__tagline">Orkestrasyon ve dış entegrasyon — SDK yok</p>
+            <p class="module-catalog__intro">
+              Onay, gecikme, HTTP çağrısı, belge üretimi ve operasyon kaydını tek zincirde birleştiren
+              platform otomasyon katmanı. «E-postayla onay iste, üç gün bekle, onaylanınca belgeyi üret»
+              gibi çok adımlı senaryoları kod yazmadan tanımlanabilir akışlara dönüştürür.
+            </p>
+            <p class="module-catalog__audience"><strong>Kimler kullanır?</strong> Süreç sahipleri, entegrasyon ekipleri, partner/ERP bağlantısı gereken operasyonlar.</p>
+          </header>
+
+          <div class="module-catalog__block">
+            <h4>Dış kapılar</h4>
+            <div class="fn-grid fn-grid--3">
+              <div class="fn-group">
+                <h5>HTTP flow</h5>
+                <ul>
+                  <li>ERP, partner, portal — tanımlı webhook endpoint</li>
+                  <li>HMAC ile güvenli çağrı</li>
+                  <li>SDK gerekmez</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Kanal Akışları</h5>
+                <ul>
+                  <li>WhatsApp, Telegram self-servis diyalog</li>
+                  <li>Mesajla flow başlatma / resume</li>
+                  <li>Kimlik ve veri adımları flow tasarımında *(plan)*</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Event / schedule</h5>
+                <ul>
+                  <li>OC, alarm, DI olay tetikleri</li>
+                  <li>Scheduler zamanlama tetikleri</li>
+                  <li>İç modüller aynı zincire bağlanır</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Ne zaman Workflow?</h4>
+            <div class="problem-grid">
+              <div class="problem-row"><span class="problem-row__q">Tek mail veya tek kural</span><span class="problem-row__a">OC kuralı veya Notifier</span></div>
+              <div class="problem-row"><span class="problem-row__q">Her Pazartesi tek checklist</span><span class="problem-row__a">Scheduler → OC</span></div>
+              <div class="problem-row"><span class="problem-row__q">CoC üret → onay → arşiv → WI kapat</span><span class="problem-row__a">Workflow</span></div>
+              <div class="problem-row"><span class="problem-row__q">Kritik alarm → onay → aksiyon → incident</span><span class="problem-row__a">Workflow</span></div>
+              <div class="problem-row"><span class="problem-row__q">«Faturamın durumu?» WhatsApp diyaloğu</span><span class="problem-row__a">Workflow — Kanal Akışları</span></div>
+            </div>
+          </div>
+
+          <div class="module-catalog__block">
+            <h4>Fonksiyon grupları</h4>
+            <div class="fn-grid">
+              <div class="fn-group">
+                <h5>Akış tanımı ve çalıştırma</h5>
+                <ul>
+                  <li>Versiyonlu workflow tanımı</li>
+                  <li>Yayınlama ve çalıştırma geçmişi</li>
+                  <li>Otomasyon Merkezi yönetim UI</li>
+                  <li>Koşul, bekleme, hata yeniden deneme / DLQ</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Adım tipleri</h5>
+                <ul>
+                  <li>Onay bekleme</li>
+                  <li>Gecikme / zaman bekleme</li>
+                  <li>HTTP çağrısı (dış sistem)</li>
+                  <li>WorkItem oluşturma / güncelleme</li>
+                  <li>DI belge üretimi</li>
+                  <li>Bildirim (Notifier)</li>
+                  <li>AI adımı *(plan)*</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Tetikleyiciler</h5>
+                <ul>
+                  <li>Event trigger — OC, alarm, DI…</li>
+                  <li>Schedule trigger — Scheduler</li>
+                  <li>HTTP flow endpoint — dış partner</li>
+                  <li>Kanal kapısı — WhatsApp / Telegram</li>
+                </ul>
+              </div>
+              <div class="fn-group">
+                <h5>Platform hub rolü</h5>
+                <ul>
+                  <li>DI = belge üretim hedefi; Workflow = orkestrasyon</li>
+                  <li>OC = insan süreci; Workflow = otomasyon zinciri</li>
+                  <li>SIEM/Alarm = tespit; Workflow = müdahale playbook</li>
+                  <li>Raporlama, Notifier, Engine ile zincir</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-catalog__note">
+            <strong>Sınır:</strong> Workflow OC'nin yerine geçmez. Tek adımlı işler OC kuralı, Notifier veya
+            Scheduler→OC ile çözülür. WhatsApp/Telegram ayrı «bot ürünü» değil — Workflow alt yeteneğidir.
+          </div>
+        </article>
+      </div>
+    </section>
+
+
+    <!-- Highlights marquee -->
+    <section class="section marquee-section" aria-label="Platform yetenekleri">
+      <div class="marquee marquee--1">
+        <div class="marquee__track">
+          <span class="marquee__item marquee__item--primary">Keeper — Kimlik &amp; Yetki</span>
+          <span class="marquee__item marquee__item--ai">AI Etiketleme</span>
+          <span class="marquee__item marquee__item--success">DataGateway — Merkezi Veri</span>
+          <span class="marquee__item marquee__item--warning">Notifier — Bildirim</span>
+          <span class="marquee__item marquee__item--info">Scheduler — Zamanlama</span>
+          <span class="marquee__item marquee__item--secondary">On-Prem LLM</span>
+          <span class="marquee__item marquee__item--secondary">Dinamik Form</span>
+          <span class="marquee__item marquee__item--primary">Widget Dashboard</span>
+          <span class="marquee__item marquee__item--success">Belge Tasarımcısı</span>
+          <span class="marquee__item marquee__item--warning">WorkItem</span>
+          <!-- duplicate for seamless loop -->
+          <span class="marquee__item marquee__item--primary">Keeper — Kimlik &amp; Yetki</span>
+          <span class="marquee__item marquee__item--ai">AI Etiketleme</span>
+          <span class="marquee__item marquee__item--success">DataGateway — Merkezi Veri</span>
+          <span class="marquee__item marquee__item--warning">Notifier — Bildirim</span>
+          <span class="marquee__item marquee__item--info">Scheduler — Zamanlama</span>
+          <span class="marquee__item marquee__item--secondary">On-Prem LLM</span>
+          <span class="marquee__item marquee__item--secondary">Dinamik Form</span>
+          <span class="marquee__item marquee__item--primary">Widget Dashboard</span>
+          <span class="marquee__item marquee__item--success">Belge Tasarımcısı</span>
+          <span class="marquee__item marquee__item--warning">WorkItem</span>
+        </div>
+      </div>
+      <div class="marquee marquee--2">
+        <div class="marquee__track">
+          <span class="marquee__item marquee__item--info">RAG Arama</span>
+          <span class="marquee__item marquee__item--secondary">Rapor Kataloğu</span>
+          <span class="marquee__item marquee__item--primary">Asset Envanteri</span>
+          <span class="marquee__item marquee__item--success">Alarm Merkezi</span>
+          <span class="marquee__item marquee__item--warning">HTTP Flow</span>
+          <span class="marquee__item marquee__item--ai">Kapalı Ağ</span>
+          <span class="marquee__item marquee__item--secondary">Keycloak SSO</span>
+          <span class="marquee__item marquee__item--primary">Tenant İzolasyonu</span>
+          <span class="marquee__item marquee__item--info">RAG Arama</span>
+          <span class="marquee__item marquee__item--secondary">Rapor Kataloğu</span>
+          <span class="marquee__item marquee__item--primary">Asset Envanteri</span>
+          <span class="marquee__item marquee__item--success">Alarm Merkezi</span>
+          <span class="marquee__item marquee__item--warning">HTTP Flow</span>
+          <span class="marquee__item marquee__item--ai">Kapalı Ağ</span>
+          <span class="marquee__item marquee__item--secondary">Keycloak SSO</span>
+          <span class="marquee__item marquee__item--primary">Tenant İzolasyonu</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- On-Prem & Kapalı Sistem -->
+    <section class="section section-onprem" id="on-prem">
+      <div class="container onprem-grid">
+        <div class="onprem-content">
+          <span class="section-label section-label--onprem">On-Prem &amp; Kapalı Sistem</span>
+          <h2>Veriniz kurum sınırında kalır</h2>
+          <p>
+            MonitraNG, bulut bağımlılığı olmadan kurum içi sunucularda çalışacak şekilde tasarlanmıştır.
+            Tüm platform bileşenleri Docker container olarak dağıtılır; internet erişimi olmayan
+            kapalı ağlarda da devreye alınabilir.
+          </p>
+          <ul class="check-list">
+            <li>Docker tabanlı on-prem kurulum — tüm servisler kurum altyapısında</li>
+            <li>Tenant (domain) izolasyonu ile veri ayrımı</li>
+            <li>Yapay zeka modelleri yerel sunucuda (Ollama) çalıştırılabilir</li>
+            <li>Dış bulut veya üçüncü taraf API zorunluluğu yok</li>
+            <li>Savunma, bankacılık ve regüle sektörler için uygun mimari</li>
+            <li>Keycloak SSO, merkezi veri ve bildirim — tek omurga</li>
+          </ul>
+        </div>
+        <div class="onprem-cards">
+          <article class="onprem-card">
+            <h3>Kapalı ağ (air-gap)</h3>
+            <p>İnternet erişimi olmayan ortamlarda platform ve AI modelleri kurum içinde çalışır. Hassas belge ve operasyon verisi dışarı çıkmaz.</p>
+          </article>
+          <article class="onprem-card">
+            <h3>Hibrit esneklik</h3>
+            <p>Tam on-prem veya müşteri onaylı servis modeli proje bazında belirlenir. AI model yerleşimi kurum politikasına göre yapılandırılır.</p>
+          </article>
+          <article class="onprem-card">
+            <h3>Kanıtlanmış referans</h3>
+            <p>Savunma sanayisinde üretim ortamında doğrulanmış altyapı. Bankacılık, lojistik ve üretim sektörlerine uyarlanabilir.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform map -->
+    <section class="section" id="platform">
+      <div class="container platform-section">
+        <div class="platform-section__text">
+          <h2>Modül bağlantı haritası</h2>
+          <p>
+            Platform omurgası (Keeper, DataGateway, Notifier, Scheduler) tüm modülleri birleştirir.
+            Zamanlama, modül olayları ve dış HTTP flow farklı tetik kaynaklarıyla aynı hedeflere ulaşır.
+          </p>
+          <ul class="check-list">
+            <li>Tek scheduler — çok modül hedefi</li>
+            <li>Modül olayı → Döküman Zekası veya Workflow</li>
+            <li>Dış sistem → HTTP flow endpoint (SDK yok)</li>
+            <li>Tenant izolasyonlu veri ve yetki modeli</li>
+          </ul>
+        </div>
+        <figure class="platform-section__figure">
+          <img src="assets/monitrang-modul-baglanti-haritasi.svg" alt="MonitraNG modül bağlantı haritası — platform omurgası ve modül ilişkileri" loading="lazy" />
+        </figure>
+      </div>
+    </section>
+
+    <!-- İletişim -->
+    <section class="section section-contact" id="iletisim">
+      <div class="container">
+        <div class="section-head text-center">
+          <h2>İletişim</h2>
+          <p>Demo, kurumsal bilgi ve platform hakkında sorularınız için bize ulaşın.</p>
+        </div>
+        <div class="contact-cards">
+          <a class="contact-card" href="mailto:info@monitrang.com">
+            <span class="contact-card__label">E-posta</span>
+            <span class="contact-card__value">info@monitrang.com</span>
+          </a>
+          <a class="contact-card" href="tel:+905324206756">
+            <span class="contact-card__label">Telefon</span>
+            <span class="contact-card__value">0532 420 67 56</span>
+          </a>
+          <div class="contact-card contact-card--static">
+            <span class="contact-card__label">Web</span>
+            <span class="contact-card__value">www.monitrang.com</span>
+          </div>
+        </div>
+        <p class="contact-note text-center">
+          On-prem kurulum, modül seçimi ve yapay zeka entegrasyonu konularında görüşme talep edebilirsiniz.
+        </p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section section-surface" id="sss">
+      <div class="container container--narrow">
+        <div class="section-head text-center">
+          <h2>Sık sorulan sorular</h2>
+        </div>
+        <div class="accordion accordion--faq" data-accordion>
+          <details class="accordion__item">
+            <summary>MonitraNG nedir?</summary>
+            <p>MonitraNG, kurumların operasyon, içerik, güvenlik ve karar süreçlerini tek çatı altında birleştiren modüler bir kurumsal platformdur. İhtiyaca göre yalnızca ilgili modüller devreye alınabilir.</p>
+          </details>
+          <details class="accordion__item">
+            <summary>Hangi modüller canlıda?</summary>
+            <p>Döküman Zekası, Operasyon Merkezi, Raporlama, Monitoring, Güvenlik Merkezi (SIEM) ve Workflow modülleri platformda kullanılabilir durumdadır.</p>
+          </details>
+          <details class="accordion__item">
+            <summary>Modüller birbirinden bağımsız mı?</summary>
+            <p>Modüller bağımsız devreye alınabilir ancak aynı kimlik, veri ve bildirim omurgasını paylaşır. Bu sayede kullanıcılar bir kez oturum açar; veri tenant izolasyonlu saklanır.</p>
+          </details>
+          <details class="accordion__item">
+            <summary>Dış sistemler nasıl entegre olur?</summary>
+            <p>Workflow modülü HTTP flow endpoint'leri sunar. Partner sistemler SDK olmadan bu endpoint'lere başvurarak platform verisi ve işlemlerini tetikleyebilir.</p>
+          </details>
+          <details class="accordion__item">
+            <summary>Yapay zeka buluta veri gönderir mi?</summary>
+            <p>Hayır — MonitraNG yapay zeka yetenekleri on-prem çalışacak şekilde tasarlanmıştır. MngLLM ve Ollama entegrasyonu ile modeller kurum sunucularında çalıştırılabilir. Model yerleşimi proje bazında belirlenir; varsayılan yaklaşım verinin kurum sınırında kalmasıdır.</p>
+          </details>
+          <details class="accordion__item">
+            <summary>Kapalı ağda (air-gap) çalışabilir mi?</summary>
+            <p>Evet. Platform Docker tabanlı on-prem dağıtım ile internet erişimi olmayan ortamlarda da kurulabilir. Tüm servisler (kimlik, veri, bildirim, AI) kurum altyapısında çalışır; dış bulut bağımlılığı zorunlu değildir.</p>
+          </details>
+          <details class="accordion__item">
+            <summary>Monitoring ile SIEM arasındaki fark nedir?</summary>
+            <p>Monitoring operasyonel metrik ve altyapı sağlığını izler. Güvenlik Merkezi (SIEM) güvenlik olaylarını toplar, alarm kuralları uygular ve operatör kuyruğu sunar.</p>
+          </details>
+        </div>
+        <p class="faq-footer text-center">
+          Başka sorunuz mu var?
+          <a href="mailto:info@monitrang.com">Bize yazın</a>
+          veya <a href="tel:+905324206756">0532 420 67 56</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- PurchaseTemplate CTA -->
+    <section class="cta-banner">
+      <div class="container cta-banner__inner">
+        <div class="cta-banner__logo">
+          <img src="assets/monitrang-logo-dark.png" alt="MonitraNG" width="270" height="40" />
+        </div>
+        <h2>Yapay zeka ve on-prem omurga ile kurumsal süreçlerinizi dijitalleştirin</h2>
+        <p>Modüler yapı, yerel AI desteği ve kapalı sistem uyumluluğu ile veriniz kurumda kalır, platform birlikte büyür.</p>
+        <div class="cta-banner__actions">
+          <a class="btn btn-white btn-lg" href="https://app.monitrang.com">Uygulamaya Git</a>
+          <!-- docs: restore when docs.monitrang.com is ready
+          <a class="btn btn-ghost-white btn-lg" href="https://docs.monitrang.com">Teknik Dokümantasyon</a>
+          -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <img src="assets/monitrang-logo-dark.png" alt="MonitraNG" class="footer-logo" width="270" height="40" />
+          <nav class="footer-links">
+            <a href="https://app.monitrang.com">Uygulama</a>
+            <!-- docs: restore when docs.monitrang.com is ready
+            <a href="https://docs.monitrang.com">Dokümantasyon</a>
+            -->
+          </nav>
+        </div>
+        <div class="footer-col">
+          <h4>Modüller</h4>
+          <nav class="footer-links">
+            <a href="#modul-veri-yuzeyleri">Dinamik Form &amp; Dashboard</a>
+            <a href="#modul-di">Döküman Zekası</a>
+            <a href="#modul-oc">Operasyon Merkezi</a>
+            <a href="#modul-reporting">Raporlama</a>
+            <a href="#modul-monitoring">Monitoring</a>
+          </nav>
+        </div>
+        <div class="footer-col">
+          <h4>Kaynaklar</h4>
+          <nav class="footer-links">
+            <!-- docs: restore when docs.monitrang.com is ready
+            <a href="https://docs.monitrang.com">API &amp; Kurulum</a>
+            -->
+            <a href="#yapay-zeka">Yapay Zeka</a>
+            <a href="#on-prem">On-Prem</a>
+            <a href="#platform">Platform Mimarisi</a>
+            <a href="#sss">SSS</a>
+          </nav>
+        </div>
+        <div class="footer-col">
+          <h4>İletişim</h4>
+          <nav class="footer-links">
+            <a href="mailto:info@monitrang.com">info@monitrang.com</a>
+            <a href="tel:+905324206756">0532 420 67 56</a>
+            <a href="#iletisim">İletişim bölümü</a>
+          </nav>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="year"></span> MonitraNG · iSIM Platform. Tüm hakları saklıdır.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@ namespace MngKeeper.Application.Directory;
 
 /// <summary>
 /// Directory sync'in yazdığı alanlar (USER_SOURCES.md whitelist).
-/// Uygulama alanları (photoUrl, photoSource, gender, title, department, phoneNumber) korunur.
+/// Uygulama alanları (photoUrl, photoSource, gender, title, department, phoneNumber, telegram*) korunur.
 /// </summary>
 public static class DirectoryUserFieldSets
 {
@@ -21,7 +21,8 @@ public static class DirectoryUserFieldSets
     /// <summary>Directory kullanıcı — PUT /api/user ile düzenlenebilir uygulama alanları.</summary>
     public static readonly IReadOnlySet<string> EditableByApplication = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "photoUrl", "gender", "title", "department", "phoneNumber", "includeInApplication",
+        "photoUrl", "gender", "title", "department", "phoneNumber",
+        "telegramUsername", "telegramChatId", "includeInApplication",
     };
 
     public static void ApplyDirectoryFields(

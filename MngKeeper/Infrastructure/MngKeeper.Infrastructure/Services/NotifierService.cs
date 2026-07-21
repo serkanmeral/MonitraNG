@@ -94,4 +94,70 @@ public class NotifierService : INotifierService
             throw;
         }
     }
+
+    public async Task SendMessageAsync(
+        string channel,
+        List<string> to,
+        string? text = null,
+        string? templateKey = null,
+        object? context = null,
+        string? bearerToken = null,
+        string? parseMode = null,
+        bool disableWebPagePreview = true,
+        CancellationToken cancellationToken = default)
+    {
+        if (to == null || to.Count == 0)
+            throw new ArgumentException("At least one recipient is required", nameof(to));
+
+        if (string.IsNullOrWhiteSpace(text) && string.IsNullOrWhiteSpace(templateKey))
+            throw new ArgumentException("Text or TemplateKey is required");
+
+        try
+        {
+            var request = new
+            {
+                channel = string.IsNullOrWhiteSpace(channel) ? "telegram" : channel.Trim(),
+                to,
+                text,
+                templateKey,
+                context,
+                parseMode,
+                disableWebPagePreview
+            };
+
+            var endpoint = $"/api/{_settings.ApiVersion}/notifications/send-message";
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            if (!string.IsNullOrWhiteSpace(bearerToken))
+                httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {bearerToken}");
+
+            httpRequest.Content = JsonContent.Create(request);
+
+            _logger.LogDebug(
+                "Sending channel message to MngNotifier. Endpoint={Endpoint} Channel={Channel} To={To} TemplateKey={TemplateKey}",
+                endpoint, channel, string.Join(", ", to), templateKey);
+
+            var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to send channel message. StatusCode={StatusCode} Error={Error}",
+                    response.StatusCode, errorContent);
+                throw new HttpRequestException(
+                    $"Failed to send channel message. StatusCode: {response.StatusCode}, Error: {errorContent}");
+            }
+
+            _logger.LogInformation(
+                "Channel message sent. Channel={Channel} To={To} TemplateKey={TemplateKey}",
+                channel, string.Join(", ", to), templateKey);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending channel message. Channel={Channel} To={To}", channel, string.Join(", ", to));
+            throw;
+        }
+    }
 }

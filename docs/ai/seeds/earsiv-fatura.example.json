@@ -1,0 +1,24 @@
+{
+  "schemaId": "earsiv_fatura",
+  "schemaVersion": 1,
+  "profileId": "EARSIVFATURA",
+  "invoiceType": "SATIS",
+  "invoiceId": "GIB2026000000001",
+  "uuid": "bb66d6cb-9e7f-40b4-91a1-9d9cfbb444b3",
+  "issueDate": "2026-06-18",
+  "currency": "TRY",
+  "payableAmount": 166730.4,
+  "taxExclusiveAmount": 138942,
+  "supplierName": "VİTANOVA BİLİŞİM DANIŞMANLIK HİZMETLERİ SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+  "supplierVkn": "9251313630",
+  "customerName": "ODAK KOMPOZİT TEKNOLOJİLERİ ANONİM ŞİRKETİ",
+  "customerVkn": "6340420559",
+  "lines": [
+    {
+      "lineId": "1",
+      "name": "Yazılım Danışmanlık Hizmeti"
+    }
+  ],
+  "source": "ubl_xml",
+  "confidence": 1.0
+}

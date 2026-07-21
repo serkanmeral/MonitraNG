@@ -20,6 +20,11 @@ public class MngKeeperSettings
     /// Örnek: https://app.monitrang.com (production), http://localhost:3000 (development).
     /// </summary>
     public string? UiBaseUrl { get; set; }
+
+    /// <summary>
+    /// Shared with MngNotifier. When non-empty, internal endpoints require X-Monitra-Notify-Key.
+    /// </summary>
+    public string? InternalNotifyApiKey { get; set; }
 }
 
 public class ServerSettings

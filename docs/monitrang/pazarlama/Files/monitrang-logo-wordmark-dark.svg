@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 48" role="img" aria-label="MonitraNG wordmark">
+  <defs>
+    <style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap');
+      .brand { font: 600 34px 'Inter', 'Segoe UI', Arial, sans-serif; fill: #ffffff; letter-spacing: -0.03em; }
+      .brand-ng { font: 700 34px 'Inter', 'Segoe UI', Arial, sans-serif; fill: #38bdf8; letter-spacing: -0.03em; }
+    ]]></style>
+  </defs>
+  <text x="0" y="36" class="brand">Monitra</text>
+  <text x="148" y="36" class="brand-ng">NG</text>
+</svg>

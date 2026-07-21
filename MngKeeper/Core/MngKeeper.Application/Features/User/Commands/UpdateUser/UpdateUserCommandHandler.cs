@@ -191,6 +191,13 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 existingUser.Department = request.Department;
                 existingUser.Gender = request.Gender;
                 existingUser.PhoneNumber = request.PhoneNumber;
+                if (request.TelegramUsername != null || request.TelegramChatId != null)
+                {
+                    TelegramUserProfileHelper.ApplyFromRequest(
+                        existingUser,
+                        request.TelegramUsername ?? existingUser.TelegramUsername,
+                        request.TelegramChatId ?? existingUser.TelegramChatId);
+                }
                 UserPhotoProfileHelper.ApplyPhotoUrlFromRequest(existingUser, request.PhotoUrl);
                 
                 // Convert group IDs to group names (User.Groups stores group names, not IDs)
@@ -320,6 +327,9 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     Department = updatedUser.Department,
                     Gender = updatedUser.Gender,
                     PhoneNumber = updatedUser.PhoneNumber,
+                    TelegramUsername = updatedUser.TelegramUsername,
+                    TelegramChatId = updatedUser.TelegramChatId,
+                    TelegramLinkedAt = updatedUser.TelegramLinkedAt,
                     PhotoUrl = updatedUser.PhotoUrl,
                     GroupIds = updatedUser.Groups,
                     IsActive = updatedUser.IsActive,
@@ -349,6 +359,13 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             existingUser.Department = request.Department;
             existingUser.Gender = request.Gender;
             existingUser.PhoneNumber = request.PhoneNumber;
+            if (request.TelegramUsername != null || request.TelegramChatId != null)
+            {
+                TelegramUserProfileHelper.ApplyFromRequest(
+                    existingUser,
+                    request.TelegramUsername ?? existingUser.TelegramUsername,
+                    request.TelegramChatId ?? existingUser.TelegramChatId);
+            }
             UserPhotoProfileHelper.ApplyPhotoUrlFromRequest(existingUser, request.PhotoUrl);
             existingUser.IncludeInApplication = request.IncludeInApplication;
             existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser;
@@ -397,6 +414,9 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 Department = updatedUser.Department,
                 Gender = updatedUser.Gender,
                 PhoneNumber = updatedUser.PhoneNumber,
+                TelegramUsername = updatedUser.TelegramUsername,
+                TelegramChatId = updatedUser.TelegramChatId,
+                TelegramLinkedAt = updatedUser.TelegramLinkedAt,
                 PhotoUrl = updatedUser.PhotoUrl,
                 GroupIds = updatedUser.Groups,
                 IsActive = updatedUser.IsActive,

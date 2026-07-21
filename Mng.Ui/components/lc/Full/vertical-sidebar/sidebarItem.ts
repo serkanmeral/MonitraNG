@@ -386,8 +386,8 @@ const sidebarItem: menu[] = [
         pageCode: "notifier.templates.menuHeader",
         children: [
           {
-            title: "E-posta şablonları",
-            pageCode: "notifier.mailTemplates.menuTitle",
+            title: "Bildirim şablonları",
+            pageCode: "notifier.notificationTemplates.menuTitle",
             icon: MailIcon,
             to: "/apps/operation-core/admin/mail-templates",
           },

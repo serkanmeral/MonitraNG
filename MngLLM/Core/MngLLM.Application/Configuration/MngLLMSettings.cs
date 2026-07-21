@@ -14,6 +14,8 @@ public class MngLLMSettings
     public ActorsSettings Actors { get; set; } = new();
     public CorsSettings Cors { get; set; } = new();
     public DocumentationSettings Documentation { get; set; } = new();
+    /// <summary>Service account used by DI AI to call MngDocument / DataGateway.</summary>
+    public ServiceAccountSettings ServiceAccount { get; set; } = new();
 }
 
 /// <summary>
@@ -43,10 +45,12 @@ public class ServerSettings
 public class OllamaSettings
 {
     public string BaseUrl { get; set; } = "http://ollama:11434";
-    public string DefaultModel { get; set; } = "qwen2.5:3b";
-    public int Timeout { get; set; } = 120; // 2 minutes - increased for complex prompts
-    public int MaxRetries { get; set; } = 2; // Maximum retry attempts for failed requests
-    public bool EnableStreaming { get; set; } = false; // Streaming response (requires frontend support)
+    public string DefaultModel { get; set; } = "qwen2.5:7b";
+    /// <summary>Faster model for DI PDF extract on CPU. Falls back to DefaultModel when empty.</summary>
+    public string ExtractModel { get; set; } = "qwen2.5:3b";
+    public int Timeout { get; set; } = 600;
+    public int MaxRetries { get; set; } = 1;
+    public bool EnableStreaming { get; set; } = false;
 }
 
 /// <summary>
@@ -78,6 +82,16 @@ public class ActorsSettings
 {
     public string MngKeeper { get; set; } = string.Empty;
     public string MngDataGateway { get; set; } = string.Empty;
+    /// <summary>MngDocument API base URL, e.g. http://mngdocument:5095</summary>
+    public string MngDocument { get; set; } = string.Empty;
+}
+
+/// <summary>Keeper password-grant account for server-side DI/DataGateway calls.</summary>
+public class ServiceAccountSettings
+{
+    public string DomainName { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
 }
 
 /// <summary>

@@ -219,6 +219,8 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser, // TODO: Get from current user context
                     CreatedAt = DateTime.UtcNow
                 };
+                TelegramUserProfileHelper.ApplyFromRequest(
+                    user, request.TelegramUsername, request.TelegramChatId);
 
                 // Save to domain-specific database (users collection)
                 var savedUser = await _userRepository.AddAsync(user);
@@ -329,6 +331,9 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     Department = savedUser.Department,
                     Gender = savedUser.Gender,
                     PhoneNumber = savedUser.PhoneNumber,
+                    TelegramUsername = savedUser.TelegramUsername,
+                    TelegramChatId = savedUser.TelegramChatId,
+                    TelegramLinkedAt = savedUser.TelegramLinkedAt,
                     PhotoUrl = savedUser.PhotoUrl,
                     IsActive = savedUser.IsActive,
                     CreatedAt = savedUser.CreatedAt,

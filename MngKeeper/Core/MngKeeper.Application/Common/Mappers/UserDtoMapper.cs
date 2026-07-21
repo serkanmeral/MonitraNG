@@ -11,6 +11,7 @@ public static class UserDtoMapper
     return new UserDto
     {
       UserId = user.Id,
+      DomainId = user.DomainId ?? string.Empty,
       KeycloakUserId = string.IsNullOrWhiteSpace(user.KeycloakUserId) ? null : user.KeycloakUserId,
       Username = user.Username,
       Email = user.Email ?? string.Empty,
@@ -20,6 +21,9 @@ public static class UserDtoMapper
       Department = user.Department,
       Gender = user.Gender,
       PhoneNumber = user.PhoneNumber,
+      TelegramUsername = user.TelegramUsername,
+      TelegramChatId = user.TelegramChatId,
+      TelegramLinkedAt = user.TelegramLinkedAt,
       PhotoUrl = user.PhotoUrl,
       PhotoSource = user.PhotoSource.ToString(),
       IsActive = user.IsActive,

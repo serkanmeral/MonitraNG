@@ -126,3 +126,9 @@ ApplicationResources/Windows/*.iso
 ## Offline map OSM data (generate locally; exceeds Git 100MB limit)
 docs/content/offline_map/data/**/*.pbf
 docs/content/offline_map/data/exports/*.geojson
+
+## Odak Keeper user/group exports (PII — local/terminal only, do not commit)
+docs/odak/exports/
+
+## Commercial proposal PDF/DOCX build output
+docs/odak/commercial/output/

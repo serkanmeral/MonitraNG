@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monitrang.local/schemas/earsiv-fatura/v1.json",
+  "title": "earsiv_fatura",
+  "description": "MonitraNG DI Auto-Extract MVP schema for Turkish e-Archive / UBL-TR invoices.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaId",
+    "schemaVersion",
+    "profileId",
+    "invoiceType",
+    "invoiceId",
+    "uuid",
+    "issueDate",
+    "currency",
+    "payableAmount",
+    "source",
+    "confidence"
+  ],
+  "properties": {
+    "schemaId": { "const": "earsiv_fatura" },
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "profileId": { "type": "string", "minLength": 1 },
+    "invoiceType": { "type": "string", "minLength": 1 },
+    "invoiceId": { "type": "string", "minLength": 1 },
+    "uuid": { "type": "string", "minLength": 1 },
+    "issueDate": { "type": "string", "format": "date" },
+    "currency": { "type": "string", "minLength": 1 },
+    "payableAmount": { "type": "number" },
+    "taxExclusiveAmount": { "type": "number" },
+    "supplierName": { "type": "string" },
+    "supplierVkn": { "type": "string" },
+    "customerName": { "type": "string" },
+    "customerVkn": { "type": "string" },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "lineId": { "type": "string" },
+          "name": { "type": "string" },
+          "quantity": { "type": "number" },
+          "lineExtensionAmount": { "type": "number" }
+        }
+      }
+    },
+    "source": {
+      "type": "string",
+      "enum": ["ubl_xml", "llm_pdf", "mixed"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}

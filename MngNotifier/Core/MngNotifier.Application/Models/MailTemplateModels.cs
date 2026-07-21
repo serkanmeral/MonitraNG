@@ -43,3 +43,32 @@ public sealed class TemplateRenderRequest
     /// <summary>Preview: template locale for date formatting when record missing or override.</summary>
     public string? LocaleOverride { get; init; }
 }
+
+public sealed class MessageTemplateRecord
+{
+    public string? TemplateKey { get; set; }
+    public string? Channel { get; set; }
+    public string? BodyText { get; set; }
+    public string? ParseMode { get; set; }
+    public string? Locale { get; set; }
+    public List<string>? Variables { get; set; }
+    public bool? IsActive { get; set; }
+}
+
+public sealed class RenderedMessageContent
+{
+    public required string Text { get; init; }
+    public required string TemplateKey { get; init; }
+    public string? ParseMode { get; init; }
+    public string? Channel { get; init; }
+}
+
+public sealed class MessageTemplateRenderRequest
+{
+    public required string TemplateKey { get; init; }
+    public JsonElement Context { get; init; }
+    /// <summary>Preview: render this body instead of DG bodyText (unsaved draft).</summary>
+    public string? BodyTextOverride { get; init; }
+    public string? LocaleOverride { get; init; }
+    public string? ParseModeOverride { get; init; }
+}

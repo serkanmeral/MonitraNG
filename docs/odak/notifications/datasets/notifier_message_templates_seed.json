@@ -1,0 +1,57 @@
+{
+  "_comment": "POST /api/v1/data/@message_templates — Telegram / push kanal system sablonlari. Ayni templateKey ailesi @mail_templates ile paylasilabilir.",
+  "dataset": "@message_templates",
+  "records": [
+    {
+      "templateKey": "di.document.generated",
+      "name": "Dokuman uretildi (Telegram)",
+      "description": "Document Intelligence document.generated bildirimi (push).",
+      "channel": "telegram",
+      "bodyText": "Dokuman hazir\n\n{{document.docNo}}\n{{document.fileName}}\n\n{{document.deepLink}}",
+      "parseMode": null,
+      "variables": [
+        "document.docNo",
+        "document.fileName",
+        "document.deepLink"
+      ],
+      "locale": "tr",
+      "category": "system",
+      "tags": ["document-intelligence", "telegram"],
+      "sampleContext": {
+        "document": {
+          "docNo": "COC-2026-001",
+          "fileName": "coc-line-42.pdf",
+          "deepLink": "https://app.local/apps/document-intelligence/resources/abc123"
+        },
+        "recipient": { "displayName": "Serkan Meral" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "system.test.notify",
+      "name": "Test bildirimi (Telegram)",
+      "description": "Yonetici kullanici baglantisi dogrulama testi.",
+      "channel": "telegram",
+      "bodyText": "MonitraNG test bildirimi\n\nKullanici: {{user.username}}\nAd: {{user.displayName}}\nZaman (UTC): {{event.timestamp}}",
+      "parseMode": null,
+      "variables": [
+        "user.username",
+        "user.displayName",
+        "event.timestamp"
+      ],
+      "locale": "tr",
+      "category": "system",
+      "tags": ["test", "telegram"],
+      "sampleContext": {
+        "user": {
+          "username": "odak_admin",
+          "displayName": "Odak Admin"
+        },
+        "event": {
+          "timestamp": "2026-07-13T12:00:00Z"
+        }
+      },
+      "isActive": true
+    }
+  ]
+}

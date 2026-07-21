@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="MonitraNG">
+  <defs>
+    <linearGradient id="mngIcon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5d87ff"/>
+      <stop offset="1" stop-color="#3b62d6"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="48" height="48" rx="12" fill="url(#mngIcon)"/>
+  <g transform="translate(4 4)">
+    <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 31 V15 L20 25 L29 15 V31" stroke-width="3.2"/>
+      <path d="M20 25 V33" stroke-width="1.8"/>
+    </g>
+    <g fill="#ffffff">
+      <circle cx="11" cy="15" r="2.6"/>
+      <circle cx="29" cy="15" r="2.6"/>
+      <circle cx="20" cy="25" r="2.8"/>
+      <circle cx="20" cy="33" r="2.6"/>
+    </g>
+  </g>
+</svg>

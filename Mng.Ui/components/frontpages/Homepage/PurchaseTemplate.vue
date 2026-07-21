@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import LogoIcon from '/images/logos/logoicon.svg';
+const logoIcon = '/images/logos/monitrang-icon.png';
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import LogoIcon from '/images/logos/logoicon.svg';
         <v-container class="max-width-1000">
             <div class="d-flex justify-center">
                 <div class="round-56 d-flex justify-center align-center rounded-md bg-white elevation-4 lh-normal">
-                    <img :src=LogoIcon alt="Logo" />
+                    <img :src="logoIcon" alt="MonitraNG" width="40" height="40" />
                 </div>
             </div>
             <h3 class="display-1 font-weight-semibold text-center py-6">Focus on what truly matters—creating stunning, functional designs.</h3>

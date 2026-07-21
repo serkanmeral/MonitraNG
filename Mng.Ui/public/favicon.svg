@@ -1,37 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Minimalist IoT Monitoring Icon - MonitraNG -->
-  
-  <!-- Background gradient circle -->
-  <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.15" />
-      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.1" />
-    </linearGradient>
-  </defs>
-  <circle cx="32" cy="32" r="30" fill="url(#bgGradient)"/>
-  
-  <!-- Central monitoring center (simplified) -->
-  <rect x="22" y="22" width="20" height="20" rx="4" fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
-  
-  <!-- Monitoring waves/data visualization -->
-  <path d="M 26 30 Q 28 28, 30 30 T 34 30 T 38 30" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
-  <path d="M 26 34 Q 28 32, 30 34 T 34 34 T 38 34" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
-  <path d="M 26 38 Q 28 36, 30 38 T 34 38 T 38 38" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.6"/>
-  
-  <!-- IoT sensors (simplified as dots with connection lines) -->
-  <!-- Top -->
-  <circle cx="32" cy="10" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
-  <line x1="32" y1="13.5" x2="32" y2="22" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
-  
-  <!-- Right -->
-  <circle cx="54" cy="32" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
-  <line x1="50.5" y1="32" x2="42" y2="32" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
-  
-  <!-- Bottom -->
-  <circle cx="32" cy="54" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
-  <line x1="32" y1="50.5" x2="32" y2="42" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
-  
-  <!-- Left -->
-  <circle cx="10" cy="32" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
-  <line x1="13.5" y1="32" x2="22" y2="32" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" width="32" height="32">
+  <image width="32" height="32" xlink:href="data:image/png;base64,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"/>
 </svg>

@@ -30,30 +30,60 @@ public class OllamaLLMAdapter : ILLMService
     
     public async Task<string> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
     {
-        return await GenerateAsync(prompt, _settings.DefaultModel, cancellationToken);
+        return await GenerateAsync(prompt, _settings.DefaultModel, jsonMode: false, cancellationToken);
     }
     
     public async Task<string> GenerateAsync(string prompt, string model, CancellationToken cancellationToken = default)
     {
-        const int maxRetries = 2;
+        return await GenerateAsync(prompt, model, jsonMode: false, cancellationToken);
+    }
+
+    public async Task<string> GenerateJsonAsync(string prompt, CancellationToken cancellationToken = default)
+    {
+        return await GenerateAsync(prompt, _settings.DefaultModel, jsonMode: true, cancellationToken);
+    }
+
+    public async Task<string> GenerateJsonAsync(string prompt, string model, CancellationToken cancellationToken = default)
+    {
+        return await GenerateAsync(prompt, model, jsonMode: true, cancellationToken);
+    }
+
+    private async Task<string> GenerateAsync(string prompt, string model, bool jsonMode, CancellationToken cancellationToken)
+    {
+        var maxRetries = Math.Max(0, _settings.MaxRetries);
         const int baseDelayMs = 1000; // 1 second
         
         for (int attempt = 0; attempt <= maxRetries; attempt++)
         {
             try
             {
-                var request = new
-                {
-                    model = model,
-                    prompt = prompt,
-                    stream = false,
-                    options = new
+                object request = jsonMode
+                    ? new
                     {
-                        temperature = 0.7, // Balanced creativity/consistency (0.0 = deterministic, 1.0 = creative)
-                        top_p = 0.9, // Nucleus sampling for better quality
-                        top_k = 40 // Limit vocabulary for more focused responses
+                        model = model,
+                        prompt = prompt,
+                        stream = false,
+                        format = "json",
+                        options = new
+                        {
+                            temperature = 0.1,
+                            top_p = 0.9,
+                            top_k = 40,
+                            num_predict = 768
+                        }
                     }
-                };
+                    : new
+                    {
+                        model = model,
+                        prompt = prompt,
+                        stream = false,
+                        options = new
+                        {
+                            temperature = 0.7,
+                            top_p = 0.9,
+                            top_k = 40
+                        }
+                    };
                 
                 var json = JsonSerializer.Serialize(request);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
@@ -64,7 +94,9 @@ public class OllamaLLMAdapter : ILLMService
                 }
                 else
                 {
-                    _logger.LogDebug("Calling Ollama API: Model={Model}, PromptLength={PromptLength}", model, prompt.Length);
+                    _logger.LogDebug(
+                        "Calling Ollama API: Model={Model}, PromptLength={PromptLength}, JsonMode={JsonMode}",
+                        model, prompt.Length, jsonMode);
                 }
                 
                 var response = await _httpClient.PostAsync("/api/generate", content, cancellationToken);

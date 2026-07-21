@@ -37,6 +37,9 @@ public sealed class DataGatewayTemplateClient : IDataGatewayTemplateClient
     public Task<MailTemplateRecord?> GetTemplateByKeyAsync(string templateKey, string bearerToken, CancellationToken cancellationToken = default)
         => QuerySingleAsync<MailTemplateRecord>("@mail_templates", $"templateKey:eq:{templateKey}", bearerToken, cancellationToken);
 
+    public Task<MessageTemplateRecord?> GetMessageTemplateByKeyAsync(string templateKey, string bearerToken, CancellationToken cancellationToken = default)
+        => QuerySingleAsync<MessageTemplateRecord>("@message_templates", $"templateKey:eq:{templateKey}", bearerToken, cancellationToken);
+
     public Task<MailLayoutRecord?> GetLayoutByKeyAsync(string layoutKey, string bearerToken, CancellationToken cancellationToken = default)
         => QuerySingleAsync<MailLayoutRecord>("@mail_layouts", $"layoutKey:eq:{layoutKey}", bearerToken, cancellationToken);
 

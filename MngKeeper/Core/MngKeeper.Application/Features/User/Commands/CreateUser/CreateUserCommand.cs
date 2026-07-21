@@ -14,6 +14,8 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         public string? Department { get; set; }
         public Gender Gender { get; set; } = Gender.NotSpecified;
         public string? PhoneNumber { get; set; }
+        public string? TelegramUsername { get; set; }
+        public string? TelegramChatId { get; set; }
         public string? PhotoUrl { get; set; }
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; } = true;
@@ -36,6 +38,9 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         public string? Department { get; set; }
         public Gender Gender { get; set; } = Gender.NotSpecified;
         public string? PhoneNumber { get; set; }
+        public string? TelegramUsername { get; set; }
+        public string? TelegramChatId { get; set; }
+        public DateTime? TelegramLinkedAt { get; set; }
         public string? PhotoUrl { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }

@@ -21,6 +21,8 @@ MonitraNG **MngNotifier e-posta sablonlari** icin Odak planlama cercevesi (DG da
 | **[DEVAM.md](./DEVAM.md)** | Planlama oturumu — açık sorular, faz önerisi, karar kaydı |
 | **[MAIL_ARCHITECTURE.md](./MAIL_ARCHITECTURE.md)** | **Kararlandı:** push-only HTTP; Notifier event dinlemez; sadece mail |
 | **[MESSAGING_CHANNELS.md](./MESSAGING_CHANNELS.md)** | **Kararlandı:** WhatsApp / Slack / Telegram — push-only; e-posta sonrasi faz |
+| **[TELEGRAM.md](./TELEGRAM.md)** | **Faz 3 / Odak:** teklif + mimari; kanal kararları |
+| **[TELEGRAM_USER_BINDING.md](./TELEGRAM_USER_BINDING.md)** | **Yeniden yazıldı:** @username + chat_id; profil alanları; bağlama UX |
 | **[MAIL_TEMPLATES.md](./MAIL_TEMPLATES.md)** | Template render Notifier'da; DG dataset ozeti |
 | **[MO_MAIL_POLICIES.md](./MO_MAIL_POLICIES.md)** | Workspace mail matrisi; `op_notification_policies` genişletmesi |
 | **[IN_APP_TOAST_PLAN.md](./IN_APP_TOAST_PLAN.md)** | Inbox + Hub user push + global toaster (MO + Alarm) |

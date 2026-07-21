@@ -33,6 +33,11 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
+        services.AddHttpClient("MngNotifier", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
         services.AddMemoryCache();
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IPermissionService, PermissionService>();
@@ -62,6 +67,7 @@ public static class ServiceRegistration
         services.AddScoped<DocumentParameterResolver>();
         services.AddScoped<PackageDashboardMetricsEnricher>();
         services.AddScoped<LetterheadHeaderValueEnricher>();
+        services.AddScoped<IDocumentNotificationOrchestrator, DocumentNotificationOrchestrator>();
         services.AddScoped<IDocumentGenerationService, DocumentGenerationService>();
         services.AddSingleton<IWopiSessionStore, InMemoryWopiSessionStore>();
         services.AddScoped<IEditorSessionService, EditorSessionService>();

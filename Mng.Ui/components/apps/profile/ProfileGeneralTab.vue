@@ -7,6 +7,7 @@ import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
 import PhotoUpload from '@/components/apps/profile/PhotoUpload.vue';
 import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import { fetchFromMngKeeper } from '@/services/apiService';
+import { buildTelegramBindUrl } from '@/utils/telegramBind';
 import * as yup from 'yup';
 
 // Get i18n instance for legacy mode
@@ -43,6 +44,7 @@ const formData = ref({
   department: '',
   gender: 'NotSpecified' as Gender | 'NotSpecified' | 'Male' | 'Female',
   phoneNumber: '',
+  telegramUsername: '',
   photoUrl: null as string | null,
 });
 
@@ -85,6 +87,8 @@ const schema = computed(() => yup.object({
     .max(100, t('profile.validation.departmentMaxLength')),
   phoneNumber: yup.string()
     .max(20, t('profile.validation.phoneNumberMaxLength')),
+  telegramUsername: yup.string()
+    .max(64, t('profile.validation.telegramUsernameMaxLength')),
 }));
 
 const profileUser = computed(() => userStore.currentUser);
@@ -156,12 +160,67 @@ const currentUser = computed(() => {
     department: null,
     gender: 'NotSpecified' as const,
     phoneNumber: null,
+    telegramUsername: null,
+    telegramChatId: null,
     photoUrl: null,
     isActive: true,
     groups: authStore.userGroups || [],
     roles: [],
   };
 });
+
+const telegramBindHint = computed(() => {
+  if (currentUser.value?.telegramChatId) {
+    return t('profile.personalInfo.telegramLinkedHint');
+  }
+  return t('profile.personalInfo.telegramUsernameHint');
+});
+
+const config = useRuntimeConfig();
+const telegramBotUsername = computed(
+  () => (config.public.telegramBotUsername as string) || 'MonitraNGBot'
+);
+
+const telegramBindUrl = computed(() => {
+  const domainId =
+    currentUser.value?.domainId ||
+    (authStore.userInfo as any)?.domain_id ||
+    '';
+  const userId =
+    currentUser.value?.id ||
+    currentUser.value?.userId ||
+    '';
+  return buildTelegramBindUrl(telegramBotUsername.value, domainId, userId);
+});
+
+const isUnlinkingTelegram = ref(false);
+
+const openTelegramBind = () => {
+  if (!telegramBindUrl.value) {
+    showSnackbar(t('profile.personalInfo.telegramBindUnavailable'), 'error');
+    return;
+  }
+  window.open(telegramBindUrl.value, '_blank', 'noopener,noreferrer');
+};
+
+const unlinkTelegram = async () => {
+  if (!currentUser.value) return;
+  const userId = currentUser.value.id || currentUser.value.userId;
+  if (!userId) return;
+  isUnlinkingTelegram.value = true;
+  try {
+    await userStore.updateUser(userId, {
+      telegramUsername: '',
+      telegramChatId: '',
+    });
+    formData.value.telegramUsername = '';
+    showSnackbar(t('profile.personalInfo.telegramUnlinkSuccess'), 'success');
+  } catch (e: any) {
+    showSnackbar(e?.message || t('profile.messages.saveError'), 'error');
+  } finally {
+    isUnlinkingTelegram.value = false;
+  }
+};
 
 // Load user data
 // Note: We use authStore.userInfo as primary source since it's already available
@@ -199,6 +258,7 @@ onMounted(async () => {
       department: currentUser.value.department || '',
       gender: genderValue,
       phoneNumber: currentUser.value.phoneNumber || '',
+      telegramUsername: currentUser.value.telegramUsername || '',
       photoUrl: currentUser.value.photoUrl || null,
     };
   }
@@ -243,6 +303,7 @@ onMounted(async () => {
           department: backendUser.department || formData.value.department,
           gender: genderValue,
           phoneNumber: backendUser.phoneNumber || formData.value.phoneNumber,
+          telegramUsername: backendUser.telegramUsername || formData.value.telegramUsername,
           photoUrl: backendUser.photoUrl || formData.value.photoUrl,
         };
       }
@@ -287,6 +348,7 @@ const updateFormDataFromUser = (user: any) => {
     department: user.department || '',
     gender: genderValue,
     phoneNumber: user.phoneNumber || '',
+    telegramUsername: user.telegramUsername || '',
     photoUrl: user.photoUrl || null,
   };
 };
@@ -382,6 +444,11 @@ const handleSave = async () => {
     if (fieldEditable('department')) payload.department = formData.value.department || undefined;
     if (fieldEditable('gender')) payload.gender = formData.value.gender;
     if (fieldEditable('phoneNumber')) payload.phoneNumber = formData.value.phoneNumber || undefined;
+    if (fieldEditable('telegramUsername')) {
+      payload.telegramUsername = formData.value.telegramUsername ?? '';
+      // Round-trip chatId so username-only save does not clear an existing bind.
+      payload.telegramChatId = currentUser.value?.telegramChatId ?? '';
+    }
     if (fieldEditable('photoUrl')) payload.photoUrl = formData.value.photoUrl || undefined;
 
     await userStore.updateUser(userId, payload);
@@ -430,6 +497,7 @@ const handleCancel = () => {
       department: currentUser.value.department || '',
       gender: currentUser.value.gender || 'NotSpecified',
       phoneNumber: currentUser.value.phoneNumber || '',
+      telegramUsername: currentUser.value.telegramUsername || '',
       photoUrl: currentUser.value.photoUrl || null,
     };
   }
@@ -625,6 +693,51 @@ const formatDate = (date: string | Date | null | undefined) => {
               class="mt-3"
               :disabled="!isEditing || !fieldEditable('phoneNumber')"
             />
+            <v-text-field
+              v-model="formData.telegramUsername"
+              :label="t('profile.personalInfo.telegramUsername')"
+              :hint="telegramBindHint"
+              persistent-hint
+              prefix="@"
+              variant="outlined"
+              density="comfortable"
+              class="mt-3"
+              :disabled="!isEditing || !fieldEditable('telegramUsername')"
+            />
+            <v-alert
+              v-if="currentUser?.telegramChatId"
+              type="success"
+              density="compact"
+              variant="tonal"
+              class="mt-2"
+            >
+              {{ t('profile.personalInfo.telegramLinked') }}
+              <span v-if="currentUser.telegramUsername">
+                (@{{ currentUser.telegramUsername }})
+              </span>
+            </v-alert>
+            <div class="d-flex flex-column ga-2 mt-2">
+              <v-btn
+                v-if="!currentUser?.telegramChatId"
+                color="primary"
+                variant="tonal"
+                block
+                :disabled="!telegramBindUrl"
+                @click="openTelegramBind"
+              >
+                {{ t('profile.personalInfo.telegramBindButton') }}
+              </v-btn>
+              <v-btn
+                v-else
+                color="error"
+                variant="outlined"
+                block
+                :loading="isUnlinkingTelegram"
+                @click="unlinkTelegram"
+              >
+                {{ t('profile.personalInfo.telegramUnlinkButton') }}
+              </v-btn>
+            </div>
             <div class="d-flex gap-2 mt-4">
               <v-btn
                 v-if="!isEditing"

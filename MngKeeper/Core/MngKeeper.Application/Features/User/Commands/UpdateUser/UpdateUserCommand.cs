@@ -14,6 +14,8 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public string? Department { get; set; }
         public Gender Gender { get; set; } = Gender.NotSpecified;
         public string? PhoneNumber { get; set; }
+        public string? TelegramUsername { get; set; }
+        public string? TelegramChatId { get; set; }
         public string? PhotoUrl { get; set; }
         public List<string>? GroupIds { get; set; } // Nullable: if null, preserve existing groups; if empty list, clear groups; if has items, update groups
         public bool IsActive { get; set; } = true;
@@ -37,6 +39,9 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public string? Department { get; set; }
         public Gender Gender { get; set; } = Gender.NotSpecified;
         public string? PhoneNumber { get; set; }
+        public string? TelegramUsername { get; set; }
+        public string? TelegramChatId { get; set; }
+        public DateTime? TelegramLinkedAt { get; set; }
         public string? PhotoUrl { get; set; }
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; }

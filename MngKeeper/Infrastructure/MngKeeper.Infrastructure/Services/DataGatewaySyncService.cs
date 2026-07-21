@@ -126,6 +126,18 @@ namespace MngKeeper.Infrastructure.Services
                 {
                     userDocument["phoneNumber"] = user.PhoneNumber;
                 }
+                if (!string.IsNullOrEmpty(user.TelegramUsername))
+                {
+                    userDocument["telegramUsername"] = user.TelegramUsername;
+                }
+                if (!string.IsNullOrEmpty(user.TelegramChatId))
+                {
+                    userDocument["telegramChatId"] = user.TelegramChatId;
+                }
+                if (user.TelegramLinkedAt.HasValue)
+                {
+                    userDocument["telegramLinkedAt"] = user.TelegramLinkedAt.Value;
+                }
                 if (!string.IsNullOrEmpty(user.PhotoUrl))
                 {
                     userDocument["photoUrl"] = user.PhotoUrl;

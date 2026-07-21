@@ -34,6 +34,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private readonly PackageDashboardMetricsEnricher _packageDashboardEnricher;
     private readonly IDomainLogoProvider _logoProvider;
     private readonly ITemplateEditorService _templateEditor;
+    private readonly IDocumentNotificationOrchestrator _notifications;
 
     public DocumentGenerationService(
         IMngDataGatewayClient dg,
@@ -51,7 +52,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         LetterheadHeaderValueEnricher headerEnricher,
         PackageDashboardMetricsEnricher packageDashboardEnricher,
         IDomainLogoProvider logoProvider,
-        ITemplateEditorService templateEditor)
+        ITemplateEditorService templateEditor,
+        IDocumentNotificationOrchestrator notifications)
     {
         _dg = dg;
         _resources = resources;
@@ -68,6 +70,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         _packageDashboardEnricher = packageDashboardEnricher;
         _logoProvider = logoProvider;
         _templateEditor = templateEditor;
+        _notifications = notifications;
     }
 
     private string? Token => _ctx.BearerToken;
@@ -505,7 +508,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
 
         var generatedAt = DateTime.UtcNow;
 
-        return new GenerateDocumentResultDto
+        var result = new GenerateDocumentResultDto
         {
             ProfileCode = profile.Code,
             ContextType = profile.ContextType,
@@ -528,6 +531,9 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             UnresolvedParameterKeys = placeholderAnalysis.UnresolvedParameterKeys,
             RemainingPlaceholderKeys = remainingPlaceholders
         };
+
+        await _notifications.NotifyDocumentGeneratedAsync(result, ct: ct);
+        return result;
     }
 
     public async Task<DocumentGenerationPreviewDto> PreviewFromTemplateAsync(
@@ -735,7 +741,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             // Best-effort; client already knows the intended path.
         }
 
-        return new GenerateDocumentResultDto
+        var result = new GenerateDocumentResultDto
         {
             ProfileCode = ManualProfileCode,
             ContextType = string.Empty,
@@ -758,6 +764,9 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             UnresolvedParameterKeys = placeholderAnalysis.UnresolvedParameterKeys,
             RemainingPlaceholderKeys = remainingPlaceholders
         };
+
+        await _notifications.NotifyDocumentGeneratedAsync(result, ct: ct);
+        return result;
     }
 
     private async Task<(DmDocumentTemplate Template, TemplateModelDocument Model, ParameterResolutionResult Resolved, DocumentPlaceholderAnalysis.Result PlaceholderAnalysis)> BuildManualTemplateValuesAsync(

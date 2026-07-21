@@ -1,0 +1,83 @@
+{
+  "defaultSettings": {
+    "headerFields": {
+      "documentName": true,
+      "docNo": false,
+      "generatedAt": false,
+      "createPerson": false
+    },
+    "generalDocNo": {
+      "enabled": false,
+      "format": "MNG-{yyyy}-{0:D4}",
+      "scopeMode": "letterhead",
+      "scopeKey": null,
+      "resetPolicy": "yearly",
+      "startValue": 1,
+      "incrementStep": 1
+    },
+    "footer": {
+      "enabled": true,
+      "tableRows": 1,
+      "tableColumns": 1
+    },
+    "legacyOdakFooter": {
+      "enabled": false,
+      "showFormRevision": false,
+      "showOfficeColumns": false,
+      "showAddresses": false,
+      "showContacts": false,
+      "showDividerLine": false
+    },
+    "pageLayout": {
+      "marginTopTwips": 1440,
+      "marginRightTwips": 1797,
+      "marginBottomTwips": 1440,
+      "marginLeftTwips": 1797,
+      "headerDistanceTwips": 709,
+      "footerDistanceTwips": 658,
+      "footerLeftIndentTwips": 0
+    }
+  },
+  "letterheads": [
+    {
+      "code": "MNG-STD",
+      "name": "MonitraNG",
+      "description": "MonitraNG pazarlama ve kurumsal dokumanlar icin minimal antet — ust tabloda ortada belge adi, altta sayfa numarasi.",
+      "isDefault": false,
+      "isActive": true,
+      "letterhead": {
+        "enabled": true,
+        "showLogo": false,
+        "showDocumentName": true,
+        "showDocumentNumber": false,
+        "showGeneratedAt": false,
+        "showCreatePerson": false
+      },
+      "settings": {
+        "headerFields": {
+          "documentName": true,
+          "docNo": false,
+          "generatedAt": false,
+          "createPerson": false
+        },
+        "generalDocNo": {
+          "enabled": false
+        },
+        "footer": {
+          "enabled": true,
+          "tableRows": 1,
+          "tableColumns": 1
+        },
+        "legacyOdakFooter": {
+          "enabled": false,
+          "showFormRevision": false,
+          "showOfficeColumns": false,
+          "showAddresses": false,
+          "showContacts": false,
+          "showDividerLine": false
+        }
+      }
+    }
+  ],
+  "templateCodes": []
+}

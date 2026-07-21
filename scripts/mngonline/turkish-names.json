@@ -1,0 +1,15 @@
+{
+  "firstNames": [
+    "Ahmet", "Mehmet", "Ayşe", "Fatma", "Emre", "Elif", "Can", "Zeynep", "Burak", "Selin",
+    "Mustafa", "Hatice", "Ali", "Esra", "Murat", "Deniz", "Cem", "İrem", "Onur", "Gül",
+    "Hakan", "Merve", "Pınar", "Yusuf", "Seda", "Kerem", "Derya", "Barış", "Nil", "Oğuz",
+    "Ceren", "Tolga", "Büşra", "Ece", "Kaan", "Melis", "Umut", "Aslı", "Eren", "Sibel",
+    "Volkan", "Gizem", "Taner", "İpek", "Nazlı", "Fatih", "Hande", "Levent", "Berk", "Ebru"
+  ],
+  "lastNames": [
+    "Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Yıldız", "Yıldırım", "Öztürk", "Aydın", "Özdemir",
+    "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara", "Koç", "Kurt", "Özkan", "Şimşek",
+    "Polat", "Korkmaz", "Özer", "Aksoy", "Erdoğan", "Acar", "Tekin", "Güneş", "Aktaş", "Bulut",
+    "Bozkurt", "Karaca", "Avcı", "Erdem", "Çakır", "Ünal", "Sezer", "Taş", "Güler", "Aydemir"
+  ]
+}

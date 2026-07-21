@@ -13,6 +13,7 @@ using MngKeeper.Application.Features.User.Queries.ExportUsers;
 using MngKeeper.Api.Attributes;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Directory;
+using MngKeeper.Application.DTOs;
 using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Api.Controllers
@@ -548,6 +549,126 @@ namespace MngKeeper.Api.Controllers
                 return StatusCode(500, new { 
                     error = "server_error", 
                     errorDescription = "An error occurred while processing your request." 
+                });
+            }
+        }
+
+        /// <summary>
+        /// Manager: send a test Telegram notification to verify user binding.
+        /// </summary>
+        [HttpPost("{userId}/test-notification")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> SendTestNotification(
+            string userId,
+            [FromBody] TestNotificationRequest? request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var claims = HttpContext.Items["TokenClaims"] as TokenClaims;
+                if (claims?.DomainId == null)
+                    return BadRequest(new { error = "invalid_request", errorDescription = "Domain information not found in token." });
+
+                var channel = (request?.Channel ?? "telegram").Trim().ToLowerInvariant();
+                if (channel != "telegram")
+                    return BadRequest(new { error = "unsupported_channel", errorDescription = "MVP supports channel: telegram" });
+
+                var user = await _userRepository.GetByIdAsync(userId, claims.DomainId);
+                if (user == null)
+                    return NotFound(new { error = "user_not_found", errorDescription = "User not found." });
+
+                if (string.IsNullOrWhiteSpace(user.TelegramChatId))
+                {
+                    return BadRequest(new
+                    {
+                        error = "telegram_not_linked",
+                        errorDescription = "User has no telegramChatId. Link Telegram first."
+                    });
+                }
+
+                var displayName = string.Join(" ", new[] { user.FirstName, user.LastName }
+                    .Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
+                if (string.IsNullOrWhiteSpace(displayName))
+                    displayName = user.Username ?? userId;
+
+                var bearer = Request.Headers.Authorization.ToString();
+                if (bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    bearer = bearer["Bearer ".Length..].Trim();
+                else
+                    bearer = string.Empty;
+
+                var contextDict = new Dictionary<string, object>
+                {
+                    ["user"] = new Dictionary<string, object>
+                    {
+                        ["username"] = user.Username ?? userId,
+                        ["displayName"] = displayName
+                    },
+                    ["event"] = new Dictionary<string, object>
+                    {
+                        ["timestamp"] = DateTime.UtcNow.ToString("o")
+                    }
+                };
+
+                var usedTemplate = false;
+                if (!string.IsNullOrWhiteSpace(bearer))
+                {
+                    try
+                    {
+                        await _notifierService.SendMessageAsync(
+                            channel: "telegram",
+                            to: new List<string> { user.TelegramChatId.Trim() },
+                            text: null,
+                            templateKey: "system.test.notify",
+                            context: contextDict,
+                            bearerToken: bearer,
+                            cancellationToken: cancellationToken);
+                        usedTemplate = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "Template test notify failed for {UserId}; falling back to plain text",
+                            userId);
+                    }
+                }
+
+                if (!usedTemplate)
+                {
+                    var fallback =
+                        $"MonitraNG test bildirimi\n\nKullanici: {user.Username}\nAd: {displayName}\nZaman (UTC): {DateTime.UtcNow:O}";
+                    await _notifierService.SendMessageAsync(
+                        channel: "telegram",
+                        to: new List<string> { user.TelegramChatId.Trim() },
+                        text: fallback,
+                        bearerToken: string.IsNullOrWhiteSpace(bearer) ? null : bearer,
+                        cancellationToken: cancellationToken);
+                }
+
+                _logger.LogInformation(
+                    "Test Telegram notification sent. UserId={UserId} ChatId={ChatId} UsedTemplate={UsedTemplate}",
+                    userId, user.TelegramChatId, usedTemplate);
+
+                return Ok(new
+                {
+                    isSuccess = true,
+                    channel = "telegram",
+                    telegramChatId = user.TelegramChatId,
+                    usedTemplate,
+                    message = "Test notification sent."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending test notification for user {UserId}", userId);
+                return StatusCode(500, new
+                {
+                    error = "server_error",
+                    errorDescription = "Failed to send test notification.",
+                    detail = ex.Message
                 });
             }
         }

@@ -8,6 +8,8 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore, Gender } from '@/stores/apps/user';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
+import { buildTelegramBindUrl } from '@/utils/telegramBind';
+import { useAuthStore } from '@/stores/auth';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -25,7 +27,9 @@ const t = (key: string, params?: any) => {
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const authStore = useAuthStore();
 const localeStore = useLocaleStore();
+const config = useRuntimeConfig();
 
 const userId = route.params.id as string;
 
@@ -66,6 +70,8 @@ const formData = ref({
   title: null as string | null,
   department: null as string | null,
   phoneNumber: null as string | null,
+  telegramUsername: null as string | null,
+  telegramChatId: null as string | null,
   photoUrl: null as string | null,
   gender: 'NotSpecified' as Gender | 'NotSpecified' | 'Male' | 'Female',
 });
@@ -79,6 +85,48 @@ const {
   sourceLabelKey,
   sourceChipColor,
 } = useUserFieldPolicies(viewingUserRef);
+
+const telegramBindUrl = computed(() => {
+  const u = userStore.viewingUser;
+  const domainId =
+    u?.domainId ||
+    (authStore.userInfo as { domain_id?: string } | null)?.domain_id ||
+    '';
+  const uid = u?.id || u?.userId || userId;
+  const bot =
+    ((config.public.telegramBotUsername as string) || 'MonitraNGBot').replace(/^@/, '');
+  return buildTelegramBindUrl(bot, domainId, uid);
+});
+
+const openTelegramBind = () => {
+  if (!telegramBindUrl.value) return;
+  window.open(telegramBindUrl.value, '_blank', 'noopener,noreferrer');
+};
+
+const hasTelegramChatId = computed(() => !!(formData.value.telegramChatId || '').trim());
+const testNotifyLoading = ref(false);
+const testNotifyMessage = ref<string | null>(null);
+const testNotifyError = ref<string | null>(null);
+
+const sendTelegramTest = async () => {
+  testNotifyMessage.value = null;
+  testNotifyError.value = null;
+  if (!hasTelegramChatId.value) {
+    testNotifyError.value = t('users.edit.fields.telegramTestNoChatId');
+    return;
+  }
+  testNotifyLoading.value = true;
+  try {
+    const result = await userStore.sendTestNotification(userId, 'telegram');
+    if (result.isSuccess) {
+      testNotifyMessage.value = result.message || t('users.edit.fields.telegramTestSuccess');
+    } else {
+      testNotifyError.value = result.error || t('users.edit.fields.telegramTestError');
+    }
+  } finally {
+    testNotifyLoading.value = false;
+  }
+};
 
 const genderOptions = computed(() => [
   { value: 'NotSpecified', title: t('users.details.gender.notSpecified') },
@@ -127,6 +175,8 @@ const loadUser = async () => {
         title: user.title || null,
         department: user.department || null,
         phoneNumber: user.phoneNumber || null,
+        telegramUsername: user.telegramUsername || null,
+        telegramChatId: user.telegramChatId || null,
         photoUrl: user.photoUrl || null,
         gender: genderValue,
       };
@@ -233,6 +283,11 @@ const onSubmit = async (values: any) => {
     if (fieldEditable('title')) userData.title = formData.value.title || null;
     if (fieldEditable('department')) userData.department = formData.value.department || null;
     if (fieldEditable('phoneNumber')) userData.phoneNumber = formData.value.phoneNumber || null;
+    if (fieldEditable('telegramUsername') || fieldEditable('telegramChatId')) {
+      // Empty string clears; do not coerce "" → null (null would skip update on server).
+      userData.telegramUsername = formData.value.telegramUsername ?? '';
+      userData.telegramChatId = formData.value.telegramChatId ?? '';
+    }
     if (fieldEditable('photoUrl')) userData.photoUrl = formData.value.photoUrl || null;
     if (fieldEditable('gender')) userData.gender = formData.value.gender;
     
@@ -406,6 +461,82 @@ const onSubmit = async (values: any) => {
                 :placeholder="t('users.edit.fields.phonePlaceholder')"
                 :disabled="!fieldEditable('phoneNumber')"
               />
+            </v-col>
+
+            <!-- Telegram username -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.telegramUsername"
+                :label="t('users.edit.fields.telegramUsername')"
+                variant="outlined"
+                prefix="@"
+                :placeholder="t('users.edit.fields.telegramUsernamePlaceholder')"
+                :hint="t('users.edit.fields.telegramUsernameHint')"
+                persistent-hint
+                :disabled="!fieldEditable('telegramUsername')"
+              />
+            </v-col>
+
+            <!-- Telegram chat_id (manual / ops until deep-link TG-3) -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.telegramChatId"
+                :label="t('users.edit.fields.telegramChatId')"
+                variant="outlined"
+                :placeholder="t('users.edit.fields.telegramChatIdPlaceholder')"
+                :hint="t('users.edit.fields.telegramChatIdHint')"
+                persistent-hint
+                :disabled="!fieldEditable('telegramChatId')"
+              />
+            </v-col>
+
+            <v-col cols="12" md="6" class="d-flex align-center flex-wrap ga-2">
+              <v-btn
+                color="primary"
+                variant="tonal"
+                :disabled="!telegramBindUrl"
+                @click="openTelegramBind"
+              >
+                {{ t('users.edit.fields.telegramBindButton') }}
+              </v-btn>
+              <v-btn
+                color="secondary"
+                variant="tonal"
+                :loading="testNotifyLoading"
+                :disabled="!hasTelegramChatId"
+                @click="sendTelegramTest"
+              >
+                {{ t('users.edit.fields.telegramTestButton') }}
+              </v-btn>
+              <span
+                v-if="!hasTelegramChatId"
+                class="text-caption text-medium-emphasis"
+              >
+                {{ t('users.edit.fields.telegramTestNoChatId') }}
+              </span>
+            </v-col>
+            <v-col v-if="testNotifyMessage || testNotifyError" cols="12">
+              <v-alert
+                v-if="testNotifyMessage"
+                type="success"
+                variant="tonal"
+                density="compact"
+                closable
+                @click:close="testNotifyMessage = null"
+              >
+                {{ testNotifyMessage }}
+              </v-alert>
+              <v-alert
+                v-if="testNotifyError"
+                type="error"
+                variant="tonal"
+                density="compact"
+                closable
+                class="mt-2"
+                @click:close="testNotifyError = null"
+              >
+                {{ testNotifyError }}
+              </v-alert>
             </v-col>
 
             <!-- Gender -->

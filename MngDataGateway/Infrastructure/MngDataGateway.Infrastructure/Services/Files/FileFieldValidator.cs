@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using MngDataGateway.Application.Services.Files;
 using Microsoft.Extensions.Logging;
@@ -160,8 +161,31 @@ public class FileFieldValidator : IFileFieldValidator
             }
         }
 
+        if (LooksLikeSvg(fileBytes))
+        {
+            _logger.LogDebug("Detected MIME type: image/svg+xml");
+            return "image/svg+xml";
+        }
+
         _logger.LogWarning("Could not detect MIME type from magic bytes, defaulting to application/octet-stream");
         return "application/octet-stream";
+    }
+
+    private static bool LooksLikeSvg(byte[] fileBytes)
+    {
+        if (fileBytes == null || fileBytes.Length < 4)
+            return false;
+
+        var sampleLength = Math.Min(fileBytes.Length, 512);
+        var prefix = Encoding.UTF8.GetString(fileBytes, 0, sampleLength)
+            .TrimStart('\uFEFF')
+            .TrimStart();
+
+        if (!prefix.StartsWith("<svg", StringComparison.OrdinalIgnoreCase) &&
+            !prefix.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return prefix.Contains("<svg", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
