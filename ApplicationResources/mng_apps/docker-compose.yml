@@ -821,6 +821,33 @@ services:
       - mngalarm
     restart: unless-stopped
 
+  # Central ingest API for field MngLogs agents (not the agent itself)
+  mnglogcollector:
+    build:
+      context: ../../MngLogCollector
+      dockerfile: Presentation/MngLogCollector.Api/Dockerfile
+    image: localhost:5000/mnglogcollector:1.0.0
+    container_name: mnglogcollector
+    ports:
+      - "5091:5091"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5091
+      - EnableSwagger=true
+      - MngLogCollectorSettings__OpenSearch__Url=http://opensearch:9200
+      - MngLogCollectorSettings__OpenSearch__WriteEnabled=true
+      - MngLogCollectorSettings__Ingest__ApiKey=
+      - MngLogCollectorSettings__Ingest__MaxEventsPerBatch=500
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5091/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
   mngoperations:
     build:
       context: ../../MngOperations

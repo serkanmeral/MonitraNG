@@ -29,7 +29,7 @@ $DefaultFullPaths = @(
     "tests/fixtures/siem",
     "MngGateway", "MngKeeper", "MngDataGateway", "MngReactor", "MngEngine", "MngHub",
     "MngScheduler", "MngWorkflow", "MngAlarm", "MngOperations", "MngDocument", "MngAdmin", "MngNotifier",
-    "Mng.Ui", "MngDomainUI"
+    "MngLogCollector", "MngLogs", "Mng.Ui", "MngDomainUI"
 )
 
 if ($MngCommonOnly) {
@@ -87,7 +87,7 @@ if ($IncludeMngCommon) {
     $CommonTar = Join-Path $env:TEMP "mng_common_odak_sync.tar"
     Push-Location (Join-Path $RepoRoot "ApplicationResources/mng_common")
     $commonComposeOdak = if (Test-OdakProductionServer -Server $Server) { "docker-compose.odak.prod.yml" } else { "docker-compose.odak.yml" }
-    & tar -cf $CommonTar --exclude=data/.npm --exclude=data/*.db docker-compose.yml $commonComposeOdak .env.odak.prod.example .env.odak.example env.example mongo-init mongo-express mosquitto nginx scalar-config 2>$null
+    & tar -cf $CommonTar --exclude=data/.npm --exclude=data/*.db docker-compose.yml $commonComposeOdak .env.odak.prod.example .env.odak.example env.example mongo-init mongo-express mosquitto nginx scalar-config opensearch 2>$null
     Pop-Location
     Send-OdakRemoteFile -ComputerName $Server -Credential $cred -LocalPath $CommonTar -RemoteDestination "/home/odak/" -AcceptKey
     $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey

@@ -43,6 +43,8 @@ namespace MngReactor.Persistence
             services.AddScoped<IDataGatewayClient, DataGatewayClient>();
             services.AddScoped<IMonMetricsRepository, MonMetricsRepository>();
             services.AddScoped<IIngestProcessing, IngestProcessing>();
+            services.AddHttpClient("opensearch");
+            services.AddScoped<ISecEventOpenSearchWriter, SecEventOpenSearchWriter>();
             services.AddScoped<ISecEventIngestProcessing, SecEventIngestProcessing>();
             services.AddScoped<ISecEventsRepository, SecEventsRepository>();
             services.AddScoped<ISecEventFlowBaselineStore, SecEventFlowBaselineStore>();

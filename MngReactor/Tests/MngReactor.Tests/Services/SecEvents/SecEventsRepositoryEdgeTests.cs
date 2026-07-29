@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Configuration;
 using MngReactor.Application.Models.SecEvents;
 using MngReactor.Persistence.Services.SecEvents;
@@ -13,15 +14,20 @@ namespace MngReactor.Tests.Services.SecEvents;
 
 public sealed class SecEventsRepositoryEdgeTests
 {
+    private static SecEventsRepository CreateSut(Mock<IMongoClient> client) =>
+        new(
+            client.Object,
+            Options.Create(new MngReactorSettings()),
+            new MemoryCache(new MemoryCacheOptions()),
+            Mock.Of<IHttpClientFactory>(),
+            Mock.Of<ISecEventOpenSearchWriter>(),
+            NullLogger<SecEventsRepository>.Instance);
+
     [Fact]
     public async Task InsertMany_EmptyDomain_ReturnsZeroWithoutMongoCall()
     {
         var client = new Mock<IMongoClient>(MockBehavior.Strict);
-        var sut = new SecEventsRepository(
-            client.Object,
-            Options.Create(new MngReactorSettings()),
-            new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<SecEventsRepository>.Instance);
+        var sut = CreateSut(client);
 
         var inserted = await sut.InsertManyAsync("  ", [SampleDoc()]);
 
@@ -33,11 +39,7 @@ public sealed class SecEventsRepositoryEdgeTests
     public async Task InsertMany_EmptyDocs_ReturnsZeroWithoutMongoCall()
     {
         var client = new Mock<IMongoClient>(MockBehavior.Strict);
-        var sut = new SecEventsRepository(
-            client.Object,
-            Options.Create(new MngReactorSettings()),
-            new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<SecEventsRepository>.Instance);
+        var sut = CreateSut(client);
 
         var inserted = await sut.InsertManyAsync("odak", []);
 

@@ -36,6 +36,10 @@ services:
       - MngReactorSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD:-admin123}
       - MngReactorSettings__Mqtt__Host=mosquitto
       - MngReactorSettings__ObservationPublish__Enabled=true
+      # G1: dual-write normalized sec_events to OpenSearch (mng_common)
+      - MngReactorSettings__SecEvents__OpenSearchDualWriteEnabled=true
+      - MngReactorSettings__SecEvents__OpenSearchReadEnabled=true
+      - MngReactorSettings__SecEvents__OpenSearchUrl=http://opensearch:9200
 
   mngengine:
     ports:
@@ -122,6 +126,17 @@ services:
     environment:
       - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngAlarmSettings__Engine__ReactorBridge__Enabled=false
+
+  mnglogcollector:
+    ports:
+      - "5091:5091"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - EnableSwagger=false
+      - MngLogCollectorSettings__OpenSearch__Url=http://opensearch:9200
+      - MngLogCollectorSettings__OpenSearch__WriteEnabled=true
+      # Set a real key in .env before exposing ingest beyond the lab network
+      - MngLogCollectorSettings__Ingest__ApiKey=${MNGLOGCOLLECTOR_INGEST_API_KEY:-}
 
   mngoperations:
     ports:

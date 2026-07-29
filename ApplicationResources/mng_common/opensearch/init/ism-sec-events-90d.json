@@ -1,0 +1,28 @@
+{
+  "policy": {
+    "description": "MonitraNG SIEM sec-events — delete after 90 days (default; override via config later)",
+    "default_state": "hot",
+    "states": [
+      {
+        "name": "hot",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "delete",
+            "conditions": { "min_index_age": "90d" }
+          }
+        ]
+      },
+      {
+        "name": "delete",
+        "actions": [{ "delete": {} }]
+      }
+    ],
+    "ism_template": [
+      {
+        "index_patterns": ["mng-*-sec-events*"],
+        "priority": 100
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "index_patterns": ["mng-*-sec-events*"],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "5s",
+      "plugins.index_state_management.policy_id": "mng-sec-events-90d"
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "ingestedAt": { "type": "date" },
+        "event": {
+          "properties": {
+            "action": { "type": "keyword" },
+            "outcome": { "type": "keyword" }
+          }
+        },
+        "source": {
+          "properties": {
+            "product": { "type": "keyword" },
+            "type": { "type": "keyword" }
+          }
+        },
+        "host": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "rawPreview": { "type": "keyword", "ignore_above": 1024 },
+        "raw": { "type": "text", "index": false }
+      }
+    }
+  }
+}

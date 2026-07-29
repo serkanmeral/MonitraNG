@@ -29,4 +29,19 @@ public class SecEventsSettings
     /// Saatlik rollup koleksiyonundan dashboard-summary oku (Faz 2.2). Veri yoksa aggregation fallback.
     /// </summary>
     public bool UseDashboardHourlyRollup { get; set; } = true;
+
+    /// <summary>
+    /// After Mongo insert, also write normalized sec_events to OpenSearch (G1 fanout). Best-effort.
+    /// </summary>
+    public bool OpenSearchDualWriteEnabled { get; set; }
+
+    /// <summary>
+    /// When true, Query / GetById / dashboard-summary read from OpenSearch (G2). Mongo write path unchanged.
+    /// </summary>
+    public bool OpenSearchReadEnabled { get; set; }
+
+    /// <summary>
+    /// OpenSearch base URL (e.g. http://opensearch:9200). Used when dual-write or read is enabled.
+    /// </summary>
+    public string OpenSearchUrl { get; set; } = "http://opensearch:9200";
 }

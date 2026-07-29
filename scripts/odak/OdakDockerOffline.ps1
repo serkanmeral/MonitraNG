@@ -18,6 +18,7 @@ $script:OdakDockerServiceCatalog = @{
     "mngworkflow-worker" = @{ Context = "MngWorkflow";        Dockerfile = "Presentation/MngWorkflow.Worker/Dockerfile"; Image = "mngworkflow-worker" }
     mngalarm           = @{ Context = "MngAlarm";           Dockerfile = "Presentation/MngAlarm.Api/Dockerfile"; Image = "mngalarm" }
     "mngalarm-worker"  = @{ Context = "MngAlarm";           Dockerfile = "Presentation/MngAlarm.Worker/Dockerfile"; Image = "mngalarm-worker" }
+    mnglogcollector    = @{ Context = "MngLogCollector";    Dockerfile = "Presentation/MngLogCollector.Api/Dockerfile"; Image = "mnglogcollector" }
     mngoperations      = @{ Context = "MngOperations";      Dockerfile = "Presentation/MngOperations.Api/Dockerfile"; Image = "mngoperations" }
     mngdocument        = @{ Context = "MngDocument";        Dockerfile = "Presentation/MngDocument.Api/Dockerfile"; Image = "mngdocument" }
     mngadmin           = @{ Context = "MngAdmin";           Dockerfile = "Presentation/MngAdmin.Api/Dockerfile"; Image = "mngadmin" }

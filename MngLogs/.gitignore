@@ -1,0 +1,12 @@
+# Nuxt / Node
+**/node_modules/
+**/.nuxt/
+**/.output/
+**/dist/
+*.local
+
+# Agent runtime
+**/bin/
+**/obj/
+*.user
+*.suo

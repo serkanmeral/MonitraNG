@@ -155,6 +155,60 @@ services:
       timeout: 10s
       retries: 3
 
+  # OpenSearch (SIEM hot store — G0; MngAdmin snapshot = G2b)
+  # Hostname for mng_apps: http://opensearch:9200
+  # Security plugin disabled for on-prem MVP (internal Docker network). Harden later if needed.
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=mng-opensearch
+      - node.name=mng-opensearch-node1
+      - bootstrap.memory_lock=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+      - "action.auto_create_index=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - mng_network
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  # One-shot: index templates + ISM (90d sec-events / 30d metrics)
+  # Waits inside apply.sh (no service_healthy — curl may be absent in some OS images)
+  opensearch-init:
+    image: curlimages/curl:8.11.1
+    container_name: opensearch_init
+    depends_on:
+      - opensearch
+    volumes:
+      - ./opensearch/init:/init:ro
+    entrypoint: ["/bin/sh", "/init/apply.sh"]
+    environment:
+      - OPENSEARCH_URL=http://opensearch:9200
+    networks:
+      - mng_network
+      - mng_common_mng_network
+    restart: "no"
+
   # MinIO (S3-Compatible Object Storage)
   minio:
     image: minio/minio:latest
@@ -426,6 +480,7 @@ volumes:
   mongo_data:
   redis_data:
   rabbitmq_data:
+  opensearch_data:
   minio_data:
   seq_data:
   portainer_data:

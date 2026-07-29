@@ -1,0 +1,29 @@
+{
+  "index_patterns": ["mng-*-metrics*"],
+  "priority": 210,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "10s",
+      "plugins.index_state_management.policy_id": "mng-metrics-30d"
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "host": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "metric": {
+          "properties": {
+            "name": { "type": "keyword" },
+            "value": { "type": "double" }
+          }
+        }
+      }
+    }
+  }
+}

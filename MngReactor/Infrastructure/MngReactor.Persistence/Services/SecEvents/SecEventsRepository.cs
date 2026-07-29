@@ -21,6 +21,9 @@ public sealed class SecEventsRepository : ISecEventsRepository
     private readonly IMongoClient _mongoClient;
     private readonly ILogger<SecEventsRepository> _logger;
     private readonly IMemoryCache _cache;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ISecEventOpenSearchWriter _openSearchWriter;
+    private readonly SecEventsSettings _secEventsSettings;
     private readonly int _hotTtlDays;
     private readonly int _dashboardSummaryCacheSeconds;
     private readonly bool _useDashboardHourlyRollup;
@@ -30,14 +33,19 @@ public sealed class SecEventsRepository : ISecEventsRepository
         IMongoClient mongoClient,
         IOptions<MngReactorSettings> options,
         IMemoryCache cache,
+        IHttpClientFactory httpClientFactory,
+        ISecEventOpenSearchWriter openSearchWriter,
         ILogger<SecEventsRepository> logger)
     {
         _mongoClient = mongoClient;
         _cache = cache;
+        _httpClientFactory = httpClientFactory;
+        _openSearchWriter = openSearchWriter;
         _logger = logger;
-        _hotTtlDays = options?.Value?.SecEvents?.HotTtlDays ?? 60;
-        _dashboardSummaryCacheSeconds = options?.Value?.SecEvents?.DashboardSummaryCacheSeconds ?? 60;
-        _useDashboardHourlyRollup = options?.Value?.SecEvents?.UseDashboardHourlyRollup ?? true;
+        _secEventsSettings = options?.Value?.SecEvents ?? new SecEventsSettings();
+        _hotTtlDays = _secEventsSettings.HotTtlDays;
+        _dashboardSummaryCacheSeconds = _secEventsSettings.DashboardSummaryCacheSeconds;
+        _useDashboardHourlyRollup = _secEventsSettings.UseDashboardHourlyRollup;
         _rollupStore = new SecEventHourlyRollupStore(mongoClient);
     }
 
@@ -66,8 +74,15 @@ public sealed class SecEventsRepository : ISecEventsRepository
         foreach (var chunk in SecEventBatchChunker.Chunk(docs, SecEventIngestLimits.MongoBulkChunkSize))
         {
             var bsonDocs = new List<BsonDocument>(chunk.Count);
+            var osItems = new List<SecEventOpenSearchIndexItem>(chunk.Count);
             foreach (var doc in chunk)
-                bsonDocs.Add(SecEventDocumentBsonMapper.ToBsonDocument(doc));
+            {
+                var id = ObjectId.GenerateNewId();
+                var bson = SecEventDocumentBsonMapper.ToBsonDocument(doc);
+                bson["_id"] = id;
+                bsonDocs.Add(bson);
+                osItems.Add(new SecEventOpenSearchIndexItem(id.ToString(), doc));
+            }
 
             if (bsonDocs.Count == 0)
                 continue;
@@ -76,6 +91,12 @@ public sealed class SecEventsRepository : ISecEventsRepository
             {
                 await collection.InsertManyAsync(bsonDocs, cancellationToken: cancellationToken);
                 inserted += bsonDocs.Count;
+
+                if (_secEventsSettings.OpenSearchDualWriteEnabled)
+                {
+                    var pairs = osItems.Select(i => (i.Id, i.Document)).ToList();
+                    _ = _openSearchWriter.IndexManyAsync(domain, pairs, cancellationToken);
+                }
             }
             catch (Exception ex)
             {
@@ -108,6 +129,12 @@ public sealed class SecEventsRepository : ISecEventsRepository
     {
         if (string.IsNullOrWhiteSpace(domain))
             return new SecEventQueryResult { Items = Array.Empty<SecEventListItem>(), Total = 0 };
+
+        if (_secEventsSettings.OpenSearchReadEnabled)
+        {
+            var reader = new SecEventOpenSearchReader(_httpClientFactory, _logger, _secEventsSettings);
+            return await reader.QueryAsync(domain, filter, cancellationToken);
+        }
 
         var databaseName = $"mng_{domain.Trim().ToLowerInvariant()}";
         var database = _mongoClient.GetDatabase(databaseName);
@@ -178,6 +205,12 @@ public sealed class SecEventsRepository : ISecEventsRepository
         if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(id))
             return null;
 
+        if (_secEventsSettings.OpenSearchReadEnabled)
+        {
+            var reader = new SecEventOpenSearchReader(_httpClientFactory, _logger, _secEventsSettings);
+            return await reader.GetByIdAsync(domain, id, cancellationToken);
+        }
+
         if (!ObjectId.TryParse(id, out var objectId))
             return null;
 
@@ -235,6 +268,13 @@ public sealed class SecEventsRepository : ISecEventsRepository
                 ByAction = new Dictionary<string, long>(),
                 Hourly = hourStarts.Select(h => new SecEventHourlyBucket { HourStart = h, Count = 0 }).ToList(),
             };
+        }
+
+        if (_secEventsSettings.OpenSearchReadEnabled)
+        {
+            var reader = new SecEventOpenSearchReader(_httpClientFactory, _logger, _secEventsSettings);
+            return await reader.GetDashboardSummaryAsync(
+                domain, rangeHours, excludeUnknown, from, to, hourStarts, cancellationToken);
         }
 
         var databaseName = $"mng_{domain.Trim().ToLowerInvariant()}";

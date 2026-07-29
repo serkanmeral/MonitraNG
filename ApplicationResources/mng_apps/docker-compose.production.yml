@@ -629,6 +629,36 @@ services:
           cpus: '0.5'
           memory: 512M
 
+  # Central ingest API for field MngLogs agents (not the agent itself)
+  mnglogcollector:
+    build:
+      context: ../../MngLogCollector
+      dockerfile: Presentation/MngLogCollector.Api/Dockerfile
+    image: mnglogcollector:${VERSION:-latest}
+    container_name: mnglogcollector
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://0.0.0.0:5091
+      - EnableSwagger=${ENABLE_MNGLOGCOLLECTOR_SWAGGER:-false}
+      - MngLogCollectorSettings__OpenSearch__Url=${MNGLOGCOLLECTOR_OPENSEARCH_URL:-http://opensearch:9200}
+      - MngLogCollectorSettings__OpenSearch__WriteEnabled=${MNGLOGCOLLECTOR_OPENSEARCH_WRITE_ENABLED:-true}
+      - MngLogCollectorSettings__Ingest__ApiKey=${MNGLOGCOLLECTOR_INGEST_API_KEY:-}
+      - MngLogCollectorSettings__Ingest__MaxEventsPerBatch=${MNGLOGCOLLECTOR_MAX_EVENTS_PER_BATCH:-500}
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5091/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
   mngoperations:
     build:
       context: ../../MngOperations
