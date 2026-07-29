@@ -1,5 +1,39 @@
 const API_BASE = '/api'
 
+export interface LatestMetricItem {
+  name: string
+  value: number
+  message?: string | null
+  detail?: string | null
+  atUtc: string
+}
+
+export interface RecentEventEntry {
+  atUtc: string
+  direction: string
+  source: string
+  severity?: string | null
+  message?: string | null
+  action?: string | null
+  metricName?: string | null
+  metricValue?: number | null
+  detail?: string | null
+}
+
+export interface TopProcessItem {
+  pid: number
+  name: string
+  cpuPercent?: number | null
+  workingSetBytes: number
+}
+
+export interface TopProcessSnapshot {
+  atUtc: string
+  byCpu: TopProcessItem[]
+  byMemory: TopProcessItem[]
+  cpuPending?: boolean
+}
+
 export interface AgentStatus {
   service: string
   startedAtUtc: string
@@ -25,8 +59,15 @@ export interface AgentStatus {
   metricsEnabled: boolean
   eventLogEnabled: boolean
   serviceWatchEnabled: boolean
+  includeTopProcesses?: boolean
+  heartbeatIntervalSeconds?: number
+  eventLogPollIntervalSeconds?: number
+  serviceWatchPollIntervalSeconds?: number
   dataDirectory: string
   recent: string[]
+  latestMetrics?: LatestMetricItem[]
+  latestLogs?: RecentEventEntry[]
+  topProcesses?: TopProcessSnapshot | null
 }
 
 export interface AgentConfig {
@@ -46,7 +87,7 @@ export interface PolicyConfig {
   heartbeatIntervalSeconds: number
   shipIntervalSeconds: number
   maxEventsPerBatch: number
-  metrics: { enabled: boolean; includeHostResources: boolean }
+  metrics: { enabled: boolean; includeHostResources: boolean; includeTopProcesses?: boolean; topProcessCount?: number }
   eventLog: {
     enabled: boolean
     pollIntervalSeconds: number
@@ -93,15 +134,6 @@ export interface SourcesResponse {
   ship: Record<string, unknown>
 }
 
-export interface RecentEventEntry {
-  atUtc: string
-  direction: string
-  source: string
-  severity?: string | null
-  message?: string | null
-  action?: string | null
-}
-
 export function useAgentApi() {
   const getStatus = () => $fetch<AgentStatus>(`${API_BASE}/status`)
   const getConfig = () => $fetch<AgentConfig>(`${API_BASE}/config`)
@@ -138,4 +170,110 @@ export function formatDate(value?: string | null) {
   } catch {
     return value
   }
+}
+
+/** Relative age in Turkish, e.g. "34 sn önce". */
+export function formatRelativeTr(value?: string | null, nowMs = Date.now()) {
+  if (!value) return '—'
+  const t = new Date(value).getTime()
+  if (Number.isNaN(t)) return '—'
+  const sec = Math.max(0, Math.floor((nowMs - t) / 1000))
+  if (sec < 5) return 'az önce'
+  if (sec < 60) return `${sec} sn önce`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min} dk önce`
+  const hr = Math.floor(min / 60)
+  if (hr < 48) return `${hr} sa önce`
+  const day = Math.floor(hr / 24)
+  return `${day} g önce`
+}
+
+export type FreshnessKind = 'off' | 'none' | 'fresh' | 'late' | 'stale'
+
+/** fresh < 2×interval, late < 4×interval, else stale. */
+export function freshnessOf(
+  enabled: boolean,
+  lastUtc: string | null | undefined,
+  intervalSeconds: number | undefined,
+  nowMs = Date.now()
+): FreshnessKind {
+  if (!enabled) return 'off'
+  if (!lastUtc) return 'none'
+  const t = new Date(lastUtc).getTime()
+  if (Number.isNaN(t)) return 'none'
+  const ageSec = Math.max(0, (nowMs - t) / 1000)
+  const interval = Math.max(5, intervalSeconds ?? 60)
+  if (ageSec <= interval * 2) return 'fresh'
+  if (ageSec <= interval * 4) return 'late'
+  return 'stale'
+}
+
+export function freshnessLabel(kind: FreshnessKind) {
+  switch (kind) {
+    case 'off':
+      return 'Kapalı'
+    case 'none':
+      return 'Henüz yok'
+    case 'fresh':
+      return 'Taze'
+    case 'late':
+      return 'Gecikmeli'
+    case 'stale':
+      return 'Eski'
+  }
+}
+
+export function freshnessColor(kind: FreshnessKind): 'gray' | 'green' | 'amber' | 'red' {
+  switch (kind) {
+    case 'off':
+      return 'gray'
+    case 'none':
+      return 'gray'
+    case 'fresh':
+      return 'green'
+    case 'late':
+      return 'amber'
+    case 'stale':
+      return 'red'
+  }
+}
+
+export function formatMetricValue(name: string, value: number) {
+  if (name === 'up') return value >= 1 ? 'Açık (1)' : 'Kapalı (0)'
+  if (name === 'cpu.percent') return `%${value.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`
+  if (name.includes('bytes')) {
+    return formatBytes(value)
+  }
+  return value.toLocaleString('tr-TR')
+}
+
+export function formatBytes(value: number) {
+  const gb = value / (1024 * 1024 * 1024)
+  if (Math.abs(gb) >= 1)
+    return `${gb.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} GB`
+  const mb = value / (1024 * 1024)
+  return `${mb.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} MB`
+}
+
+export function metricLabel(name: string) {
+  const map: Record<string, string> = {
+    up: 'Ana bilgisayar (up)',
+    'cpu.percent': 'İşlemci',
+    'memory.available_bytes': 'Boş bellek',
+    'memory.process_working_set_bytes': 'Ajan bellek kullanımı',
+    'disk.free_bytes': 'Boş disk',
+    'disk.total_bytes': 'Toplam disk'
+  }
+  return map[name] || name
+}
+
+export function sourceLabel(s: string) {
+  const map: Record<string, string> = {
+    metric: 'metrik',
+    'event-log': 'olay günlüğü',
+    'windows-eventlog': 'olay günlüğü',
+    'service-watch': 'servis izleme',
+    unknown: 'bilinmiyor'
+  }
+  return map[s] || s
 }

@@ -60,10 +60,19 @@
               {{ sourceLabel(entry.source) }}
             </UBadge>
             <span class="break-all">
-              {{ entry.action || entry.message || '—' }}
-              <span v-if="entry.message && entry.action && entry.message !== entry.action" class="text-gray-400">
-                · {{ entry.message }}
-              </span>
+              <template v-if="entry.metricName != null && entry.metricValue != null">
+                {{ metricLabel(entry.metricName) }}
+                <span v-if="entry.detail" class="text-gray-400"> ({{ entry.detail }})</span>
+                =
+                <span class="text-emerald-300">{{ formatMetricValue(entry.metricName, entry.metricValue) }}</span>
+              </template>
+              <template v-else>
+                {{ entry.action || entry.message || '—' }}
+                <span v-if="entry.detail" class="text-gray-400"> · {{ entry.detail }}</span>
+                <span v-if="entry.message && entry.action && entry.message !== entry.action" class="text-gray-400">
+                  · {{ entry.message }}
+                </span>
+              </template>
             </span>
           </div>
         </div>
@@ -74,6 +83,7 @@
 
 <script setup lang="ts">
 import type { RecentEventEntry } from '~/composables/useAgentApi'
+import { formatMetricValue, metricLabel, sourceLabel } from '~/composables/useAgentApi'
 
 const { getEvents, clearEvents } = useAgentApi()
 
@@ -100,16 +110,6 @@ function directionLabel(d: string) {
   if (d === 'shipped') return 'Gönderildi'
   if (d === 'produced') return 'Üretildi'
   return d
-}
-
-function sourceLabel(s: string) {
-  const map: Record<string, string> = {
-    metric: 'metrik',
-    'event-log': 'olay günlüğü',
-    'service-watch': 'servis izleme',
-    unknown: 'bilinmiyor'
-  }
-  return map[s] || s
 }
 
 function formatTime(value: string) {

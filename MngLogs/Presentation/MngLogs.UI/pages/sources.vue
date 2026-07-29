@@ -30,6 +30,16 @@
             <dd>{{ sources.metrics.includeHostResources ? 'Evet' : 'Hayır' }}</dd>
           </div>
           <div class="flex justify-between gap-2">
+            <dt class="text-gray-500">Üst süreç listesi</dt>
+            <dd>
+              {{
+                sources.metrics.includeTopProcesses
+                  ? `Evet (Top ${sources.metrics.topProcessCount ?? 5})`
+                  : 'Hayır'
+              }}
+            </dd>
+          </div>
+          <div class="flex justify-between gap-2">
             <dt class="text-gray-500">Üretilen</dt>
             <dd class="tabular-nums">{{ sources.metrics.eventsProduced }}</dd>
           </div>

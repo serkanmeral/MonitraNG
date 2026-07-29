@@ -1,8 +1,8 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 29 Temmuz 2026 (G0–G3 + Nuxt UI commit)  
+**Son güncelleme:** 30 Temmuz 2026 (MngLogs Faz 1 metrik toplama tamam)  
 **Ortam notu:** Odak production `odak@192.168.20.8`; merkezi Mng.Ui local `npm run dev`; UI prod deploy sadece istekte.  
-**Canlı pilot:** `MngLogs.Agent` → collector `http://192.168.20.8:5091`; **Türkçe Nuxt UI** `http://127.0.0.1:5092/` (Durum · Kuyruk · Kaynaklar · Loglar · Politika); hostId=`TERMINAL-pilot`. Event Log: admin bekleniyor.
+**Canlı pilot:** `MngLogs.Agent` → collector `http://192.168.20.8:5091`; **Türkçe Nuxt UI** `http://127.0.0.1:5092/`; hostId=`TERMINAL-pilot`. Event Log: admin bekleniyor.
 
 ## Çalışma kuralı (bu oturumdan itibaren)
 
@@ -17,7 +17,8 @@ Onaysız büyük adım yok. Bu dosya **yapılan / yapılacak** listesinin günce
 
 ## Son çalışılan konu
 
-Yol **A** — G0–G3 dilim 1–4 ✓ · **MngLogs Nuxt Edge UI** (Engine kalıbı) ✓.
+**MngLogs Faz 1 metrik toplama** ✓ (Durum UI + host metrikleri + üst süreç ship).  
+Önceki: Yol **A** G0–G3 + Nuxt Edge UI ✓.
 
 ---
 
@@ -122,6 +123,43 @@ MngLogs golden path:
 - Settings: `MngLogCollectorSettings__…`
 - OS: `parser.id=mnglogcollector`
 
+### MngLogs Faz 1 metrik toplama ✓ (30 Tem) — KAPANDI
+
+**Kilit:** Üst süreç listesi Faz 1 **metrik ana maddesi** (yerel Durum + collector özet event; process flood yok).
+
+| Madde | Durum |
+|-------|--------|
+| `host.up` | ✓ |
+| CPU / bellek / disk (`IncludeHostResources`) | ✓ |
+| Üst süreç yerel UI (Top-N CPU/RAM) | ✓ |
+| Üst süreç → collector: `process.top_cpu` / `process.top_memory` | ✓ |
+| Politika: `includeTopProcesses`, `topProcessCount` (varsayılan 5) | ✓ |
+
+**Ship biçimi**
+
+- Kalp atışı döngüsünde özet event (`source=metric`)
+- `fields.metric` / `event.action`: `process.top_cpu` | `process.top_memory`
+- `fields.processes[]`: `name`, `pid`, `cpuPercent` veya `workingSetBytes`
+- `fields.value`: listedeki 1. sürecin skaler değeri; `fields.count`: N
+
+**Durum UI (30 Tem)**
+
+- Kompakt durum header (host, toplayıcı, kuyruk, gönderim)
+- İç sekmeler: **Metrik** · Olay günlüğü · Servis izleme · Aktivite
+- Metrik sağlık karoları: ömür boyu sayaç yerine tazelik / son okuma / son gönderim
+- Üst süreç tablolarında tıklanabilir sıralama (Süreç / PID / CPU|RAM)
+
+**Geçici OS doğrulama**
+
+- `scripts/tests/MngLogs/os-test/start-os-test-dashboard.ps1` → `http://127.0.0.1:5099/`
+- OpenSearch `mng-{domain}-sec-events-*` (Odak: `http://192.168.20.8:9200`); ürün Dashboards değil
+
+**Bilinçli erteleme (metrik dışı / sonra)**
+
+- Eşik aşımında ekstra top-process event
+- Agent self metrikleri (kuyruk gecikmesi vb.) zorunlu değil
+- Merkez SIEM’de dedicated top-process kartı
+
 ---
 
 ## Bilinçli erteleme / sonra
@@ -131,6 +169,7 @@ MngLogs golden path:
 - G4 cutover
 - Faz 2 / 3, TRTEST lab, UI prod deploy
 - Bu PC’de Event Log (admin gelince)
+- OpenSearch Dashboards (opsiyonel)
 
 ---
 
@@ -151,6 +190,8 @@ MngLogs golden path:
 | **Kazanım** | Saha dağıtımı |
 
 ### C — G2b MngAdmin OS snapshot / G4 cutover planı
+
+### D — Durum UI: Olay günlüğü / Servis izleme sekmelerini derinleştirme
 
 ---
 

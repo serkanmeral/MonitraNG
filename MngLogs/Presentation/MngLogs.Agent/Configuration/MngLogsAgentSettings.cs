@@ -56,6 +56,12 @@ public sealed class MetricsPolicy
 
     /// <summary>Collect CPU / memory / disk besides host.up.</summary>
     public bool IncludeHostResources { get; set; } = true;
+
+    /// <summary>Collect top CPU/RAM processes for local UI and Phase-1 metric ship.</summary>
+    public bool IncludeTopProcesses { get; set; } = true;
+
+    /// <summary>How many processes to keep per ranking (CPU and memory).</summary>
+    public int TopProcessCount { get; set; } = 5;
 }
 
 public sealed class EventLogPolicy

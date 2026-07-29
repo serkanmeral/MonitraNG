@@ -162,7 +162,9 @@ public sealed class AgentConfigStore : IAgentConfigStore
         Metrics = new MetricsPolicy
         {
             Enabled = p.Metrics.Enabled,
-            IncludeHostResources = p.Metrics.IncludeHostResources
+            IncludeHostResources = p.Metrics.IncludeHostResources,
+            IncludeTopProcesses = p.Metrics.IncludeTopProcesses,
+            TopProcessCount = p.Metrics.TopProcessCount
         },
         EventLog = new EventLogPolicy
         {

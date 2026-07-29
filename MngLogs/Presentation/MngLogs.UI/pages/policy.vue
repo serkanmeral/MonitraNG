@@ -68,7 +68,19 @@
               <UToggle v-model="policy.metrics.includeHostResources" />
               <span class="text-sm">İşlemci / bellek / disk</span>
             </div>
+            <div class="flex items-center gap-2">
+              <UToggle v-model="policy.metrics.includeTopProcesses" />
+              <span class="text-sm">Üst süreç listesi (yerel)</span>
+            </div>
           </div>
+          <UFormGroup v-if="policy.metrics.includeTopProcesses" label="Üst süreç sayısı" class="max-w-xs">
+            <UInput v-model.number="policy.metrics.topProcessCount" type="number" :min="1" :max="15" />
+          </UFormGroup>
+          <p class="text-xs text-gray-500">
+            Üst süreç listesi Faz 1 metrik özetidir: Durum ekranında gösterilir ve
+            kalp atışında toplayıcıya <span class="font-mono">process.top_cpu</span> /
+            <span class="font-mono">process.top_memory</span> olarak gönderilir.
+          </p>
         </div>
 
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">

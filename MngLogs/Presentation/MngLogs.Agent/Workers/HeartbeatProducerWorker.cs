@@ -5,7 +5,7 @@ using MngLogs.Agent.Runtime;
 
 namespace MngLogs.Agent.Workers;
 
-/// <summary>Periodic host.up (+ CPU/memory/disk when enabled).</summary>
+/// <summary>Periodic host.up (+ CPU/memory/disk + optional top-process summaries).</summary>
 public sealed class HeartbeatProducerWorker : BackgroundService
 {
     private readonly IOutboundQueue _queue;
@@ -56,7 +56,15 @@ public sealed class HeartbeatProducerWorker : BackgroundService
             if (!policy.Metrics.Enabled)
                 return;
 
-            var items = _metrics.Collect(policy.Metrics.IncludeHostResources);
+            var items = _metrics.Collect(policy.Metrics.IncludeHostResources).ToList();
+
+            if (policy.Metrics.IncludeTopProcesses)
+            {
+                var top = _metrics.CollectTopProcesses(policy.Metrics.TopProcessCount);
+                _status.UpdateTopProcesses(top);
+                items.AddRange(_metrics.ToTopProcessEvents(top));
+            }
+
             foreach (var item in items)
                 await _queue.EnqueueAsync(item, cancellationToken);
 

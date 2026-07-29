@@ -41,8 +41,15 @@ public static class LocalUiEndpoints
                 metricsEnabled = s.Policy.Metrics.Enabled,
                 eventLogEnabled = s.Policy.EventLog.Enabled,
                 serviceWatchEnabled = s.Policy.ServiceWatch.Enabled,
+                includeTopProcesses = s.Policy.Metrics.IncludeTopProcesses,
+                heartbeatIntervalSeconds = s.Policy.HeartbeatIntervalSeconds,
+                eventLogPollIntervalSeconds = s.Policy.EventLog.PollIntervalSeconds,
+                serviceWatchPollIntervalSeconds = s.Policy.ServiceWatch.PollIntervalSeconds,
                 dataDirectory = config.ResolveDataDirectory(),
-                recent = status.RecentNotes()
+                recent = status.RecentNotes(),
+                latestMetrics = status.LatestMetrics(),
+                latestLogs = status.LatestLogEvents(15),
+                topProcesses = status.TopProcesses()
             });
         });
 
@@ -120,6 +127,8 @@ public static class LocalUiEndpoints
                 {
                     enabled = policy.Metrics.Enabled,
                     includeHostResources = policy.Metrics.IncludeHostResources,
+                    includeTopProcesses = policy.Metrics.IncludeTopProcesses,
+                    topProcessCount = policy.Metrics.TopProcessCount,
                     heartbeatIntervalSeconds = policy.HeartbeatIntervalSeconds,
                     lastHeartbeatUtc = status.LastHeartbeatUtc,
                     eventsProduced = status.MetricEventsProduced

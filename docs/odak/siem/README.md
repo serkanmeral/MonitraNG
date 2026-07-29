@@ -17,6 +17,14 @@ Canlı durum ve sıradaki adımlar: **[current_status.md](./current_status.md)**
 | G1 Dual-write (Reactor) | ✓ |
 | G2 UI → OpenSearch okuma | ✓ |
 | G3 Collector + MngLogs ajan + service watch + Edge UI | ✓ |
+| **MngLogs Faz 1 metrik toplama** | ✓ (30 Tem) — host + top-process ship |
 | G4 Cutover | Bekliyor |
+
+### Metrik özeti (Faz 1)
+
+`host.up` · CPU/bellek/disk · `process.top_cpu` / `process.top_memory` (özet, flood yok).  
+Detay: `current_status.md` → **MngLogs Faz 1 metrik toplama**.
+
+Geçici OS test UI: `scripts/tests/MngLogs/os-test/start-os-test-dashboard.ps1`.
 
 Detay ve onay kuyruğu `current_status.md` içindedir.
