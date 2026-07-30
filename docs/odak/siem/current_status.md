@@ -1,6 +1,6 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 30 Temmuz 2026 (MngLogs Faz 1 metrik toplama tamam)  
+**Son güncelleme:** 30 Temmuz 2026 (Discovery mimari kilit + Domain LDAP; SIEM settings/discovery UI)  
 **Ortam notu:** Odak production `odak@192.168.20.8`; merkezi Mng.Ui local `npm run dev`; UI prod deploy sadece istekte.  
 **Canlı pilot:** `MngLogs.Agent` → collector `http://192.168.20.8:5091`; **Türkçe Nuxt UI** `http://127.0.0.1:5092/`; hostId=`TERMINAL-pilot`. Event Log: admin bekleniyor.
 
@@ -13,185 +13,103 @@ Her implementasyon adımından **önce**:
 
 Onaysız büyük adım yok. Bu dosya **yapılan / yapılacak** listesinin güncel kaynağıdır.
 
+**Park:** MngLogs P5 Event Log parser — kodlama yok; sonra dönülecek.
+
 ---
 
 ## Son çalışılan konu
 
-**MngLogs Faz 1 metrik toplama** ✓ (Durum UI + host metrikleri + üst süreç ship).  
-Önceki: Yol **A** G0–G3 + Nuxt Edge UI ✓.
+**Network Discovery mimari + Domain `directoryLdap` + SIEM Center settings/discovery UI.**  
+Önceki kapanış: MngLogs Faz 1 metrik toplama ✓.
 
 ---
 
-## Yapılanlar
+## Bu oturumda tamamlananlar
 
-### Planlama — Master (kilitli)
+### SIEM Center — Settings MVP ✓
 
-- Ürün: siber güvenlik suite; SIEM ana sütun
-- Faz 1 = LogAlarm parity + TRTEST tasarım + OC/Workflow
-- Faz 2 = SIEM dışı dikeyler; Faz 3 = lisans SKU + managed hizmet
-- Depo: OpenSearch (ham); Mongo (alarm + suite); on-prem/air-gap; cloud yok
+- Route: `/apps/siem-center/settings` · menü: **SIEM ayarları**
+- Sekmeler: Catalog (live collector `GET /api/v1/policy/eventlog-packages`) · Sources · Scenarios · Dictionary
+- Nuxt BFF: `server/api/logcollector/[...path].ts` → `:5091`
+- `/reference` → `settings?tab=dictionary`
+- Eski SIEM security paneli (**dokunulmaz**)
 
-### Planlama — Alt planlar 1–11 (üst seviye tamam)
+### SIEM Center — Discovery UI (mock + coverage) ✓
 
-| # | Konu | Özet kilit |
-|---|------|------------|
-| 1 | MngLogs | Event Log paketleri; metrik=up; servis watch; HTTPS collector; Win/Linux |
-| 2 | Network discovery | AD/DHCP + sınırlı tarama; coverage = metrik |
-| 3 | OpenSearch | mng_common tek node; domain’li indeks; ILM 90/30g; REST aynı; MngAdmin snapshot; Dashboards opsiyonel |
-| 4 | Normalize / map | Sunucu katalog; action sözlüğü; raw+rawPreview; FW aynı hat; geçiş Reactor → collector |
-| 5 | Detect | MngAlarm; observation; siem-mvp-v1; OC/Workflow; çift alarm yok |
-| 6–11 | UI, rsyslog, TRTEST, geçiş, lisans, managed | üst seviye kilitli |
+- Route: `/apps/siem-center/discovery`
+- Topoloji görünümleri: Tree · Split · Tiers · Graph (`localStorage`)
+- Coverage: `host.up` (15 dk stale → Online/Offline); Live agents dalı
+- KPI kartları hâlâ mock görüntü (bilinçli)
+- Plan ref: `network_discovery_bf70a6d6.plan.md` (MVP kararları kilitli)
 
-### G0 — OpenSearch (mng_common) ✓
+### Domain LDAP (`directoryLdap`) ✓
 
-- Compose + ISM/template; Odak `http://192.168.20.8:9200`
+- Keeper: `DomainSettings.directoryLdap` (host, port, useSsl, baseDn, bindUsername, bindPassword — düz metin)
+- `PUT /api/domain/{id}` → `UpdateDomainRequest` + **merge** (privileges/ldap silinmez; boş parola → eski kalır)
+- UI: Domain sayfası **Dizin / LDAP (AD)** kartı
+- Odak prod Keeper deploy ✓; Mongo `odak` için LDAP + privileges onarıldı:
+  - Bind: `monitra@odak.local` @ `192.168.20.3:389` · Base `DC=odak,DC=local`
+  - Privileges: admin `MonitraNG Users`, manager `MonitraNG Admins`
+- Keycloak federation bind ile aynı hesap
 
-### G1 — Dual-write ✓
+### Discovery mimari — kilit (konuşma, henüz backend kod yok)
 
-- Reactor Mongo insert sonrası OpenSearch `_bulk`; `_id` = Mongo ObjectId
+| Katman | Karar |
+|--------|--------|
+| Credential | Keeper `settings.directoryLdap` |
+| İş + store + UI API | **MngLogCollector** (sürekli ayakta) |
+| Periyodik tetik | **MngScheduler** → Collector HTTP |
+| Coverage (C) | Agent + `host.up` (mevcut) |
+| MngAdmin | **Kullanılmayacak** (episodik ops; Discovery evi değil) |
+| Yeni mikroservis | Şimdilik yok |
 
-### G2 — OpenSearch read ✓
+**İlk dilim (MVP-A1) — sıradaki implementasyon:** AD computer pull → Mongo `discovery_hosts` → liste/özet API → UI mock→live. DHCP/ICMP sonra.
 
-- `SecEvents:OpenSearchReadEnabled=true` Odak; UI aynı REST
+---
 
-### Standartlar ✓
+## Yapılanlar (önceki — özet)
 
-MngLogs golden path:
+### Planlama — Master + alt planlar 1–11 (üst seviye kilitli)
 
-| Klasör | Rol |
-|--------|-----|
-| **`MngLogCollector/`** | Sunucu backend (Domain…Api), Docker `mnglogcollector`:5091 |
-| **`MngLogs/`** | Saha ajanı only (`MngLogs.Agent`) — sunucu stack’ten bağımsız |
+Discovery (#2): AD/DHCP + sınırlı tarama; coverage = metrik.
 
-### G3 dilim 1 — Merkez collector ✓ (29 Tem)
+### G0–G3 + MngLogs Faz 1 ✓
 
-**Ne yapıldı**
-
-- `MngLogCollector.Api` (eski ad: MngLogs.Api) → OpenSearch
-- Compose servisi: **`mnglogcollector`** port **5091**
-- API key: `X-MngLogs-ApiKey` (`MngLogCollectorSettings__Ingest__ApiKey`)
-
-| Parça | Nerede | Durum |
-|-------|--------|--------|
-| Collector API (`mnglogcollector`) | Sunucu | ✓ |
-| Saha ajanı (`MngLogs.Agent`) | Müşteri Windows | Dilim 2–3 ✓ |
-
-### G3 dilim 2 — Saha ajanı iskeleti ✓ (29 Tem)
-
-**Ne yapıldı**
-
-- `Presentation/MngLogs.Agent` — Windows Service capable (`UseWindowsService`), console ile de çalışır
-- Sistem vs politika config (`system.json` / `policy.json` under `%ProgramData%\MngLogs\Agent`)
-- Disk outbound kuyruk + HTTPS/HTTP shipper → collector `/api/v1/ingest/batches`
-- Yerel UI: `http://127.0.0.1:5092/` + `/api/status` + `/api/config`
-
-### G3 dilim 3 — Event Log + metrik ✓ (29 Tem)
-
-**Ne yapıldı**
-
-- Varsayılan paketler: `security-auth` (4624,4625,4634,4648,4672,4720,4726,4740), `system-lifecycle` (6005,6006,7045)
-- Bookmark: `eventlog-bookmarks.json`; ilk çalıştırmada “şimdi” seed (tarihçe flood yok)
-- Metrikler: `host.up`, `cpu.percent`, `memory.available_bytes`, disk free/total
-- Policy: `EventLog` + `Metrics` bölümleri; boş `Packages` → defaults
-- Unit test (service watch ile birlikte **12/12**)
-
-**Not:** Security kanalı için ajan LocalSystem / admin gerekir.
-
-### G3 dilim 4 — Servis watch ✓ (29 Tem)
-
-**Ne yapıldı**
-
-- Policy: `serviceWatch.enabled` + `services[]` (`name`, `restartAllowed`)
-- `ServiceWatchWorker`: SCM poll → `service.failed` / `service.recovered` / `service.missing`; opsiyonel restart event
-- Status UI: `serviceWatchEventsProduced`, `lastServiceWatchUtc`
-- Pilot: Spooler + `MngLogsDoesNotExist` → OS’te `source.type=service-watch`, `event.action=service.missing`
-
-### MngLogs yerel UI (Nuxt) ✓ (29 Tem)
-
-**Ne yapıldı**
-
-- `Presentation/MngLogs.UI` — Nuxt 3 + @nuxt/ui (MngEngine Edge kalıbı)
-- Sekmeler: Durum · Kuyruk · Kaynaklar · Loglar (üretilen/gönderilen) · Politika
-- Build: `MngLogs/scripts/build-frontend.ps1` → `Agent/wwwroot`
-- API: `/api/status`, `/queue`, `/sources`, `/events`, `/config` (+ system/policy POST)
-- Arayüz dili: **Türkçe** (ürün/kod adları İngilizce kalabilir)
-
-### Odak `mnglogcollector` deploy ✓ (29 Tem)
-
-- Servis adı: **`mnglogcollector`** (eski `mnglogs` kaldırıldı)
-- URL: `http://192.168.20.8:5091`
-- Settings: `MngLogCollectorSettings__…`
-- OS: `parser.id=mnglogcollector`
-
-### MngLogs Faz 1 metrik toplama ✓ (30 Tem) — KAPANDI
-
-**Kilit:** Üst süreç listesi Faz 1 **metrik ana maddesi** (yerel Durum + collector özet event; process flood yok).
-
-| Madde | Durum |
-|-------|--------|
-| `host.up` | ✓ |
-| CPU / bellek / disk (`IncludeHostResources`) | ✓ |
-| Üst süreç yerel UI (Top-N CPU/RAM) | ✓ |
-| Üst süreç → collector: `process.top_cpu` / `process.top_memory` | ✓ |
-| Politika: `includeTopProcesses`, `topProcessCount` (varsayılan 5) | ✓ |
-
-**Ship biçimi**
-
-- Kalp atışı döngüsünde özet event (`source=metric`)
-- `fields.metric` / `event.action`: `process.top_cpu` | `process.top_memory`
-- `fields.processes[]`: `name`, `pid`, `cpuPercent` veya `workingSetBytes`
-- `fields.value`: listedeki 1. sürecin skaler değeri; `fields.count`: N
-
-**Durum UI (30 Tem)**
-
-- Kompakt durum header (host, toplayıcı, kuyruk, gönderim)
-- İç sekmeler: **Metrik** · Olay günlüğü · Servis izleme · Aktivite
-- Metrik sağlık karoları: ömür boyu sayaç yerine tazelik / son okuma / son gönderim
-- Üst süreç tablolarında tıklanabilir sıralama (Süreç / PID / CPU|RAM)
-
-**Geçici OS doğrulama**
-
-- `scripts/tests/MngLogs/os-test/start-os-test-dashboard.ps1` → `http://127.0.0.1:5099/`
-- OpenSearch `mng-{domain}-sec-events-*` (Odak: `http://192.168.20.8:9200`); ürün Dashboards değil
-
-**Bilinçli erteleme (metrik dışı / sonra)**
-
-- Eşik aşımında ekstra top-process event
-- Agent self metrikleri (kuyruk gecikmesi vb.) zorunlu değil
-- Merkez SIEM’de dedicated top-process kartı
+Collector `mnglogcollector:5091`; ajan Event Log + metrik + service watch; yerel Durum UI; üst süreç ship. Detay: git history / önceki sürümler.
 
 ---
 
 ## Bilinçli erteleme / sonra
 
-- G2b MngAdmin OpenSearch snapshot (G4 öncesi)
-- MSI+GPO; Linux parite
-- G4 cutover
-- Faz 2 / 3, TRTEST lab, UI prod deploy
-- Bu PC’de Event Log (admin gelince)
-- OpenSearch Dashboards (opsiyonel)
+- Discovery A1 implementasyonu (Collector + Scheduler + UI live)
+- DHCP / sınırlı ICMP (katman B)
+- Yeni SIEM security panel (greenfield Detect hub; eski panel frozen)
+- Discovery KPI → live `dashboard-summary`
+- SNMP topoloji
+- MngLogs P5 parser (park)
+- Catalog CRUD
+- G2b MngAdmin OpenSearch snapshot; G4 cutover
+- UI prod deploy (istekte)
+- MSI+GPO saha (kısmen ilerledi — ayrı dal)
 
 ---
 
-## Sıradaki adım (bekleyen onay)
+## Sıradaki adım (yeni chat)
 
-### A — Admin gelince Event Log (bu PC)
+1. **Discovery A1 şema + API sözleşmesi** (chat’te kilitle) → Collector implement
+2. Scheduler system job: periyodik `POST .../discovery/sync`
+3. UI Discovery: mock → live `discovery_hosts` + coverage birleşimi
 
-| | |
-|--|--|
-| **Ne** | Elevated / LocalSystem ajan; `EventLog:Enabled=true` |
-| **Kazanım** | Security + System paketleri Odak OS’e |
+Onay kapısı: implement öncesi kapsam/kazanım.
 
-### B — MSI / kurulum paketi (önerilen sonraki ürün adımı)
+---
 
-| | |
-|--|--|
-| **Ne** | Agent MSI + temel GPO notları |
-| **Kazanım** | Saha dağıtımı |
+## Nerede kalmıştık (handoff özeti)
 
-### C — G2b MngAdmin OS snapshot / G4 cutover planı
-
-### D — Durum UI: Olay günlüğü / Servis izleme sekmelerini derinleştirme
+- LDAP credential domain’de hazır (Odak prod Mongo + Keeper merge fix deploy).
+- Discovery **yeri kilitli:** Collector + Scheduler; MngAdmin değil.
+- UI Discovery mock ayakta; backend AD pull **henüz yok**.
+- MngLogs park; eski SIEM panel freeze.
 
 ---
 

@@ -53,8 +53,8 @@ onMounted(async () => {
         <v-btn
           variant="outlined"
           color="primary"
-          prepend-icon="mdi-book-open-page-variant"
-          to="/apps/siem-center/reference"
+          prepend-icon="mdi-cog-outline"
+          to="/apps/siem-center/settings"
         >
           {{ t('siemCenter.reference.openGuide') }}
         </v-btn>

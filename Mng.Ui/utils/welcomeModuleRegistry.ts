@@ -129,7 +129,7 @@ export const welcomeModuleRegistry: WelcomeModuleDefinition[] = [
     color: 'red-darken-1',
     links: [
       { labelKey: 'welcome.modules.siemCenter.linkDashboard', to: '/apps/siem-center' },
-      { labelKey: 'welcome.modules.siemCenter.linkReference', to: '/apps/siem-center/reference' },
+      { labelKey: 'welcome.modules.siemCenter.linkSettings', to: '/apps/siem-center/settings' },
     ],
   },
   {

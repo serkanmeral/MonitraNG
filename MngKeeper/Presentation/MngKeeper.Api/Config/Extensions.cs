@@ -100,14 +100,12 @@ public static class Extensions
             o.JsonSerializerOptions.ReferenceHandler
                 = ReferenceHandler.IgnoreCycles;
             o.JsonSerializerOptions.MaxDepth = 64;
+            o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
             o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
         });
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
         // CORS is handled by API Gateway, not needed here (backend services are internal)
-
-        // Add services to the container
-        builder.Services.AddControllers();
 
         // Add GraphQL
         builder.Services.AddGraphQLServer()

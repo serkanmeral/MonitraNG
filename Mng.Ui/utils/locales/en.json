@@ -1011,7 +1011,22 @@
     "cards": {
       "domainInfo": "Domain Information",
       "domainSettings": "Domain Settings",
+      "directoryLdap": "Directory / LDAP (AD)",
       "licenseInfo": "License Information"
+    },
+    "directoryLdap": {
+      "description": "Active Directory / LDAP bind settings for this domain. Keycloak federation and later services such as discovery can reuse this record.",
+      "enabled": "LDAP enabled",
+      "host": "Host",
+      "hostPlaceholder": "dc01.corp.local",
+      "port": "Port",
+      "useSsl": "SSL / LDAPS",
+      "baseDn": "Base DN",
+      "baseDnPlaceholder": "DC=corp,DC=local",
+      "bindUsername": "Bind username",
+      "bindUsernamePlaceholder": "CN=svc-ldap,OU=Service,DC=corp,DC=local",
+      "bindPassword": "Bind password",
+      "bindPasswordHint": "Leave blank to keep the current password."
     },
     "directorySync": {
       "title": "LDAP / Directory Sync",
@@ -1708,9 +1723,10 @@
       },
       "siemCenter": {
         "title": "SIEM Center",
-        "description": "Monitor security events; access the SIEM dashboard and reference docs.",
+        "description": "Monitor security events; access the SIEM dashboard and settings.",
         "linkDashboard": "Security dashboard",
-        "linkReference": "Reference"
+        "linkSettings": "SIEM settings",
+        "linkReference": "SIEM settings"
       },
       "datasets": {
         "title": "Datasets",
@@ -8442,10 +8458,108 @@
       "U9": { "title": "Account created", "desc": "New AD account created" },
       "U10": { "title": "Directory object change", "desc": "AD directory object modified" }
     },
+    "settings": {
+      "menuTitle": "SIEM settings",
+      "pageTitle": "SIEM settings",
+      "pageSubtitle": "Event Log catalog, source dictionary, scenario links, and parser guide.",
+      "tabs": {
+        "catalog": "Catalog",
+        "sources": "Sources",
+        "scenarios": "Scenarios",
+        "dictionary": "Dictionary"
+      },
+      "catalog": {
+        "readOnlyHint": "Live catalog is read from MngLogCollector. Editing (CRUD) comes in a later slice.",
+        "refresh": "Refresh",
+        "version": "Version",
+        "source": "Source",
+        "generated": "Generated",
+        "loadError": "Could not load catalog. Check collector reachability and API key.",
+        "packagesTitle": "Base packages",
+        "packagesHint": "Server base for agent merge (packages).",
+        "optionalTitle": "Optional packages",
+        "optionalHint": "Packages agents can enable in Local UI (optionalPackages).",
+        "colName": "Package",
+        "colChannel": "Channel",
+        "colEventIds": "Event IDs",
+        "emptyPackages": "No packages in this group."
+      },
+      "sources": {
+        "intro": "sec_events source.type values. Security events and agent telemetry are grouped separately.",
+        "securityGroup": "Security sources",
+        "telemetryGroup": "Telemetry (agent metrics)",
+        "openEvents": "Open in events",
+        "sourceBastion": "Bastion / jump host",
+        "hintAd": "Active Directory / Windows Security session and directory events.",
+        "hintFirewall": "Firewall syslog (deny, allow, rule change).",
+        "hintEndpoint": "Linux / endpoint auth (sshd, sudo, etc.).",
+        "hintWindowsEventLog": "MngLogs agent Windows Event Log raw/normalized events.",
+        "hintBastion": "Bastion / jump-host session records.",
+        "hintMetric": "Agent host.up, CPU/memory, watch.inventory and other operational metrics."
+      },
+      "scenarios": {
+        "intro": "U1–U10 detection scenarios. Rules are managed in Alarm Center; this tab provides links.",
+        "rulesHint": "Thresholds and enable/disable live under Alarm Center → Rules.",
+        "colId": "Id",
+        "colTitle": "Scenario",
+        "colAction": "event.action / match",
+        "colLinks": "Links",
+        "openEvents": "Events"
+      }
+    },
+    "discovery": {
+      "menuTitle": "Discovery map",
+      "pageTitle": "Discovery / coverage map",
+      "pageSubtitle": "Browse discovery results by VLAN, DHCP, AP, or subnet; coverage legend and summary cards sit above the map.",
+      "mockBanner": "Topology branches are sample (mock). Coverage: last 24h host.up — Online within 15m, else Offline. Click a host to open events.",
+      "coverageLoadError": "Could not load live coverage (host.up); showing mock statuses.",
+      "refreshCoverage": "Refresh coverage",
+      "liveBranchLabel": "Live agents",
+      "liveBranchDetail": "Seen via host.up · no mock VLAN/DHCP match",
+      "legendTitle": "Coverage legend",
+      "kpiTitle": "Security summary (display)",
+      "topologyTitle": "Topology",
+      "rootLabel": "Odak site · discovery",
+      "rootHint": "{n} hosts · {b} branches — click: expand/collapse all",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
+      "layoutHint": "Preference saved in this browser",
+      "toolbar": {
+        "layout": "View",
+        "groupBy": "Group by"
+      },
+      "layouts": {
+        "tree": "Tree",
+        "split": "Split",
+        "tiers": "Tiers",
+        "graph": "Graph"
+      },
+      "splitTreeTitle": "Branches",
+      "splitEmpty": "Select a branch on the left.",
+      "tiers": {
+        "core": "Core",
+        "access": "Access",
+        "endpoint": "Endpoint"
+      },
+      "tiersEmpty": "Expand a branch in Access; hosts appear here.",
+      "graphHint": "Click a node to expand/collapse. Each branch is its own column; hosts stack vertically (no overlap).",
+      "facets": {
+        "vlan": "VLAN",
+        "dhcp": "DHCP",
+        "ap": "Access Point",
+        "subnet": "Subnet"
+      },
+      "coverage": {
+        "managedOnline": "Managed Online",
+        "managedOffline": "Managed Offline",
+        "discoveredUnmanaged": "Discovered Unmanaged",
+        "unknown": "Unknown"
+      }
+    },
     "reference": {
       "menuTitle": "Log scope guide",
       "pageTitle": "Log scope guide",
-      "openGuide": "Log scope guide",
+      "openGuide": "SIEM settings",
       "pageSubtitle": "Which logs we collect, what they mean in the system, and default alarm scenarios.",
       "intro": "This page summarizes how MonitraNG interprets security logs. Collection (NxLog, rsyslog, firewall syslog) is configured in your network; the tables below show supported product scope.",
       "readOnlyTitle": "Why can't this page be edited?",

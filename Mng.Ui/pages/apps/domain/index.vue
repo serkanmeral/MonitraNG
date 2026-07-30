@@ -2,12 +2,40 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useDomain, type Domain, type UpdateDomainRequest } from '@/composables/useDomain';
+import { useDomain, type Domain, type UpdateDomainRequest, type DirectoryLdapSettings, type DirectoryPrivilegeSettings } from '@/composables/useDomain';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DomainBackupCard from '@/components/apps/domain/DomainBackupCard.vue';
 import DomainDirectorySyncCard from '@/components/apps/domain/DomainDirectorySyncCard.vue';
-import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon } from 'vue-tabler-icons';
+import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon, ServerIcon } from 'vue-tabler-icons';
+
+const emptyDirectoryLdap = (): DirectoryLdapSettings => ({
+  enabled: false,
+  host: '',
+  port: 389,
+  useSsl: false,
+  baseDn: '',
+  bindUsername: '',
+  bindPassword: '',
+});
+
+const mapDirectoryLdap = (ldap?: DirectoryLdapSettings | null): DirectoryLdapSettings => ({
+  enabled: ldap?.enabled ?? false,
+  host: ldap?.host || '',
+  port: ldap?.port && ldap.port > 0 ? ldap.port : 389,
+  useSsl: ldap?.useSsl ?? false,
+  baseDn: ldap?.baseDn || '',
+  bindUsername: ldap?.bindUsername || '',
+  // Write-only in the form: empty on save keeps the existing password on the server.
+  bindPassword: '',
+});
+
+const mapDirectoryPrivileges = (
+  privileges?: DirectoryPrivilegeSettings | null
+): DirectoryPrivilegeSettings => ({
+  adminGroupNames: [...(privileges?.adminGroupNames || [])],
+  managerGroupNames: [...(privileges?.managerGroupNames || [])],
+});
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -102,6 +130,8 @@ const formData = ref<UpdateDomainRequest>({
     maxUsers: 100,
     maxAssets: 1000,
     enableMqtt: true,
+    directoryPrivileges: mapDirectoryPrivileges(null),
+    directoryLdap: emptyDirectoryLdap(),
   },
 });
 
@@ -250,6 +280,8 @@ const loadDomain = async () => {
         maxUsers: domainData.settings?.maxUsers || 100,
         maxAssets: domainData.settings?.maxAssets || 1000,
         enableMqtt: domainData.settings?.enableMqtt ?? true,
+        directoryPrivileges: mapDirectoryPrivileges(domainData.settings?.directoryPrivileges),
+        directoryLdap: mapDirectoryLdap(domainData.settings?.directoryLdap),
       },
     };
 
@@ -389,6 +421,8 @@ const cancelEdit = () => {
       maxUsers: domain.value.settings?.maxUsers || 100,
       maxAssets: domain.value.settings?.maxAssets || 1000,
       enableMqtt: domain.value.settings?.enableMqtt ?? true,
+      directoryPrivileges: mapDirectoryPrivileges(domain.value.settings?.directoryPrivileges),
+      directoryLdap: mapDirectoryLdap(domain.value.settings?.directoryLdap),
     },
   };
   
@@ -1130,6 +1164,161 @@ onMounted(async () => {
                   v-model="formData.settings!.enableMqtt"
                   :label="t('domain.fields.enableMqtt')"
                   color="primary"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
+        <!-- Directory LDAP (AD bind) -->
+        <v-card elevation="10" class="mb-4">
+          <v-card-title class="d-flex align-center">
+            <ServerIcon size="20" class="mr-2" />
+            {{ t('domain.cards.directoryLdap') }}
+          </v-card-title>
+
+          <v-divider />
+
+          <v-card-text>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              {{ t('domain.directoryLdap.description') }}
+            </p>
+
+            <v-row>
+              <v-col cols="12" md="4">
+                <v-switch
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.enabled')"
+                  :model-value="domain.settings?.directoryLdap?.enabled ?? false"
+                  readonly
+                  disabled
+                  color="primary"
+                />
+                <v-switch
+                  v-else
+                  v-model="formData.settings!.directoryLdap!.enabled"
+                  :label="t('domain.directoryLdap.enabled')"
+                  color="primary"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-switch
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.useSsl')"
+                  :model-value="domain.settings?.directoryLdap?.useSsl ?? false"
+                  readonly
+                  disabled
+                  color="primary"
+                />
+                <v-switch
+                  v-else
+                  v-model="formData.settings!.directoryLdap!.useSsl"
+                  :label="t('domain.directoryLdap.useSsl')"
+                  color="primary"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.port')"
+                  :model-value="domain.settings?.directoryLdap?.port || 389"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                />
+                <v-text-field
+                  v-else
+                  v-model.number="formData.settings!.directoryLdap!.port"
+                  :label="t('domain.directoryLdap.port')"
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                  min="1"
+                  max="65535"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.host')"
+                  :model-value="domain.settings?.directoryLdap?.host || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.directoryLdap!.host"
+                  :label="t('domain.directoryLdap.host')"
+                  :placeholder="t('domain.directoryLdap.hostPlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.baseDn')"
+                  :model-value="domain.settings?.directoryLdap?.baseDn || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.directoryLdap!.baseDn"
+                  :label="t('domain.directoryLdap.baseDn')"
+                  :placeholder="t('domain.directoryLdap.baseDnPlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.bindUsername')"
+                  :model-value="domain.settings?.directoryLdap?.bindUsername || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.directoryLdap!.bindUsername"
+                  :label="t('domain.directoryLdap.bindUsername')"
+                  :placeholder="t('domain.directoryLdap.bindUsernamePlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                  autocomplete="off"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryLdap.bindPassword')"
+                  :model-value="domain.settings?.directoryLdap?.bindPassword ? '••••••••' : '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  type="password"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.directoryLdap!.bindPassword"
+                  :label="t('domain.directoryLdap.bindPassword')"
+                  :hint="t('domain.directoryLdap.bindPasswordHint')"
+                  persistent-hint
+                  variant="outlined"
+                  density="comfortable"
+                  type="password"
+                  autocomplete="new-password"
                 />
               </v-col>
             </v-row>

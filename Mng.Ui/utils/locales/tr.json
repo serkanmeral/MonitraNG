@@ -1045,8 +1045,23 @@
     "cards": {
       "domainInfo": "Domain Bilgileri",
       "domainSettings": "Domain Ayarları",
+      "directoryLdap": "Dizin / LDAP (AD)",
       "licenseInfo": "Lisans Bilgileri",
       "backupInfo": "Yedek Bilgileri"
+    },
+    "directoryLdap": {
+      "description": "Bu domain için Active Directory / LDAP bağlantı bilgileri. Keycloak federation ve ileride discovery gibi servisler bu kaydı kullanabilir.",
+      "enabled": "LDAP etkin",
+      "host": "Sunucu (host)",
+      "hostPlaceholder": "dc01.corp.local",
+      "port": "Port",
+      "useSsl": "SSL / LDAPS",
+      "baseDn": "Base DN",
+      "baseDnPlaceholder": "DC=corp,DC=local",
+      "bindUsername": "Bind kullanıcı",
+      "bindUsernamePlaceholder": "CN=svc-ldap,OU=Service,DC=corp,DC=local",
+      "bindPassword": "Bind parola",
+      "bindPasswordHint": "Boş bırakırsanız mevcut parola korunur."
     },
     "directorySync": {
       "title": "LDAP / Dizin Senkronu",
@@ -8537,10 +8552,108 @@
       "U9": { "title": "Hesap oluşturma", "desc": "Yeni AD hesabı oluşturuldu" },
       "U10": { "title": "Dizin nesnesi değişikliği", "desc": "AD dizin nesnesi değiştirildi" }
     },
+    "settings": {
+      "menuTitle": "SIEM ayarları",
+      "pageTitle": "SIEM ayarları",
+      "pageSubtitle": "Event Log kataloğu, kaynak sözlüğü, senaryo köprüleri ve parser rehberi.",
+      "tabs": {
+        "catalog": "Katalog",
+        "sources": "Kaynaklar",
+        "scenarios": "Senaryolar",
+        "dictionary": "Sözlük"
+      },
+      "catalog": {
+        "readOnlyHint": "Canlı katalog MngLogCollector’dan okunur. Düzenleme (CRUD) sonraki dilimde gelecek.",
+        "refresh": "Yenile",
+        "version": "Sürüm",
+        "source": "Kaynak",
+        "generated": "Üretilme",
+        "loadError": "Katalog yüklenemedi. Collector erişimi ve API anahtarını kontrol edin.",
+        "packagesTitle": "Temel paketler",
+        "packagesHint": "Agent merge için sunucu tabanı (packages).",
+        "optionalTitle": "Opsiyonel paketler",
+        "optionalHint": "Agent Local UI’da açılabilir paketler (optionalPackages).",
+        "colName": "Paket",
+        "colChannel": "Kanal",
+        "colEventIds": "Event ID",
+        "emptyPackages": "Bu grupta paket yok."
+      },
+      "sources": {
+        "intro": "sec_events source.type değerleri. Güvenlik olayları ile agent telemetrisi ayrı gruplanır.",
+        "securityGroup": "Güvenlik kaynakları",
+        "telemetryGroup": "Telemetry (agent metrik)",
+        "openEvents": "Olaylarda aç",
+        "sourceBastion": "Bastion / jump host",
+        "hintAd": "Active Directory / Windows Security oturum ve dizin olayları.",
+        "hintFirewall": "Firewall syslog (deny, allow, kural değişikliği).",
+        "hintEndpoint": "Linux / endpoint auth (sshd, sudo vb.).",
+        "hintWindowsEventLog": "MngLogs agent Windows Event Log ham/normalize olayları.",
+        "hintBastion": "Bastion / jump host oturum kayıtları.",
+        "hintMetric": "Agent host.up, CPU/bellek, watch.inventory vb. operasyonel metrikler."
+      },
+      "scenarios": {
+        "intro": "U1–U10 tespit senaryoları. Kurallar Alarm Merkezi’nde yönetilir; burada köprüler vardır.",
+        "rulesHint": "Alarm eşikleri ve kural aç/kapa Alarm Merkezi → Kurallar ekranındadır.",
+        "colId": "Kod",
+        "colTitle": "Senaryo",
+        "colAction": "event.action / match",
+        "colLinks": "Bağlantılar",
+        "openEvents": "Olaylar"
+      }
+    },
+    "discovery": {
+      "menuTitle": "Keşif haritası",
+      "pageTitle": "Keşif / coverage haritası",
+      "pageSubtitle": "Discovery sonuçlarını VLAN, DHCP, AP veya subnet dallarında görün; coverage legend ve özet kartlar harita üstünde.",
+      "mockBanner": "Topoloji dalları örnek (mock). Coverage: son 24s host.up — 15 dk içi Online, sonrası Offline. Host’a tıklayınca olaylara gider.",
+      "coverageLoadError": "Canlı coverage (host.up) yüklenemedi; mock durumlar gösteriliyor.",
+      "refreshCoverage": "Coverage yenile",
+      "liveBranchLabel": "Canlı agentlar",
+      "liveBranchDetail": "host.up görüldü · mock VLAN/DHCP eşleşmesi yok",
+      "legendTitle": "Coverage legend",
+      "kpiTitle": "Güvenlik özeti (gösterge)",
+      "topologyTitle": "Topoloji",
+      "rootLabel": "Odak site · discovery",
+      "rootHint": "{n} host · {b} dal — tıkla: tümünü aç/kapat",
+      "expandAll": "Tümünü aç",
+      "collapseAll": "Tümünü kapat",
+      "layoutHint": "Tercih tarayıcıda saklanır",
+      "toolbar": {
+        "layout": "Görünüm",
+        "groupBy": "Grupla"
+      },
+      "layouts": {
+        "tree": "Ağaç",
+        "split": "Split",
+        "tiers": "Katman",
+        "graph": "Graf"
+      },
+      "splitTreeTitle": "Dallar",
+      "splitEmpty": "Soldan bir dal seçin.",
+      "tiers": {
+        "core": "Core",
+        "access": "Access",
+        "endpoint": "Endpoint"
+      },
+      "tiersEmpty": "Access şeridinden dal açın; host’lar burada listelenir.",
+      "graphHint": "Düğüme tıklayarak dalı açın/kapatın. Her dal kendi sütununda; host’lar alt alta (üst üste binmez).",
+      "facets": {
+        "vlan": "VLAN",
+        "dhcp": "DHCP",
+        "ap": "Access Point",
+        "subnet": "Subnet"
+      },
+      "coverage": {
+        "managedOnline": "Managed Online",
+        "managedOffline": "Managed Offline",
+        "discoveredUnmanaged": "Discovered Unmanaged",
+        "unknown": "Unknown"
+      }
+    },
     "reference": {
       "menuTitle": "Log kapsamı rehberi",
       "pageTitle": "Log kapsamı rehberi",
-      "openGuide": "Log kapsamı rehberi",
+      "openGuide": "SIEM ayarları",
       "pageSubtitle": "Hangi logları topladığımız, sistemde ne anlama geldikleri ve hazır alarm senaryoları.",
       "intro": "Bu sayfa, güvenlik loglarının MonitraNG'de nasıl okunduğunu özetler. Kurulum (NxLog, rsyslog, firewall syslog) sizin ağınızda yapılır; aşağıdaki tablolar ürünün desteklediği kapsamı gösterir.",
       "readOnlyTitle": "Bu sayfa neden düzenlenemiyor?",
@@ -8884,9 +8997,10 @@
       },
       "siemCenter": {
         "title": "SIEM Merkezi",
-        "description": "Güvenlik olaylarını izleyin; SIEM paneli ve referans dokümantasyonuna erişin.",
+        "description": "Güvenlik olaylarını izleyin; SIEM paneli ve ayarlarına erişin.",
         "linkDashboard": "Güvenlik paneli",
-        "linkReference": "Referans"
+        "linkSettings": "SIEM ayarları",
+        "linkReference": "SIEM ayarları"
       },
       "datasets": {
         "title": "Veri setleri",

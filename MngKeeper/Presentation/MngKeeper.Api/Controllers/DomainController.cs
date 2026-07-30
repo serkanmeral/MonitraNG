@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
+using MngKeeper.Api.Contracts;
 using MngKeeper.Application.Features.Domain.Commands.CreateDomain;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
@@ -143,23 +144,36 @@ namespace MngKeeper.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<MngKeeper.Domain.Entities.Domain>> UpdateDomain(string id, [FromBody] MngKeeper.Domain.Entities.Domain domain)
+        public async Task<ActionResult<MngKeeper.Domain.Entities.Domain>> UpdateDomain(
+            string id,
+            [FromBody] UpdateDomainRequest request)
         {
             try
             {
+                if (request == null)
+                    return BadRequest(new { error = "Request body is required" });
+
                 var existingDomain = await _domainRepository.GetByIdAsync(id);
-                
+
                 if (existingDomain == null)
                 {
                     return NotFound();
                 }
 
-                // Update properties
-                existingDomain.DisplayName = domain.DisplayName;
-                existingDomain.Settings = domain.Settings;
-                existingDomain.RelatedPersonPhone = domain.RelatedPersonPhone;
-                existingDomain.Logo = domain.Logo;
-                existingDomain.LogoUrl = domain.LogoUrl;
+                if (!string.IsNullOrWhiteSpace(request.DisplayName))
+                    existingDomain.DisplayName = request.DisplayName.Trim();
+
+                // Only overwrite phone/logo when the client actually sent the property
+                // (UI always sends these today; keep defensive for partial clients).
+                if (request.RelatedPersonPhone != null)
+                    existingDomain.RelatedPersonPhone = request.RelatedPersonPhone;
+                if (request.Logo != null)
+                    existingDomain.Logo = request.Logo;
+                if (request.LogoUrl != null)
+                    existingDomain.LogoUrl = request.LogoUrl;
+
+                MergeDomainSettings(existingDomain, request.Settings);
+
                 existingDomain.UpdatedAt = DateTime.UtcNow;
                 existingDomain.UpdatedBy = "system"; // TODO: Get from current user context
 
@@ -258,6 +272,62 @@ namespace MngKeeper.Api.Controllers
                 _logger.LogError(ex, "Error getting collections for domain with id: {Id}", id);
                 return StatusCode(500, new { error = "Internal server error", message = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Merges incoming settings into existing so partial UI payloads do not wipe nested config
+        /// (directoryPrivileges, mqttSettings, directoryLdap password, etc.).
+        /// </summary>
+        private static void MergeDomainSettings(
+            MngKeeper.Domain.Entities.Domain existingDomain,
+            UpdateDomainSettingsRequest? incoming)
+        {
+            if (incoming == null)
+                return;
+
+            existingDomain.Settings ??= new DomainSettings();
+            var target = existingDomain.Settings;
+
+            if (incoming.MaxUsers.HasValue)
+                target.MaxUsers = incoming.MaxUsers.Value;
+            if (incoming.MaxAssets.HasValue)
+                target.MaxAssets = incoming.MaxAssets.Value;
+            if (incoming.EnableMqtt.HasValue)
+                target.EnableMqtt = incoming.EnableMqtt.Value;
+
+            // Only replace privileges when the client sent at least one group name.
+            // Empty arrays from a partial form must never wipe Mongo configuration.
+            if (HasDirectoryPrivilegePayload(incoming.DirectoryPrivileges))
+                target.DirectoryPrivileges = incoming.DirectoryPrivileges!;
+
+            if (incoming.DirectoryLdap != null)
+                MergeDirectoryLdap(target, incoming.DirectoryLdap);
+        }
+
+        private static bool HasDirectoryPrivilegePayload(DirectoryPrivilegeSettings? privileges)
+        {
+            if (privileges == null)
+                return false;
+
+            return (privileges.AdminGroupNames?.Count ?? 0) > 0
+                || (privileges.ManagerGroupNames?.Count ?? 0) > 0;
+        }
+
+        private static void MergeDirectoryLdap(DomainSettings target, DirectoryLdapSettings incoming)
+        {
+            target.DirectoryLdap ??= new DirectoryLdapSettings();
+            var ldap = target.DirectoryLdap;
+
+            ldap.Enabled = incoming.Enabled;
+            ldap.Host = incoming.Host ?? string.Empty;
+            ldap.Port = incoming.Port > 0 ? incoming.Port : 389;
+            ldap.UseSsl = incoming.UseSsl;
+            ldap.BaseDn = incoming.BaseDn ?? string.Empty;
+            ldap.BindUsername = incoming.BindUsername ?? string.Empty;
+
+            // Empty password on update means "keep existing" (plain storage otherwise).
+            if (!string.IsNullOrEmpty(incoming.BindPassword))
+                ldap.BindPassword = incoming.BindPassword;
         }
     }
 

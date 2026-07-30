@@ -1,6 +1,21 @@
 import { fetchFromMngKeeper } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
 
+export interface DirectoryPrivilegeSettings {
+  adminGroupNames?: string[];
+  managerGroupNames?: string[];
+}
+
+export interface DirectoryLdapSettings {
+  enabled?: boolean;
+  host?: string;
+  port?: number;
+  useSsl?: boolean;
+  baseDn?: string;
+  bindUsername?: string;
+  bindPassword?: string;
+}
+
 export interface Domain {
   id: string;
   name: string;
@@ -17,6 +32,8 @@ export interface Domain {
     enableMqtt?: boolean;
     mqttSettings?: any;
     customSettings?: Record<string, any>;
+    directoryPrivileges?: DirectoryPrivilegeSettings | null;
+    directoryLdap?: DirectoryLdapSettings | null;
   };
   createdAt?: string;
   expiresAt?: string;
@@ -40,6 +57,8 @@ export interface UpdateDomainRequest {
     enableMqtt?: boolean;
     mqttSettings?: any;
     customSettings?: Record<string, any>;
+    directoryPrivileges?: DirectoryPrivilegeSettings | null;
+    directoryLdap?: DirectoryLdapSettings | null;
   };
 }
 

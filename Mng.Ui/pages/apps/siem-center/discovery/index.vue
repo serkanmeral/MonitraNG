@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import AcSiemCenterDashboard from '@/components/apps/siem-center/AcSiemCenterDashboard.vue';
+import AcSiemDiscoveryCoverageMap from '@/components/apps/siem-center/AcSiemDiscoveryCoverageMap.vue';
 import { useSiemCenterBreadcrumbs } from '@/composables/useSiemCenterBreadcrumbs';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
@@ -12,8 +12,9 @@ const { t } = useAppI18n();
 const auth = useAuthStore();
 
 const { breadcrumbs } = useSiemCenterBreadcrumbs({
+  subPage: true,
   tail: computed(() => ({
-    text: t('siemCenter.dashboard.pageTitle'),
+    text: t('siemCenter.discovery.pageTitle'),
     disabled: true,
   })),
 });
@@ -26,9 +27,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="siem-dashboard-page">
+  <div class="siem-discovery-page">
     <BaseBreadcrumb
-      :title="t('siemCenter.dashboard.menuTitle')"
+      :title="t('siemCenter.discovery.menuTitle')"
       :breadcrumbs="breadcrumbs"
     />
 
@@ -36,42 +37,34 @@ onMounted(() => {
       <div class="d-flex flex-wrap align-start justify-space-between gap-3">
         <div>
           <h1 class="text-h5 font-weight-bold mb-2">
-            {{ t('siemCenter.dashboard.menuTitle') }}
+            {{ t('siemCenter.discovery.pageTitle') }}
           </h1>
           <p class="text-body-2 text-medium-emphasis mb-0">
-            {{ t('siemCenter.dashboard.pageSubtitle') }}
+            {{ t('siemCenter.discovery.pageSubtitle') }}
           </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-          <v-btn
-            color="primary"
-            variant="flat"
-            prepend-icon="mdi-shield-search"
-            to="/apps/siem-center/events"
-          >
-            {{ t('siemCenter.dashboard.openEvents') }}
-          </v-btn>
-          <v-btn
-            variant="outlined"
-            color="primary"
-            prepend-icon="mdi-bell-alert"
-            to="/apps/alarm-center/alarms"
-          >
-            {{ t('alarmCenter.menuTitle') }}
-          </v-btn>
           <v-btn
             variant="outlined"
             color="primary"
             prepend-icon="mdi-cog-outline"
             to="/apps/siem-center/settings"
           >
-            {{ t('siemCenter.reference.openGuide') }}
+            {{ t('siemCenter.settings.menuTitle') }}
+          </v-btn>
+          <v-btn
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-shield-search"
+            to="/apps/siem-center"
+          >
+            {{ t('siemCenter.dashboard.menuTitle') }}
           </v-btn>
         </div>
       </div>
     </div>
 
-    <AcSiemCenterDashboard />
+    <AcSiemDiscoveryCoverageMap />
   </div>
 </template>
 

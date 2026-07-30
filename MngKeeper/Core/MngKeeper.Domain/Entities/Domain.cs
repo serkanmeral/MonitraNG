@@ -97,12 +97,22 @@ namespace MngKeeper.Domain.Entities
         public DirectoryPrivilegeSettings DirectoryPrivileges { get; set; } = new();
 
         /// <summary>
+        /// LDAP/AD bind for Keycloak federation and services that need directory access (e.g. discovery).
+        /// Null when not configured; omit from partial update payloads to leave unchanged.
+        /// </summary>
+        [BsonElement("directoryLdap")]
+        [BsonIgnoreIfNull]
+        public DirectoryLdapSettings? DirectoryLdap { get; set; }
+
+        /// <summary>
         /// Manuel Mongo güncellemelerinde yanlışlıkla settings altına düz yazılmış alanlar.
         /// </summary>
         [BsonElement("adminGroupNames")]
+        [BsonIgnoreIfNull]
         public List<string>? FlatAdminGroupNames { get; set; }
 
         [BsonElement("managerGroupNames")]
+        [BsonIgnoreIfNull]
         public List<string>? FlatManagerGroupNames { get; set; }
 
         public DirectoryPrivilegeSettings ResolveDirectoryPrivileges()

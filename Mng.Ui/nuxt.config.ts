@@ -43,6 +43,10 @@ function resolveBackendServiceUrl(
 const gatewayUrl = resolveGatewayUrl();
 const schedulerUrl = resolveBackendServiceUrl(["SERVER_SCHEDULER_URL", "SCHEDULER_URL"], 5090);
 const adminUrl = resolveBackendServiceUrl(["SERVER_ADMIN_URL", "ADMIN_URL"], 5080);
+const logCollectorUrl = resolveBackendServiceUrl(
+  ["SERVER_LOGCOLLECTOR_URL", "LOGCOLLECTOR_URL", "MNGLOGCOLLECTOR_URL"],
+  5091
+);
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -93,6 +97,13 @@ export default defineNuxtConfig({
     // Server-side only (private)
     serverAdminUrl: adminUrl,
     serverSchedulerUrl: schedulerUrl,
+    /** MngLogCollector base URL (e.g. http://192.168.20.8:5091) — not via Keeper gateway. */
+    serverLogCollectorUrl: logCollectorUrl,
+    /** Optional; when collector Ingest:ApiKey is set, BFF forwards this header. */
+    logCollectorIngestApiKey:
+      process.env.MNGLOGCOLLECTOR_INGEST_API_KEY ||
+      process.env.LOGCOLLECTOR_INGEST_API_KEY ||
+      "",
   },
   build: { transpile: ["vuetify"] },
   modules: [

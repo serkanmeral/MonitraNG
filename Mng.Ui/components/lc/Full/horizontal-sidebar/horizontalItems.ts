@@ -353,6 +353,18 @@ const horizontalItems: menu[] = [
         icon: ShieldIcon,
         to: "/apps/siem-center",
       },
+      {
+        title: "SIEM ayarları",
+        pageCode: "siemCenter.settings.menuTitle",
+        icon: SettingsIcon,
+        to: "/apps/siem-center/settings",
+      },
+      {
+        title: "Keşif haritası",
+        pageCode: "siemCenter.discovery.menuTitle",
+        icon: ShieldIcon,
+        to: "/apps/siem-center/discovery",
+      },
     ],
   },
   {
