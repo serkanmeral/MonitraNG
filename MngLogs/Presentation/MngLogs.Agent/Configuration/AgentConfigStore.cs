@@ -29,6 +29,7 @@ public sealed class AgentConfigStore : IAgentConfigStore
     {
         _current = Clone(options.Value);
         TryLoadOverrides();
+        EnsureDefaultHostId();
     }
 
     public MngLogsAgentSettings Current
@@ -62,9 +63,58 @@ public sealed class AgentConfigStore : IAgentConfigStore
         return Environment.MachineName;
     }
 
+    /// <summary>
+    /// First install / empty HostId → persist machine name so Local UI and MSI leave a concrete value.
+    /// </summary>
+    private void EnsureDefaultHostId()
+    {
+        if (!string.IsNullOrWhiteSpace(_current.System.HostId))
+            return;
+
+        _current.System.HostId = Environment.MachineName;
+        try
+        {
+            var dir = ResolveDataDirectoryUnlocked();
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "system.json");
+            // Merge into existing system.json when present; otherwise write HostId + current system snapshot.
+            SystemConfig toSave = CloneSystem(_current.System);
+            if (File.Exists(path))
+            {
+                try
+                {
+                    var existing = JsonSerializer.Deserialize<SystemConfig>(File.ReadAllText(path), JsonOptions);
+                    if (existing is not null)
+                    {
+                        toSave = existing;
+                        if (string.IsNullOrWhiteSpace(toSave.HostId))
+                            toSave.HostId = Environment.MachineName;
+                    }
+                }
+                catch
+                {
+                    // keep toSave from memory
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(toSave.DataDirectory))
+                toSave.DataDirectory = dir;
+
+            File.WriteAllText(path, JsonSerializer.Serialize(toSave, JsonOptions));
+            _current.System = CloneSystem(toSave);
+        }
+        catch
+        {
+            // In-memory MachineName still used via HostId assignment above
+        }
+    }
+
     public async Task SaveSystemAsync(SystemConfig system, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(system);
+        if (string.IsNullOrWhiteSpace(system.HostId))
+            system.HostId = Environment.MachineName;
+
         var dir = ResolveDataDirectory();
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, "system.json");

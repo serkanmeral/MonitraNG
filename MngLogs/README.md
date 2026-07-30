@@ -14,15 +14,48 @@ Sunucu backend stack’inin parçası değildir.
 
 Dokümantasyon: `docs/content/MngLogs/` (changelog, roadmap, technical specs, Local UI/CLI rehberi).
 
-```powershell
-# UI build (wwwroot)
-cd MngLogs
-.\scripts\build-frontend.ps1
+## Windows Service / GPO (P0)
 
-# Agent
-cd Presentation/MngLogs.Agent
-dotnet run
+Hedef dağıtım: müşteri IT’sinin **AD Group Policy / Software Installation** ile per-machine MSI dağıtması.
+Kurulum **sessiz, makine kapsamlı, LocalSystem**; config `%ProgramData%\MngLogs\Agent` altında (upgrade’de binary gider, data kalır).
+
+### MSI (önerilen)
+
+```powershell
+cd MngLogs
+.\scripts\build-msi.ps1 -SkipFrontend
+
+# Yönetici PowerShell / GPO eşdeğeri:
+msiexec /i .\artifacts\msi\MngLogs.Agent-0.2.0.msi /qn /L*v $env:TEMP\mnglogs-agent-install.log `
+  COLLECTORURL=http://192.168.20.8:5091 `
+  APIKEY=your-key `
+  HOSTID= `
+  LOCALUIHOST=127.0.0.1 `
+  LOCALUIPORT=5092
 ```
+
+Public property’ler (MST ile de verilebilir): `COLLECTORURL`, `APIKEY`, `HOSTID`, `LOCALUIHOST`, `LOCALUIPORT`.
+
+```powershell
+# Smoke
+..\scripts\tests\MngLogs\windows-service\smoke-service.ps1
+msiexec /x .\artifacts\msi\MngLogs.Agent-0.2.0.msi /qn
+```
+
+### Script ile (MSI öncesi / acil)
+
+```powershell
+.\scripts\publish-agent.ps1
+.\scripts\install-windows-service.ps1 `
+  -SourceDir .\artifacts\agent\win-x64 `
+  -CollectorUrl http://192.168.20.8:5091 `
+  -ApiKey 'your-key' `
+  -StartService
+```
+
+- Servis adı: `MngLogsAgent` (görünen ad: MngLogs Agent)
+- Loglar: `%ProgramData%\MngLogs\Agent\logs\agent-*.log`
+- CLI config: `MngLogs.Agent.exe config show|set ...`
 
 Local UI: `http://127.0.0.1:5092/`  
 Collector URL (ör. Odak): `http://192.168.20.8:5091`

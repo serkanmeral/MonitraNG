@@ -14,27 +14,39 @@ using Serilog;
 if (AgentCli.IsCliInvocation(args))
     return await AgentCli.RunAsync(args);
 
+// Windows Service / GPO install: working directory is often System32; pin to exe folder for wwwroot.
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.Configure<MngLogsAgentSettings>(
     builder.Configuration.GetSection(MngLogsAgentSettings.SectionName));
 
+var earlySettings = builder.Configuration.GetSection(MngLogsAgentSettings.SectionName).Get<MngLogsAgentSettings>()
+                    ?? new MngLogsAgentSettings();
+var logDirectory = ResolveLogDirectory(earlySettings.System.DataDirectory);
+Directory.CreateDirectory(logDirectory);
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console()
+    .WriteTo.File(
+        Path.Combine(logDirectory, "agent-.log"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        shared: true)
     .CreateLogger();
 builder.Host.UseSerilog();
 
 builder.Host.UseWindowsService(options =>
 {
-    options.ServiceName = "MngLogs Agent";
+    options.ServiceName = MngLogs.Agent.AgentServiceInfo.ServiceName;
 });
 
 builder.Services.AddSingleton<IAgentConfigStore, AgentConfigStore>();
 builder.Services.AddSingleton<ILocalUiPinAuth, LocalUiPinAuth>();
-builder.Services.AddSingleton<IEventLogPackageCatalogStore, EventLogPackageCatalogStore>();
 builder.Services.AddSingleton<AgentRuntimeStatus>();
 builder.Services.AddSingleton<IOutboundQueue>(sp =>
 {
@@ -49,6 +61,7 @@ builder.Services.AddHttpClient("collector", client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddSingleton<ICollectorClient, CollectorClient>();
+builder.Services.AddSingleton<IEventLogPackageCatalogStore, EventLogPackageCatalogStore>();
 builder.Services.AddSingleton<IHostMetricsCollector, HostMetricsCollector>();
 builder.Services.AddSingleton<IWindowsEventLogReader>(_ =>
     OperatingSystem.IsWindows()
@@ -66,13 +79,36 @@ builder.Services.AddHostedService<ServiceWatchWorker>();
 builder.Services.AddHostedService<OutboundShipperWorker>();
 
 // Bind Kestrel to local UI only (field agent UI).
+// Prefer DataDirectory/system.json (GPO/MSI writes here) over appsettings defaults.
 string uiHost;
 int uiPort;
 {
-    var early = builder.Configuration.GetSection(MngLogsAgentSettings.SectionName).Get<MngLogsAgentSettings>()
-                ?? new MngLogsAgentSettings();
-    uiHost = string.IsNullOrWhiteSpace(early.System.LocalUiHost) ? "127.0.0.1" : early.System.LocalUiHost;
-    uiPort = early.System.LocalUiPort <= 0 ? 5092 : early.System.LocalUiPort;
+    var system = earlySettings.System;
+    var dataDirHint = string.IsNullOrWhiteSpace(system.DataDirectory)
+        ? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "MngLogs",
+            "Agent")
+        : system.DataDirectory.Trim();
+    var systemJsonPath = Path.Combine(dataDirHint, "system.json");
+    if (File.Exists(systemJsonPath))
+    {
+        try
+        {
+            var fromDisk = System.Text.Json.JsonSerializer.Deserialize<SystemConfig>(
+                File.ReadAllText(systemJsonPath),
+                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+            if (fromDisk is not null)
+                system = fromDisk;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Could not read {Path}; using appsettings system config", systemJsonPath);
+        }
+    }
+
+    uiHost = string.IsNullOrWhiteSpace(system.LocalUiHost) ? "127.0.0.1" : system.LocalUiHost;
+    uiPort = system.LocalUiPort <= 0 ? 5092 : system.LocalUiPort;
 
     if (!LocalUiPortProbe.IsPortAvailable(uiHost, uiPort, out var probeDetail))
     {
@@ -113,9 +149,12 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "mngl
 app.MapFallbackToFile("index.html");
 
 Log.Information(
-    "Starting MngLogs Agent (Windows Service capable). Local UI http://{Host}:{Port}/",
+    "Starting MngLogs Agent service={Service} base={Base}. Local UI http://{Host}:{Port}/ logs={LogDir}",
+    MngLogs.Agent.AgentServiceInfo.ServiceName,
+    AppContext.BaseDirectory,
     uiHost,
-    uiPort);
+    uiPort,
+    logDirectory);
 
 try
 {
@@ -132,6 +171,18 @@ catch (IOException ex) when (ex.InnerException is SocketException ||
     Console.Error.WriteLine("  MngLogs.Agent.exe port set <yeniPort>");
     Console.Error.WriteLine("  sonra agent’ı yeniden başlatın.");
     return 3;
+}
+
+static string ResolveLogDirectory(string? configuredDataDirectory)
+{
+    if (!string.IsNullOrWhiteSpace(configuredDataDirectory))
+        return Path.Combine(configuredDataDirectory.Trim(), "logs");
+
+    var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+    if (string.IsNullOrWhiteSpace(programData))
+        programData = Path.Combine(Path.GetTempPath(), "MngLogs");
+
+    return Path.Combine(programData, "MngLogs", "Agent", "logs");
 }
 
 public partial class Program;

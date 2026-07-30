@@ -1,0 +1,19 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <OutputName>MngLogs.Agent</OutputName>
+    <!-- Per-machine MSI for AD GPO Software Installation -->
+    <InstallerPlatform>x64</InstallerPlatform>
+    <DefineConstants>AgentVersion=$(AgentVersion)</DefineConstants>
+    <AgentVersion Condition="'$(AgentVersion)' == ''">0.2.0</AgentVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <!-- Payload = publish output folder (set by build-msi.ps1 / -p:PayloadDir=...) -->
+  <ItemGroup>
+    <BindPath Include="$(PayloadDir)" BindName="Payload" />
+  </ItemGroup>
+</Project>

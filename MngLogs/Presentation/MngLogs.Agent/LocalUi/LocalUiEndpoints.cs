@@ -63,7 +63,7 @@ public static class LocalUiEndpoints
                 {
                     s.System.CollectorBaseUrl,
                     apiKeyConfigured = !string.IsNullOrWhiteSpace(s.System.ApiKey),
-                    s.System.HostId,
+                    hostId = config.ResolveHostId(),
                     s.System.LocalUiHost,
                     s.System.LocalUiPort,
                     dataDirectory = config.ResolveDataDirectory()
@@ -124,7 +124,12 @@ public static class LocalUiEndpoints
             if (update.ApiKey is not null)
                 current.ApiKey = update.ApiKey;
             if (update.HostId is not null)
-                current.HostId = update.HostId;
+            {
+                var trimmed = update.HostId.Trim();
+                current.HostId = string.IsNullOrWhiteSpace(trimmed)
+                    ? Environment.MachineName
+                    : trimmed;
+            }
             await config.SaveSystemAsync(current);
             return Results.Ok(new { saved = true });
         });

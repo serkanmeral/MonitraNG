@@ -118,7 +118,10 @@ public sealed class OpenSearchBulkWriter : IOpenSearchBulkWriter
         var ingestedAt = doc.IngestedAtUtc.Kind == DateTimeKind.Utc ? doc.IngestedAtUtc : doc.IngestedAtUtc.ToUniversalTime();
         var hostName = string.IsNullOrWhiteSpace(doc.Hostname) ? doc.HostId : doc.Hostname;
         var sourceType = string.IsNullOrWhiteSpace(doc.Source) ? "endpoint" : doc.Source;
-        var action = string.IsNullOrWhiteSpace(doc.Message) ? sourceType : doc.Message;
+        var actionFromFields = ExtractEventAction(doc.Fields);
+        var action = !string.IsNullOrWhiteSpace(actionFromFields)
+            ? actionFromFields!
+            : (string.IsNullOrWhiteSpace(doc.Message) ? sourceType : doc.Message);
 
         var payload = new Dictionary<string, object?>
         {
@@ -170,6 +173,19 @@ public sealed class OpenSearchBulkWriter : IOpenSearchBulkWriter
             "warning" => "unknown",
             _ => "success"
         };
+
+    private static string? ExtractEventAction(Dictionary<string, object?>? fields)
+    {
+        if (fields is null)
+            return null;
+        if (fields.TryGetValue("event.action", out var a) && a is not null)
+        {
+            var s = a.ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(s))
+                return s;
+        }
+        return null;
+    }
 
     private static string? ExtractEventCode(Dictionary<string, object?>? fields)
     {

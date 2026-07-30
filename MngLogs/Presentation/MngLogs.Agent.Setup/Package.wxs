@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-machine MSI for AD Group Policy Software Installation.
+  Public properties (set via msiexec or MST):
+    COLLECTORURL, APIKEY, HOSTID, LOCALUIHOST, LOCALUIPORT
+  Data under CommonAppData survives upgrade (NeverOverwrite system.json seed).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package
+      Name="MngLogs Agent"
+      Manufacturer="MonitraNG"
+      Version="$(AgentVersion)"
+      UpgradeCode="a7c3e8f1-2b4d-4e9a-9c1f-8d6e5a4b3c2d"
+      Scope="perMachine"
+      Compressed="yes"
+      InstallerVersion="500">
+
+    <SummaryInformation Description="MonitraNG MngLogs field agent (Windows Service + Local UI)" />
+
+    <MajorUpgrade
+        DowngradeErrorMessage="Daha yeni bir MngLogs Agent sürümü zaten yüklü."
+        Schedule="afterInstallInitialize" />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- GPO / msiexec PUBLIC properties (Secure for command-line logging hygiene on APIKEY) -->
+    <Property Id="COLLECTORURL" Secure="yes" />
+    <Property Id="APIKEY" Secure="yes" Hidden="yes" />
+    <Property Id="HOSTID" Secure="yes" />
+    <Property Id="LOCALUIHOST" Value="127.0.0.1" />
+    <Property Id="LOCALUIPORT" Value="5092" />
+
+    <Feature Id="ProductFeature" Title="MngLogs Agent" Level="1">
+      <ComponentGroupRef Id="AgentPayload" />
+      <ComponentRef Id="AgentServiceExe" />
+      <ComponentRef Id="AgentDataFolders" />
+      <ComponentRef Id="AgentSystemJsonSeed" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="CompanyFolder" Name="MngLogs">
+        <Directory Id="INSTALLFOLDER" Name="Agent" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DataCompanyFolder" Name="MngLogs">
+        <Directory Id="AGENTDATAFOLDER" Name="Agent">
+          <Directory Id="AGENTLOGSFOLDER" Name="logs" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- All published files except the service exe (authored below for ServiceInstall). -->
+    <ComponentGroup Id="AgentPayload" Directory="INSTALLFOLDER">
+      <Files Include="!(bindpath.Payload)**">
+        <Exclude Files="!(bindpath.Payload)MngLogs.Agent.exe" />
+      </Files>
+    </ComponentGroup>
+
+    <Component Id="AgentServiceExe" Directory="INSTALLFOLDER" Guid="b1c2d3e4-5f60-4781-9a2b-3c4d5e6f7081">
+      <File Id="AgentExe" Source="!(bindpath.Payload)MngLogs.Agent.exe" KeyPath="yes" />
+      <ServiceInstall
+          Id="MngLogsAgentServiceInstall"
+          Name="MngLogsAgent"
+          DisplayName="MngLogs Agent"
+          Description="MonitraNG MngLogs field agent — metrics, event log, ship to collector. Local UI on loopback."
+          Type="ownProcess"
+          Start="auto"
+          Account="LocalSystem"
+          ErrorControl="normal"
+          Vital="yes" />
+      <util:ServiceConfig
+          ServiceName="MngLogsAgent"
+          FirstFailureActionType="restart"
+          SecondFailureActionType="restart"
+          ThirdFailureActionType="restart"
+          RestartServiceDelayInSeconds="60"
+          ResetPeriodInDays="1" />
+      <ServiceControl
+          Id="MngLogsAgentServiceControl"
+          Name="MngLogsAgent"
+          Start="install"
+          Stop="both"
+          Remove="uninstall"
+          Wait="yes" />
+    </Component>
+
+    <Component Id="AgentDataFolders" Directory="AGENTDATAFOLDER" Guid="c2d3e4f5-6071-4892-ab3c-4d5e6f708192">
+      <CreateFolder />
+      <CreateFolder Directory="AGENTLOGSFOLDER" />
+      <RegistryValue
+          Root="HKLM"
+          Key="Software\MonitraNG\MngLogsAgent"
+          Name="DataFolder"
+          Type="string"
+          Value="[AGENTDATAFOLDER]"
+          KeyPath="yes" />
+    </Component>
+
+    <!-- Seed only; NeverOverwrite preserves GPO/MST or admin edits across upgrades. -->
+    <Component Id="AgentSystemJsonSeed" Directory="AGENTDATAFOLDER" Guid="d3e4f5a6-7182-49a3-bc4d-5e6f708192a3" NeverOverwrite="yes" Permanent="yes">
+      <File Id="SystemJsonSeed" Source="assets\system.json" Name="system.json" KeyPath="yes" />
+    </Component>
+
+    <!--
+      QuietExec: schedule deferred CA whose Id matches the property set below.
+      BinaryRef name is provided by WixToolset.Util.wixext (WiX 5).
+    -->
+    <SetProperty
+        Id="ApplyAgentConfig"
+        Value="&quot;[#AgentExe]&quot; config set --collector &quot;[COLLECTORURL]&quot; --api-key &quot;[APIKEY]&quot; --host-id &quot;[HOSTID]&quot; --ui-host &quot;[LOCALUIHOST]&quot; --ui-port [LOCALUIPORT] --data-dir &quot;[AGENTDATAFOLDER]&quot;"
+        Before="ApplyAgentConfig"
+        Sequence="execute"
+        Condition="COLLECTORURL AND NOT REMOVE" />
+
+    <CustomAction
+        Id="ApplyAgentConfig"
+        BinaryRef="Wix4UtilCA_X64"
+        DllEntry="WixQuietExec64"
+        Execute="deferred"
+        Impersonate="no"
+        Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="ApplyAgentConfig" After="InstallFiles" Condition="COLLECTORURL AND NOT REMOVE" />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

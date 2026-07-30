@@ -29,3 +29,33 @@ public sealed class IngestBatchResponse
     public int Written { get; set; }
     public bool OpenSearchWriteEnabled { get; set; }
 }
+
+/// <summary>GET /api/v1/policy/eventlog-packages response from MngLogCollector.</summary>
+public sealed class EventLogPackageCatalogResponse
+{
+    public string Version { get; set; } = string.Empty;
+    public string Source { get; set; } = "collector";
+    public DateTime GeneratedUtc { get; set; }
+    public List<EventLogPackageCatalogItem> Packages { get; set; } = [];
+    public List<EventLogPackageCatalogItem> OptionalPackages { get; set; } = [];
+}
+
+public sealed class EventLogPackageCatalogItem
+{
+    public string Name { get; set; } = string.Empty;
+    public string Channel { get; set; } = string.Empty;
+    public List<int> EventIds { get; set; } = [];
+}
+
+/// <summary>Result of a catalog pull (200 body, 304 not modified, or failure).</summary>
+public sealed class EventLogPackageCatalogPullResult
+{
+    public bool Success { get; init; }
+    public bool NotModified { get; init; }
+    public EventLogPackageCatalogResponse? Catalog { get; init; }
+
+    public static EventLogPackageCatalogPullResult Failed() => new() { Success = false };
+    public static EventLogPackageCatalogPullResult Unchanged() => new() { Success = true, NotModified = true };
+    public static EventLogPackageCatalogPullResult Ok(EventLogPackageCatalogResponse catalog) =>
+        new() { Success = true, Catalog = catalog };
+}

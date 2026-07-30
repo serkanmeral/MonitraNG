@@ -108,6 +108,8 @@ const sourceTypeItems = computed(() => [
   { title: t('siemCenter.events.sourceFirewall'), value: 'firewall' },
   { title: t('siemCenter.events.sourceAd'), value: 'ad' },
   { title: t('siemCenter.events.sourceEndpoint'), value: 'endpoint' },
+  { title: t('siemCenter.events.sourceMetric'), value: 'metric' },
+  { title: t('siemCenter.events.sourceWindowsEventLog'), value: 'windows-eventlog' },
 ]);
 
 const eventActionItems = computed(() => [

@@ -114,8 +114,8 @@
             <UFormGroup label="Toplayıcı adresi (URL)">
               <UInput v-model="system.collectorBaseUrl" />
             </UFormGroup>
-            <UFormGroup label="Ana bilgisayar kimliği (boş = makine adı)">
-              <UInput v-model="system.hostId" placeholder="ör. TERMINAL-pilot" />
+            <UFormGroup label="Bilgisayar kimliği (HostId)" help="Boş bırakılırsa PC adı kullanılır ve kaydedilir.">
+              <UInput v-model="system.hostId" :placeholder="hostIdPlaceholder" />
             </UFormGroup>
             <UFormGroup label="API anahtarı (boş bırakırsanız değişmez)">
               <UInput v-model="system.apiKey" type="password" placeholder="••••••••" />
@@ -598,6 +598,7 @@ const systemMeta = reactive({
   localUiHost: '127.0.0.1',
   localUiPort: 5092
 })
+const hostIdPlaceholder = computed(() => system.hostId?.trim() || 'PC adı (otomatik)')
 const policy = ref<PolicyConfig | null>(null)
 
 const tabItems = [

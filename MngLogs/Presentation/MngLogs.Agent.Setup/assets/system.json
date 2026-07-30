@@ -1,0 +1,8 @@
+{
+  "collectorBaseUrl": "http://127.0.0.1:5091",
+  "apiKey": "",
+  "hostId": "",
+  "localUiHost": "127.0.0.1",
+  "localUiPort": 5092,
+  "dataDirectory": "C:\\ProgramData\\MngLogs\\Agent"
+}

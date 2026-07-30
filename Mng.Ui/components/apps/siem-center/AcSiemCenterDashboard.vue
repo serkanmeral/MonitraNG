@@ -36,6 +36,7 @@ import {
   scenarioEventsLink,
   type SiemScenarioDef,
 } from '@/composables/useSiemScenarioCatalog';
+import AcAgentHealthPanel from '@/components/apps/siem-center/AcAgentHealthPanel.vue';
 
 const { t, locale } = useAppI18n();
 
@@ -815,6 +816,8 @@ onUnmounted(() => {
         </v-card>
       </v-col>
     </v-row>
+
+    <AcAgentHealthPanel />
 
     <v-row v-if="showChartsRow" class="mb-4">
       <v-col v-if="showEventTimeline" cols="12" lg="8">

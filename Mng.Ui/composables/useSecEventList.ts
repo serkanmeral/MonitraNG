@@ -20,6 +20,8 @@ export const SEC_EVENT_ACTION_OPTIONS: SecEventActionOption[] = [
   { value: 'account_created', labelKey: 'siemCenter.events.actions.account_created', scenarioId: 'U9' },
   { value: 'directory_object_modified', labelKey: 'siemCenter.events.actions.directory_object_modified', scenarioId: 'U10' },
   { value: 'privilege_denied', labelKey: 'siemCenter.events.actions.privilege_denied' },
+  { value: 'host.up', labelKey: 'siemCenter.events.actions.host_up' },
+  { value: 'watch.inventory', labelKey: 'siemCenter.events.actions.watch_inventory' },
   { value: 'unknown', labelKey: 'siemCenter.events.actions.unknown' },
 ];
 
@@ -68,8 +70,8 @@ export function getScenarioIdForAction(eventAction: string): string | null {
 
 export function actionColor(action: string): string {
   if (action.includes('fail') || action.includes('denied') || action === 'unknown') return 'error';
-  if (action.includes('success')) return 'success';
-  if (action.includes('new_flow') || action.includes('privileged') || action.includes('rule_change')) return 'warning';
+  if (action.includes('success') || action === 'host.up') return 'success';
+  if (action.includes('new_flow') || action.includes('privileged') || action.includes('rule_change') || action === 'watch.inventory') return 'warning';
   return 'info';
 }
 
@@ -89,6 +91,10 @@ export function sourceTypeLabelKey(sourceType?: string | null): string {
       return 'siemCenter.events.sourceAd';
     case 'endpoint':
       return 'siemCenter.events.sourceEndpoint';
+    case 'metric':
+      return 'siemCenter.events.sourceMetric';
+    case 'windows-eventlog':
+      return 'siemCenter.events.sourceWindowsEventLog';
     default:
       return 'siemCenter.events.sourceUnknown';
   }
@@ -239,16 +245,6 @@ export function formatRawForDisplay(raw: string): { text: string; isJson: boolea
     /* plain text */
   }
   return { text: raw, isJson: false };
-}
-
-export async function copyTextToClipboard(text: string): Promise<boolean> {
-  if (!text) return false;
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export function alarmRulesLinkForAction(eventAction: string): string {

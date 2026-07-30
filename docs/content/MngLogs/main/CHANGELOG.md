@@ -8,21 +8,30 @@ Versiyonlama [Semantic Versioning](https://semver.org/spec/v2.0.0.html) kullanı
 ## [Unreleased]
 
 ### Added
+- **MSI / GPO paketleme** — WiX per-machine MSI (`MngLogsAgent` servisi), IT helper kılavuzları, self-update yok (MajorUpgrade).
+- **CLI genişleme** — `config show|set`, `catalog show|sync`.
+- **Collector katalog pull** — `GET /api/v1/policy/eventlog-packages` + ETag/304; agent HTTP sync.
+- **SIEM Center agent health (ince)** — `AcAgentHealthPanel` (`host.up` / `watch.inventory`).
 - **Local UI sekmeleri** — Durum, Kaynaklar, Politika sayfalarında tab’lı düzen; Loglar satır detay modalı.
 - **Politika PIN koruması** — PBKDF2 hash (`ui-auth.json`), oturum token’ı, kilit / unlock / setup; yazma API’leri korumalı.
-- **CLI kurtarma** — `MngLogs.Agent.exe status|pin|port` (PIN reset/set, port check/set); port doluyken açılışta net hata + CLI ipucu.
-- **Servis seçici / exe gözat** — `GET /api/host/services`, `POST /api/host/browse-executable` (native OpenFileDialog).
-- **Event Log paket modeli** — Sunucu katalog önbelleği (`server-packages.json`) ⊕ agent override / disabled; periyodik sync worker; Politika UI ayrımı.
-- **Service / uygulama izleme** — Watch snapshot, OS SCM enricher, restart cooldown, `watch.inventory` metrik özeti.
-- **Kaynaklar** — Salt-okunur config kataloğu (üreticiler, metrik tanımları, paketler, izleme, gönderim).
+- **CLI kurtarma** — `status|pin|port`; port doluyken açılışta net hata + CLI ipucu.
+- **Servis seçici / exe gözat** — `GET /api/host/services`, `POST /api/host/browse-executable`.
+- **Event Log paket modeli** — Sunucu katalog ⊕ agent override / disabled; Politika UI.
+- **Service / uygulama izleme** — Watch snapshot, OS SCM enricher, `watch.inventory`.
+- **Kaynaklar** — Salt-okunur config kataloğu.
 
 ### Changed
-- Agent hedef çerçeve: `net9.0-windows` (WinForms OpenFileDialog + ServiceController).
-- Event Log resolve: boş override → sunucu/builtin katalog; legacy `packages` tam-liste modu korunur.
+- Agent hedef çerçeve: `net9.0-windows`.
+- Event Log resolve: sunucu/builtin ⊕ override; legacy `packages` korunur.
+- Boş `HostId` → PC adı (`Environment.MachineName`) persist + Politika API.
+- Ingest OpenSearch: `fields["event.action"]` öncelikli.
 
 ### Fixed
 - Loglar yön filtresi (`USelectMenu` Nuxt UI v2 `options` API).
 - `formatDate` / API tutarlılığı (Kaynaklar, Kuyruk).
+
+### Parked (2026-07-30)
+- MSI/Service smoke (admin), P5 parser, P3 Linux — `docs/content/MngLogs/current_status.md`.
 
 ## [0.1.0] - 2026-07
 

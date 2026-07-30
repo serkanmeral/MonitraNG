@@ -2,7 +2,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MngLogs.Agent.Configuration;
+using MngLogs.Agent.EventLog;
 using MngLogs.Agent.LocalUi;
+using MngLogs.Agent.Transport;
 
 namespace MngLogs.Agent.Cli;
 
@@ -36,6 +38,8 @@ public static class AgentCli
                 "status" => await StatusAsync(dataDirOverride),
                 "pin" => await PinAsync(remaining.Skip(1).ToArray(), dataDirOverride),
                 "port" => await PortAsync(remaining.Skip(1).ToArray(), dataDirOverride),
+                "config" => await ConfigAsync(remaining.Skip(1).ToArray(), dataDirOverride),
+                "catalog" => await CatalogAsync(remaining.Skip(1).ToArray(), dataDirOverride),
                 _ => Unknown(verb)
             };
         }
@@ -51,7 +55,7 @@ public static class AgentCli
         if (args.Length == 0)
             return false;
         var v = args[0].Trim().ToLowerInvariant();
-        return v is "help" or "-h" or "--help" or "status" or "pin" or "port";
+        return v is "help" or "-h" or "--help" or "status" or "pin" or "port" or "config" or "catalog";
     }
 
     private static int PrintHelpAndExit()
@@ -70,7 +74,7 @@ public static class AgentCli
     private static void PrintHelp()
     {
         Console.WriteLine("""
-            MngLogs Agent CLI — Local UI kurtarma (PIN / port)
+            MngLogs Agent CLI — Local UI kurtarma + kurulum config
 
             Kullanım:
               MngLogs.Agent.exe status [--data-dir <path>]
@@ -80,9 +84,19 @@ public static class AgentCli
               MngLogs.Agent.exe port show [--data-dir <path>]
               MngLogs.Agent.exe port set <port> [--data-dir <path>]
               MngLogs.Agent.exe port check [port] [--data-dir <path>]
+              MngLogs.Agent.exe config show [--data-dir <path>]
+              MngLogs.Agent.exe config set [options] [--data-dir <path>]
+              MngLogs.Agent.exe catalog show [--data-dir <path>]
+              MngLogs.Agent.exe catalog sync [--data-dir <path>]
+
+            config set (MSI/GPO sessiz; sadece verilen alanlar değişir):
+              --collector <url>   --api-key <key>   --host-id <id>
+              --ui-host <host>    --ui-port <port>
+
+            catalog sync: collector'dan event-log paket kataloğunu çeker (yoksa builtin).
 
             Notlar:
-              - Port/PIN değişince agent sürecini yeniden başlatın.
+              - Port/PIN/config değişince agent sürecini yeniden başlatın.
               - --data-dir yoksa ayar / env / %ProgramData%\MngLogs\Agent kullanılır.
               - pin set: --pin vermezseniz etkileşimli sorulur (onay ile).
             """);
@@ -290,6 +304,131 @@ public static class AgentCli
         }
     }
 
+    private static async Task<int> ConfigAsync(string[] args, string? dataDirOverride)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("config alt komutu gerekli: show | set");
+            return 2;
+        }
+
+        await using var scope = CreateScope(dataDirOverride);
+        var config = scope.Services.GetRequiredService<IAgentConfigStore>();
+        var system = config.Current.System;
+        var sub = args[0].ToLowerInvariant();
+
+        switch (sub)
+        {
+            case "show":
+                Console.WriteLine($"DataDirectory    : {config.ResolveDataDirectory()}");
+                Console.WriteLine($"CollectorBaseUrl : {system.CollectorBaseUrl}");
+                Console.WriteLine($"ApiKey           : {(string.IsNullOrEmpty(system.ApiKey) ? "(empty)" : "***")}");
+                Console.WriteLine($"HostId           : {(string.IsNullOrWhiteSpace(system.HostId) ? "(machine)" : system.HostId)}");
+                Console.WriteLine($"LocalUiHost      : {(string.IsNullOrWhiteSpace(system.LocalUiHost) ? "127.0.0.1" : system.LocalUiHost)}");
+                Console.WriteLine($"LocalUiPort      : {(system.LocalUiPort <= 0 ? 5092 : system.LocalUiPort)}");
+                return 0;
+
+            case "set":
+            {
+                var collector = GetOption(args, "--collector");
+                var apiKey = GetOption(args, "--api-key");
+                var hostId = GetOption(args, "--host-id");
+                var uiHost = GetOption(args, "--ui-host");
+                var uiPortRaw = GetOption(args, "--ui-port");
+                var hasApiKeyFlag = HasFlag(args, "--api-key");
+
+                if (collector is null && !hasApiKeyFlag && hostId is null && uiHost is null && uiPortRaw is null)
+                {
+                    Console.Error.WriteLine("config set: en az bir alan verin (--collector, --api-key, --host-id, --ui-host, --ui-port).");
+                    return 2;
+                }
+
+                if (collector is not null)
+                    system.CollectorBaseUrl = collector.Trim().TrimEnd('/');
+                if (hasApiKeyFlag)
+                    system.ApiKey = apiKey ?? "";
+                if (hostId is not null)
+                    system.HostId = hostId.Trim();
+                if (uiHost is not null)
+                    system.LocalUiHost = uiHost.Trim();
+                if (uiPortRaw is not null)
+                {
+                    if (!int.TryParse(uiPortRaw, out var port) || port is < 1 or > 65535)
+                    {
+                        Console.Error.WriteLine("--ui-port 1-65535 olmalı.");
+                        return 2;
+                    }
+
+                    system.LocalUiPort = port;
+                }
+
+                if (!string.IsNullOrWhiteSpace(dataDirOverride))
+                    system.DataDirectory = dataDirOverride.Trim();
+                else if (string.IsNullOrWhiteSpace(system.DataDirectory))
+                    system.DataDirectory = config.ResolveDataDirectory();
+
+                await config.SaveSystemAsync(system);
+                Console.WriteLine($"system.json kaydedildi: {Path.Combine(config.ResolveDataDirectory(), "system.json")}");
+                return 0;
+            }
+
+            default:
+                Console.Error.WriteLine($"Bilinmeyen config komutu: {sub}");
+                return 2;
+        }
+    }
+
+    private static async Task<int> CatalogAsync(string[] args, string? dataDirOverride)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("catalog alt komutu gerekli: show | sync");
+            return 2;
+        }
+
+        await using var scope = CreateScope(dataDirOverride, includeCollector: true);
+        var catalog = scope.Services.GetRequiredService<IEventLogPackageCatalogStore>();
+        var sub = args[0].ToLowerInvariant();
+
+        switch (sub)
+        {
+            case "show":
+                Console.WriteLine($"Source        : {catalog.Source}");
+                Console.WriteLine($"Version       : {catalog.Version ?? "(none)"}");
+                Console.WriteLine($"LastSyncedUtc : {catalog.LastSyncedUtc?.ToString("o") ?? "(never)"}");
+                Console.WriteLine($"Packages      : {catalog.ServerPackages.Count}");
+                foreach (var p in catalog.ServerPackages)
+                    Console.WriteLine($"  - {p.Name} ({p.Channel}) ids={p.EventIds.Count}");
+                Console.WriteLine($"Optional      : {catalog.OptionalPackages.Count}");
+                foreach (var p in catalog.OptionalPackages)
+                    Console.WriteLine($"  - {p.Name} ({p.Channel}) ids={p.EventIds.Count}");
+                return 0;
+
+            case "sync":
+                await catalog.RefreshAsync();
+                Console.WriteLine($"Catalog sync OK — source={catalog.Source} version={catalog.Version} packages={catalog.ServerPackages.Count}");
+                Console.WriteLine($"LastSyncedUtc : {catalog.LastSyncedUtc?.ToString("o")}");
+                if (string.Equals(catalog.Source, "builtin", StringComparison.OrdinalIgnoreCase))
+                    Console.WriteLine("Uyarı: collector'dan alınamadı; builtin katalog kullanılıyor. config show ile URL/API key kontrol edin.");
+                return 0;
+
+            default:
+                Console.Error.WriteLine($"Bilinmeyen catalog komutu: {sub}");
+                return 2;
+        }
+    }
+
+    private static bool HasFlag(string[] args, string name)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
     private static string? GetOption(string[] args, string name)
     {
         for (var i = 0; i < args.Length - 1; i++)
@@ -330,7 +469,7 @@ public static class AgentCli
         return new string(chars.ToArray());
     }
 
-    private static ServiceProviderScope CreateScope(string? dataDirOverride)
+    private static ServiceProviderScope CreateScope(string? dataDirOverride, bool includeCollector = false)
     {
         var configBuilder = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -352,6 +491,14 @@ public static class AgentCli
         services.Configure<MngLogsAgentSettings>(configuration.GetSection(MngLogsAgentSettings.SectionName));
         services.AddSingleton<IAgentConfigStore, AgentConfigStore>();
         services.AddSingleton<ILocalUiPinAuth, LocalUiPinAuth>();
+
+        if (includeCollector)
+        {
+            services.AddHttpClient("collector", client => client.Timeout = TimeSpan.FromSeconds(30));
+            services.AddSingleton<ICollectorClient, CollectorClient>();
+            services.AddSingleton<IEventLogPackageCatalogStore, EventLogPackageCatalogStore>();
+        }
+
         return new ServiceProviderScope(services.BuildServiceProvider());
     }
 
