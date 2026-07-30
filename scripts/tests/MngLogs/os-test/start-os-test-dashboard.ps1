@@ -35,27 +35,37 @@ catch {
 }
 
 function Get-OsRecent {
-    param([string]$FilterHostId, [int]$Take)
+    param(
+        [string]$FilterHostId,
+        [string]$FilterSource,
+        [int]$Take
+    )
 
     $must = @(
         @{ exists = @{ field = "@timestamp" } }
     )
     if (-not [string]::IsNullOrWhiteSpace($FilterHostId)) {
-        $must += @{ term = @{ "host.id.keyword" = $FilterHostId } }
-        # fallback if keyword mapping differs
-        $must = @(
-            @{ exists = @{ field = "@timestamp" } }
-            @{ bool = @{
-                    should = @(
-                        @{ term = @{ "host.id.keyword" = $FilterHostId } }
-                        @{ term = @{ "host.id" = $FilterHostId } }
-                        @{ term = @{ "agent.id.keyword" = $FilterHostId } }
-                        @{ match_phrase = @{ "host.id" = $FilterHostId } }
-                    )
-                    minimum_should_match = 1
-                }
+        $must += @{ bool = @{
+                should = @(
+                    @{ term = @{ "host.id.keyword" = $FilterHostId } }
+                    @{ term = @{ "host.id" = $FilterHostId } }
+                    @{ term = @{ "agent.id.keyword" = $FilterHostId } }
+                    @{ match_phrase = @{ "host.id" = $FilterHostId } }
+                )
+                minimum_should_match = 1
             }
-        )
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($FilterSource)) {
+        $must += @{ bool = @{
+                should = @(
+                    @{ term = @{ "source.type.keyword" = $FilterSource } }
+                    @{ term = @{ "source.type" = $FilterSource } }
+                    @{ match_phrase = @{ "source.type" = $FilterSource } }
+                )
+                minimum_should_match = 1
+            }
+        }
     }
 
     $body = @{
@@ -216,6 +226,15 @@ $html = @'
       <label class="meta">HostId
         <input id="hostId" placeholder="örn. TERMINAL-pilot" style="width:11rem" />
       </label>
+      <label class="meta">Kaynak
+        <select id="source">
+          <option value="">Tümü</option>
+          <option value="metric">metric</option>
+          <option value="windows-eventlog">windows-eventlog</option>
+          <option value="service-watch">service-watch</option>
+          <option value="app-watch">app-watch</option>
+        </select>
+      </label>
       <label class="meta">Boyut
         <select id="size">
           <option>25</option>
@@ -241,16 +260,31 @@ $html = @'
   <script>
     const qs = new URLSearchParams(location.search);
     const hostInput = document.getElementById('hostId');
+    const sourceSel = document.getElementById('source');
     const sizeSel = document.getElementById('size');
     const autoCb = document.getElementById('auto');
     const errEl = document.getElementById('error');
     const wrap = document.getElementById('tableWrap');
     if (qs.get('hostId')) hostInput.value = qs.get('hostId');
+    if (qs.get('source')) sourceSel.value = qs.get('source');
+
+    function ensureSourceOption(value) {
+      if (!value) return;
+      const exists = Array.from(sourceSel.options).some(o => o.value === value);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = value;
+        sourceSel.appendChild(opt);
+      }
+    }
 
     function pillClass(source, action) {
       const a = (action || '').toLowerCase();
+      const s = (source || '').toLowerCase();
       if (a.includes('process.top')) return 'pill process';
-      if ((source || '').toLowerCase() === 'metric') return 'pill metric';
+      if (s === 'metric') return 'pill metric';
+      if (s === 'service-watch' || s === 'app-watch') return 'pill process';
       return 'pill';
     }
 
@@ -299,20 +333,24 @@ $html = @'
     async function load() {
       errEl.hidden = true;
       const hostId = hostInput.value.trim();
+      const source = sourceSel.value.trim();
       const size = sizeSel.value;
       const url = `/api/recent?size=${encodeURIComponent(size)}` +
-        (hostId ? `&hostId=${encodeURIComponent(hostId)}` : '');
+        (hostId ? `&hostId=${encodeURIComponent(hostId)}` : '') +
+        (source ? `&source=${encodeURIComponent(source)}` : '');
       try {
         const res = await fetch(url);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || res.statusText);
+        const filterNote = source ? ` · kaynak=${source}` : '';
         document.getElementById('subtitle').textContent =
-          `${data.indexPattern} · hits=${data.total ?? (data.hits||[]).length}`;
+          `${data.indexPattern} · hits=${data.total ?? (data.hits||[]).length}${filterNote}`;
         const hits = data.hits || [];
         let metric = 0, top = 0;
         hits.forEach(h => {
           const x = summarize(h);
           const src = (x.s.source && x.s.source.type) || '';
+          ensureSourceOption(src);
           if (String(src).toLowerCase() === 'metric' || x.metric) metric++;
           if (isTopProcess(x.action, x.fields)) top++;
         });
@@ -322,7 +360,7 @@ $html = @'
         document.getElementById('sAt').textContent = new Date().toLocaleTimeString('tr-TR');
 
         if (!hits.length) {
-          wrap.innerHTML = '<div class="empty">Kayıt yok — ajan ship ediyor mu / domain-hostId doğru mu?</div>';
+          wrap.innerHTML = '<div class="empty">Kayıt yok — ajan ship ediyor mu / domain-hostId-kaynak doğru mu?</div>';
           return;
         }
 
@@ -360,6 +398,7 @@ $html = @'
 
     document.getElementById('refresh').onclick = load;
     hostInput.addEventListener('change', load);
+    sourceSel.addEventListener('change', load);
     sizeSel.addEventListener('change', load);
     load();
     setInterval(() => { if (autoCb.checked) load(); }, 5000);
@@ -403,13 +442,14 @@ try {
             elseif ($path -eq "/api/recent") {
                 $qHost = $req.QueryString["hostId"]
                 if ([string]::IsNullOrWhiteSpace($qHost)) { $qHost = $HostId }
+                $qSource = $req.QueryString["source"]
                 $qSize = 50
                 [int]::TryParse($req.QueryString["size"], [ref]$qSize) | Out-Null
                 if ($qSize -lt 1) { $qSize = 50 }
                 if ($qSize -gt 200) { $qSize = 200 }
 
                 try {
-                    $os = Get-OsRecent -FilterHostId $qHost -Take $qSize
+                    $os = Get-OsRecent -FilterHostId $qHost -FilterSource $qSource -Take $qSize
                     $hits = @($os.hits.hits)
                     $total = $os.hits.total
                     if ($total -is [psobject] -and $null -ne $total.value) { $total = $total.value }
@@ -418,6 +458,7 @@ try {
                         indexPattern = $indexPattern
                         openSearch   = $osBase
                         hostId       = $qHost
+                        source       = $qSource
                         total        = $total
                         hits         = $hits
                     } | ConvertTo-Json -Depth 30 -Compress

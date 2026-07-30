@@ -60,8 +60,9 @@
 
 <script setup lang="ts">
 import type { QueueResponse } from '~/composables/useAgentApi'
+import { formatDate } from '~/composables/useAgentApi'
 
-const { getQueue, formatDate } = useAgentApi()
+const { getQueue } = useAgentApi()
 const data = ref<QueueResponse | null>(null)
 const loading = ref(false)
 

@@ -13,8 +13,9 @@
           <div class="flex items-center gap-3">
             <USelectMenu
               v-model="selectedDirection"
-              :items="directionOptions"
-              value-key="value"
+              :options="directionOptions"
+              option-attribute="label"
+              value-attribute="value"
               class="w-44"
               size="sm"
             />
@@ -40,9 +41,10 @@
           <div
             v-for="(entry, i) in items"
             :key="i"
-            class="flex gap-3 py-0.5 hover:bg-gray-800/50 rounded px-1 -mx-1"
+            class="flex gap-3 py-1 hover:bg-gray-800/50 rounded px-1 -mx-1 cursor-pointer items-start"
+            @click="openDetail(entry)"
           >
-            <span class="shrink-0 text-gray-500 tabular-nums">{{ formatTime(entry.atUtc) }}</span>
+            <span class="shrink-0 text-gray-500 tabular-nums pt-0.5">{{ formatTime(entry.atUtc) }}</span>
             <UBadge
               :color="entry.direction === 'shipped' ? 'primary' : 'amber'"
               variant="soft"
@@ -59,7 +61,7 @@
             >
               {{ sourceLabel(entry.source) }}
             </UBadge>
-            <span class="break-all">
+            <span class="break-all flex-1 min-w-0">
               <template v-if="entry.metricName != null && entry.metricValue != null">
                 {{ metricLabel(entry.metricName) }}
                 <span v-if="entry.detail" class="text-gray-400"> ({{ entry.detail }})</span>
@@ -74,10 +76,21 @@
                 </span>
               </template>
             </span>
+            <UButton
+              size="xs"
+              variant="soft"
+              color="gray"
+              class="shrink-0"
+              @click.stop="openDetail(entry)"
+            >
+              Detay
+            </UButton>
           </div>
         </div>
       </div>
     </UCard>
+
+    <EventDetailModal v-model:open="detailOpen" :event="selectedEvent" />
   </div>
 </template>
 
@@ -93,11 +106,14 @@ const directionOptions = [
   { label: 'Gönderilen', value: 'shipped' }
 ]
 
-const selectedDirection = ref(directionOptions[0])
+/** Bound to option value when value-attribute is set (Nuxt UI v2). */
+const selectedDirection = ref<'all' | 'produced' | 'shipped'>('all')
 const items = ref<RecentEventEntry[]>([])
 const loading = ref(false)
 const clearing = ref(false)
 const autoRefresh = ref(true)
+const detailOpen = ref(false)
+const selectedEvent = ref<RecentEventEntry | null>(null)
 let timer: ReturnType<typeof setInterval> | null = null
 
 function severityColor(s?: string | null) {
@@ -120,10 +136,15 @@ function formatTime(value: string) {
   }
 }
 
+function openDetail(entry: RecentEventEntry) {
+  selectedEvent.value = entry
+  detailOpen.value = true
+}
+
 async function fetchEvents() {
   loading.value = true
   try {
-    const dir = selectedDirection.value?.value || 'all'
+    const dir = selectedDirection.value || 'all'
     const res = await getEvents(dir, 150)
     items.value = res.items
   } finally {
@@ -136,6 +157,8 @@ async function clear() {
   try {
     await clearEvents()
     items.value = []
+    detailOpen.value = false
+    selectedEvent.value = null
   } finally {
     clearing.value = false
   }

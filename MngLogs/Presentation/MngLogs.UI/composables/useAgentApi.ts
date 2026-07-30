@@ -18,6 +18,14 @@ export interface RecentEventEntry {
   metricName?: string | null
   metricValue?: number | null
   detail?: string | null
+  id?: string | null
+  channel?: string | null
+  package?: string | null
+  eventId?: number | null
+  recordId?: number | null
+  provider?: string | null
+  rawJson?: string | null
+  fields?: Record<string, unknown> | null
 }
 
 export interface TopProcessItem {
@@ -32,6 +40,26 @@ export interface TopProcessSnapshot {
   byCpu: TopProcessItem[]
   byMemory: TopProcessItem[]
   cpuPending?: boolean
+}
+
+export interface WatchSnapshotItem {
+  kind: string
+  name: string
+  displayName?: string | null
+  health: string
+  statusText?: string | null
+  restartAllowed: boolean
+  instanceCount?: number | null
+  minCount?: number | null
+  updatedAtUtc: string
+  lastOsEventId?: number | null
+  lastOsEventAtUtc?: string | null
+  lastOsEventAction?: string | null
+  lastOsEventMessage?: string | null
+  lastRestartAtUtc?: string | null
+  lastRestartOk?: boolean | null
+  lastRestartError?: string | null
+  restartAttemptCount?: number
 }
 
 export interface AgentStatus {
@@ -68,6 +96,7 @@ export interface AgentStatus {
   latestMetrics?: LatestMetricItem[]
   latestLogs?: RecentEventEntry[]
   topProcesses?: TopProcessSnapshot | null
+  watchSnapshot?: WatchSnapshotItem[]
 }
 
 export interface AgentConfig {
@@ -93,11 +122,26 @@ export interface PolicyConfig {
     pollIntervalSeconds: number
     maxEventsPerPoll: number
     packages: { name: string; channel: string; eventIds: number[] }[]
+    agentOverrides?: { name: string; channel: string; eventIds: number[] }[]
+    disabledServerPackages?: string[]
+    packageCatalogSyncIntervalSeconds?: number
   }
   serviceWatch: {
     enabled: boolean
     pollIntervalSeconds: number
+    restartCooldownSeconds?: number
+    restartMaxAttempts?: number
+    includeInventory?: boolean
+    inventoryIntervalSeconds?: number
     services: { name: string; restartAllowed: boolean }[]
+    applications?: {
+      name: string
+      minCount: number
+      restartAllowed?: boolean
+      executablePath?: string | null
+      arguments?: string | null
+      workingDirectory?: string | null
+    }[]
   }
 }
 
@@ -114,20 +158,78 @@ export interface QueueResponse {
 }
 
 export interface SourcesResponse {
-  metrics: Record<string, unknown>
+  readOnly?: boolean
+  producers?: {
+    sourceType: string
+    label: string
+    enabled: boolean
+    intervalSeconds?: number
+    lastUtc?: string | null
+    eventsProduced?: number
+    lastError?: string | null
+  }[]
+  metrics: Record<string, unknown> & {
+    enabled?: boolean
+    heartbeatIntervalSeconds?: number
+    includeHostResources?: boolean
+    includeTopProcesses?: boolean
+    topProcessCount?: number
+    eventsProduced?: number
+    lastHeartbeatUtc?: string | null
+    definitions?: {
+      name: string
+      metric: string
+      action: string
+      sourceType: string
+      description: string
+      intervalSeconds: number
+      enabled: boolean
+    }[]
+  }
   eventLog: Record<string, unknown> & {
     packages?: { name: string; channel: string; eventIds: number[]; enabled: boolean }[]
+    knownOptional?: { name: string; channel: string; eventIds: number[]; requiresElevation?: boolean }[]
     lastError?: string | null
+    pollIntervalSeconds?: number
+    maxEventsPerPoll?: number
+    eventsProduced?: number
+    lastEventLogUtc?: string | null
+    enabled?: boolean
   }
   serviceWatch: Record<string, unknown> & {
+    enabled?: boolean
+    pollIntervalSeconds?: number
+    restartCooldownSeconds?: number
+    restartMaxAttempts?: number
+    includeInventory?: boolean
+    inventoryIntervalSeconds?: number
     configured?: { name: string; restartAllowed: boolean }[]
+    applications?: {
+      name: string
+      minCount: number
+      restartAllowed?: boolean
+      executablePath?: string | null
+      arguments?: string | null
+      workingDirectory?: string | null
+    }[]
     snapshot?: {
+      kind?: string
       name: string
       displayName?: string | null
       health: string
       statusText?: string | null
       restartAllowed: boolean
+      instanceCount?: number | null
+      minCount?: number | null
       updatedAtUtc: string
+      lastOsEventId?: number | null
+      lastOsEventAtUtc?: string | null
+      lastOsEventAction?: string | null
+      lastOsEventMessage?: string | null
+      lastRestartAtUtc?: string | null
+      lastRestartOk?: boolean | null
+      lastRestartError?: string | null
+      restartAttemptCount?: number
     }[]
     lastError?: string | null
   }
@@ -135,6 +237,37 @@ export interface SourcesResponse {
 }
 
 export function useAgentApi() {
+  const TOKEN_KEY = 'mnglogs-local-ui-token'
+  const TOKEN_HEADER = 'X-Local-Ui-Token'
+
+  function getStoredToken(): string | null {
+    if (!import.meta.client) return null
+    try {
+      return sessionStorage.getItem(TOKEN_KEY)
+    } catch {
+      return null
+    }
+  }
+
+  function setStoredToken(token: string | null) {
+    if (!import.meta.client) return
+    try {
+      if (token) sessionStorage.setItem(TOKEN_KEY, token)
+      else sessionStorage.removeItem(TOKEN_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function authHeaders(): Record<string, string> {
+    const token = getStoredToken()
+    return token ? { [TOKEN_HEADER]: token } : {}
+  }
+
+  function rememberAuthResult(res: { ok?: boolean; token?: string | null }) {
+    if (res?.ok && res.token) setStoredToken(res.token)
+  }
+
   const getStatus = () => $fetch<AgentStatus>(`${API_BASE}/status`)
   const getConfig = () => $fetch<AgentConfig>(`${API_BASE}/config`)
   const getQueue = () => $fetch<QueueResponse>(`${API_BASE}/queue`)
@@ -145,10 +278,74 @@ export function useAgentApi() {
     })
   const clearEvents = () => $fetch<{ cleared: boolean }>(`${API_BASE}/events`, { method: 'DELETE' })
   const saveSystem = (body: { collectorBaseUrl?: string; apiKey?: string; hostId?: string }) =>
-    $fetch<{ saved: boolean }>(`${API_BASE}/config/system`, { method: 'POST', body })
+    $fetch<{ saved: boolean }>(`${API_BASE}/config/system`, {
+      method: 'POST',
+      body,
+      headers: authHeaders()
+    })
   const savePolicy = (policy: PolicyConfig) =>
-    $fetch<{ saved: boolean }>(`${API_BASE}/config/policy`, { method: 'POST', body: policy })
+    $fetch<{ saved: boolean }>(`${API_BASE}/config/policy`, {
+      method: 'POST',
+      body: policy,
+      headers: authHeaders()
+    })
   const getHealth = () => $fetch<{ status: string }>(`/health`)
+  const getHostServices = () =>
+    $fetch<{ items: HostServiceItem[]; count: number; error?: string }>(`${API_BASE}/host/services`, {
+      headers: authHeaders()
+    })
+  const getKnownEventLogPackages = () =>
+    $fetch<KnownEventLogPackagesResponse>(`${API_BASE}/eventlog/known-packages`)
+  const getEventLogPackagePlan = () =>
+    $fetch<EventLogPackagePlan>(`${API_BASE}/eventlog/package-plan`)
+  const syncEventLogCatalog = () =>
+    $fetch<{ synced: boolean; source: string; lastSyncedUtc?: string; count: number }>(
+      `${API_BASE}/eventlog/sync-catalog`,
+      { method: 'POST', headers: authHeaders() }
+    )
+  /** Opens a native OpenFileDialog on the agent host; may take a long time while the dialog is open. */
+  const browseExecutable = () =>
+    $fetch<BrowseExecutableResult>(`${API_BASE}/host/browse-executable`, {
+      method: 'POST',
+      timeout: 300_000,
+      headers: authHeaders()
+    })
+
+  const getAuthStatus = () =>
+    $fetch<LocalUiAuthStatus>(`${API_BASE}/auth/status`, { headers: authHeaders() })
+
+  const setupPin = async (pin: string, pinConfirm: string) => {
+    const res = await $fetch<LocalUiAuthResult>(`${API_BASE}/auth/setup`, {
+      method: 'POST',
+      body: { pin, pinConfirm }
+    })
+    rememberAuthResult(res)
+    return res
+  }
+
+  const unlockPin = async (pin: string) => {
+    const res = await $fetch<LocalUiAuthResult>(`${API_BASE}/auth/unlock`, {
+      method: 'POST',
+      body: { pin }
+    })
+    rememberAuthResult(res)
+    return res
+  }
+
+  const lockPin = async () => {
+    try {
+      await $fetch(`${API_BASE}/auth/lock`, { method: 'POST', headers: authHeaders() })
+    } finally {
+      setStoredToken(null)
+    }
+  }
+
+  const changePin = (currentPin: string, newPin: string, newPinConfirm: string) =>
+    $fetch<LocalUiAuthResult>(`${API_BASE}/auth/change-pin`, {
+      method: 'POST',
+      body: { currentPin, newPin, newPinConfirm },
+      headers: authHeaders()
+    })
 
   return {
     getStatus,
@@ -159,8 +356,82 @@ export function useAgentApi() {
     clearEvents,
     saveSystem,
     savePolicy,
-    getHealth
+    getHealth,
+    getHostServices,
+    getKnownEventLogPackages,
+    getEventLogPackagePlan,
+    syncEventLogCatalog,
+    browseExecutable,
+    getAuthStatus,
+    setupPin,
+    unlockPin,
+    lockPin,
+    changePin,
+    getStoredToken,
+    setStoredToken,
+    formatDate,
+    formatRelativeTr
   }
+}
+
+export interface LocalUiAuthStatus {
+  configured: boolean
+  unlocked: boolean
+  sessionExpiresAtUtc?: string | null
+  lockedUntilUtc?: string | null
+  failedAttempts?: number
+  sessionTtlSeconds?: number
+  minPinLength?: number
+}
+
+export interface LocalUiAuthResult {
+  ok: boolean
+  error?: string | null
+  token?: string | null
+  expiresAtUtc?: string | null
+  lockedUntilUtc?: string | null
+}
+
+export interface HostServiceItem {
+  name: string
+  displayName: string
+  status: string
+}
+
+export interface KnownEventLogPackage {
+  name: string
+  channel: string
+  eventIds: number[]
+  optional?: boolean
+}
+
+export interface KnownEventLogPackagesResponse {
+  defaults: KnownEventLogPackage[]
+  optional: KnownEventLogPackage[]
+  all: KnownEventLogPackage[]
+  source?: string
+  lastSyncedUtc?: string | null
+}
+
+export interface EventLogPackagePlan {
+  source: string
+  lastSyncedUtc?: string | null
+  syncIntervalSeconds: number
+  legacyMode: boolean
+  server: { name: string; channel: string; eventIds: number[]; disabled: boolean }[]
+  optional: KnownEventLogPackage[]
+  agentOverrides: { name: string; channel: string; eventIds: number[] }[]
+  disabledServerPackages: string[]
+  effective: { name: string; channel: string; eventIds: number[] }[]
+}
+
+export interface BrowseExecutableResult {
+  cancelled: boolean
+  path?: string
+  processName?: string
+  fileName?: string
+  directory?: string | null
+  error?: string
 }
 
 export function formatDate(value?: string | null) {

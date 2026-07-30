@@ -9,6 +9,7 @@ public sealed class EventLogCollectorWorker : BackgroundService
 {
     private readonly IOutboundQueue _queue;
     private readonly IAgentConfigStore _config;
+    private readonly IEventLogPackageCatalogStore _catalog;
     private readonly IWindowsEventLogReader _reader;
     private readonly EventLogBookmarkStore _bookmarks;
     private readonly AgentRuntimeStatus _status;
@@ -17,6 +18,7 @@ public sealed class EventLogCollectorWorker : BackgroundService
     public EventLogCollectorWorker(
         IOutboundQueue queue,
         IAgentConfigStore config,
+        IEventLogPackageCatalogStore catalog,
         IWindowsEventLogReader reader,
         EventLogBookmarkStore bookmarks,
         AgentRuntimeStatus status,
@@ -24,6 +26,7 @@ public sealed class EventLogCollectorWorker : BackgroundService
     {
         _queue = queue;
         _config = config;
+        _catalog = catalog;
         _reader = reader;
         _bookmarks = bookmarks;
         _status = status;
@@ -72,7 +75,7 @@ public sealed class EventLogCollectorWorker : BackgroundService
 
     private async Task PollAsync(EventLogPolicy policy, CancellationToken cancellationToken)
     {
-        var packages = DefaultEventLogPackages.Resolve(policy);
+        var packages = DefaultEventLogPackages.Resolve(policy, _catalog.ServerPackages);
         var max = Math.Max(1, policy.MaxEventsPerPoll);
         var total = 0;
         string? lastAccessError = null;
@@ -109,5 +112,7 @@ public sealed class EventLogCollectorWorker : BackgroundService
             _status.MarkEventLogCollected(total);
         else if (lastAccessError != null)
             _status.MarkEventLogError(lastAccessError);
+        else
+            _status.MarkEventLogIdle();
     }
 }

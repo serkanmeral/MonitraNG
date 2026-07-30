@@ -109,6 +109,23 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
         try { message = record.FormatDescription(); }
         catch { /* provider message DLL missing */ }
 
+        var fields = new Dictionary<string, object?>
+        {
+            ["channel"] = package.Channel,
+            ["package"] = package.Name,
+            ["eventId"] = record.Id,
+            ["recordId"] = record.RecordId,
+            ["provider"] = record.ProviderName
+        };
+
+        var props = ReadPropertyStrings(record);
+        if (ServiceControlEventEnricher.TryEnrich(record.Id, props, fields, out var action) &&
+            !string.IsNullOrWhiteSpace(action) &&
+            string.IsNullOrWhiteSpace(message))
+        {
+            message = action;
+        }
+
         var rawObj = new Dictionary<string, object?>
         {
             ["channel"] = package.Channel,
@@ -121,6 +138,11 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             ["machine"] = record.MachineName,
             ["message"] = message
         };
+        foreach (var kv in fields)
+        {
+            if (!rawObj.ContainsKey(kv.Key))
+                rawObj[kv.Key] = kv.Value;
+        }
 
         var rawJson = JsonSerializer.SerializeToElement(rawObj);
 
@@ -133,15 +155,27 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             Severity = level,
             Message = Truncate(message ?? $"EventID {record.Id}", 512),
             Raw = rawJson,
-            Fields = new Dictionary<string, object?>
-            {
-                ["channel"] = package.Channel,
-                ["package"] = package.Name,
-                ["eventId"] = record.Id,
-                ["recordId"] = record.RecordId,
-                ["provider"] = record.ProviderName
-            }
+            Fields = fields
         };
+    }
+
+    private static IReadOnlyList<string?> ReadPropertyStrings(EventRecord record)
+    {
+        try
+        {
+            var props = record.Properties;
+            if (props is null || props.Count == 0)
+                return [];
+
+            var list = new string?[props.Count];
+            for (var i = 0; i < props.Count; i++)
+                list[i] = props[i].Value?.ToString();
+            return list;
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private static string Truncate(string value, int max) =>

@@ -320,22 +320,231 @@
                 <thead class="bg-gray-50 dark:bg-gray-800/80">
                   <tr>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zaman</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tür</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Event ID</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kanal</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Paket</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Özet</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Detay</th>
+                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase"> </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr v-for="(e, i) in eventLogRows" :key="i">
+                  <tr v-for="(e, i) in eventLogRows" :key="e.id || i">
                     <td class="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">
-                      {{ formatRelativeTr(e.atUtc, nowMs) }}
+                      <div>{{ formatRelativeTr(e.atUtc, nowMs) }}</div>
+                      <div class="text-[11px] text-gray-400">{{ formatDate(e.atUtc) }}</div>
                     </td>
-                    <td class="px-3 py-2 text-sm font-medium">{{ e.action || e.message || '—' }}</td>
-                    <td class="px-3 py-2 text-sm text-gray-500">{{ e.detail || '—' }}</td>
+                    <td class="px-3 py-2 text-sm">
+                      <UBadge size="xs" variant="soft" :color="severityColor(e.severity)">
+                        {{ severityLabel(e.severity) }}
+                      </UBadge>
+                    </td>
+                    <td class="px-3 py-2 text-sm tabular-nums font-mono">
+                      {{ e.eventId ?? '—' }}
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 max-w-[8rem] truncate" :title="e.channel || ''">
+                      {{ e.channel || '—' }}
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-500 max-w-[7rem] truncate" :title="e.package || ''">
+                      {{ e.package || '—' }}
+                    </td>
+                    <td class="px-3 py-2 text-sm font-medium max-w-[14rem] truncate" :title="e.message || e.action || ''">
+                      {{ summarizeEvent(e) }}
+                    </td>
+                    <td class="px-3 py-2 text-right whitespace-nowrap">
+                      <UButton size="xs" variant="soft" color="gray" @click="openEventDetail(e)">
+                        Detayları göster
+                      </UButton>
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
+
+          <UModal
+            v-model="eventDetailOpen"
+            :ui="{ width: 'w-full sm:max-w-3xl', background: 'bg-white dark:bg-gray-900' }"
+          >
+            <div
+              v-if="selectedEvent"
+              class="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl"
+            >
+              <!-- Severity accent bar -->
+              <div
+                class="absolute inset-y-0 left-0 w-1"
+                :class="severityAccentClass(selectedEvent.severity)"
+              />
+
+              <!-- Header -->
+              <div class="pl-5 pr-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                      <UBadge size="sm" variant="soft" :color="severityColor(selectedEvent.severity)">
+                        {{ severityLabel(selectedEvent.severity) }}
+                      </UBadge>
+                      <span
+                        v-if="selectedEvent.eventId != null"
+                        class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-semibold tabular-nums text-gray-800 dark:text-gray-100 font-mono"
+                      >
+                        ID {{ selectedEvent.eventId }}
+                      </span>
+                      <span
+                        v-if="selectedEvent.package"
+                        class="inline-flex items-center rounded-md bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-xs text-primary-700 dark:text-primary-300"
+                      >
+                        {{ selectedEvent.package }}
+                      </span>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white leading-snug">
+                      Olay detayı
+                    </h3>
+                    <p class="mt-1 text-xs text-gray-500 flex flex-wrap gap-x-2 gap-y-0.5">
+                      <span>{{ formatDate(selectedEvent.atUtc) }}</span>
+                      <span class="text-gray-300 dark:text-gray-600">·</span>
+                      <span>{{ formatRelativeTr(selectedEvent.atUtc, nowMs) }}</span>
+                      <template v-if="selectedEvent.channel">
+                        <span class="text-gray-300 dark:text-gray-600">·</span>
+                        <span class="font-mono truncate max-w-[16rem]" :title="selectedEvent.channel">
+                          {{ selectedEvent.channel }}
+                        </span>
+                      </template>
+                    </p>
+                  </div>
+                  <UButton
+                    color="gray"
+                    variant="ghost"
+                    icon="i-heroicons-x-mark-20-solid"
+                    size="sm"
+                    class="-mt-1 -mr-1"
+                    @click="eventDetailOpen = false"
+                  />
+                </div>
+              </div>
+
+              <!-- Message callout -->
+              <div class="px-5 pt-4">
+                <div
+                  class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3.5 py-3"
+                >
+                  <p class="text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1.5">
+                    Mesaj
+                  </p>
+                  <p class="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">
+                    {{ selectedEvent.message || selectedEvent.action || '—' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Inner tabs -->
+              <div class="px-5 pt-4 pb-1">
+                <div class="flex gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 w-fit">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+                    :class="
+                      detailPane === 'parsed'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    "
+                    @click="detailPane = 'parsed'"
+                  >
+                    Parse edilmiş
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+                    :class="
+                      detailPane === 'raw'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    "
+                    @click="detailPane = 'raw'"
+                  >
+                    Ham JSON
+                  </button>
+                </div>
+              </div>
+
+              <div class="px-5 py-4 max-h-[min(52vh,28rem)] overflow-y-auto">
+                <template v-if="detailPane === 'parsed'">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-4">
+                    <div
+                      v-for="cell in selectedMetaCells"
+                      :key="cell.label"
+                      class="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 bg-white dark:bg-gray-900/40"
+                    >
+                      <p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">
+                        {{ cell.label }}
+                      </p>
+                      <p
+                        class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                        :class="cell.mono ? 'font-mono text-xs' : ''"
+                        :title="cell.value"
+                      >
+                        {{ cell.value }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div v-if="selectedExtraFields.length" class="mt-1">
+                    <p class="text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-2">
+                      Ek alanlar
+                    </p>
+                    <div
+                      class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden"
+                    >
+                      <div
+                        v-for="row in selectedExtraFields"
+                        :key="row.label"
+                        class="flex gap-3 px-3 py-2 text-sm bg-white dark:bg-gray-900/30"
+                      >
+                        <span class="shrink-0 w-36 text-xs text-gray-500 font-mono pt-0.5 truncate" :title="row.label">
+                          {{ row.label }}
+                        </span>
+                        <span class="min-w-0 flex-1 text-gray-800 dark:text-gray-200 break-words whitespace-pre-wrap">
+                          {{ row.value }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <p class="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                      Ham yük
+                    </p>
+                    <UButton
+                      size="xs"
+                      color="gray"
+                      variant="soft"
+                      :icon="rawCopied ? 'i-heroicons-check-20-solid' : 'i-heroicons-clipboard-document-20-solid'"
+                      @click="copyRawJson"
+                    >
+                      {{ rawCopied ? 'Kopyalandı' : 'Kopyala' }}
+                    </UButton>
+                  </div>
+                  <pre
+                    class="text-[11px] leading-relaxed font-mono rounded-lg border border-gray-200 dark:border-gray-700 bg-slate-950 text-slate-100 p-3.5 max-h-[min(40vh,22rem)] overflow-auto whitespace-pre-wrap break-all"
+                  >{{ selectedRawPretty }}</pre>
+                </template>
+              </div>
+
+              <!-- Footer -->
+              <div
+                class="px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/40 flex items-center justify-between gap-3"
+              >
+                <p class="text-[11px] text-gray-400 font-mono truncate min-w-0" :title="selectedEvent.id || ''">
+                  {{ selectedEvent.id || '—' }}
+                </p>
+                <UButton color="primary" variant="soft" size="sm" @click="eventDetailOpen = false">
+                  Kapat
+                </UButton>
+              </div>
+            </div>
+          </UModal>
         </div>
       </template>
 
@@ -363,8 +572,80 @@
           />
 
           <section>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">İzlenen hedefler</h3>
+            <div
+              v-if="!(status?.watchSnapshot?.length)"
+              class="text-sm text-gray-500 py-6 text-center rounded-lg border border-dashed border-gray-200 dark:border-gray-700"
+            >
+              Henüz hedef yok veya ilk tarama bekleniyor. Politika’dan servis / uygulama ekleyin.
+            </div>
+            <div v-else class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-800/80">
+                  <tr>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tip</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ad</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Detay</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Son OS</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Restart</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  <tr v-for="w in (status?.watchSnapshot || [])" :key="`${w.kind}-${w.name}`">
+                    <td class="px-3 py-2">
+                      <UBadge size="xs" variant="soft" :color="w.kind === 'application' ? 'primary' : 'gray'">
+                        {{ w.kind === 'application' ? 'Uygulama' : 'Servis' }}
+                      </UBadge>
+                    </td>
+                    <td class="px-3 py-2 font-medium">
+                      {{ w.displayName || w.name }}
+                      <span v-if="w.displayName" class="block text-xs text-gray-400 font-mono">{{ w.name }}</span>
+                    </td>
+                    <td class="px-3 py-2">
+                      <UBadge size="xs" variant="soft" :color="watchHealthColor(w.health)">
+                        {{ watchHealthLabel(w.health) }}
+                      </UBadge>
+                    </td>
+                    <td class="px-3 py-2 text-gray-500">
+                      <template v-if="w.kind === 'application'">
+                        {{ w.instanceCount ?? 0 }} / {{ w.minCount ?? 1 }} örnek
+                      </template>
+                      <template v-else>
+                        {{ w.statusText || '—' }}
+                      </template>
+                    </td>
+                    <td class="px-3 py-2 text-xs text-gray-500 max-w-[14rem]">
+                      <template v-if="w.kind === 'service' && w.lastOsEventId">
+                        <span class="font-mono">{{ w.lastOsEventId }}</span>
+                        <span v-if="w.lastOsEventAction"> · {{ w.lastOsEventAction }}</span>
+                        <span v-if="w.lastOsEventAtUtc" class="block text-gray-400">
+                          {{ formatRelativeTr(w.lastOsEventAtUtc, nowMs) }}
+                        </span>
+                      </template>
+                      <template v-else>—</template>
+                    </td>
+                    <td class="px-3 py-2 text-xs text-gray-500">
+                      <template v-if="!w.restartAllowed">Kapalı</template>
+                      <template v-else>
+                        <span :class="w.lastRestartOk === false ? 'text-amber-600' : ''">
+                          {{ w.lastRestartOk == null ? 'Bekliyor' : (w.lastRestartOk ? 'OK' : 'Fail') }}
+                        </span>
+                        <span v-if="(w.restartAttemptCount || 0) > 0"> · {{ w.restartAttemptCount }}x</span>
+                        <span v-if="w.lastRestartAtUtc" class="block text-gray-400">
+                          {{ formatRelativeTr(w.lastRestartAtUtc, nowMs) }}
+                        </span>
+                      </template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
             <div class="flex items-center justify-between gap-2 mb-3">
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Son servis olayları</h3>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Son izleme olayları</h3>
               <NuxtLink
                 to="/sources"
                 class="text-sm text-primary-600 dark:text-primary-400 hover:underline"
@@ -373,27 +654,49 @@
               </NuxtLink>
             </div>
             <div
-              v-if="!serviceRows.length"
+              v-if="!watchEventRows.length"
               class="text-sm text-gray-500 py-6 text-center rounded-lg border border-dashed border-gray-200 dark:border-gray-700"
             >
-              Servis izleme olayı yok. Ayrıntılı anlık görüntü için Kaynaklar sekmesine bakın.
+              Geçiş olayı yok (hedef sağlıklıysa veya henüz değişim yoksa normal).
             </div>
             <div v-else class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
               <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-800/80">
                   <tr>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zaman</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Özet</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Detay</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tip</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tür</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Olay</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hedef</th>
+                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase"> </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr v-for="(e, i) in serviceRows" :key="i">
+                  <tr v-for="(e, i) in watchEventRows" :key="e.id || i">
                     <td class="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">
                       {{ formatRelativeTr(e.atUtc, nowMs) }}
                     </td>
-                    <td class="px-3 py-2 text-sm font-medium">{{ e.action || e.message || '—' }}</td>
-                    <td class="px-3 py-2 text-sm text-gray-500">{{ e.detail || '—' }}</td>
+                    <td class="px-3 py-2 text-sm">
+                      <UBadge size="xs" variant="soft" :color="e.source === 'app-watch' ? 'primary' : 'gray'">
+                        {{ e.source === 'app-watch' ? 'Uygulama' : 'Servis' }}
+                      </UBadge>
+                    </td>
+                    <td class="px-3 py-2 text-sm">
+                      <UBadge size="xs" variant="soft" :color="severityColor(e.severity)">
+                        {{ severityLabel(e.severity) }}
+                      </UBadge>
+                    </td>
+                    <td class="px-3 py-2 text-sm font-medium font-mono text-xs">
+                      {{ e.action || e.message || '—' }}
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
+                      {{ e.detail || '—' }}
+                    </td>
+                    <td class="px-3 py-2 text-right">
+                      <UButton size="xs" variant="soft" color="gray" @click="openEventDetail(e)">
+                        Detay
+                      </UButton>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -432,7 +735,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AgentStatus, FreshnessKind, TopProcessItem } from '~/composables/useAgentApi'
+import type { AgentStatus, FreshnessKind, RecentEventEntry, TopProcessItem } from '~/composables/useAgentApi'
 import {
   formatBytes,
   formatDate,
@@ -459,6 +762,11 @@ type MemSortKey = 'name' | 'pid' | 'ram'
 
 const cpuSort = ref<{ key: CpuSortKey; dir: SortDir }>({ key: 'cpu', dir: 'desc' })
 const memSort = ref<{ key: MemSortKey; dir: SortDir }>({ key: 'ram', dir: 'desc' })
+const eventDetailOpen = ref(false)
+const selectedEvent = ref<RecentEventEntry | null>(null)
+const detailPane = ref<'parsed' | 'raw'>('parsed')
+const rawCopied = ref(false)
+let rawCopyTimer: ReturnType<typeof setTimeout> | null = null
 
 let timer: ReturnType<typeof setInterval> | null = null
 let clock: ReturnType<typeof setInterval> | null = null
@@ -541,7 +849,7 @@ const serviceTile = computed(() => {
     nowMs.value
   )
   return buildTile(
-    'Servis izleme',
+    'İzleme',
     !!s?.serviceWatchEnabled,
     s?.lastServiceWatchUtc,
     s?.serviceWatchPollIntervalSeconds,
@@ -565,7 +873,7 @@ const tabItems = computed(() => [
   },
   {
     key: 'services',
-    label: 'Servis izleme',
+    label: 'İzleme',
     slot: 'services',
     badge: freshnessLabel(serviceTile.value.freshness)
   },
@@ -584,9 +892,165 @@ const eventLogRows = computed(() =>
   )
 )
 
-const serviceRows = computed(() =>
-  (status.value?.latestLogs || []).filter(e => e.source === 'service-watch')
+const watchEventRows = computed(() =>
+  (status.value?.latestLogs || []).filter(
+    e => e.source === 'service-watch' || e.source === 'app-watch'
+  )
 )
+
+function watchHealthColor(h?: string) {
+  if (h === 'Running') return 'green'
+  if (h === 'NotRunning' || h === 'Missing') return 'red'
+  return 'gray'
+}
+
+function watchHealthLabel(h?: string) {
+  switch (h) {
+    case 'Running':
+      return 'Çalışıyor'
+    case 'NotRunning':
+      return 'Durmuş'
+    case 'Missing':
+      return 'Yok'
+    case 'Unknown':
+      return 'Bilinmiyor'
+    default:
+      return h || '—'
+  }
+}
+
+const selectedMetaCells = computed(() => {
+  const e = selectedEvent.value
+  if (!e) return [] as { label: string; value: string; mono?: boolean }[]
+  return [
+    { label: 'Event ID', value: e.eventId != null ? String(e.eventId) : '—', mono: true },
+    { label: 'Record ID', value: e.recordId != null ? String(e.recordId) : '—', mono: true },
+    { label: 'Kanal', value: e.channel || '—' },
+    { label: 'Paket', value: e.package || '—' },
+    { label: 'Sağlayıcı', value: e.provider || '—', mono: true },
+    { label: 'Kaynak', value: e.source || '—' }
+  ]
+})
+
+const selectedExtraFields = computed(() => {
+  const e = selectedEvent.value
+  if (!e?.fields) return [] as { label: string; value: string }[]
+  const skip = new Set(['channel', 'package', 'provider', 'eventId', 'recordId'])
+  return Object.entries(e.fields)
+    .filter(([k]) => !skip.has(k))
+    .map(([k, v]) => ({ label: k, value: formatFieldValue(v) }))
+})
+
+const selectedRawPretty = computed(() => {
+  const e = selectedEvent.value
+  if (!e) return '—'
+  if (e.rawJson) {
+    try {
+      return JSON.stringify(JSON.parse(e.rawJson), null, 2)
+    } catch {
+      return e.rawJson
+    }
+  }
+  return JSON.stringify(
+    {
+      id: e.id,
+      atUtc: e.atUtc,
+      source: e.source,
+      severity: e.severity,
+      message: e.message,
+      channel: e.channel,
+      package: e.package,
+      eventId: e.eventId,
+      recordId: e.recordId,
+      provider: e.provider,
+      fields: e.fields
+    },
+    null,
+    2
+  )
+})
+
+function openEventDetail(e: RecentEventEntry) {
+  selectedEvent.value = e
+  detailPane.value = 'parsed'
+  rawCopied.value = false
+  eventDetailOpen.value = true
+}
+
+async function copyRawJson() {
+  try {
+    await navigator.clipboard.writeText(selectedRawPretty.value)
+    rawCopied.value = true
+    if (rawCopyTimer) clearTimeout(rawCopyTimer)
+    rawCopyTimer = setTimeout(() => {
+      rawCopied.value = false
+    }, 1600)
+  } catch {
+    rawCopied.value = false
+  }
+}
+
+function summarizeEvent(e: RecentEventEntry) {
+  const text = (e.message || e.action || '—').replace(/\s+/g, ' ').trim()
+  return text.length > 80 ? `${text.slice(0, 80)}…` : text
+}
+
+function severityLabel(s?: string | null) {
+  switch ((s || '').toLowerCase()) {
+    case 'critical':
+      return 'Kritik'
+    case 'error':
+      return 'Hata'
+    case 'warning':
+      return 'Uyarı'
+    case 'verbose':
+      return 'Ayrıntılı'
+    case 'info':
+      return 'Bilgi'
+    default:
+      return s || '—'
+  }
+}
+
+function severityColor(s?: string | null): 'gray' | 'green' | 'amber' | 'red' | 'blue' {
+  switch ((s || '').toLowerCase()) {
+    case 'critical':
+    case 'error':
+      return 'red'
+    case 'warning':
+      return 'amber'
+    case 'info':
+      return 'blue'
+    case 'verbose':
+      return 'gray'
+    default:
+      return 'gray'
+  }
+}
+
+function severityAccentClass(s?: string | null) {
+  switch ((s || '').toLowerCase()) {
+    case 'critical':
+    case 'error':
+      return 'bg-red-500'
+    case 'warning':
+      return 'bg-amber-500'
+    case 'info':
+      return 'bg-sky-500'
+    default:
+      return 'bg-gray-400'
+  }
+}
+
+function formatFieldValue(v: unknown) {
+  if (v == null) return '—'
+  if (typeof v === 'string') return v
+  try {
+    return JSON.stringify(v)
+  } catch {
+    return String(v)
+  }
+}
 
 const sortedCpuRows = computed(() =>
   sortProcesses(status.value?.topProcesses?.byCpu || [], cpuSort.value.key, cpuSort.value.dir)
@@ -659,7 +1123,7 @@ function eventLogHint(s: AgentStatus | null, freshness: FreshnessKind) {
 }
 
 function serviceWatchHint(s: AgentStatus | null, freshness: FreshnessKind) {
-  if (!s?.serviceWatchEnabled) return 'Politika: servis izleme kapalı'
+  if (!s?.serviceWatchEnabled) return 'Politika: izleme kapalı'
   if (s.lastServiceWatchError) return s.lastServiceWatchError
   if (freshness === 'none') return 'İlk tarama bekleniyor'
   return null

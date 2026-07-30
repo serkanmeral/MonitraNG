@@ -47,6 +47,13 @@ public sealed class AgentRuntimeStatus
         Note($"Event Log enqueued {count}");
     }
 
+    /// <summary>Successful poll with no new events — clear stale access errors.</summary>
+    public void MarkEventLogIdle()
+    {
+        LastEventLogUtc = DateTime.UtcNow;
+        LastEventLogError = null;
+    }
+
     public void MarkEventLogError(string error)
     {
         LastEventLogError = error;
@@ -61,6 +68,12 @@ public sealed class AgentRuntimeStatus
         Note($"Service watch enqueued {count}");
     }
 
+    public void MarkServiceWatchIdle()
+    {
+        LastServiceWatchUtc = DateTime.UtcNow;
+        LastServiceWatchError = null;
+    }
+
     public void MarkServiceWatchError(string error)
     {
         LastServiceWatchError = error;
@@ -68,21 +81,147 @@ public sealed class AgentRuntimeStatus
     }
 
     public void UpdateServiceWatchSnapshot(
+        string kind,
         string name,
         string health,
         string? statusText,
         string? displayName,
-        bool restartAllowed)
+        bool restartAllowed,
+        int? instanceCount = null,
+        int? minCount = null)
     {
         LastServiceWatchUtc = DateTime.UtcNow;
-        _serviceWatch[name] = new ServiceWatchSnapshotItem
+        var key = $"{kind}:{name}";
+        _serviceWatch.TryGetValue(key, out var prev);
+        _serviceWatch[key] = new ServiceWatchSnapshotItem
         {
+            Kind = kind,
             Name = name,
             DisplayName = displayName,
             Health = health,
             StatusText = statusText,
             RestartAllowed = restartAllowed,
-            UpdatedAtUtc = DateTime.UtcNow
+            InstanceCount = instanceCount,
+            MinCount = minCount,
+            UpdatedAtUtc = DateTime.UtcNow,
+            LastOsEventId = prev?.LastOsEventId,
+            LastOsEventAtUtc = prev?.LastOsEventAtUtc,
+            LastOsEventAction = prev?.LastOsEventAction,
+            LastOsEventMessage = prev?.LastOsEventMessage,
+            LastRestartAtUtc = prev?.LastRestartAtUtc,
+            LastRestartOk = prev?.LastRestartOk,
+            LastRestartError = prev?.LastRestartError,
+            RestartAttemptCount = prev?.RestartAttemptCount ?? 0
+        };
+    }
+
+    public void NoteOsServiceEvent(
+        string serviceLabel,
+        int eventId,
+        string? action,
+        string? message,
+        DateTime atUtc)
+    {
+        if (string.IsNullOrWhiteSpace(serviceLabel))
+            return;
+
+        foreach (var kv in _serviceWatch.ToArray())
+        {
+            var item = kv.Value;
+            if (!string.Equals(item.Kind, "service", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var match =
+                string.Equals(item.Name, serviceLabel, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(item.DisplayName) &&
+                 string.Equals(item.DisplayName, serviceLabel, StringComparison.OrdinalIgnoreCase));
+            if (!match)
+                continue;
+
+            _serviceWatch[kv.Key] = new ServiceWatchSnapshotItem
+            {
+                Kind = item.Kind,
+                Name = item.Name,
+                DisplayName = item.DisplayName,
+                Health = item.Health,
+                StatusText = item.StatusText,
+                RestartAllowed = item.RestartAllowed,
+                InstanceCount = item.InstanceCount,
+                MinCount = item.MinCount,
+                UpdatedAtUtc = item.UpdatedAtUtc,
+                LastOsEventId = eventId,
+                LastOsEventAtUtc = atUtc,
+                LastOsEventAction = action,
+                LastOsEventMessage = Truncate(message, 160),
+                LastRestartAtUtc = item.LastRestartAtUtc,
+                LastRestartOk = item.LastRestartOk,
+                LastRestartError = item.LastRestartError,
+                RestartAttemptCount = item.RestartAttemptCount
+            };
+        }
+    }
+
+    public void NoteServiceRestart(string serviceName, bool ok, string? error, int attemptCount) =>
+        NoteWatchRestart("service", serviceName, ok, error, attemptCount);
+
+    public void NoteWatchRestart(string kind, string name, bool ok, string? error, int attemptCount)
+    {
+        var key = $"{kind}:{name}";
+        if (!_serviceWatch.TryGetValue(key, out var item))
+            return;
+
+        _serviceWatch[key] = new ServiceWatchSnapshotItem
+        {
+            Kind = item.Kind,
+            Name = item.Name,
+            DisplayName = item.DisplayName,
+            Health = item.Health,
+            StatusText = item.StatusText,
+            RestartAllowed = item.RestartAllowed,
+            InstanceCount = item.InstanceCount,
+            MinCount = item.MinCount,
+            UpdatedAtUtc = item.UpdatedAtUtc,
+            LastOsEventId = item.LastOsEventId,
+            LastOsEventAtUtc = item.LastOsEventAtUtc,
+            LastOsEventAction = item.LastOsEventAction,
+            LastOsEventMessage = item.LastOsEventMessage,
+            LastRestartAtUtc = DateTime.UtcNow,
+            LastRestartOk = ok,
+            LastRestartError = error,
+            RestartAttemptCount = attemptCount
+        };
+    }
+
+    public void ResetServiceRestartAttempts(string serviceName) =>
+        ResetWatchRestartAttempts("service", serviceName);
+
+    public void ResetWatchRestartAttempts(string kind, string name)
+    {
+        var key = $"{kind}:{name}";
+        if (!_serviceWatch.TryGetValue(key, out var item))
+            return;
+        if (item.RestartAttemptCount == 0)
+            return;
+
+        _serviceWatch[key] = new ServiceWatchSnapshotItem
+        {
+            Kind = item.Kind,
+            Name = item.Name,
+            DisplayName = item.DisplayName,
+            Health = item.Health,
+            StatusText = item.StatusText,
+            RestartAllowed = item.RestartAllowed,
+            InstanceCount = item.InstanceCount,
+            MinCount = item.MinCount,
+            UpdatedAtUtc = item.UpdatedAtUtc,
+            LastOsEventId = item.LastOsEventId,
+            LastOsEventAtUtc = item.LastOsEventAtUtc,
+            LastOsEventAction = item.LastOsEventAction,
+            LastOsEventMessage = item.LastOsEventMessage,
+            LastRestartAtUtc = item.LastRestartAtUtc,
+            LastRestartOk = item.LastRestartOk,
+            LastRestartError = item.LastRestartError,
+            RestartAttemptCount = 0
         };
     }
 
@@ -113,6 +252,51 @@ public sealed class AgentRuntimeStatus
         var entry = ToEntry(item, "produced");
         EnqueueEvent(_producedEvents, entry);
         RememberMetric(entry);
+        TryNoteOsServiceEvent(item, entry);
+    }
+
+    private void TryNoteOsServiceEvent(IngestEventItem item, RecentEventEntry entry)
+    {
+        if (!string.Equals(item.Source, "windows-eventlog", StringComparison.OrdinalIgnoreCase))
+            return;
+        if (item.Fields is null)
+            return;
+        if (!item.Fields.TryGetValue("serviceName", out var sn) || sn is null)
+            return;
+
+        var serviceLabel = Convert.ToString(sn, CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(serviceLabel))
+            return;
+
+        var eventId = entry.EventId ?? 0;
+        if (eventId == 0 &&
+            item.Fields.TryGetValue("eventId", out var eid) &&
+            eid != null &&
+            int.TryParse(Convert.ToString(eid, CultureInfo.InvariantCulture), NumberStyles.Any,
+                CultureInfo.InvariantCulture, out var parsed))
+        {
+            eventId = parsed;
+        }
+
+        string? action = null;
+        if (item.Fields.TryGetValue("event.action", out var a) && a != null)
+            action = Convert.ToString(a, CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(action))
+            action = entry.Action;
+
+        NoteOsServiceEvent(
+            serviceLabel,
+            eventId,
+            action,
+            entry.Message,
+            entry.AtUtc == default ? DateTime.UtcNow : entry.AtUtc);
+    }
+
+    private static string? Truncate(string? value, int max)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+        return value.Length <= max ? value : value[..max];
     }
 
     public void RecordShipped(IEnumerable<IngestEventItem> items)
@@ -165,8 +349,9 @@ public sealed class AgentRuntimeStatus
             entry.MetricValue is null)
             return;
 
-        // Top-process summaries are list payloads; dedicated UI card, not scalar tiles.
-        if (entry.MetricName.StartsWith("process.top", StringComparison.OrdinalIgnoreCase))
+        // Top-process / watch inventory summaries are list payloads; dedicated UI, not scalar tiles.
+        if (entry.MetricName.StartsWith("process.top", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(entry.MetricName, "watch.inventory", StringComparison.OrdinalIgnoreCase))
             return;
 
         var key = string.IsNullOrWhiteSpace(entry.Detail)
@@ -189,9 +374,17 @@ public sealed class AgentRuntimeStatus
         string? metricName = null;
         double? metricValue = null;
         string? detail = null;
+        string? channel = null;
+        string? package = null;
+        string? provider = null;
+        int? eventId = null;
+        long? recordId = null;
+        Dictionary<string, object?>? fieldsCopy = null;
 
         if (item.Fields != null)
         {
+            fieldsCopy = new Dictionary<string, object?>(item.Fields, StringComparer.OrdinalIgnoreCase);
+
             if (item.Fields.TryGetValue("metric", out var m) && m != null)
                 metricName = Convert.ToString(m, CultureInfo.InvariantCulture);
             if (item.Fields.TryGetValue("value", out var v) && v != null &&
@@ -205,16 +398,56 @@ public sealed class AgentRuntimeStatus
                 detail = Convert.ToString(ch, CultureInfo.InvariantCulture);
             else if (item.Fields.TryGetValue("serviceName", out var sn) && sn != null)
                 detail = Convert.ToString(sn, CultureInfo.InvariantCulture);
+            else if (item.Fields.TryGetValue("processName", out var pn) && pn != null)
+                detail = Convert.ToString(pn, CultureInfo.InvariantCulture);
             else if (item.Fields.TryGetValue("package", out var pkg) && pkg != null)
                 detail = Convert.ToString(pkg, CultureInfo.InvariantCulture);
 
-            if (string.IsNullOrWhiteSpace(action) &&
-                item.Fields.TryGetValue("event.action", out var a) && a != null)
+            if (item.Fields.TryGetValue("channel", out var ch2) && ch2 != null)
+                channel = Convert.ToString(ch2, CultureInfo.InvariantCulture);
+            if (item.Fields.TryGetValue("package", out var pkg2) && pkg2 != null)
+                package = Convert.ToString(pkg2, CultureInfo.InvariantCulture);
+            if (item.Fields.TryGetValue("provider", out var prov) && prov != null)
+                provider = Convert.ToString(prov, CultureInfo.InvariantCulture);
+            if (item.Fields.TryGetValue("eventId", out var eid) && eid != null &&
+                int.TryParse(Convert.ToString(eid, CultureInfo.InvariantCulture), NumberStyles.Any,
+                    CultureInfo.InvariantCulture, out var eidParsed))
+                eventId = eidParsed;
+            if (item.Fields.TryGetValue("recordId", out var rid) && rid != null &&
+                long.TryParse(Convert.ToString(rid, CultureInfo.InvariantCulture), NumberStyles.Any,
+                    CultureInfo.InvariantCulture, out var ridParsed))
+                recordId = ridParsed;
+
+            if (item.Fields.TryGetValue("event.action", out var a) && a != null)
                 action = Convert.ToString(a, CultureInfo.InvariantCulture);
             else if (string.IsNullOrWhiteSpace(action) && metricName != null)
                 action = metricName;
             else if (string.IsNullOrWhiteSpace(action) && detail != null)
                 action = detail;
+        }
+
+        string? rawJson = null;
+        if (item.Raw is { } rawEl)
+        {
+            try { rawJson = rawEl.GetRawText(); }
+            catch { /* ignore */ }
+        }
+        else if (fieldsCopy is { Count: > 0 })
+        {
+            try
+            {
+                rawJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    id = item.Id,
+                    timestampUtc = item.TimestampUtc,
+                    source = item.Source,
+                    sourceProduct = item.SourceProduct,
+                    severity = item.Severity,
+                    message = item.Message,
+                    fields = fieldsCopy
+                });
+            }
+            catch { /* ignore */ }
         }
 
         return new RecentEventEntry
@@ -227,7 +460,15 @@ public sealed class AgentRuntimeStatus
             Action = action,
             MetricName = metricName,
             MetricValue = metricValue,
-            Detail = detail
+            Detail = detail,
+            Id = item.Id,
+            Channel = channel,
+            Package = package ?? item.SourceProduct,
+            EventId = eventId,
+            RecordId = recordId,
+            Provider = provider,
+            RawJson = rawJson,
+            Fields = fieldsCopy
         };
     }
 

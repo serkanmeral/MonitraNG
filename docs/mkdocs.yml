@@ -179,6 +179,13 @@ nav:
           - Gateway Integration: MngEngine/support/guides/GATEWAY_INTEGRATION.md
           - Specs:
               - Engine-Reactor Status/Errors/Ingest: MngEngine/support/specs/ENGINE_REACTOR_STATUS_SPEC.md
+      - MngLogs:
+          - Changelog: MngLogs/main/CHANGELOG.md
+          - Roadmap: MngLogs/main/ROADMAP.md
+          - Technical Specs: MngLogs/main/TECHNICAL_SPECS.md
+          - Guides:
+              - Local UI ve CLI: MngLogs/support/guides/LOCAL_UI_AND_CLI.md
+          - Current Status: MngLogs/current_status.md
       - MngNotifier:
           - Changelog: MngNotifier/main/CHANGELOG.md
           - Roadmap: MngNotifier/main/ROADMAP.md

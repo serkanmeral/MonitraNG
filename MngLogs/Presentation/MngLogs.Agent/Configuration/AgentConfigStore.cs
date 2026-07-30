@@ -104,7 +104,12 @@ public sealed class AgentConfigStore : IAgentConfigStore
                 policy.EventLog ??= new EventLogPolicy();
                 policy.ServiceWatch ??= new ServiceWatchPolicy();
                 policy.EventLog.Packages ??= [];
+                policy.EventLog.AgentOverrides ??= [];
+                policy.EventLog.DisabledServerPackages ??= [];
+                if (policy.EventLog.PackageCatalogSyncIntervalSeconds <= 0)
+                    policy.EventLog.PackageCatalogSyncIntervalSeconds = 3600;
                 policy.ServiceWatch.Services ??= [];
+                policy.ServiceWatch.Applications ??= [];
                 _current.Policy = policy;
             }
         });
@@ -171,24 +176,61 @@ public sealed class AgentConfigStore : IAgentConfigStore
             Enabled = p.EventLog.Enabled,
             PollIntervalSeconds = p.EventLog.PollIntervalSeconds,
             MaxEventsPerPoll = p.EventLog.MaxEventsPerPoll,
-            Packages = p.EventLog.Packages
+            PackageCatalogSyncIntervalSeconds = p.EventLog.PackageCatalogSyncIntervalSeconds <= 0
+                ? 3600
+                : p.EventLog.PackageCatalogSyncIntervalSeconds,
+            Packages = (p.EventLog.Packages ?? [])
                 .Select(x => new EventLogPackage
                 {
                     Name = x.Name,
                     Channel = x.Channel,
                     EventIds = [.. x.EventIds]
                 })
+                .ToList(),
+            AgentOverrides = (p.EventLog.AgentOverrides ?? [])
+                .Select(x => new EventLogPackage
+                {
+                    Name = x.Name,
+                    Channel = x.Channel,
+                    EventIds = [.. x.EventIds]
+                })
+                .ToList(),
+            DisabledServerPackages = (p.EventLog.DisabledServerPackages ?? [])
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Select(n => n.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList()
         },
         ServiceWatch = new ServiceWatchPolicy
         {
             Enabled = p.ServiceWatch.Enabled,
             PollIntervalSeconds = p.ServiceWatch.PollIntervalSeconds,
+            RestartCooldownSeconds = p.ServiceWatch.RestartCooldownSeconds <= 0
+                ? 300
+                : p.ServiceWatch.RestartCooldownSeconds,
+            RestartMaxAttempts = p.ServiceWatch.RestartMaxAttempts <= 0
+                ? 3
+                : p.ServiceWatch.RestartMaxAttempts,
+            IncludeInventory = p.ServiceWatch.IncludeInventory,
+            InventoryIntervalSeconds = p.ServiceWatch.InventoryIntervalSeconds <= 0
+                ? 60
+                : p.ServiceWatch.InventoryIntervalSeconds,
             Services = p.ServiceWatch.Services
                 .Select(x => new WatchedService
                 {
                     Name = x.Name,
                     RestartAllowed = x.RestartAllowed
+                })
+                .ToList(),
+            Applications = p.ServiceWatch.Applications
+                .Select(x => new WatchedApplication
+                {
+                    Name = x.Name,
+                    MinCount = x.MinCount <= 0 ? 1 : x.MinCount,
+                    RestartAllowed = x.RestartAllowed,
+                    ExecutablePath = string.IsNullOrWhiteSpace(x.ExecutablePath) ? null : x.ExecutablePath.Trim(),
+                    Arguments = string.IsNullOrWhiteSpace(x.Arguments) ? null : x.Arguments.Trim(),
+                    WorkingDirectory = string.IsNullOrWhiteSpace(x.WorkingDirectory) ? null : x.WorkingDirectory.Trim()
                 })
                 .ToList()
         }

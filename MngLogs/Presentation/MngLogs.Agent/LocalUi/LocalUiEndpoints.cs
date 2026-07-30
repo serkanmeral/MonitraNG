@@ -49,7 +49,8 @@ public static class LocalUiEndpoints
                 recent = status.RecentNotes(),
                 latestMetrics = status.LatestMetrics(),
                 latestLogs = status.LatestLogEvents(15),
-                topProcesses = status.TopProcesses()
+                topProcesses = status.TopProcesses(),
+                watchSnapshot = status.ServiceWatchSnapshot()
             });
         });
 
@@ -71,8 +72,52 @@ public static class LocalUiEndpoints
             });
         });
 
-        api.MapPost("/config/system", async (SystemConfigUpdate update, IAgentConfigStore config) =>
+        api.MapGet("/auth/status", (HttpRequest req, ILocalUiPinAuth auth) =>
         {
+            var token = req.Headers[LocalUiPinAuth.TokenHeaderName].FirstOrDefault();
+            return Results.Json(auth.GetStatus(token));
+        });
+
+        api.MapPost("/auth/setup", (PinSetupRequest body, ILocalUiPinAuth auth) =>
+        {
+            var result = auth.Setup(body.Pin ?? "", body.PinConfirm ?? "");
+            return result.Ok
+                ? Results.Ok(result)
+                : Results.Json(result, statusCode: StatusCodes.Status400BadRequest);
+        });
+
+        api.MapPost("/auth/unlock", (PinUnlockRequest body, ILocalUiPinAuth auth) =>
+        {
+            var result = auth.Unlock(body.Pin ?? "");
+            if (result.Ok)
+                return Results.Ok(result);
+            var code = result.LockedUntilUtc is not null
+                ? StatusCodes.Status429TooManyRequests
+                : StatusCodes.Status401Unauthorized;
+            return Results.Json(result, statusCode: code);
+        });
+
+        api.MapPost("/auth/lock", (HttpRequest req, ILocalUiPinAuth auth) =>
+        {
+            var token = req.Headers[LocalUiPinAuth.TokenHeaderName].FirstOrDefault();
+            auth.Lock(token);
+            return Results.Ok(new { locked = true });
+        });
+
+        api.MapPost("/auth/change-pin", (HttpRequest req, PinChangeRequest body, ILocalUiPinAuth auth) =>
+        {
+            var token = req.Headers[LocalUiPinAuth.TokenHeaderName].FirstOrDefault();
+            var result = auth.ChangePin(token, body.CurrentPin ?? "", body.NewPin ?? "", body.NewPinConfirm ?? "");
+            return result.Ok
+                ? Results.Ok(result)
+                : Results.Json(result, statusCode: StatusCodes.Status400BadRequest);
+        });
+
+        api.MapPost("/config/system", async (HttpRequest req, SystemConfigUpdate update, IAgentConfigStore config, ILocalUiPinAuth auth) =>
+        {
+            if (!TryAuthorize(req, auth, out var denied))
+                return denied!;
+
             var current = config.Current.System;
             if (!string.IsNullOrWhiteSpace(update.CollectorBaseUrl))
                 current.CollectorBaseUrl = update.CollectorBaseUrl.Trim();
@@ -84,8 +129,11 @@ public static class LocalUiEndpoints
             return Results.Ok(new { saved = true });
         });
 
-        api.MapPost("/config/policy", async (PolicyConfig update, IAgentConfigStore config) =>
+        api.MapPost("/config/policy", async (HttpRequest req, PolicyConfig update, IAgentConfigStore config, ILocalUiPinAuth auth) =>
         {
+            if (!TryAuthorize(req, auth, out var denied))
+                return denied!;
+
             await config.SavePolicyAsync(update);
             return Results.Ok(new { saved = true });
         });
@@ -109,10 +157,10 @@ public static class LocalUiEndpoints
             });
         });
 
-        api.MapGet("/sources", (IAgentConfigStore config, AgentRuntimeStatus status) =>
+        api.MapGet("/sources", (IAgentConfigStore config, AgentRuntimeStatus status, IEventLogPackageCatalogStore catalog) =>
         {
             var policy = config.Current.Policy;
-            var packages = DefaultEventLogPackages.Resolve(policy.EventLog)
+            var packages = DefaultEventLogPackages.Resolve(policy.EventLog, catalog.ServerPackages)
                 .Select(p => new
                 {
                     p.Name,
@@ -121,8 +169,53 @@ public static class LocalUiEndpoints
                     enabled = policy.EventLog.Enabled
                 });
 
+            var metricDefinitions = BuildMetricDefinitions(policy);
+
             return Results.Json(new
             {
+                readOnly = true,
+                producers = new object[]
+                {
+                    new
+                    {
+                        sourceType = "metric",
+                        label = "Metrik",
+                        enabled = policy.Metrics.Enabled,
+                        intervalSeconds = policy.HeartbeatIntervalSeconds,
+                        lastUtc = status.LastHeartbeatUtc,
+                        eventsProduced = status.MetricEventsProduced
+                    },
+                    new
+                    {
+                        sourceType = "windows-eventlog",
+                        label = "Olay günlüğü",
+                        enabled = policy.EventLog.Enabled,
+                        intervalSeconds = policy.EventLog.PollIntervalSeconds,
+                        lastUtc = status.LastEventLogUtc,
+                        eventsProduced = status.EventLogEventsProduced,
+                        lastError = status.LastEventLogError
+                    },
+                    new
+                    {
+                        sourceType = "service-watch",
+                        label = "Servis izleme",
+                        enabled = policy.ServiceWatch.Enabled && policy.ServiceWatch.Services.Count > 0,
+                        intervalSeconds = policy.ServiceWatch.PollIntervalSeconds,
+                        lastUtc = status.LastServiceWatchUtc,
+                        eventsProduced = status.ServiceWatchEventsProduced,
+                        lastError = status.LastServiceWatchError
+                    },
+                    new
+                    {
+                        sourceType = "app-watch",
+                        label = "Uygulama izleme",
+                        enabled = policy.ServiceWatch.Enabled && policy.ServiceWatch.Applications.Count > 0,
+                        intervalSeconds = policy.ServiceWatch.PollIntervalSeconds,
+                        lastUtc = status.LastServiceWatchUtc,
+                        eventsProduced = status.ServiceWatchEventsProduced,
+                        lastError = status.LastServiceWatchError
+                    }
+                },
                 metrics = new
                 {
                     enabled = policy.Metrics.Enabled,
@@ -131,7 +224,8 @@ public static class LocalUiEndpoints
                     topProcessCount = policy.Metrics.TopProcessCount,
                     heartbeatIntervalSeconds = policy.HeartbeatIntervalSeconds,
                     lastHeartbeatUtc = status.LastHeartbeatUtc,
-                    eventsProduced = status.MetricEventsProduced
+                    eventsProduced = status.MetricEventsProduced,
+                    definitions = metricDefinitions
                 },
                 eventLog = new
                 {
@@ -141,16 +235,31 @@ public static class LocalUiEndpoints
                     lastEventLogUtc = status.LastEventLogUtc,
                     lastError = status.LastEventLogError,
                     eventsProduced = status.EventLogEventsProduced,
-                    packages
+                    packages,
+                    knownOptional = new[]
+                    {
+                        new
+                        {
+                            DefaultEventLogPackages.SecurityAuth.Name,
+                            DefaultEventLogPackages.SecurityAuth.Channel,
+                            eventIds = DefaultEventLogPackages.SecurityAuth.EventIds,
+                            requiresElevation = true
+                        }
+                    }
                 },
                 serviceWatch = new
                 {
                     enabled = policy.ServiceWatch.Enabled,
                     pollIntervalSeconds = policy.ServiceWatch.PollIntervalSeconds,
+                    restartCooldownSeconds = policy.ServiceWatch.RestartCooldownSeconds,
+                    restartMaxAttempts = policy.ServiceWatch.RestartMaxAttempts,
+                    includeInventory = policy.ServiceWatch.IncludeInventory,
+                    inventoryIntervalSeconds = policy.ServiceWatch.InventoryIntervalSeconds,
                     lastServiceWatchUtc = status.LastServiceWatchUtc,
                     lastError = status.LastServiceWatchError,
                     eventsProduced = status.ServiceWatchEventsProduced,
                     configured = policy.ServiceWatch.Services,
+                    applications = policy.ServiceWatch.Applications,
                     snapshot = status.ServiceWatchSnapshot()
                 },
                 ship = new
@@ -187,6 +296,237 @@ public static class LocalUiEndpoints
             status.ClearRecentEvents();
             return Results.Ok(new { cleared = true });
         });
+
+        api.MapGet("/eventlog/known-packages", (IEventLogPackageCatalogStore catalog) =>
+        {
+            static object MapPkg(EventLogPackage p, bool optional) => new
+            {
+                name = p.Name,
+                channel = p.Channel,
+                eventIds = p.EventIds,
+                optional
+            };
+
+            var defaults = catalog.ServerPackages.Select(p => MapPkg(p, false)).ToArray();
+            var optional = catalog.OptionalPackages.Select(p => MapPkg(p, true)).ToArray();
+            return Results.Json(new
+            {
+                source = catalog.Source,
+                lastSyncedUtc = catalog.LastSyncedUtc,
+                defaults,
+                optional,
+                all = defaults.Concat(optional).ToArray()
+            });
+        });
+
+        api.MapGet("/eventlog/package-plan", (IAgentConfigStore config, IEventLogPackageCatalogStore catalog) =>
+        {
+            var el = config.Current.Policy.EventLog;
+            var server = catalog.ServerPackages;
+            var effective = DefaultEventLogPackages.Resolve(el, server);
+            var legacyMode = el.Packages is { Count: > 0 }
+                && (el.AgentOverrides is not { Count: > 0 })
+                && (el.DisabledServerPackages is not { Count: > 0 });
+
+            return Results.Json(new
+            {
+                source = catalog.Source,
+                lastSyncedUtc = catalog.LastSyncedUtc,
+                syncIntervalSeconds = el.PackageCatalogSyncIntervalSeconds,
+                legacyMode,
+                server = server.Select(p => new
+                {
+                    p.Name,
+                    p.Channel,
+                    eventIds = p.EventIds,
+                    disabled = el.DisabledServerPackages.Any(d =>
+                        string.Equals(d, p.Name, StringComparison.OrdinalIgnoreCase))
+                }),
+                optional = catalog.OptionalPackages.Select(p => new
+                {
+                    p.Name,
+                    p.Channel,
+                    eventIds = p.EventIds,
+                    optional = true
+                }),
+                agentOverrides = el.AgentOverrides,
+                disabledServerPackages = el.DisabledServerPackages,
+                effective = effective.Select(p => new { p.Name, p.Channel, eventIds = p.EventIds })
+            });
+        });
+
+        api.MapPost("/eventlog/sync-catalog", async (HttpRequest req, ILocalUiPinAuth auth, IEventLogPackageCatalogStore catalog) =>
+        {
+            if (!TryAuthorize(req, auth, out var denied))
+                return denied!;
+
+            await catalog.RefreshAsync(req.HttpContext.RequestAborted);
+            return Results.Ok(new
+            {
+                synced = true,
+                source = catalog.Source,
+                lastSyncedUtc = catalog.LastSyncedUtc,
+                count = catalog.ServerPackages.Count
+            });
+        });
+
+        api.MapGet("/host/services", (HttpRequest req, ILocalUiPinAuth auth) =>
+        {
+            if (!TryAuthorize(req, auth, out var denied))
+                return denied!;
+
+            try
+            {
+                var items = HostLocalInventory.ListWindowsServices()
+                    .Select(s => new { name = s.Name, displayName = s.DisplayName, status = s.Status })
+                    .ToArray();
+                return Results.Json(new { items, count = items.Length });
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new { items = Array.Empty<object>(), count = 0, error = ex.Message });
+            }
+        });
+
+        api.MapPost("/host/browse-executable", (HttpRequest req, ILocalUiPinAuth auth, CancellationToken ct) =>
+        {
+            if (!TryAuthorize(req, auth, out var denied))
+                return denied!;
+
+            try
+            {
+                var path = HostLocalInventory.BrowseExecutable(ct);
+                if (string.IsNullOrWhiteSpace(path))
+                    return Results.Json(new { cancelled = true });
+
+                var full = Path.GetFullPath(path);
+                return Results.Json(new
+                {
+                    cancelled = false,
+                    path = full,
+                    processName = Path.GetFileNameWithoutExtension(full),
+                    fileName = Path.GetFileName(full),
+                    directory = Path.GetDirectoryName(full)
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                return Results.Json(new { cancelled = true });
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new
+                {
+                    cancelled = true,
+                    error = ex.Message
+                });
+            }
+        });
+    }
+
+    private static bool TryAuthorize(HttpRequest req, ILocalUiPinAuth auth, out IResult? denied)
+    {
+        var token = req.Headers[LocalUiPinAuth.TokenHeaderName].FirstOrDefault();
+        if (auth.TryValidateSession(token, out var error))
+        {
+            denied = null;
+            return true;
+        }
+
+        denied = Results.Json(new { ok = false, error }, statusCode: StatusCodes.Status401Unauthorized);
+        return false;
+    }
+
+    private static IReadOnlyList<object> BuildMetricDefinitions(PolicyConfig policy)
+    {
+        var list = new List<object>();
+        if (!policy.Metrics.Enabled)
+            return list;
+
+        list.Add(new
+        {
+            name = "up",
+            metric = "up",
+            action = "host.up",
+            sourceType = "metric",
+            description = "Host heartbeat (alive)",
+            intervalSeconds = policy.HeartbeatIntervalSeconds,
+            enabled = true
+        });
+
+        if (policy.Metrics.IncludeHostResources)
+        {
+            list.Add(new
+            {
+                name = "cpu.percent",
+                metric = "cpu.percent",
+                action = "host.cpu",
+                sourceType = "metric",
+                description = "CPU kullanımı (%)",
+                intervalSeconds = policy.HeartbeatIntervalSeconds,
+                enabled = true
+            });
+            list.Add(new
+            {
+                name = "memory",
+                metric = "memory.*",
+                action = "host.memory",
+                sourceType = "metric",
+                description = "Bellek kullanımı",
+                intervalSeconds = policy.HeartbeatIntervalSeconds,
+                enabled = true
+            });
+            list.Add(new
+            {
+                name = "disk",
+                metric = "disk.*",
+                action = "host.disk",
+                sourceType = "metric",
+                description = "Disk kullanımı (sürücü bazlı)",
+                intervalSeconds = policy.HeartbeatIntervalSeconds,
+                enabled = true
+            });
+        }
+
+        if (policy.Metrics.IncludeTopProcesses)
+        {
+            list.Add(new
+            {
+                name = "process.top_cpu",
+                metric = "process.top_cpu",
+                action = "process.top_cpu",
+                sourceType = "metric",
+                description = $"CPU Top-{policy.Metrics.TopProcessCount} süreç özeti",
+                intervalSeconds = policy.HeartbeatIntervalSeconds,
+                enabled = true
+            });
+            list.Add(new
+            {
+                name = "process.top_memory",
+                metric = "process.top_memory",
+                action = "process.top_memory",
+                sourceType = "metric",
+                description = $"Bellek Top-{policy.Metrics.TopProcessCount} süreç özeti",
+                intervalSeconds = policy.HeartbeatIntervalSeconds,
+                enabled = true
+            });
+        }
+
+        if (policy.ServiceWatch.Enabled && policy.ServiceWatch.IncludeInventory)
+        {
+            list.Add(new
+            {
+                name = "watch.inventory",
+                metric = "watch.inventory",
+                action = "watch.inventory",
+                sourceType = "metric",
+                description = "İzlenen servis/uygulama envanter özeti",
+                intervalSeconds = policy.ServiceWatch.InventoryIntervalSeconds,
+                enabled = true
+            });
+        }
+
+        return list;
     }
 }
 
@@ -195,4 +535,22 @@ public sealed class SystemConfigUpdate
     public string? CollectorBaseUrl { get; set; }
     public string? ApiKey { get; set; }
     public string? HostId { get; set; }
+}
+
+public sealed class PinSetupRequest
+{
+    public string? Pin { get; set; }
+    public string? PinConfirm { get; set; }
+}
+
+public sealed class PinUnlockRequest
+{
+    public string? Pin { get; set; }
+}
+
+public sealed class PinChangeRequest
+{
+    public string? CurrentPin { get; set; }
+    public string? NewPin { get; set; }
+    public string? NewPinConfirm { get; set; }
 }
