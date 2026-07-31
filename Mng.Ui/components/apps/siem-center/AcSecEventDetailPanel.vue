@@ -6,7 +6,6 @@ import type { SecEventListItem } from '@/types/apps/secEvent';
 import {
   actionColor,
   alarmRulesLinkForAction,
-  copyTextToClipboard,
   displayEventAction,
   formatRawForDisplay,
   formatRelativeTime,
@@ -14,6 +13,7 @@ import {
   outcomeColor,
   sourceTypeLabelKey,
 } from '@/composables/useSecEventList';
+import { copyTextToClipboard } from '@/utils/clipboard';
 
 const props = defineProps<{
   event: SecEventListItem | null;

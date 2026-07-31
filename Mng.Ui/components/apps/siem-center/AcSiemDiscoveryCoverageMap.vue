@@ -2,12 +2,12 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
-  DISCOVERY_FACETS,
   useSiemDiscoveryData,
-  hostEventsLink,
 } from '@/composables/useSiemDiscoveryData';
-import { coverageColor } from '@/composables/useSiemDiscoveryMock';
+import { DISCOVERY_FACETS, coverageColor } from '@/composables/useSiemDiscoveryMock';
+import AcSiemDiscoveryHostDetailDialog from '@/components/apps/siem-center/AcSiemDiscoveryHostDetailDialog.vue';
 import type {
+  SiemCoverageStatus,
   SiemDiscoveryBranch,
   SiemDiscoveryFacet,
   SiemDiscoveryHost,
@@ -36,26 +36,65 @@ const layout = ref<LayoutMode>(loadLayoutPreference());
 
 const {
   loading,
+  syncing,
+  coverageRefreshing,
   error,
   lastRefreshedAt,
+  usingLiveDiscovery,
+  autoRefresh,
+  pollIntervalMs,
   branches: rawBranches,
   legend,
   kpis,
   refresh,
+  syncNow,
+  toggleAutoRefresh,
+  staleMs,
 } = useSiemDiscoveryData(facet);
 
-const branches = computed((): SiemDiscoveryBranch[] =>
-  rawBranches.value.map((b) => {
+const detailOpen = ref(false);
+const selectedHost = ref<SiemDiscoveryHost | null>(null);
+
+/** Empty set = show all coverage statuses (multi-select toggle via legend). */
+const coverageFilter = ref<Set<SiemCoverageStatus>>(new Set());
+
+function isCoverageFilterActive(status: SiemCoverageStatus): boolean {
+  return coverageFilter.value.has(status);
+}
+
+function toggleCoverageFilter(status: SiemCoverageStatus) {
+  const next = new Set(coverageFilter.value);
+  if (next.has(status)) next.delete(status);
+  else next.add(status);
+  coverageFilter.value = next;
+}
+
+function clearCoverageFilter() {
+  coverageFilter.value = new Set();
+}
+
+const branches = computed((): SiemDiscoveryBranch[] => {
+  const localized = rawBranches.value.map((b) => {
     if (b.id !== '__live-unplaced') return b;
     return {
       ...b,
       label: t('siemCenter.discovery.liveBranchLabel'),
       detail: t('siemCenter.discovery.liveBranchDetail'),
     };
-  }),
-);
+  });
+
+  if (coverageFilter.value.size === 0) return localized;
+
+  return localized
+    .map((b) => ({
+      ...b,
+      hosts: b.hosts.filter((h) => coverageFilter.value.has(h.coverage)),
+    }))
+    .filter((b) => b.hosts.length > 0);
+});
 
 const hostCount = computed(() => branches.value.reduce((n, b) => n + b.hosts.length, 0));
+const filterActive = computed(() => coverageFilter.value.size > 0);
 
 const lastRefreshedLabel = computed(() => {
   if (!lastRefreshedAt.value) return '';
@@ -69,6 +108,8 @@ const lastRefreshedLabel = computed(() => {
     return '';
   }
 });
+
+const pollSeconds = computed(() => Math.round(pollIntervalMs / 1000));
 
 const expanded = ref<Set<string>>(new Set());
 const selectedBranchId = ref<string | null>(null);
@@ -117,6 +158,13 @@ function syncDefaults() {
 
 watch(facet, syncDefaults, { immediate: true });
 
+watch(branches, (list) => {
+  if (!selectedBranchId.value) return;
+  if (!list.some((b) => b.id === selectedBranchId.value)) {
+    selectedBranchId.value = list[0]?.id ?? null;
+  }
+});
+
 function isExpanded(id: string): boolean {
   return expanded.value.has(id);
 }
@@ -159,7 +207,8 @@ function coverageDots(branch: SiemDiscoveryBranch) {
 }
 
 function openHost(host: SiemDiscoveryHost) {
-  void navigateTo(hostEventsLink(host));
+  selectedHost.value = host;
+  detailOpen.value = true;
 }
 
 /**
@@ -227,8 +276,17 @@ const graphLayout = computed(() => {
 
 <template>
   <div class="discovery-map">
-    <v-alert type="info" variant="tonal" density="comfortable" class="mb-3">
-      {{ t('siemCenter.discovery.mockBanner') }}
+    <v-alert
+      :type="usingLiveDiscovery ? 'success' : 'info'"
+      variant="tonal"
+      density="comfortable"
+      class="mb-3"
+    >
+      {{
+        usingLiveDiscovery
+          ? t('siemCenter.discovery.liveBanner')
+          : t('siemCenter.discovery.mockBanner')
+      }}
     </v-alert>
 
     <v-alert v-if="error" type="warning" variant="tonal" density="comfortable" class="mb-3">
@@ -319,14 +377,49 @@ const graphLayout = computed(() => {
             </v-btn>
             <v-btn
               size="small"
+              :variant="autoRefresh ? 'tonal' : 'text'"
+              :color="autoRefresh ? 'success' : undefined"
+              :prepend-icon="autoRefresh ? 'mdi-broadcast' : 'mdi-broadcast-off'"
+              @click="toggleAutoRefresh"
+            >
+              <span class="d-none d-lg-inline">
+                {{
+                  autoRefresh
+                    ? t('siemCenter.discovery.autoRefreshOn', { s: pollSeconds })
+                    : t('siemCenter.discovery.autoRefreshOff')
+                }}
+              </span>
+              <v-tooltip activator="parent" location="bottom">
+                {{
+                  autoRefresh
+                    ? t('siemCenter.discovery.autoRefreshOnHint', { s: pollSeconds })
+                    : t('siemCenter.discovery.autoRefreshOffHint')
+                }}
+              </v-tooltip>
+            </v-btn>
+            <v-btn
+              size="small"
               variant="text"
-              :loading="loading"
+              :loading="loading || coverageRefreshing"
               @click="refresh"
             >
               <v-icon>mdi-refresh</v-icon>
               <v-tooltip activator="parent" location="bottom">
                 {{ t('siemCenter.discovery.refreshCoverage') }}
                 <span v-if="lastRefreshedLabel"> · {{ lastRefreshedLabel }}</span>
+              </v-tooltip>
+            </v-btn>
+            <v-btn
+              size="small"
+              variant="tonal"
+              color="primary"
+              :loading="syncing"
+              prepend-icon="mdi-sync"
+              @click="syncNow"
+            >
+              <span class="d-none d-lg-inline">{{ t('siemCenter.discovery.syncNow') }}</span>
+              <v-tooltip activator="parent" location="bottom">
+                {{ t('siemCenter.discovery.syncNow') }}
               </v-tooltip>
             </v-btn>
           </div>
@@ -687,14 +780,38 @@ const graphLayout = computed(() => {
       <aside class="discovery-rail">
         <div class="discovery-rail-sticky">
           <v-card variant="outlined" class="rail-section pa-3 mb-3">
-            <div class="text-caption text-medium-emphasis mb-2 text-uppercase">
-              {{ t('siemCenter.discovery.legendTitle') }}
+            <div class="d-flex align-center justify-space-between ga-2 mb-2">
+              <div class="text-caption text-medium-emphasis text-uppercase">
+                {{ t('siemCenter.discovery.legendTitle') }}
+              </div>
+              <v-btn
+                v-if="filterActive"
+                size="x-small"
+                variant="text"
+                color="primary"
+                @click="clearCoverageFilter"
+              >
+                {{ t('siemCenter.discovery.clearCoverageFilter') }}
+              </v-btn>
+            </div>
+            <div class="text-caption text-medium-emphasis mb-2">
+              {{ t('siemCenter.discovery.legendFilterHint') }}
             </div>
             <div class="d-flex flex-column ga-2">
               <div
                 v-for="item in legend"
                 :key="item.status"
                 class="legend-pill d-flex align-center ga-2 px-2 py-2 rounded-lg"
+                :class="{
+                  'legend-pill--active': isCoverageFilterActive(item.status),
+                  'legend-pill--dim': filterActive && !isCoverageFilterActive(item.status),
+                }"
+                role="button"
+                tabindex="0"
+                :aria-pressed="isCoverageFilterActive(item.status)"
+                @click="toggleCoverageFilter(item.status)"
+                @keydown.enter.prevent="toggleCoverageFilter(item.status)"
+                @keydown.space.prevent="toggleCoverageFilter(item.status)"
               >
                 <span class="legend-dot" :class="`bg-${item.color}`" />
                 <span class="text-body-2 flex-grow-1">{{ t(item.labelKey) }}</span>
@@ -731,6 +848,12 @@ const graphLayout = computed(() => {
         </div>
       </aside>
     </div>
+
+    <AcSiemDiscoveryHostDetailDialog
+      v-model:open="detailOpen"
+      :host="selectedHost"
+      :stale-ms="staleMs"
+    />
   </div>
 </template>
 
@@ -782,6 +905,19 @@ const graphLayout = computed(() => {
 .legend-pill {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   background: rgb(var(--v-theme-surface));
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.legend-pill:hover {
+  border-color: rgba(var(--v-theme-primary), 0.45);
+}
+.legend-pill--active {
+  border-color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+.legend-pill--dim {
+  opacity: 0.45;
 }
 .legend-dot,
 .mini-dot {

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using MngLogs.Agent.Contracts;
+using MngLogs.Agent.Metrics;
 
 namespace MngLogs.Agent.Runtime;
 
@@ -14,6 +15,7 @@ public sealed class AgentRuntimeStatus
     private readonly ConcurrentDictionary<string, LatestMetricItem> _latestMetrics =
         new(StringComparer.OrdinalIgnoreCase);
     private TopProcessSnapshot? _topProcesses;
+    private HostInventorySnapshot? _hostInventory;
 
     public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
     public DateTime? LastHeartbeatUtc { get; private set; }
@@ -113,6 +115,28 @@ public sealed class AgentRuntimeStatus
             LastRestartError = prev?.LastRestartError,
             RestartAttemptCount = prev?.RestartAttemptCount ?? 0
         };
+    }
+
+    /// <summary>
+    /// Drops snapshot rows whose keys are not in the current policy (rename/delete/disable).
+    /// Returns how many entries were removed.
+    /// </summary>
+    public int PruneServiceWatchSnapshot(IEnumerable<string> activeKeys)
+    {
+        var keep = new HashSet<string>(activeKeys, StringComparer.OrdinalIgnoreCase);
+        var removed = 0;
+        foreach (var key in _serviceWatch.Keys)
+        {
+            if (keep.Contains(key))
+                continue;
+            if (_serviceWatch.TryRemove(key, out _))
+                removed++;
+        }
+
+        if (removed > 0)
+            LastServiceWatchUtc = DateTime.UtcNow;
+
+        return removed;
     }
 
     public void NoteOsServiceEvent(
@@ -334,12 +358,18 @@ public sealed class AgentRuntimeStatus
 
     public TopProcessSnapshot? TopProcesses() => _topProcesses;
 
+    public void UpdateHostInventory(HostInventorySnapshot snapshot) =>
+        _hostInventory = snapshot;
+
+    public HostInventorySnapshot? HostInventory() => _hostInventory;
+
     public void ClearRecentEvents()
     {
         while (_producedEvents.TryDequeue(out _)) { }
         while (_shippedEvents.TryDequeue(out _)) { }
         _latestMetrics.Clear();
         _topProcesses = null;
+        _hostInventory = null;
     }
 
     private void RememberMetric(RecentEventEntry entry)

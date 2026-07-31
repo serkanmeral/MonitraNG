@@ -18,6 +18,7 @@ public static class LocalUiEndpoints
             return Results.Json(new
             {
                 service = "mnglogs-agent",
+                version = AgentVersion.Current,
                 startedAtUtc = status.StartedAtUtc,
                 hostId = config.ResolveHostId(),
                 hostname = Environment.MachineName,
@@ -46,6 +47,7 @@ public static class LocalUiEndpoints
                 eventLogPollIntervalSeconds = s.Policy.EventLog.PollIntervalSeconds,
                 serviceWatchPollIntervalSeconds = s.Policy.ServiceWatch.PollIntervalSeconds,
                 dataDirectory = config.ResolveDataDirectory(),
+                hostInventory = status.HostInventory(),
                 recent = status.RecentNotes(),
                 latestMetrics = status.LatestMetrics(),
                 latestLogs = status.LatestLogEvents(15),

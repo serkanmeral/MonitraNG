@@ -62,8 +62,31 @@ export interface WatchSnapshotItem {
   restartAttemptCount?: number
 }
 
+export interface HostSessionSnapshot {
+  user: string
+  sessionId: number
+  state: string
+  stationName?: string | null
+  clientProtocol?: string | null
+  logonAtUtc?: string | null
+  durationSeconds?: number | null
+}
+
+export interface HostInventorySnapshot {
+  collectedAtUtc: string
+  ipAddresses: string[]
+  primaryIp?: string | null
+  loggedOnUsers: string[]
+  consoleUser?: string | null
+  agentVersion: string
+  bootTimeUtc?: string | null
+  uptimeSeconds?: number | null
+  sessions?: HostSessionSnapshot[]
+}
+
 export interface AgentStatus {
   service: string
+  version?: string
   startedAtUtc: string
   hostId: string
   hostname: string
@@ -92,6 +115,7 @@ export interface AgentStatus {
   eventLogPollIntervalSeconds?: number
   serviceWatchPollIntervalSeconds?: number
   dataDirectory: string
+  hostInventory?: HostInventorySnapshot | null
   recent: string[]
   latestMetrics?: LatestMetricItem[]
   latestLogs?: RecentEventEntry[]

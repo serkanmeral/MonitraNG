@@ -7,6 +7,10 @@
             <NuxtLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0">
               <img src="/favicon.svg" alt="MngLogs" class="w-8 h-8" />
               <span class="text-lg font-semibold text-gray-900 dark:text-white">MngLogs</span>
+              <span
+                v-if="agentVersion"
+                class="text-xs font-mono text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700"
+              >v{{ agentVersion }}</span>
             </NuxtLink>
             <nav class="flex gap-1 sm:gap-2 overflow-x-auto">
               <NuxtLink
@@ -29,13 +33,17 @@
     </main>
     <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-3">
       <div class="max-w-5xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-        &copy; {{ new Date().getFullYear() }} MonitraNG · MngLogs Ajan Arayüzü
+        &copy; {{ new Date().getFullYear() }} MonitraNG · MngLogs Ajan
+        <span v-if="agentVersion" class="font-mono">· v{{ agentVersion }}</span>
       </div>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useAgentApi } from '~/composables/useAgentApi'
+
 const links = [
   { to: '/', label: 'Durum' },
   { to: '/queue', label: 'Kuyruk' },
@@ -43,4 +51,16 @@ const links = [
   { to: '/logs', label: 'Loglar' },
   { to: '/policy', label: 'Politika' }
 ]
+
+const agentVersion = ref<string | null>(null)
+const { getStatus } = useAgentApi()
+
+onMounted(async () => {
+  try {
+    const s = await getStatus()
+    agentVersion.value = s.version || s.hostInventory?.agentVersion || null
+  } catch {
+    agentVersion.value = null
+  }
+})
 </script>

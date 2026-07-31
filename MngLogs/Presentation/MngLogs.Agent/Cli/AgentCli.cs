@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using MngLogs.Agent.Configuration;
 using MngLogs.Agent.EventLog;
 using MngLogs.Agent.LocalUi;
+using MngLogs.Agent.Metrics;
 using MngLogs.Agent.Transport;
 
 namespace MngLogs.Agent.Cli;
@@ -133,6 +134,7 @@ public static class AgentCli
         var free = LocalUiPortProbe.IsPortAvailable(host, port, out var detail);
         var hint = LocalUiPortProbe.FindListenerProcessHint(port);
 
+        Console.WriteLine($"Version       : {AgentVersion.Current}");
         Console.WriteLine($"DataDirectory : {config.ResolveDataDirectory()}");
         Console.WriteLine($"HostId        : {config.ResolveHostId()}");
         Console.WriteLine($"Collector     : {s.CollectorBaseUrl}");
@@ -143,6 +145,27 @@ public static class AgentCli
         if (hint != null)
             Console.WriteLine($"  → {hint}");
         Console.WriteLine($"PIN           : {(pin.Configured ? "tanımlı" : "yok (ilk kurulum)")}");
+        try
+        {
+            var uiPort = s.LocalUiPort <= 0 ? 5092 : s.LocalUiPort;
+            var uiHost = string.IsNullOrWhiteSpace(s.LocalUiHost) ? "127.0.0.1" : s.LocalUiHost;
+            var inv = HostMetricsCollector.CaptureInventory(new LocalUiBindInfo(uiPort, uiHost));
+            Console.WriteLine($"Primary IP    : {inv.PrimaryIp ?? "—"}");
+            Console.WriteLine($"Local UI bind : {inv.LocalUiHost}:{inv.LocalUiPort}");
+            Console.WriteLine($"Boot (UTC)    : {inv.BootTimeUtc:u}");
+            Console.WriteLine($"Uptime        : {FormatDuration(inv.UptimeSeconds)}");
+            Console.WriteLine($"Logged on     : {(inv.LoggedOnUsers.Count == 0 ? "—" : string.Join(", ", inv.LoggedOnUsers))}");
+            foreach (var sess in inv.Sessions)
+            {
+                Console.WriteLine(
+                    $"  session {sess.SessionId}: {sess.User} [{sess.State}/{sess.ClientProtocol ?? "?"}] " +
+                    $"since {sess.LogonAtUtc:u} ({FormatDuration(sess.DurationSeconds)})");
+            }
+        }
+        catch
+        {
+            // ignore probe errors in CLI
+        }
         Console.WriteLine();
         Console.WriteLine("Port doluysa : MngLogs.Agent.exe port set <yeniPort>");
         Console.WriteLine("PIN unutuldu : MngLogs.Agent.exe pin reset --yes");
@@ -500,6 +523,18 @@ public static class AgentCli
         }
 
         return new ServiceProviderScope(services.BuildServiceProvider());
+    }
+
+    private static string FormatDuration(long? seconds)
+    {
+        if (seconds is null or < 0)
+            return "—";
+        var ts = TimeSpan.FromSeconds(seconds.Value);
+        if (ts.TotalDays >= 1)
+            return $"{(int)ts.TotalDays}g {ts.Hours}s {ts.Minutes}d";
+        if (ts.TotalHours >= 1)
+            return $"{(int)ts.TotalHours}s {ts.Minutes}d";
+        return $"{ts.Minutes}d {ts.Seconds}sn";
     }
 
     private sealed class ServiceProviderScope(ServiceProvider provider) : IAsyncDisposable

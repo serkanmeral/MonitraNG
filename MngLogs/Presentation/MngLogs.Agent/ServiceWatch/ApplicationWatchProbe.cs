@@ -7,9 +7,32 @@ public static class ApplicationWatchProbe
     public static string NormalizeProcessName(string name)
     {
         var n = (name ?? string.Empty).Trim();
-        if (n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        if (n.Length == 0)
+            return string.Empty;
+
+        // Accidental full path in the name field must not become a distinct watch key.
+        if (n.Contains('\\') || n.Contains('/'))
+        {
+            try
+            {
+                n = Path.GetFileNameWithoutExtension(n);
+            }
+            catch
+            {
+                n = n.TrimEnd('\\', '/');
+                var slash = Math.Max(n.LastIndexOf('\\'), n.LastIndexOf('/'));
+                if (slash >= 0 && slash < n.Length - 1)
+                    n = n[(slash + 1)..];
+                if (n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    n = n[..^4];
+            }
+        }
+        else if (n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
             n = n[..^4];
-        return n;
+        }
+
+        return n.Trim();
     }
 
     /// <summary>Counts processes whose ProcessName matches (case-insensitive, .exe optional).</summary>

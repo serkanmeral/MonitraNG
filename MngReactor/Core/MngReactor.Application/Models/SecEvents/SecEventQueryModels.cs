@@ -40,4 +40,6 @@ public sealed class SecEventListItem
     /// <summary>Tam ham mesaj — yalnızca GET by id yanıtında dolu.</summary>
     public string? Raw { get; init; }
     public bool BaselineNewFlowPair { get; init; }
+    /// <summary>Collector metric enrichment (e.g. host.up primaryIp / sessions). Null when absent.</summary>
+    public IReadOnlyDictionary<string, object?>? Fields { get; init; }
 }

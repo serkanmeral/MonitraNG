@@ -43,6 +43,37 @@
             <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
             <span class="font-mono break-all">{{ status?.collectorBaseUrl || '—' }}</span>
           </p>
+          <p
+            v-if="status?.hostInventory"
+            class="text-sm text-gray-500 dark:text-gray-400"
+          >
+            <span>IP: <span class="font-mono text-gray-800 dark:text-gray-200">{{ status.hostInventory.primaryIp || '—' }}</span></span>
+            <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+            <span>Uptime:
+              <span class="font-mono text-gray-800 dark:text-gray-200">{{ formatUptimeSeconds(status.hostInventory.uptimeSeconds) }}</span>
+            </span>
+            <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+            <span>Kullanıcı:
+              <span class="font-mono text-gray-800 dark:text-gray-200">{{
+                status.hostInventory.consoleUser
+                  || (status.hostInventory.loggedOnUsers?.length
+                    ? status.hostInventory.loggedOnUsers.join(', ')
+                    : '—')
+              }}</span>
+            </span>
+          </p>
+          <p
+            v-if="status?.hostInventory?.sessions?.length"
+            class="text-xs text-gray-500 dark:text-gray-400 font-mono"
+          >
+            <span
+              v-for="(s, i) in status.hostInventory.sessions"
+              :key="s.sessionId"
+            >
+              <span v-if="i"> · </span>{{ s.user }} [{{ s.clientProtocol || '?' }}/{{ s.state }}]
+              {{ formatUptimeSeconds(s.durationSeconds) }}
+            </span>
+          </p>
         </div>
 
         <dl class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 text-sm shrink-0">
@@ -92,9 +123,13 @@
           Teknik ayrıntılar
         </summary>
         <div class="mt-2 pl-5 text-xs text-gray-500 space-y-1 font-mono break-all">
+          <p>Sürüm: {{ status?.version || '—' }}</p>
           <p>Başlangıç (UTC): {{ formatDate(status?.startedAtUtc) }}</p>
           <p>Veri dizini: {{ status?.dataDirectory || '—' }}</p>
           <p>Son gönderim denemesi: {{ formatDate(status?.lastShipUtc) }}</p>
+          <p v-if="status?.hostInventory?.ipAddresses?.length">
+            IP listesi: {{ status.hostInventory.ipAddresses.join(', ') }}
+          </p>
         </div>
       </details>
     </div>
@@ -1134,8 +1169,14 @@ function formatUptime(startedAt?: string | null, now = Date.now()) {
   const t = new Date(startedAt).getTime()
   if (Number.isNaN(t)) return '—'
   const sec = Math.max(0, Math.floor((now - t) / 1000))
-  if (sec < 60) return `${sec} sn`
-  const min = Math.floor(sec / 60)
+  return formatUptimeSeconds(sec)
+}
+
+function formatUptimeSeconds(sec?: number | null) {
+  if (sec == null || Number.isNaN(sec) || sec < 0) return '—'
+  const s = Math.floor(sec)
+  if (s < 60) return `${s} sn`
+  const min = Math.floor(s / 60)
   if (min < 60) return `${min} dk`
   const hr = Math.floor(min / 60)
   const remMin = min % 60

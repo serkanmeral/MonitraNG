@@ -1,73 +1,45 @@
-# MngLogs — Son durum (PARKED)
+# MngLogs — Son durum
 
-**Son güncelleme:** 2026-07-30  
-**Durum:** MngLogs saha agent çalışmaları bu noktada **park edildi**. Sonraki oturum: Mng.Ui SIEM Center UI planlaması (ayrı chat). MngLogs’a dönüşte bu dosyadan devam.
+**Son güncelleme:** 2026-07-31  
+**Durum:** Ajan **1.0.4** — Windows Service kurulu (TERMINAL); watch prune + host.up zenginleştirme + Local UI LAN bind.
 
 ## Son çalışılan konu
 
-Windows-first: Local UI / PIN / CLI, MSI+GPO hazırlığı, collector event-log katalog pull, SIEM’de ince agent health paneli, HostId varsayılanı = PC adı.
+Service/App Watch snapshot prune; process adı normalize; ajan 1.0.4 publish + elevated reinstall (`LocalUiHost=0.0.0.0`).
 
-## Tamamlanan işler
+## Bu dilimde tamamlananlar
 
-### Agent / Local UI
-- Durum / Kaynaklar / Politika tab UI; Loglar detay modal
-- PIN koruması; host services + exe browse
-- CLI: `status`, `pin`, `port`, `config`, `catalog show|sync`
-- Event Log: sunucu katalog ⊕ agent override / disabled; merger
-- `HostId` boşsa ilk açılışta **PC adı** (`Environment.MachineName`) yazılıyor; Politika API efektif değer döner
+- Sürüm **1.0.4** (csproj / UI package / WiX yolu)
+- `host.up` / inventory: IP, users, boot, uptime, sessions, `localUiPort` / `localUiHost`
+- Watch snapshot: politika dışı hedefler budanır; inventory boşalınca ship
+- `NormalizeProcessName`: path / `.exe` → kısa process adı; policy save dedupe
+- Local UI Politika: uygulama kaydında ad normalize
+- Session 0 notu: servisten başlatılan GUI (notepad) masaüstünde görünmez; process Task Manager’da görünür
+- Reinstall script: `scripts/tests/MngLogs/windows-service/reinstall-agent-odak-elevated.ps1`
 
-### Collector (P2)
-- `GET /api/v1/policy/eventlog-packages` (ingest API key)
-- ETag / `If-None-Match` → 304
-- Agent `RefreshAsync` pull + builtin/cache fallback
-- Ingest: `fields["event.action"]` öncelikli OpenSearch map
+## Bekleyen
 
-### Dağıtım (P0 — paket hazır, smoke admin bekliyor)
-- WiX MSI: `MngLogs.Agent.Setup` → `artifacts\msi\MngLogs.Agent-0.2.0.msi`
-- Script’ler: `publish-agent`, `build-msi`, `install/uninstall-windows-service`, `write-system-config`
-- Servis adı: `MngLogsAgent`; data: `%ProgramData%\MngLogs\Agent`
-- Self-update **yok** → GPO/MSI MajorUpgrade
+1. P5 Event Log parser (park)
+2. Uygulama restart’ı aktif kullanıcı oturumuna alma (WTS / CreateProcessAsUser) — ürün kararı
+3. MSI/GPO saha yayılımı (lab kurulumu yapıldı)
 
-### Merkez UI (P4 ince dilim)
-- SIEM Center: `AcAgentHealthPanel` (`host.up` / `watch.inventory`)
-- Olay filtreleri: `metric`, `windows-eventlog` source type
-
-### Dokümanlar
-- MkDocs: `docs/content/MngLogs/` (changelog, roadmap, technical specs, guides)
-- IT helper: `docs/odak/siem/mnglogs/it_helper/` (01–07 + README)
-- Sözleşme: `docs/odak/siem/mnglogs/POLICY_EVENTLOG_PACKAGES.md`
-
-## Bilinçli ertelemeler / bekleyen testler
+## Önceki ertelemeler
 
 | Madde | Not |
 |--------|-----|
-| MSI / Windows Service smoke | Lab’da admin yok (`msiexec` 1625). Elevated oturumda sonra |
-| P3 Linux | Acele yok; Windows bitince |
-| P5 Event Log parser kuralları | **Sıradaki ürün işi** (park sonrası dönüşte) |
-| P4 genişletme | Unhealthy inventory özeti, widget kaydı — opsiyonel |
-| Katalog admin CRUD | Collector’da hâlâ builtin seed |
-| Auto port | Düşük öncelik |
-
-## Sıradaki işler (öncelik — Windows)
-
-1. **P5** — Event Log parser (Event ID → `event.action` / alan map; sunucu/collector ağırlıklı önerildi)
-2. **MSI/Service smoke** — admin ortamında (`it_helper` 02–04)
-3. P4 genişletme / katalog admin (ihtiyaca göre)
-4. **P3 Linux** — en sonda
-
-## Park öncesi bağlam (sonraki chat’e)
-
-- Yeni chat konusu: **Mng.Ui SIEM Center UI planlaması** (MngLogs park; SIEM panel UX/plan).
-- MngLogs’a dönüşte: P5 parser tartışması + kararlar (`current_status` + ROADMAP).
+| P5 parser | Park |
+| P3 Linux | Sonra |
+| Alarm/Notifier watch kuralları | SIEM tarafında erken |
 
 ## Önemli yollar
 
 | Öğe | Yol |
 |-----|-----|
-| Agent exe (publish) | `MngLogs\artifacts\agent\win-x64\MngLogs.Agent.exe` |
-| MSI | `MngLogs\artifacts\msi\MngLogs.Agent-0.2.0.msi` |
-| TFM | `net9.0-windows` |
-| Local UI | `http://127.0.0.1:5092/` |
-| Collector (Odak örn.) | `http://192.168.20.8:5091` |
-| Collector (local) | `http://127.0.0.1:5091` |
-| IT kılavuz | `docs/odak/siem/mnglogs/it_helper/` |
+| Agent | `MngLogs\Presentation\MngLogs.Agent\` |
+| Publish | `.\MngLogs\scripts\publish-agent.ps1` |
+| Service install | `.\MngLogs\scripts\install-windows-service.ps1` |
+| Reinstall (Odak) | `.\scripts\tests\MngLogs\windows-service\reinstall-agent-odak-elevated.ps1` |
+| Local UI | `http://127.0.0.1:5092/` · LAN `:5092` |
+| Collector | `http://192.168.20.8:5091` |
+| HostId (pilot) | `TERMINAL-pilot` |
+| Sürüm | csproj `Version` / `AgentVersion.Current` → **1.0.4** |

@@ -644,6 +644,8 @@ services:
       - MngLogCollectorSettings__OpenSearch__WriteEnabled=${MNGLOGCOLLECTOR_OPENSEARCH_WRITE_ENABLED:-true}
       - MngLogCollectorSettings__Ingest__ApiKey=${MNGLOGCOLLECTOR_INGEST_API_KEY:-}
       - MngLogCollectorSettings__Ingest__MaxEventsPerBatch=${MNGLOGCOLLECTOR_MAX_EVENTS_PER_BATCH:-500}
+      - MngLogCollectorSettings__MongoDB__ConnectionString=${MNGLOGCOLLECTOR_MONGODB_CONNECTION:-mongodb://admin:admin123@mongo:27017}
+      - MngLogCollectorSettings__MongoDB__KeeperDatabaseName=${MNGLOGCOLLECTOR_KEEPER_DB:-mngkeeper}
     networks:
       - mng_common_mng_network
     restart: unless-stopped

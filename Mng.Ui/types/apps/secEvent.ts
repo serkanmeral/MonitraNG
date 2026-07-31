@@ -17,6 +17,8 @@ export interface SecEventListItem {
   raw?: string | null;
   /** U7: baseline sonrası ilk kez görülen src→dst çifti */
   baselineNewFlowPair?: boolean;
+  /** Collector metric enrichment (host.up fields, etc.) */
+  fields?: Record<string, unknown> | null;
 }
 
 export interface SecEventQueryResponse {

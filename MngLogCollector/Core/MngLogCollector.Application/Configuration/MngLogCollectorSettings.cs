@@ -7,6 +7,7 @@ public sealed class MngLogCollectorSettings
     public ServerSettings Server { get; set; } = new();
     public OpenSearchSettings OpenSearch { get; set; } = new();
     public IngestSettings Ingest { get; set; } = new();
+    public MongoDbSettings MongoDB { get; set; } = new();
 }
 
 public sealed class ServerSettings
@@ -34,4 +35,18 @@ public sealed class IngestSettings
     public string ApiKey { get; set; } = string.Empty;
 
     public int MaxEventsPerBatch { get; set; } = 500;
+}
+
+public sealed class MongoDbSettings
+{
+    /// <summary>Full connection string. When empty, Host/Port/Username/Password are used.</summary>
+    public string ConnectionString { get; set; } = string.Empty;
+
+    public string Host { get; set; } = "localhost";
+    public int Port { get; set; } = 27017;
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+
+    /// <summary>MngKeeper database that holds the domains collection.</summary>
+    public string KeeperDatabaseName { get; set; } = "mngkeeper";
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using MngLogs.Agent.Configuration;
+using MngLogs.Agent.ServiceWatch;
 
 namespace MngLogs.Agent.Configuration;
 
@@ -275,14 +276,20 @@ public sealed class AgentConfigStore : IAgentConfigStore
             Applications = p.ServiceWatch.Applications
                 .Select(x => new WatchedApplication
                 {
-                    Name = x.Name,
+                    Name = NormalizeWatchedProcessName(x.Name),
                     MinCount = x.MinCount <= 0 ? 1 : x.MinCount,
                     RestartAllowed = x.RestartAllowed,
                     ExecutablePath = string.IsNullOrWhiteSpace(x.ExecutablePath) ? null : x.ExecutablePath.Trim(),
                     Arguments = string.IsNullOrWhiteSpace(x.Arguments) ? null : x.Arguments.Trim(),
                     WorkingDirectory = string.IsNullOrWhiteSpace(x.WorkingDirectory) ? null : x.WorkingDirectory.Trim()
                 })
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.Last())
                 .ToList()
         }
     };
+
+    private static string NormalizeWatchedProcessName(string? name) =>
+        ApplicationWatchProbe.NormalizeProcessName(name ?? string.Empty);
 }

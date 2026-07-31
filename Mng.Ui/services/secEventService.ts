@@ -54,7 +54,14 @@ function normalizeListItem(raw: Record<string, unknown>): SecEventListItem {
     rawPreview: (raw.rawPreview ?? raw.RawPreview) as string | null | undefined,
     raw: (raw.raw ?? raw.Raw) as string | null | undefined,
     baselineNewFlowPair: Boolean(raw.baselineNewFlowPair ?? raw.BaselineNewFlowPair),
+    fields: normalizeFields(raw.fields ?? raw.Fields),
   };
+}
+
+function normalizeFields(raw: unknown): Record<string, unknown> | null | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  return raw as Record<string, unknown>;
 }
 
 function normalizeQueryResponse(raw: Record<string, unknown>): SecEventQueryResponse {

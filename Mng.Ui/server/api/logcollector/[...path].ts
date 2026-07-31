@@ -1,9 +1,10 @@
-import { defineEventHandler, getQuery, getMethod, getRouterParam, getRequestHeader } from 'h3';
+import { defineEventHandler, getQuery, getMethod, getRouterParam, getRequestHeader, readBody } from 'h3';
 import { getCookie } from 'h3';
 
 /**
  * Dev/prod BFF → MngLogCollector (direct :5091).
  * Requires UI session cookie; forwards optional ingest API key for agent-gated routes.
+ * Allows GET/HEAD and POST (discovery sync).
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -18,10 +19,18 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (method !== 'GET' && method !== 'HEAD') {
+  const allowed = method === 'GET' || method === 'HEAD' || method === 'POST';
+  if (!allowed) {
     throw createError({
       statusCode: 405,
       statusMessage: 'Method Not Allowed',
+    });
+  }
+
+  if (method === 'POST' && !path.toLowerCase().includes('discovery/sync')) {
+    throw createError({
+      statusCode: 405,
+      statusMessage: 'POST yalnızca discovery/sync için açık',
     });
   }
 
@@ -52,10 +61,17 @@ export default defineEventHandler(async (event) => {
     headers['If-None-Match'] = ifNoneMatch;
   }
 
+  let body: unknown = undefined;
+  if (method === 'POST') {
+    headers['Content-Type'] = 'application/json';
+    body = await readBody(event);
+  }
+
   try {
     return await $fetch(urlWithQuery, {
-      method: method as 'GET' | 'HEAD',
+      method: method as 'GET' | 'HEAD' | 'POST',
       headers,
+      body: method === 'POST' ? body : undefined,
     });
   } catch (error: any) {
     const status = error.statusCode || error.status || 500;

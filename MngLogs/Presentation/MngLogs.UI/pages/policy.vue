@@ -997,6 +997,27 @@ async function savePolicyCfg() {
   policy.value.eventLog.disabledServerPackages = (policy.value.eventLog.disabledServerPackages || [])
     .map(n => n.trim())
     .filter(Boolean)
+
+  // Normalize process names (strip .exe / path) and drop empty / duplicate apps.
+  const seenApps = new Set<string>()
+  policy.value.serviceWatch.applications = (policy.value.serviceWatch.applications || [])
+    .map(a => {
+      let name = (a.name || '').trim()
+      if (/[\\/]/.test(name)) {
+        const base = name.split(/[\\/]/).pop() || name
+        name = base.replace(/\.exe$/i, '')
+      } else if (/\.exe$/i.test(name)) {
+        name = name.replace(/\.exe$/i, '')
+      }
+      return { ...a, name, minCount: a.minCount > 0 ? a.minCount : 1 }
+    })
+    .filter(a => {
+      const key = a.name.toLowerCase()
+      if (!key || seenApps.has(key)) return false
+      seenApps.add(key)
+      return true
+    })
+
   savingPolicy.value = true
   try {
     await savePolicy(policy.value)

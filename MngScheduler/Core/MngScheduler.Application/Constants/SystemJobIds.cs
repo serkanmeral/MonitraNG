@@ -10,6 +10,11 @@ public static class SystemJobIds
     /// </summary>
     public const string DirectorySyncAllDomains = "system-directory-sync-all-domains";
 
+    /// <summary>
+    /// SIEM Discovery AD computer pull via MngLogCollector POST /api/v1/discovery/sync.
+    /// </summary>
+    public const string SiemDiscoveryAdSync = "system-siem-discovery-ad-sync";
+
     public static bool IsDirectorySyncOrchestration(string jobId) =>
         string.Equals(jobId, DirectorySyncAllDomains, StringComparison.OrdinalIgnoreCase);
 }

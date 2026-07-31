@@ -57,6 +57,7 @@ public sealed class HeartbeatProducerWorker : BackgroundService
                 return;
 
             var items = _metrics.Collect(policy.Metrics.IncludeHostResources).ToList();
+            _status.UpdateHostInventory(_metrics.CaptureInventory());
 
             if (policy.Metrics.IncludeTopProcesses)
             {

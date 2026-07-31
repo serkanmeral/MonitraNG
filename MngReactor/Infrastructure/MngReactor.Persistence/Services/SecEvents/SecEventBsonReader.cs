@@ -26,9 +26,36 @@ internal static class SecEventBsonReader
             ParserId = ReadNestedString(doc, "parser", "id"),
             RawPreview = rawPreview,
             Raw = includeRaw ? ReadString(doc, "raw") ?? rawPreview : null,
-            BaselineNewFlowPair = ReadNestedBool(doc, "baseline", "newFlowPair")
+            BaselineNewFlowPair = ReadNestedBool(doc, "baseline", "newFlowPair"),
+            Fields = ReadFields(doc)
         };
     }
+
+    private static IReadOnlyDictionary<string, object?>? ReadFields(BsonDocument doc)
+    {
+        if (!doc.TryGetValue("fields", out var fieldsVal) || !fieldsVal.IsBsonDocument)
+            return null;
+
+        var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var el in fieldsVal.AsBsonDocument.Elements)
+            dict[el.Name] = BsonValueToClr(el.Value);
+        return dict.Count == 0 ? null : dict;
+    }
+
+    private static object? BsonValueToClr(BsonValue value) => value.BsonType switch
+    {
+        BsonType.Null => null,
+        BsonType.String => value.AsString,
+        BsonType.Boolean => value.AsBoolean,
+        BsonType.Int32 => value.AsInt32,
+        BsonType.Int64 => value.AsInt64,
+        BsonType.Double => value.AsDouble,
+        BsonType.DateTime => value.ToUniversalTime(),
+        BsonType.Array => value.AsBsonArray.Select(BsonValueToClr).ToList(),
+        BsonType.Document => value.AsBsonDocument.Elements
+            .ToDictionary(e => e.Name, e => BsonValueToClr(e.Value), StringComparer.OrdinalIgnoreCase),
+        _ => value.ToString()
+    };
 
     private static DateTime ReadDate(BsonDocument doc, string field)
     {

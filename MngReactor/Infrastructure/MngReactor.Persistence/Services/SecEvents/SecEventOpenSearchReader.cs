@@ -505,7 +505,34 @@ internal sealed class SecEventOpenSearchReader
             ParserId = GetNested("parser", "id"),
             RawPreview = rawPreview,
             Raw = raw,
-            BaselineNewFlowPair = baseline
+            BaselineNewFlowPair = baseline,
+            Fields = ReadFields(src)
         };
     }
+
+    private static IReadOnlyDictionary<string, object?>? ReadFields(JsonElement src)
+    {
+        if (src.ValueKind != JsonValueKind.Object
+            || !src.TryGetProperty("fields", out var fields)
+            || fields.ValueKind != JsonValueKind.Object)
+            return null;
+
+        var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var prop in fields.EnumerateObject())
+            dict[prop.Name] = JsonElementToClr(prop.Value);
+        return dict.Count == 0 ? null : dict;
+    }
+
+    private static object? JsonElementToClr(JsonElement el) => el.ValueKind switch
+    {
+        JsonValueKind.String => el.GetString(),
+        JsonValueKind.Number => el.TryGetInt64(out var l) ? l : el.GetDouble(),
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        JsonValueKind.Null or JsonValueKind.Undefined => null,
+        JsonValueKind.Array => el.EnumerateArray().Select(JsonElementToClr).ToList(),
+        JsonValueKind.Object => el.EnumerateObject()
+            .ToDictionary(p => p.Name, p => JsonElementToClr(p.Value), StringComparer.OrdinalIgnoreCase),
+        _ => el.ToString()
+    };
 }

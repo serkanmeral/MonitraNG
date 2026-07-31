@@ -10,7 +10,7 @@
 param(
     [string] $Configuration = "Release",
     [string] $Runtime = "win-x64",
-    [string] $AgentVersion = "0.2.0",
+    [string] $AgentVersion = "1.0.3",
     [switch] $SkipFrontend,
     [switch] $SkipPublish,
     [string] $PayloadDir = "",

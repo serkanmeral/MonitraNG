@@ -838,6 +838,8 @@ services:
       - MngLogCollectorSettings__OpenSearch__WriteEnabled=true
       - MngLogCollectorSettings__Ingest__ApiKey=
       - MngLogCollectorSettings__Ingest__MaxEventsPerBatch=500
+      - MngLogCollectorSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngLogCollectorSettings__MongoDB__KeeperDatabaseName=mngkeeper
     networks:
       - mng_common_mng_network
     restart: unless-stopped

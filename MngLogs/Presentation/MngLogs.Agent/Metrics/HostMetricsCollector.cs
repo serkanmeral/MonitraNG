@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using MngLogs.Agent.Configuration;
 using MngLogs.Agent.Contracts;
 using MngLogs.Agent.Runtime;
 
@@ -14,6 +15,9 @@ public interface IHostMetricsCollector
 
     /// <summary>Summary ingest events: process.top_cpu / process.top_memory (no per-process flood).</summary>
     IReadOnlyList<IngestEventItem> ToTopProcessEvents(TopProcessSnapshot snapshot);
+
+    /// <summary>Local inventory snapshot (includes Local UI port/host from config).</summary>
+    HostInventorySnapshot CaptureInventory();
 }
 
 public sealed class HostMetricsCollector : IHostMetricsCollector
@@ -27,21 +31,23 @@ public sealed class HostMetricsCollector : IHostMetricsCollector
         "Secure System"
     };
 
+    private readonly IAgentConfigStore _config;
     private PerformanceCounter? _cpuCounter;
     private bool _cpuWarmed;
     private readonly Dictionary<int, (TimeSpan Cpu, DateTime At)> _prevCpu = new();
     private readonly object _topLock = new();
+
+    public HostMetricsCollector(IAgentConfigStore config)
+    {
+        _config = config;
+    }
 
     public IReadOnlyList<IngestEventItem> Collect(bool includeHostResources)
     {
         var now = DateTime.UtcNow;
         var items = new List<IngestEventItem>
         {
-            Metric(now, "up", 1, "host.up", new Dictionary<string, object?>
-            {
-                ["os"] = Environment.OSVersion.ToString(),
-                ["machine"] = Environment.MachineName
-            })
+            Metric(now, "up", 1, "host.up", BuildHostUpFields(ResolveLocalUi()))
         };
 
         if (!includeHostResources)
@@ -53,6 +59,20 @@ public sealed class HostMetricsCollector : IHostMetricsCollector
             AddPortableDisk(items, now);
 
         return items;
+    }
+
+    public HostInventorySnapshot CaptureInventory() => CaptureInventory(ResolveLocalUi());
+
+    /// <summary>CLI / tests without DI — pass Local UI bind explicitly when known.</summary>
+    public static HostInventorySnapshot CaptureInventory(LocalUiBindInfo? localUi = null)
+        => CaptureInventoryCore(localUi ?? new LocalUiBindInfo(5092, "127.0.0.1"));
+
+    private LocalUiBindInfo ResolveLocalUi()
+    {
+        var s = _config.Current.System;
+        var port = s.LocalUiPort <= 0 ? 5092 : s.LocalUiPort;
+        var host = string.IsNullOrWhiteSpace(s.LocalUiHost) ? "127.0.0.1" : s.LocalUiHost.Trim();
+        return new LocalUiBindInfo(port, host);
     }
 
     public TopProcessSnapshot CollectTopProcesses(int take)
@@ -259,6 +279,115 @@ public sealed class HostMetricsCollector : IHostMetricsCollector
         AddPortableDisk(items, now);
     }
 
+    /// <summary>Shared host.up enrichment (also used for Local UI inventory snapshot).</summary>
+    public static Dictionary<string, object?> BuildHostUpFields(LocalUiBindInfo? localUi = null)
+    {
+        var bind = localUi ?? new LocalUiBindInfo(5092, "127.0.0.1");
+        var ips = HostNetworkAddresses.Collect();
+        var primaryIp = HostNetworkAddresses.PickPrimary(ips);
+        var (bootUtc, uptimeSec) = HostUptimeInfo.Capture();
+
+        IReadOnlyList<LoggedOnUserInfo> users = [];
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                users = WindowsLoggedOnUsers.Collect();
+            }
+            catch
+            {
+                users = [];
+            }
+        }
+
+        var active = users
+            .Where(u => string.Equals(u.State, "Active", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (active.Count == 0)
+            active = users.ToList();
+
+        return new Dictionary<string, object?>
+        {
+            ["os"] = Environment.OSVersion.ToString(),
+            ["machine"] = Environment.MachineName,
+            ["agentVersion"] = AgentVersion.Current,
+            ["ipAddresses"] = ips.ToList(),
+            ["primaryIp"] = primaryIp,
+            ["bootTimeUtc"] = bootUtc.ToString("o"),
+            ["uptimeSeconds"] = uptimeSec,
+            ["loggedOnUsers"] = active.Select(u => u.DisplayName).ToList(),
+            ["consoleUser"] = active.FirstOrDefault()?.DisplayName,
+            ["loggedOnSessions"] = users.Select(SessionToDict).ToList(),
+            ["localUiPort"] = bind.Port,
+            ["localUiHost"] = bind.Host,
+            ["localUiRemoteAccess"] = IsRemoteAccessibleBind(bind.Host)
+        };
+    }
+
+    private static HostInventorySnapshot CaptureInventoryCore(LocalUiBindInfo localUi)
+    {
+        var ips = HostNetworkAddresses.Collect();
+        var primaryIp = HostNetworkAddresses.PickPrimary(ips);
+        var (bootUtc, uptimeSec) = HostUptimeInfo.Capture();
+
+        IReadOnlyList<LoggedOnUserInfo> users = [];
+        if (OperatingSystem.IsWindows())
+        {
+            try { users = WindowsLoggedOnUsers.Collect(); }
+            catch { users = []; }
+        }
+
+        var active = users
+            .Where(u => string.Equals(u.State, "Active", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (active.Count == 0)
+            active = users.ToList();
+
+        return new HostInventorySnapshot
+        {
+            CollectedAtUtc = DateTime.UtcNow,
+            IpAddresses = ips,
+            PrimaryIp = primaryIp,
+            LoggedOnUsers = active.Select(u => u.DisplayName).ToList(),
+            ConsoleUser = active.FirstOrDefault()?.DisplayName,
+            AgentVersion = AgentVersion.Current,
+            BootTimeUtc = bootUtc,
+            UptimeSeconds = uptimeSec,
+            LocalUiPort = localUi.Port,
+            LocalUiHost = localUi.Host,
+            Sessions = users.Select(u => new HostSessionSnapshot
+            {
+                User = u.DisplayName,
+                SessionId = u.SessionId,
+                State = u.State,
+                StationName = u.StationName,
+                ClientProtocol = u.ClientProtocol,
+                LogonAtUtc = u.LogonAtUtc,
+                DurationSeconds = u.DurationSeconds
+            }).ToList()
+        };
+    }
+
+    private static bool IsRemoteAccessibleBind(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host)) return false;
+        var h = host.Trim();
+        if (h is "0.0.0.0" or "*" or "::" or "[::]") return true;
+        if (h is "127.0.0.1" or "localhost" or "::1") return false;
+        return true; // explicit LAN/hostname bind
+    }
+
+    private static Dictionary<string, object?> SessionToDict(LoggedOnUserInfo u) => new()
+    {
+        ["user"] = u.DisplayName,
+        ["sessionId"] = u.SessionId,
+        ["state"] = u.State,
+        ["stationName"] = u.StationName,
+        ["clientProtocol"] = u.ClientProtocol,
+        ["logonAtUtc"] = u.LogonAtUtc?.ToString("o"),
+        ["durationSeconds"] = u.DurationSeconds
+    };
+
     private static void AddPortableDisk(List<IngestEventItem> items, DateTime now)
     {
         foreach (var drive in DriveInfo.GetDrives())
@@ -315,3 +444,6 @@ public sealed class HostMetricsCollector : IHostMetricsCollector
         };
     }
 }
+
+/// <summary>Local UI Kestrel bind (from system.json).</summary>
+public readonly record struct LocalUiBindInfo(int Port, string Host);

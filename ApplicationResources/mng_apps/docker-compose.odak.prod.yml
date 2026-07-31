@@ -137,6 +137,8 @@ services:
       - MngLogCollectorSettings__OpenSearch__WriteEnabled=true
       # Set a real key in .env before exposing ingest beyond the lab network
       - MngLogCollectorSettings__Ingest__ApiKey=${MNGLOGCOLLECTOR_INGEST_API_KEY:-}
+      - MngLogCollectorSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngLogCollectorSettings__MongoDB__KeeperDatabaseName=mngkeeper
 
   mngoperations:
     ports:

@@ -49,6 +49,8 @@ public sealed class ServiceWatchWorker : BackgroundService
                 var hasTargets = policy.Services.Count > 0 || policy.Applications.Count > 0;
                 if (policy.Enabled && hasTargets)
                     await PollAsync(policy, stoppingToken);
+                else
+                    await ClearWatchStateAsync(policy, stoppingToken);
 
                 await Task.Delay(TimeSpan.FromSeconds(seconds), stoppingToken);
             }
@@ -70,12 +72,14 @@ public sealed class ServiceWatchWorker : BackgroundService
     private async Task PollAsync(ServiceWatchPolicy policy, CancellationToken cancellationToken)
     {
         var emitted = 0;
+        var activeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var svc in policy.Services.Where(s => !string.IsNullOrWhiteSpace(s.Name)))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var name = svc.Name.Trim();
             var key = $"service:{name}";
+            activeKeys.Add(key);
             var health = ProbeService(name, out var statusText, out var displayName);
             _status.UpdateServiceWatchSnapshot(
                 "service", name, health.ToString(), statusText, displayName, svc.RestartAllowed);
@@ -102,8 +106,11 @@ public sealed class ServiceWatchWorker : BackgroundService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var name = ApplicationWatchProbe.NormalizeProcessName(app.Name);
+            if (string.IsNullOrWhiteSpace(name))
+                continue;
             var min = app.MinCount <= 0 ? 1 : app.MinCount;
             var key = $"application:{name}";
+            activeKeys.Add(key);
             var count = ApplicationWatchProbe.CountInstances(name);
             var health = count >= min ? ServiceWatchHealth.Running : ServiceWatchHealth.Missing;
             var statusText = $"instances={count}/{min}";
@@ -133,12 +140,60 @@ public sealed class ServiceWatchWorker : BackgroundService
             }
         }
 
+        var pruned = _status.PruneServiceWatchSnapshot(activeKeys);
+        PruneLocalWatchState(activeKeys);
+        if (pruned > 0)
+            _lastInventoryShipUtc = DateTime.MinValue;
+
         emitted += await MaybeShipInventoryAsync(policy, cancellationToken);
 
         if (emitted > 0)
             _status.MarkServiceWatchEvents(emitted);
         else
             _status.MarkServiceWatchIdle();
+    }
+
+    private async Task ClearWatchStateAsync(ServiceWatchPolicy policy, CancellationToken cancellationToken)
+    {
+        var pruned = _status.PruneServiceWatchSnapshot([]);
+        PruneLocalWatchState([]);
+        if (pruned <= 0)
+            return;
+
+        _lastInventoryShipUtc = DateTime.MinValue;
+        if (policy.IncludeInventory)
+        {
+            _lastInventoryShipUtc = DateTime.UtcNow;
+            await _queue.EnqueueAsync(
+                WatchInventoryEvents.Build(_status.ServiceWatchSnapshot(), DateTime.UtcNow),
+                cancellationToken);
+            _status.MarkServiceWatchEvents(1);
+        }
+        else
+        {
+            _status.MarkServiceWatchIdle();
+        }
+    }
+
+    private void PruneLocalWatchState(HashSet<string> activeKeys)
+    {
+        foreach (var key in _previous.Keys.ToArray())
+        {
+            if (!activeKeys.Contains(key))
+                _previous.Remove(key);
+        }
+
+        foreach (var key in _lastRestartAttemptUtc.Keys.ToArray())
+        {
+            if (!activeKeys.Contains(key))
+                _lastRestartAttemptUtc.Remove(key);
+        }
+
+        foreach (var key in _restartAttempts.Keys.ToArray())
+        {
+            if (!activeKeys.Contains(key))
+                _restartAttempts.Remove(key);
+        }
     }
 
     private async Task<int> MaybeShipInventoryAsync(
