@@ -2,6 +2,8 @@
 
 Canlı durum ve sıradaki adımlar: **[current_status.md](./current_status.md)**
 
+**Host paneli (Windows Host Analytics):** [HOST_ANALYTICS.md](./HOST_ANALYTICS.md) · route `/apps/siem-center/hosts/[hostname]`
+
 ## Ürün ayrımı (G3)
 
 | Klasör | Rol |

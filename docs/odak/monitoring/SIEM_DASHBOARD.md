@@ -64,6 +64,7 @@ Deploy: [../deploy/README.md](../deploy/README.md) — `sync-odak-source.ps1 -Pa
 | Sayfa | `Mng.Ui/pages/apps/siem-center/index.vue` |
 | Dashboard | `Mng.Ui/components/apps/siem-center/AcSiemCenterDashboard.vue` |
 | Olay arama | `/apps/siem-center/events` (mevcut) |
+| **Host Analytics** | `/apps/siem-center/hosts/[hostname]` — [../siem/HOST_ANALYTICS.md](../siem/HOST_ANALYTICS.md) |
 
 ## Odak menü
 

@@ -197,7 +197,8 @@ function onTimeRangeSelect(value: SecEventTimeRange | 'custom') {
 
 function syncQueryToUrl() {
   const query: Record<string, string> = {};
-  if (search.value.trim()) query.search = search.value.trim();
+  const searchText = (search.value ?? '').trim();
+  if (searchText) query.search = searchText;
   if (sourceType.value) query.sourceType = sourceType.value;
   if (eventAction.value) query.eventAction = eventAction.value;
   if (showUnknown.value) query.showUnknown = '1';
@@ -258,7 +259,7 @@ function clearFilters() {
 
 function hasActiveFilters(): boolean {
   return !!(
-    search.value.trim() ||
+    (search.value ?? '').trim() ||
     sourceType.value ||
     eventAction.value ||
     rangeMode.value !== 'preset' ||
@@ -282,7 +283,7 @@ async function loadRows(options: { syncUrl?: boolean; resetSelection?: boolean; 
       to: range.to,
       sourceType: sourceType.value ?? undefined,
       eventAction: eventAction.value ?? undefined,
-      search: search.value.trim() || undefined,
+      search: (search.value ?? '').trim() || undefined,
       excludeUnknown: !showUnknown.value,
       skip: skip.value,
       limit: itemsPerPage.value,

@@ -234,27 +234,32 @@ function emptySnapshot(): DiscoveryHostMetricsSnapshot {
 }
 
 /**
- * Load latest host resource + top-process metrics (+ short series) for Discovery Metrics tabs.
+ * Load host resource + top-process metrics (+ series) for Discovery / Host Analytics.
  */
 export async function fetchDiscoveryHostMetrics(
   hostname: string,
+  options?: { from?: string; to?: string; maxPoints?: number; limit?: number },
 ): Promise<DiscoveryHostMetricsSnapshot> {
   const host = hostname.trim();
   if (!host) return emptySnapshot();
 
-  const from = fromHours(2);
+  const from = options?.from || fromHours(2);
+  const to = options?.to;
+  const maxPoints = options?.maxPoints ?? 40;
+  const limit = options?.limit ?? Math.max(60, maxPoints + 20);
   const search = shortHostKey(host);
   const base = {
     from,
+    to,
     sourceType: 'metric' as const,
     excludeUnknown: false,
     search,
   };
 
   const [cpuRes, memRes, diskRes, topCpuRes, topMemRes] = await Promise.all([
-    secEventQuery({ ...base, eventAction: 'host.cpu', limit: 60 }),
-    secEventQuery({ ...base, eventAction: 'host.memory', limit: 80 }),
-    secEventQuery({ ...base, eventAction: 'host.disk', limit: 120 }),
+    secEventQuery({ ...base, eventAction: 'host.cpu', limit }),
+    secEventQuery({ ...base, eventAction: 'host.memory', limit: Math.max(limit, 80) }),
+    secEventQuery({ ...base, eventAction: 'host.disk', limit: Math.max(limit, 120) }),
     secEventQuery({ ...base, eventAction: 'process.top_cpu', limit: 10 }),
     secEventQuery({ ...base, eventAction: 'process.top_memory', limit: 10 }),
   ]);
@@ -268,7 +273,7 @@ export async function fetchDiscoveryHostMetrics(
   const snap = emptySnapshot();
   const times: number[] = [];
 
-  snap.cpuSeries = buildValueSeries(cpuItems, 'cpu.percent', 40);
+  snap.cpuSeries = buildValueSeries(cpuItems, 'cpu.percent', maxPoints);
   if (snap.cpuSeries.length) {
     const last = snap.cpuSeries[snap.cpuSeries.length - 1]!;
     snap.cpuPercent = last.value;
@@ -276,7 +281,7 @@ export async function fetchDiscoveryHostMetrics(
     times.push(last.at);
   }
 
-  snap.memorySeries = buildValueSeries(memItems, 'memory.available_bytes', 40);
+  snap.memorySeries = buildValueSeries(memItems, 'memory.available_bytes', maxPoints);
   if (snap.memorySeries.length) {
     const last = snap.memorySeries[snap.memorySeries.length - 1]!;
     snap.memoryAvailableBytes = last.value;
@@ -299,7 +304,7 @@ export async function fetchDiscoveryHostMetrics(
 
   snap.disks = buildDisks(diskItems);
   for (const d of snap.disks) times.push(d.at);
-  snap.diskSeries = buildDiskUsedSeries(diskItems, 40);
+  snap.diskSeries = buildDiskUsedSeries(diskItems, maxPoints);
 
   const topCpuHit = topCpuItems[0] || null;
   if (topCpuHit) {

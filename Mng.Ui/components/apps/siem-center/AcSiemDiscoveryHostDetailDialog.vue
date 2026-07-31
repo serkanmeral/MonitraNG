@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { hostEventsLink, hostLocalUiLink } from '@/composables/useSiemDiscoveryData';
+import { hostDashboardLink, hostLocalUiLink, hostTabEventsLink } from '@/composables/useSiemDiscoveryData';
 import { coverageColor } from '@/composables/useSiemDiscoveryMock';
+import AcSiemDiscoveryHostStatusPanel from '@/components/apps/siem-center/AcSiemDiscoveryHostStatusPanel.vue';
 import AcSiemDiscoveryHostMetricsPanel from '@/components/apps/siem-center/AcSiemDiscoveryHostMetricsPanel.vue';
 import AcSiemDiscoveryHostAppsPanel from '@/components/apps/siem-center/AcSiemDiscoveryHostAppsPanel.vue';
 import AcSiemDiscoveryHostEventLogsPanel from '@/components/apps/siem-center/AcSiemDiscoveryHostEventLogsPanel.vue';
@@ -92,44 +93,26 @@ function formatUptimeSeconds(sec?: number | null): string {
   return t('siemCenter.discovery.hostDetail.uptimeDays', { n: day });
 }
 
-const lastSeenAgeLabel = computed(() => {
-  const at = props.host?.lastSeenAt;
-  if (at == null) return null;
-  const ageSec = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (ageSec < 60) return t('siemCenter.discovery.hostDetail.ageSeconds', { n: ageSec });
-  const ageMin = Math.round(ageSec / 60);
-  return t('siemCenter.discovery.hostDetail.ageMinutes', { n: ageMin });
-});
-
-const staleMinutes = computed(() => Math.round(props.staleMs / 60000));
-
 const sourcesLabel = computed(() => {
   const s = props.host?.sources;
   if (!s?.length) return '—';
   return s.join(', ');
 });
 
-const eventsHref = computed(() =>
-  props.host ? hostEventsLink(props.host) : '/apps/siem-center/events',
+/** Footer primary CTA: full host dashboard (new tab), tab matches modal. */
+const dashboardHref = computed(() =>
+  props.host ? hostDashboardLink(props.host.hostname, activeTab.value) : '/apps/siem-center/discovery',
 );
+
+/** Secondary: filtered security events for the active tab. */
+const eventsHref = computed(() => {
+  if (!props.host) return '/apps/siem-center/events';
+  return hostTabEventsLink(props.host, activeTab.value);
+});
 
 const localUiHref = computed(() =>
   props.host ? hostLocalUiLink(props.host) : null,
 );
-
-const hasAgentSnapshot = computed(() => {
-  const a = agent.value;
-  if (!a) return false;
-  return !!(
-    a.primaryIp
-    || a.consoleUser
-    || a.loggedOnUsers?.length
-    || a.bootTimeUtc
-    || a.uptimeSeconds != null
-    || a.sessions?.length
-    || a.agentVersion
-  );
-});
 
 function close() {
   open.value = false;
@@ -137,9 +120,9 @@ function close() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="920" scrollable>
+  <v-dialog v-model="open" max-width="960" scrollable>
     <v-card v-if="host" class="host-detail-card">
-      <v-card-title class="d-flex align-start justify-space-between ga-3 flex-wrap py-4 px-4">
+      <v-card-title class="d-flex align-start justify-space-between ga-3 flex-wrap py-4 px-4 flex-shrink-0">
         <div class="min-w-0">
           <div class="text-h6 font-weight-bold text-truncate">{{ title }}</div>
           <div class="text-caption text-medium-emphasis">
@@ -151,8 +134,9 @@ function close() {
         </v-chip>
       </v-card-title>
 
-      <v-divider />
+      <v-divider class="flex-shrink-0" />
 
+      <v-card-text class="host-detail-scroll pa-0">
       <div class="host-detail-body" :class="{ 'host-detail-body--side-collapsed': sideCollapsed }">
         <aside v-if="!sideCollapsed" class="host-detail-side pa-4">
           <div class="d-flex align-center justify-space-between ga-2 mb-3">
@@ -214,7 +198,7 @@ function close() {
         </aside>
 
         <div class="host-detail-main">
-          <div class="d-flex align-center">
+          <div class="d-flex align-center flex-shrink-0">
             <v-btn
               v-if="sideCollapsed"
               icon
@@ -233,92 +217,14 @@ function close() {
               <v-tab value="eventlog">{{ t('siemCenter.discovery.hostDetail.tabEventLog') }}</v-tab>
             </v-tabs>
           </div>
-          <v-divider />
-          <v-tabs-window v-model="activeTab">
+          <v-divider class="flex-shrink-0" />
+          <v-tabs-window v-model="activeTab" class="host-detail-tabs-window">
             <v-tabs-window-item value="status">
-              <div class="pa-4">
-                <v-alert
-                  :type="host.coverage === 'managedOnline' ? 'success' : host.coverage === 'managedOffline' ? 'warning' : 'info'"
-                  variant="tonal"
-                  density="comfortable"
-                  class="mb-4"
-                >
-                  <div class="font-weight-medium mb-1">{{ coverageLabel }}</div>
-                  <div class="text-body-2">
-                    {{
-                      t('siemCenter.discovery.hostDetail.statusHint', {
-                        m: staleMinutes,
-                      })
-                    }}
-                  </div>
-                  <div v-if="host.lastSeenAt" class="text-body-2 mt-2">
-                    <span class="text-medium-emphasis">{{ t('siemCenter.discovery.hostDetail.lastHeartbeat') }}:</span>
-                    {{ formatTs(host.lastSeenAt) }}
-                    <span v-if="lastSeenAgeLabel" class="text-medium-emphasis"> ({{ lastSeenAgeLabel }})</span>
-                  </div>
-                  <div v-else class="text-body-2 mt-2 text-medium-emphasis">
-                    {{ t('siemCenter.discovery.hostDetail.noHeartbeat') }}
-                  </div>
-                </v-alert>
-
-                <template v-if="hasAgentSnapshot">
-                  <div class="text-subtitle-2 mb-2">
-                    {{ t('siemCenter.discovery.hostDetail.sectionAgent') }}
-                  </div>
-                  <v-table density="compact" class="mb-4 host-detail-table">
-                    <tbody>
-                      <tr>
-                        <td class="text-medium-emphasis">{{ t('siemCenter.discovery.hostDetail.ip') }}</td>
-                        <td class="font-mono">{{ displayIp }}</td>
-                      </tr>
-                      <tr>
-                        <td class="text-medium-emphasis">{{ t('siemCenter.discovery.hostDetail.activeUser') }}</td>
-                        <td class="font-mono">{{ displayUser || '—' }}</td>
-                      </tr>
-                      <tr>
-                        <td class="text-medium-emphasis">{{ t('siemCenter.discovery.hostDetail.bootTime') }}</td>
-                        <td>{{ formatTs(agent?.bootTimeUtc) }}</td>
-                      </tr>
-                      <tr>
-                        <td class="text-medium-emphasis">{{ t('siemCenter.discovery.hostDetail.uptime') }}</td>
-                        <td>{{ formatUptimeSeconds(agent?.uptimeSeconds) }}</td>
-                      </tr>
-                    </tbody>
-                  </v-table>
-
-                  <div v-if="agent?.sessions?.length" class="mb-2">
-                    <div class="text-subtitle-2 mb-2">
-                      {{ t('siemCenter.discovery.hostDetail.sectionSessions') }}
-                    </div>
-                    <v-table density="compact" class="host-detail-table">
-                      <thead>
-                        <tr>
-                          <th class="text-left">{{ t('siemCenter.discovery.hostDetail.sessionUser') }}</th>
-                          <th class="text-left">{{ t('siemCenter.discovery.hostDetail.sessionType') }}</th>
-                          <th class="text-left">{{ t('siemCenter.discovery.hostDetail.sessionState') }}</th>
-                          <th class="text-left">{{ t('siemCenter.discovery.hostDetail.sessionDuration') }}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(s, i) in agent.sessions" :key="`${s.sessionId ?? i}-${s.user}`">
-                          <td class="font-mono text-break">{{ s.user }}</td>
-                          <td>{{ s.clientProtocol || '—' }}</td>
-                          <td>{{ s.state || '—' }}</td>
-                          <td>{{ formatUptimeSeconds(s.durationSeconds) }}</td>
-                        </tr>
-                      </tbody>
-                    </v-table>
-                  </div>
-                </template>
-                <v-sheet
-                  v-else-if="host.lastSeenAt"
-                  border
-                  rounded
-                  class="pa-3 text-medium-emphasis text-body-2"
-                >
-                  {{ t('siemCenter.discovery.hostDetail.agentFieldsPending') }}
-                </v-sheet>
-              </div>
+              <AcSiemDiscoveryHostStatusPanel
+                v-if="host"
+                :host="host"
+                :stale-ms="staleMs"
+              />
             </v-tabs-window-item>
 
             <v-tabs-window-item value="metrics">
@@ -339,16 +245,33 @@ function close() {
               <AcSiemDiscoveryHostEventLogsPanel
                 v-if="activeTab === 'eventlog' && host"
                 :hostname="host.hostname"
+                :active="activeTab === 'eventlog'"
               />
             </v-tabs-window-item>
           </v-tabs-window>
         </div>
       </div>
+      </v-card-text>
 
-      <v-divider />
+      <v-divider class="flex-shrink-0" />
 
-      <v-card-actions class="pa-4 flex-wrap ga-2">
-        <v-btn variant="text" :to="eventsHref" prepend-icon="mdi-timeline-text-outline">
+      <v-card-actions class="pa-4 flex-wrap ga-2 flex-shrink-0 host-detail-actions">
+        <v-btn
+          variant="text"
+          :to="dashboardHref"
+          target="_blank"
+          rel="noopener noreferrer"
+          prepend-icon="mdi-view-dashboard-outline"
+        >
+          {{ t('siemCenter.discovery.hostDetail.openDashboard') }}
+        </v-btn>
+        <v-btn
+          variant="text"
+          :to="eventsHref"
+          target="_blank"
+          rel="noopener noreferrer"
+          prepend-icon="mdi-timeline-text-outline"
+        >
           {{ t('siemCenter.discovery.hostDetail.openEvents') }}
         </v-btn>
         <v-tooltip :disabled="!!localUiHref" location="top">
@@ -378,10 +301,25 @@ function close() {
 </template>
 
 <style scoped>
+.host-detail-card {
+  display: flex;
+  flex-direction: column;
+  max-height: min(92vh, 920px);
+}
+.host-detail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.host-detail-actions {
+  background: rgb(var(--v-theme-surface));
+  z-index: 1;
+}
 .host-detail-body {
   display: grid;
   grid-template-columns: minmax(240px, 300px) 1fr;
   min-height: 360px;
+  align-items: stretch;
 }
 .host-detail-body--side-collapsed {
   grid-template-columns: 1fr;
@@ -389,7 +327,6 @@ function close() {
 .host-detail-side {
   border-right: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
   background: rgba(var(--v-theme-surface-variant), 0.12);
-  overflow: auto;
 }
 .host-side-dl {
   display: flex;
@@ -407,6 +344,11 @@ function close() {
   font-size: 0.875rem;
 }
 .host-detail-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.host-detail-tabs-window {
   min-width: 0;
 }
 .host-detail-table :deep(td),

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { secEventGet } from '@/services/secEventService';
 import type { SecEventListItem } from '@/types/apps/secEvent';
+import AcSiemDiscoveryHostPackagesPanel from '@/components/apps/siem-center/AcSiemDiscoveryHostPackagesPanel.vue';
 import {
   DISCOVERY_EVENTLOG_STALE_MS,
   channelFilterKey,
@@ -15,16 +16,21 @@ import {
 
 const props = defineProps<{
   hostname: string;
+  /** When true, optional package assignment panel loads. */
+  active?: boolean;
   staleMs?: number;
 }>();
 
 const { t, locale } = useAppI18n();
 
+const innerTab = ref<'events' | 'packages'>('events');
 const loading = ref(false);
 const error = ref<string | null>(null);
 const snap = ref<DiscoveryHostEventLogSnapshot | null>(null);
 const loadedFor = ref<string | null>(null);
-const channelFilter = ref<'all' | 'Security' | 'System' | 'Application' | 'PowerShell' | 'RDP' | 'Other'>('all');
+const filterChannel = ref<string | null>(null);
+const filterPackage = ref<string | null>(null);
+const filterEventId = ref('');
 const page = ref(1);
 const itemsPerPage = ref(10);
 const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([
@@ -53,10 +59,39 @@ const isStale = computed(() => {
   return Date.now() - at > staleThreshold.value;
 });
 
+const channelOptions = computed(() => {
+  const set = new Set<string>();
+  for (const x of snap.value?.items ?? []) {
+    const key = channelFilterKey(x.channel);
+    if (key) set.add(key);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b)).map((v) => ({ title: v, value: v }));
+});
+
+const packageOptions = computed(() => {
+  const set = new Set<string>();
+  for (const x of snap.value?.items ?? []) {
+    const p = (x.packageName || '').trim();
+    if (p) set.add(p);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b)).map((v) => ({ title: v, value: v }));
+});
+
 const filteredItems = computed(() => {
-  const list = snap.value?.items ?? [];
-  if (channelFilter.value === 'all') return list;
-  return list.filter((x) => channelFilterKey(x.channel) === channelFilter.value);
+  let list = snap.value?.items ?? [];
+  if (filterChannel.value) {
+    list = list.filter((x) => channelFilterKey(x.channel) === filterChannel.value);
+  }
+  if (filterPackage.value) {
+    list = list.filter(
+      (x) => (x.packageName || '').toLowerCase() === filterPackage.value!.toLowerCase(),
+    );
+  }
+  const idQ = filterEventId.value.trim();
+  if (idQ) {
+    list = list.filter((x) => String(x.eventId ?? '').includes(idQ));
+  }
+  return list;
 });
 
 const hasAny = computed(() => (snap.value?.items.length ?? 0) > 0);
@@ -94,7 +129,7 @@ const detailFieldsJson = computed(() => {
   }
 });
 
-watch(channelFilter, () => {
+watch([filterChannel, filterPackage, filterEventId], () => {
   page.value = 1;
 });
 
@@ -141,16 +176,47 @@ function truncate(text: string | null | undefined, max = 48): string {
   return `${t0.slice(0, max)}…`;
 }
 
+function clearFilters() {
+  filterChannel.value = null;
+  filterPackage.value = null;
+  filterEventId.value = '';
+}
+
 async function openDetail(item: DiscoveryHostEventLogItem) {
   selected.value = item;
   detailOpen.value = true;
-  detailFull.value = null;
   detailError.value = null;
   detailLoading.value = true;
+  detailFull.value = {
+    id: item.id,
+    timestamp: item.timestamp,
+    ingestedAt: item.timestamp,
+    sourceType: 'windows-eventlog',
+    sourceProduct: item.packageName,
+    sourceHost: item.sourceHost ?? null,
+    eventAction: item.eventAction || item.action || '',
+    eventOutcome: item.level,
+    eventCode: item.eventId,
+    actorUser: null,
+    networkSrcIp: null,
+    networkDstIp: null,
+    parserId: null,
+    rawPreview: item.rawPreview || item.message,
+    raw: null,
+    baselineNewFlowPair: false,
+    fields: item.fields ?? {
+      channel: item.channel,
+      eventId: item.eventId,
+      provider: item.provider,
+      message: item.message,
+    },
+  };
   try {
     detailFull.value = await secEventGet(item.id);
+    detailError.value = null;
   } catch (e: unknown) {
-    detailError.value = e instanceof Error ? e.message : String(e);
+    const hasBody = !!(item.message || item.rawPreview || item.eventAction);
+    detailError.value = hasBody ? null : (e instanceof Error ? e.message : String(e));
   } finally {
     detailLoading.value = false;
   }
@@ -187,7 +253,8 @@ watch(
   () => {
     snap.value = null;
     loadedFor.value = null;
-    channelFilter.value = 'all';
+    innerTab.value = 'events';
+    clearFilters();
     page.value = 1;
     sortBy.value = [{ key: 'at', order: 'desc' }];
     closeDetail();
@@ -195,147 +262,186 @@ watch(
   },
   { immediate: true },
 );
+
+const packagesActive = computed(
+  () => props.active !== false && innerTab.value === 'packages',
+);
 </script>
 
 <template>
   <div class="host-eventlog-panel">
     <div class="d-flex align-center flex-wrap ga-2 px-4 pt-3 pb-1">
-      <v-btn-toggle
-        v-model="channelFilter"
-        mandatory
-        density="compact"
-        color="primary"
-        variant="outlined"
-      >
-        <v-btn value="all" size="small">{{ t('siemCenter.discovery.hostDetail.eventLogFilterAll') }}</v-btn>
-        <v-btn value="Security" size="small">Security</v-btn>
-        <v-btn value="System" size="small">System</v-btn>
-        <v-btn value="Application" size="small">Application</v-btn>
-        <v-btn value="PowerShell" size="small">PowerShell</v-btn>
-        <v-btn value="RDP" size="small">RDP</v-btn>
-        <v-btn value="Other" size="small">{{ t('siemCenter.discovery.hostDetail.eventLogFilterOther') }}</v-btn>
-      </v-btn-toggle>
-      <v-spacer />
-      <span class="text-caption text-medium-emphasis">
-        {{ t('siemCenter.discovery.hostDetail.eventLogHint') }}
-      </span>
-      <v-btn
-        size="small"
-        variant="text"
-        prepend-icon="mdi-refresh"
-        :loading="loading"
-        @click="load(true)"
-      >
-        {{ t('siemCenter.discovery.hostDetail.eventLogRefresh') }}
-      </v-btn>
-      <v-btn
-        size="small"
-        variant="text"
-        prepend-icon="mdi-timeline-text-outline"
-        :to="eventsHref"
-      >
-        {{ t('siemCenter.discovery.hostDetail.eventLogOpenEvents') }}
-      </v-btn>
-    </div>
-
-    <div class="pa-4 pt-2">
-      <v-alert v-if="error" type="warning" variant="tonal" density="compact" class="mb-3">
-        {{ error }}
-      </v-alert>
-
-      <v-skeleton-loader v-if="loading && !snap" type="table" />
-
-      <template v-else-if="!hasAny">
-        <v-sheet border rounded class="pa-3 text-medium-emphasis text-body-2">
-          {{ t('siemCenter.discovery.hostDetail.eventLogEmpty') }}
-        </v-sheet>
-      </template>
-
-      <template v-else>
-        <v-alert
-          v-if="isStale"
-          type="warning"
-          variant="tonal"
-          density="compact"
-          class="mb-3"
-        >
-          {{ t('siemCenter.discovery.hostDetail.eventLogStale') }}
-          <span v-if="snap?.at" class="ms-1">
-            ({{ formatTs(snap.at) }}
-            <span v-if="ageLabel(snap.at)"> · {{ ageLabel(snap.at) }}</span>)
-          </span>
-        </v-alert>
-
-        <div class="d-flex flex-wrap ga-3 mb-3 text-caption text-medium-emphasis">
-          <span>
-            {{ t('siemCenter.discovery.hostDetail.eventLogCount', { n: filteredItems.length }) }}
-          </span>
-          <span v-if="snap?.at">
-            · {{ t('siemCenter.discovery.hostDetail.appsLastSample') }}:
-            {{ formatTs(snap.at) }}
-            <span v-if="ageLabel(snap.at)"> ({{ ageLabel(snap.at) }})</span>
-          </span>
-        </div>
-
-        <v-data-table
-          v-model:page="page"
-          v-model:items-per-page="itemsPerPage"
-          v-model:sort-by="sortBy"
-          :headers="headers"
-          :items="filteredItems"
+      <v-tabs v-model="innerTab" density="compact" color="primary" class="flex-grow-1">
+        <v-tab value="events">{{ t('siemCenter.discovery.hostDetail.eventLogTabEvents') }}</v-tab>
+        <v-tab value="packages">{{ t('siemCenter.discovery.hostDetail.eventLogTabPackages') }}</v-tab>
+      </v-tabs>
+      <template v-if="innerTab === 'events'">
+        <span class="text-caption text-medium-emphasis d-none d-sm-inline">
+          {{ t('siemCenter.discovery.hostDetail.eventLogHint') }}
+        </span>
+        <v-btn
+          size="small"
+          variant="text"
+          prepend-icon="mdi-refresh"
           :loading="loading"
-          item-value="id"
-          density="compact"
-          class="eventlog-table rounded-lg"
-          :items-per-page-options="PAGE_SIZE_OPTIONS"
-          :no-data-text="t('siemCenter.discovery.hostDetail.appsFilterEmpty')"
+          @click="load(true)"
         >
-          <template #item.at="{ item }">
-            <div class="text-body-2 text-no-wrap">
-              <div>{{ formatTs(item.at) }}</div>
-              <div v-if="ageLabel(item.at)" class="text-caption text-medium-emphasis">
-                {{ ageLabel(item.at) }}
-              </div>
-            </div>
-          </template>
-          <template #item.channel="{ item }">
-            <div class="font-mono text-body-2 text-truncate eventlog-channel">{{ item.channel }}</div>
-          </template>
-          <template #item.eventId="{ item }">
-            <span class="font-mono">{{ item.eventId || '—' }}</span>
-          </template>
-          <template #item.packageName="{ item }">
-            <v-chip v-if="item.packageName" size="x-small" variant="tonal">
-              {{ item.packageName }}
-            </v-chip>
-            <span v-else>—</span>
-          </template>
-          <template #item.level="{ item }">
-            <v-chip size="x-small" variant="flat" :color="eventLogLevelTone(item.level)">
-              {{ levelLabel(item.level) }}
-            </v-chip>
-          </template>
-          <template #item.message="{ item }">
-            <span class="text-body-2 text-medium-emphasis text-truncate d-inline-block eventlog-preview">
-              {{ truncate(item.message || item.action) }}
-            </span>
-          </template>
-          <template #item.actions="{ item }">
-            <v-tooltip :text="t('siemCenter.discovery.hostDetail.eventLogDetail')" location="top">
-              <template #activator="{ props: tip }">
-                <v-btn
-                  v-bind="tip"
-                  icon="mdi-eye-outline"
-                  size="small"
-                  variant="text"
-                  @click.stop="openDetail(item)"
-                />
-              </template>
-            </v-tooltip>
-          </template>
-        </v-data-table>
+          {{ t('siemCenter.discovery.hostDetail.eventLogRefresh') }}
+        </v-btn>
+        <v-btn
+          size="small"
+          variant="text"
+          prepend-icon="mdi-timeline-text-outline"
+          :to="eventsHref"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t('siemCenter.discovery.hostDetail.eventLogOpenEvents') }}
+        </v-btn>
       </template>
     </div>
+
+    <v-tabs-window v-model="innerTab">
+      <v-tabs-window-item value="packages">
+        <div class="pa-4 pt-2">
+          <AcSiemDiscoveryHostPackagesPanel
+            :hostname="hostname"
+            :active="packagesActive"
+          />
+        </div>
+      </v-tabs-window-item>
+
+      <v-tabs-window-item value="events">
+        <div class="pa-4 pt-2">
+          <v-alert v-if="error" type="warning" variant="tonal" density="compact" class="mb-3">
+            {{ error }}
+          </v-alert>
+
+          <v-skeleton-loader v-if="loading && !snap" type="table" />
+
+          <template v-else-if="!hasAny">
+            <v-sheet border rounded class="pa-3 text-medium-emphasis text-body-2">
+              {{ t('siemCenter.discovery.hostDetail.eventLogEmpty') }}
+            </v-sheet>
+          </template>
+
+          <template v-else>
+            <v-alert
+              v-if="isStale"
+              type="warning"
+              variant="tonal"
+              density="compact"
+              class="mb-3"
+            >
+              {{ t('siemCenter.discovery.hostDetail.eventLogStale') }}
+              <span v-if="snap?.at" class="ms-1">
+                ({{ formatTs(snap.at) }}
+                <span v-if="ageLabel(snap.at)"> · {{ ageLabel(snap.at) }}</span>)
+              </span>
+            </v-alert>
+
+            <div class="d-flex flex-wrap ga-2 mb-3 align-center">
+              <v-select
+                v-model="filterChannel"
+                :items="channelOptions"
+                :label="t('siemCenter.discovery.hostDetail.eventLogColChannel')"
+                density="compact"
+                clearable
+                hide-details
+                style="max-width: 11rem"
+              />
+              <v-select
+                v-model="filterPackage"
+                :items="packageOptions"
+                :label="t('siemCenter.discovery.hostDetail.eventLogColPackage')"
+                density="compact"
+                clearable
+                hide-details
+                style="max-width: 12rem"
+              />
+              <v-text-field
+                v-model="filterEventId"
+                :label="t('siemCenter.discovery.hostDetail.eventLogColEventId')"
+                density="compact"
+                clearable
+                hide-details
+                style="max-width: 8rem"
+              />
+              <v-btn size="small" variant="text" @click="clearFilters">
+                {{ t('siemCenter.discovery.hostDetail.eventLogClearFilters') }}
+              </v-btn>
+              <v-spacer />
+              <span class="text-caption text-medium-emphasis">
+                {{ t('siemCenter.discovery.hostDetail.eventLogCount', { n: filteredItems.length }) }}
+                <template v-if="snap?.at">
+                  · {{ t('siemCenter.discovery.hostDetail.appsLastSample') }}:
+                  {{ formatTs(snap.at) }}
+                  <span v-if="ageLabel(snap.at)"> ({{ ageLabel(snap.at) }})</span>
+                </template>
+              </span>
+            </div>
+
+            <v-data-table
+              v-model:page="page"
+              v-model:items-per-page="itemsPerPage"
+              v-model:sort-by="sortBy"
+              :headers="headers"
+              :items="filteredItems"
+              :loading="loading"
+              item-value="id"
+              density="compact"
+              class="eventlog-table rounded-lg"
+              :items-per-page-options="PAGE_SIZE_OPTIONS"
+              :no-data-text="t('siemCenter.discovery.hostDetail.appsFilterEmpty')"
+            >
+              <template #item.at="{ item }">
+                <div class="text-body-2 text-no-wrap">
+                  <div>{{ formatTs(item.at) }}</div>
+                  <div v-if="ageLabel(item.at)" class="text-caption text-medium-emphasis">
+                    {{ ageLabel(item.at) }}
+                  </div>
+                </div>
+              </template>
+              <template #item.channel="{ item }">
+                <div class="font-mono text-body-2 text-truncate eventlog-channel">{{ item.channel }}</div>
+              </template>
+              <template #item.eventId="{ item }">
+                <span class="font-mono">{{ item.eventId || '—' }}</span>
+              </template>
+              <template #item.packageName="{ item }">
+                <v-chip v-if="item.packageName" size="x-small" variant="tonal">
+                  {{ item.packageName }}
+                </v-chip>
+                <span v-else>—</span>
+              </template>
+              <template #item.level="{ item }">
+                <v-chip size="x-small" variant="flat" :color="eventLogLevelTone(item.level)">
+                  {{ levelLabel(item.level) }}
+                </v-chip>
+              </template>
+              <template #item.message="{ item }">
+                <span class="text-body-2 text-medium-emphasis text-truncate d-inline-block eventlog-preview">
+                  {{ truncate(item.message || item.action) }}
+                </span>
+              </template>
+              <template #item.actions="{ item }">
+                <v-tooltip :text="t('siemCenter.discovery.hostDetail.eventLogDetail')" location="top">
+                  <template #activator="{ props: tip }">
+                    <v-btn
+                      v-bind="tip"
+                      icon="mdi-eye-outline"
+                      size="small"
+                      variant="text"
+                      @click.stop="openDetail(item)"
+                    />
+                  </template>
+                </v-tooltip>
+              </template>
+            </v-data-table>
+          </template>
+        </div>
+      </v-tabs-window-item>
+    </v-tabs-window>
 
     <v-dialog
       :model-value="detailOpen"

@@ -249,6 +249,8 @@ watch(innerTab, (tab) => {
         variant="text"
         prepend-icon="mdi-timeline-text-outline"
         :to="eventsHref"
+        target="_blank"
+        rel="noopener noreferrer"
       >
         {{
           innerTab === 'activity'

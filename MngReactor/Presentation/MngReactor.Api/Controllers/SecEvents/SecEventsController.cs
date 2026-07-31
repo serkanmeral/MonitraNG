@@ -90,7 +90,30 @@ public sealed class SecEventsController : ControllerBase
         return Ok(summary);
     }
 
-    [HttpGet("{id}")]
+    /// <summary>
+    /// Fetch one event by id via query string — safe for ids that contain '/'
+    /// (e.g. Windows channel paths like "...LocalSessionManager/Operational:123:25").
+    /// </summary>
+    [HttpGet("by-id")]
+    [ProducesResponseType(typeof(SecEventListItem), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SecEventListItem>> GetByIdQuery(
+        [FromQuery] string id,
+        CancellationToken cancellationToken)
+    {
+        var domain = await GetDomainAsync();
+        if (string.IsNullOrEmpty(domain))
+            return Unauthorized();
+        if (string.IsNullOrWhiteSpace(id))
+            return NotFound();
+
+        var item = await _repository.GetByIdAsync(domain, id.Trim(), cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    /// <summary>Path-based get; catch-all so ids with '/' still bind.</summary>
+    [HttpGet("{**id}")]
     [ProducesResponseType(typeof(SecEventListItem), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SecEventListItem>> GetById(string id, CancellationToken cancellationToken)
@@ -99,7 +122,12 @@ public sealed class SecEventsController : ControllerBase
         if (string.IsNullOrEmpty(domain))
             return Unauthorized();
 
-        var item = await _repository.GetByIdAsync(domain, id, cancellationToken);
+        // ASP.NET may leave catch-all encoded; normalize once.
+        var normalized = Uri.UnescapeDataString(id ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return NotFound();
+
+        var item = await _repository.GetByIdAsync(domain, normalized, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 

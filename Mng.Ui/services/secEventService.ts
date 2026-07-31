@@ -92,11 +92,36 @@ export async function secEventQuery(query: SecEventQuery = {}): Promise<SecEvent
 }
 
 export async function secEventGet(id: string): Promise<SecEventListItem> {
-  const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/${encodeURIComponent(id)}`, {
-    method: 'GET',
-    headers: await authHeaders(),
-  });
-  return normalizeListItem(raw);
+  const trimmed = (id || '').trim();
+  if (!trimmed) {
+    throw new Error('Missing sec-event id');
+  }
+
+  // Prefer query-string lookup: Windows Event Log ids often contain '/'
+  // (e.g. "...LocalSessionManager/Operational:2543:25") which breaks path routes / proxies.
+  const qs = buildQuery({ id: trimmed });
+  try {
+    const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/by-id${qs}`, {
+      method: 'GET',
+      headers: await authHeaders(),
+    });
+    return normalizeListItem(raw);
+  } catch (err: unknown) {
+    const status = (err as { statusCode?: number; status?: number })?.statusCode
+      ?? (err as { statusCode?: number; status?: number })?.status;
+    // Older Reactor builds may not have by-id yet — fall back to path get for simple ids.
+    if (status === 404 && !trimmed.includes('/')) {
+      const raw = await $fetch<Record<string, unknown>>(
+        `/api/reactor/v1/sec-events/${encodeURIComponent(trimmed)}`,
+        {
+          method: 'GET',
+          headers: await authHeaders(),
+        },
+      );
+      return normalizeListItem(raw);
+    }
+    throw err;
+  }
 }
 
 function normalizeDashboardSummary(raw: Record<string, unknown>): SecEventDashboardSummary {

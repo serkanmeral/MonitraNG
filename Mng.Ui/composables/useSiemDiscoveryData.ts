@@ -9,6 +9,9 @@ import {
   buildLegend,
   buildMockKpis,
 } from '@/composables/useSiemDiscoveryMock';
+import { hostMetricsEventsLink } from '@/composables/useSiemDiscoveryHostMetrics';
+import { hostWatchEventsLink } from '@/composables/useSiemDiscoveryHostApps';
+import { hostEventLogEventsLink } from '@/composables/useSiemDiscoveryHostEventLogs';
 import type {
   SiemCoverageStatus,
   SiemDiscoveryAgentInfo,
@@ -29,14 +32,134 @@ interface LiveHostSnapshot {
   agent: SiemDiscoveryAgentInfo | null;
 }
 
+/** Bare hostname for sec-events search (FQDN often does not match indexed host fields). */
+export function shortHostKey(hostname: string): string {
+  const h = hostname.trim().toLowerCase();
+  if (!h) return '';
+  // Keep IPv4 as-is; splitting on '.' would truncate to the first octet.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return h;
+  return h.split('.')[0] || h;
+}
+
+/** Deep-link: host heartbeat / status events for a discovery host. */
 export function hostEventsLink(host: Pick<SiemDiscoveryHost, 'hostname' | 'ip'>): string {
   const q = new URLSearchParams();
   q.set('sourceType', 'metric');
   q.set('eventAction', 'host.up');
   q.set('timeRange', '24h');
-  const term = (host.hostname || host.ip || '').trim();
+  const hostname = (host.hostname || '').trim();
+  const term = hostname ? shortHostKey(hostname) : (host.ip || '').trim();
   if (term) q.set('search', term);
   return `/apps/siem-center/events?${q.toString()}`;
+}
+
+export type HostDashboardTab = 'status' | 'metrics' | 'apps' | 'eventlog';
+
+const HOST_DASHBOARD_TABS = new Set<string>(['status', 'metrics', 'apps', 'eventlog']);
+
+export function parseHostDashboardTab(raw: unknown): HostDashboardTab {
+  const t = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  return HOST_DASHBOARD_TABS.has(t) ? (t as HostDashboardTab) : 'status';
+}
+
+/** Full-page host dashboard route (short hostname key). */
+export function hostDashboardLink(
+  hostname: string,
+  tab?: HostDashboardTab | string | null,
+): string {
+  const key = shortHostKey(hostname) || hostname.trim().toLowerCase();
+  const q = new URLSearchParams();
+  if (tab != null && String(tab).trim()) {
+    q.set('tab', parseHostDashboardTab(tab));
+  }
+  const qs = q.toString();
+  return `/apps/siem-center/hosts/${encodeURIComponent(key)}${qs ? `?${qs}` : ''}`;
+}
+
+/** Security-events deep-link shaped by dashboard / modal tab. */
+export function hostTabEventsLink(
+  host: Pick<SiemDiscoveryHost, 'hostname' | 'ip'> | string,
+  tab: HostDashboardTab | string,
+): string {
+  const hostname = typeof host === 'string' ? host : (host.hostname || host.ip || '');
+  const t = parseHostDashboardTab(tab);
+  switch (t) {
+    case 'metrics':
+      return hostMetricsEventsLink(hostname);
+    case 'apps':
+      return hostWatchEventsLink(hostname);
+    case 'eventlog':
+      return hostEventLogEventsLink(hostname);
+    case 'status':
+    default:
+      return typeof host === 'string'
+        ? hostEventsLink({ hostname: host, ip: '' })
+        : hostEventsLink(host);
+  }
+}
+
+/**
+ * Resolve a host view-model for the host dashboard page (AD inventory + latest host.up).
+ */
+export async function loadHostDashboardHost(routeHostname: string): Promise<SiemDiscoveryHost> {
+  const want = shortHostKey(routeHostname) || routeHostname.trim().toLowerCase();
+  const displayName = routeHostname.trim() || want;
+
+  let dto: DiscoveryHostDto | null = null;
+  try {
+    const hostsRes = await fetchDiscoveryHosts({ limit: 2000 });
+    for (const h of hostsRes.items ?? []) {
+      const hn = (h.hostname || h.samAccountName?.replace(/\$$/, '') || '').trim();
+      if (!hn) continue;
+      if (shortHostKey(hn) === want || hn.toLowerCase() === want) {
+        dto = h;
+        break;
+      }
+    }
+  } catch {
+    dto = null;
+  }
+
+  let lastSeenAt: number | null = null;
+  let agent: SiemDiscoveryAgentInfo | null = null;
+  try {
+    const res = await secEventQuery({
+      from: from24h(),
+      sourceType: 'metric',
+      eventAction: 'host.up',
+      search: want,
+      limit: 50,
+      excludeUnknown: false,
+    });
+    for (const item of res.items ?? []) {
+      const key = (item.sourceHost || '').trim().toLowerCase();
+      if (!key) continue;
+      if (shortHostKey(key) !== want && key !== want && !key.includes(want)) continue;
+      const ts = Date.parse(item.timestamp || item.ingestedAt || '');
+      if (!Number.isFinite(ts)) continue;
+      if (lastSeenAt != null && ts <= lastSeenAt) continue;
+      lastSeenAt = ts;
+      agent = parseHostUpAgent(item.fields ?? null);
+    }
+  } catch {
+    // keep defaults
+  }
+
+  const liveCoverage = coverageFromLastSeen(lastSeenAt);
+  if (dto) {
+    const baseCoverage: SiemCoverageStatus =
+      liveCoverage ?? 'managedOffline';
+    return toViewHost(dto, baseCoverage, lastSeenAt, agent);
+  }
+
+  return {
+    id: `live-${want}`,
+    hostname: displayName || want,
+    ip: agent?.primaryIp || '—',
+    coverage: liveCoverage ?? 'discoveredUnmanaged',
+    lastSeenAt,
+    agent,
+  };
 }
 
 /** Default MngLogs Local UI port (agent system.json LocalUiPort). */
@@ -72,12 +195,6 @@ function coverageFromLastSeen(lastSeenMs: number | null): SiemCoverageStatus | n
   const age = Date.now() - lastSeenMs;
   if (age <= DISCOVERY_STALE_MS) return 'managedOnline';
   return 'managedOffline';
-}
-
-function shortHostKey(hostname: string): string {
-  const h = hostname.trim().toLowerCase();
-  const bare = h.split('.')[0] || h;
-  return bare;
 }
 
 function subnetLabel(ip: string): string {

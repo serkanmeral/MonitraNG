@@ -159,6 +159,8 @@ watch(
         variant="text"
         prepend-icon="mdi-timeline-text-outline"
         :to="metricsEventsHref"
+        target="_blank"
+        rel="noopener noreferrer"
       >
         {{ t('siemCenter.discovery.hostDetail.metricsOpenEvents') }}
       </v-btn>

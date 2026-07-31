@@ -134,12 +134,14 @@ function emptySnapshot(): DiscoveryHostAppsSnapshot {
  */
 export async function fetchDiscoveryHostApps(
   hostname: string,
+  options?: { from?: string; to?: string },
 ): Promise<DiscoveryHostAppsSnapshot> {
   const host = hostname.trim();
   if (!host) return emptySnapshot();
 
   const res = await secEventQuery({
-    from: fromHours(24),
+    from: options?.from || fromHours(24),
+    to: options?.to,
     sourceType: 'metric',
     eventAction: 'watch.inventory',
     excludeUnknown: false,
@@ -201,20 +203,22 @@ export function watchActivityTone(
 }
 
 /**
- * Host watch transitions + restart attempts (last 24h).
+ * Host watch transitions + restart attempts.
  * Sources: service-watch / app-watch (not watch.inventory snapshots).
  */
 export async function fetchDiscoveryHostWatchActivity(
   hostname: string,
+  options?: { from?: string; to?: string; limit?: number },
 ): Promise<DiscoveryWatchActivitySnapshot> {
   const host = hostname.trim();
   if (!host) return emptyActivity();
 
   const base = {
-    from: fromHours(24),
+    from: options?.from || fromHours(24),
+    to: options?.to,
     excludeUnknown: false,
     search: shortHostKey(host),
-    limit: 80,
+    limit: options?.limit ?? 80,
   } as const;
 
   const [svcRes, appRes] = await Promise.all([

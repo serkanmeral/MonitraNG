@@ -14,6 +14,12 @@ export interface DiscoveryHostEventLogItem {
   level: string | null;
   message: string | null;
   action: string | null;
+  /** Host reported on the sec-event (for detail fallback). */
+  sourceHost?: string | null;
+  /** List-row blobs so detail UI works when GetById cannot resolve slash-ids. */
+  rawPreview?: string | null;
+  eventAction?: string | null;
+  fields?: Record<string, unknown> | null;
 }
 
 export interface DiscoveryHostEventLogSnapshot {
@@ -116,24 +122,30 @@ function toItem(item: SecEventListItem): DiscoveryHostEventLogItem | null {
     level: asString(item.eventOutcome) || asString(fields.severity) || asString(fields.level),
     message,
     action: actionUseful,
+    sourceHost: item.sourceHost ?? null,
+    rawPreview: item.rawPreview ?? null,
+    eventAction: item.eventAction || null,
+    fields: item.fields ?? null,
   };
 }
 
 /**
- * Recent Windows Event Log rows for a discovery host (last 24h).
+ * Windows Event Log rows for a discovery host.
  */
 export async function fetchDiscoveryHostEventLogs(
   hostname: string,
+  options?: { from?: string; to?: string; limit?: number },
 ): Promise<DiscoveryHostEventLogSnapshot> {
   const host = hostname.trim();
   if (!host) return emptySnapshot();
 
   const res = await secEventQuery({
-    from: fromHours(24),
+    from: options?.from || fromHours(24),
+    to: options?.to,
     sourceType: 'windows-eventlog',
     excludeUnknown: false,
     search: shortHostKey(host),
-    limit: 100,
+    limit: options?.limit ?? 100,
   });
 
   const items = (res.items ?? [])
