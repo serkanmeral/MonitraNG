@@ -95,6 +95,8 @@ export function sourceTypeLabelKey(sourceType?: string | null): string {
       return 'siemCenter.events.sourceMetric';
     case 'windows-eventlog':
       return 'siemCenter.events.sourceWindowsEventLog';
+    case 'linux-journal':
+      return 'siemCenter.events.sourceLinuxJournal';
     default:
       return 'siemCenter.events.sourceUnknown';
   }

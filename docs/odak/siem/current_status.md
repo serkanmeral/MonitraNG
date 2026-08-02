@@ -1,6 +1,6 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 2 Ağustos 2026 (Discovery Faz 1–3 park; ajansız host aksiyonları konuşuldu, kod yok)  
+**Son güncelleme:** 2 Ağustos 2026 (Linux Host Analytics L1/L2 park; Analytics’e sonra dönülecek)  
 **Ortam notu:** Odak production `odak@192.168.20.8`; Collector `:5091`; UI local Nuxt → prod API sık kullanılıyor.  
 **Canlı pilot Windows:** `MngLogs.Agent` **v1.0.4** → collector `:5091`; hostId=`TERMINAL-pilot`.  
 **Canlı pilot Linux:** `MngLogs.Agent.Linux` **v0.3.x** → `monitrang` 192.168.20.20 → aynı collector; Local UI `:5092`; hostId=`monitrang-linux-pilot`.
@@ -9,6 +9,7 @@
 
 Kapsam → kazanım → onay → kod.  
 **Park:**  
+- **Host Analytics L3 / genel Analytics dönüşü** (cilâ, UX derinliği)  
 - **Ajansız host aksiyonları** (Discovery — rehber / olay deep-link; kararlar açık)  
 - Periyodik discovery scan  
 - P5 parser · Alarm/Notifier · Hard publish · Settings iskelet redesign · Host paket ataması (E3)  
@@ -20,14 +21,23 @@ Kapsam → kazanım → onay → kod.
 
 ## Son çalışılan konu
 
-**SIEM Discovery — Keşif ve kapsam** (Coverage gap + identity + prefix site).  
-Detay: [DISCOVERY_COVERAGE.md](./DISCOVERY_COVERAGE.md)
+**Linux Host Analytics (L1 + L2)** — Discovery modal Journal + metrik eşleme + tam sayfa Host Analytics Linux uyarlaması.  
+Detay: [HOST_ANALYTICS.md](./HOST_ANALYTICS.md)
 
-Konuşuldu, implement edilmedi: **ajansız host aksiyonları** (kurulum rehberi, olaylara git, opsiyonel kurulum komutu). Kullanıcı başka işlere geçti; buraya sonra dönülecek.
+Kullanıcı Analytics sayfalarına sonra dönecek; şu an için tamam kabul edildi.
 
 ---
 
 ## Tamamlananlar
+
+### Linux Host Analytics L1/L2 ✓ (2 Ağu 2026)
+
+- **L1 modal:** Event Log → `linux-journal`; sekme Journal; Unit/Aksiyon; Windows paket ataması Linux’ta gizli
+- **Metrik eşleme:** scan-IP hostname ↔ `host.up.machine` / `source.host` (`siemDiscoveryHostMatch.ts`)
+- **Metrik UX:** kullanım % birincil; disk free/total merge
+- **L2 tam sayfa:** SSH/sudo oturum geçmişi; Journal özeti; bellek % KPI/chart; IP route ile host çözümleme
+- Pilot: `monitrang` / `192.168.20.20`
+- Doküman: [HOST_ANALYTICS.md](./HOST_ANALYTICS.md)
 
 ### Discovery Coverage ✓ (2 Ağu 2026)
 
@@ -38,13 +48,11 @@ Konuşuldu, implement edilmedi: **ajansız host aksiyonları** (kurulum rehberi,
 - Facet: sadece subnet/site (VLAN/DHCP/AP gizli)
 - Doküman: [DISCOVERY_COVERAGE.md](./DISCOVERY_COVERAGE.md)
 
-### Host Analytics ✓ (31 Tem — UI + Reactor prod)
+### Host Analytics Windows ✓ (31 Tem — UI + Reactor prod)
 
 - Tek sayfa host paneli; Discovery modal CTA
 - Oturum geçmişi: 4624/4634/4625/4647 + RDP 21/23/24/25; kullanıcı filtresi; sayfalama/detay
-- Watch: tanımlı hedeflerin son inventory durumu + aralık aktivitesi
-- Event Log: sayfalı/sıralanabilir tablo, pasta→kanal filtresi, detay
-- `sec-events/by-id` + `{**id}` (slash’li Windows id 404 düzeltmesi)
+- Watch + Event Log özeti; `sec-events/by-id`
 - Doküman: [HOST_ANALYTICS.md](./HOST_ANALYTICS.md)
 
 ### E1 Event Log paket ayarları ✓ (kod; Collector prod deploy ayrı)
@@ -63,21 +71,21 @@ Konuşuldu, implement edilmedi: **ajansız host aksiyonları** (kurulum rehberi,
 
 ## Sıradaki adım
 
-**Discovery’ye dönüşte (öncelik):** **Ajansız host aksiyonları** — MVP önerisi: kurulum rehberi + olaylara git; IoT’de ajan CTA gizle. Kararlar: [DISCOVERY_COVERAGE.md § Park](./DISCOVERY_COVERAGE.md#park-noktası--ajansız-host-aksiyonları-dönülecek).
+**Analytics’e dönüşte:** L3 cilâ + genel Host Analytics UX derinliği — [HOST_ANALYTICS.md § Sıradaki](./HOST_ANALYTICS.md).
+
+**Discovery’ye dönüşte:** **Ajansız host aksiyonları** — MVP: kurulum rehberi + olaylara git; IoT’de ajan CTA gizle. Kararlar: [DISCOVERY_COVERAGE.md § Park](./DISCOVERY_COVERAGE.md#park-noktası--ajansız-host-aksiyonları-dönülecek).
 
 **Paralel / diğer kuyruk (onaylı dilim):**
 
-1. Kullanıcının şu anki diğer işleri (bu oturum dışı)  
-2. P3d (.deb) veya Host Analytics Linux — [MngLogs current_status](../../content/MngLogs/current_status.md)  
-3. Collector Odak prod deploy + Settings Catalog E1 doğrula (gerekirse)  
-4. E3 host paket ataması (ayrı onay)  
-5. Periyodik discovery scan  
-6. P5 parser (ayrı onay)
+1. P3d (.deb) — [MngLogs current_status](../../content/MngLogs/current_status.md)  
+2. Collector Odak prod deploy + Settings Catalog E1 doğrula (gerekirse)  
+3. E3 host paket ataması (ayrı onay)  
+4. Periyodik discovery scan  
+5. P5 parser (ayrı onay)
 
 ---
 
 ## Nerede kalmıştık
 
-Discovery Faz 1–3 + demo UX tamam; Odak’ta CIDR tarama + site bucket + identity gösterilebilir.  
-**Kaldığımız nokta:** ajansız host aksiyonları — ürün konuşması yapıldı, kod yazılmadı; başka işler sonrası buraya dönülecek.  
-Host Analytics MVP ve Linux P3c pilot ayrıca canlı.
+Linux Host Analytics L1/L2 tamam (modal Journal + tam sayfa SSH/sudo/journal).  
+**Kaldığımız nokta:** Analytics L3 / genel dönüş ve Discovery ajansız host aksiyonları — ikisi de park; kullanıcı istediğinde dönülecek.

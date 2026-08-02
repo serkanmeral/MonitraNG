@@ -30,8 +30,16 @@ function formatLabel(at: number): string {
   }
 }
 
+const useMemoryUsedPct = computed(
+  () => (props.metrics.memoryUsedSeries?.length ?? 0) >= 2,
+);
+
+const memSeriesSource = computed(() =>
+  useMemoryUsedPct.value ? props.metrics.memoryUsedSeries : props.metrics.memorySeries,
+);
+
 const hasCpuMem = computed(
-  () => props.metrics.cpuSeries.length >= 2 || props.metrics.memorySeries.length >= 2,
+  () => props.metrics.cpuSeries.length >= 2 || memSeriesSource.value.length >= 2,
 );
 
 const hasDisk = computed(() => props.metrics.diskSeries.some((d) => d.series.length >= 2));
@@ -39,7 +47,7 @@ const hasDisk = computed(() => props.metrics.diskSeries.some((d) => d.series.len
 const cpuMemCategories = computed(() => {
   const times = new Set<number>();
   for (const p of props.metrics.cpuSeries) times.add(p.at);
-  for (const p of props.metrics.memorySeries) times.add(p.at);
+  for (const p of memSeriesSource.value) times.add(p.at);
   return [...times].sort((a, b) => a - b);
 });
 
@@ -84,14 +92,22 @@ const cpuMemChartOptions = computed(() => ({
       labels: { formatter: (v: number) => `${Math.round(v)}%` },
     },
     {
-      seriesName: t('siemCenter.hostDashboard.chartMemSeries'),
+      seriesName: useMemoryUsedPct.value
+        ? t('siemCenter.hostDashboard.chartMemUsedSeries')
+        : t('siemCenter.hostDashboard.chartMemSeries'),
       opposite: true,
+      ...(useMemoryUsedPct.value ? { min: 0, max: 100 } : {}),
       title: {
-        text: t('siemCenter.hostDashboard.chartMemAxis'),
+        text: useMemoryUsedPct.value
+          ? t('siemCenter.hostDashboard.chartMemUsedAxis')
+          : t('siemCenter.hostDashboard.chartMemAxis'),
         style: { color: MEMORY_SERIES_COLOR },
       },
       labels: {
-        formatter: (v: number) => formatBytes(v, dateLocale.value),
+        formatter: (v: number) =>
+          useMemoryUsedPct.value
+            ? `${Math.round(v)}%`
+            : formatBytes(v, dateLocale.value),
         style: { colors: [MEMORY_SERIES_COLOR] },
       },
     },
@@ -103,7 +119,7 @@ const cpuMemChartOptions = computed(() => ({
 const cpuMemSeries = computed(() => {
   const cats = cpuMemCategories.value;
   const cpuMap = new Map(props.metrics.cpuSeries.map((p) => [p.at, p.value]));
-  const memMap = new Map(props.metrics.memorySeries.map((p) => [p.at, p.value]));
+  const memMap = new Map(memSeriesSource.value.map((p) => [p.at, p.value]));
   return [
     {
       name: t('siemCenter.hostDashboard.chartCpuSeries'),
@@ -111,7 +127,9 @@ const cpuMemSeries = computed(() => {
       data: cats.map((at) => cpuMap.get(at) ?? null),
     },
     {
-      name: t('siemCenter.hostDashboard.chartMemSeries'),
+      name: useMemoryUsedPct.value
+        ? t('siemCenter.hostDashboard.chartMemUsedSeries')
+        : t('siemCenter.hostDashboard.chartMemSeries'),
       type: 'line',
       data: cats.map((at) => memMap.get(at) ?? null),
     },

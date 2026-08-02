@@ -4,15 +4,21 @@ export type SiemOsFamily = 'windows' | 'linux' | 'unknown';
 
 /** Normalize scan hint / AD OS string / agent placeholder → windows|linux|unknown. */
 export function resolveOsFamily(
-  host: Pick<SiemDiscoveryHost, 'osHint' | 'osFamily' | 'openPorts' | 'sources'> | null | undefined,
+  host: Pick<SiemDiscoveryHost, 'osHint' | 'osFamily' | 'openPorts' | 'sources' | 'agent'> | null | undefined,
 ): SiemOsFamily {
   if (!host) return 'unknown';
-  if (host.osFamily === 'windows' || host.osFamily === 'linux' || host.osFamily === 'unknown') {
+  // Keep explicit family; re-resolve when unknown so agent platform / ports can win.
+  if (host.osFamily === 'windows' || host.osFamily === 'linux') {
     return host.osFamily;
   }
 
+  const agentPlatform = (host.agent?.platform || '').trim().toLowerCase();
+  if (agentPlatform === 'windows' || agentPlatform === 'linux') {
+    return agentPlatform;
+  }
+
   const hint = (host.osHint || '').trim().toLowerCase();
-  if (hint === 'windows' || hint === 'linux' || hint === 'unknown') return hint as SiemOsFamily;
+  if (hint === 'windows' || hint === 'linux') return hint;
 
   if (
     hint.includes('windows')

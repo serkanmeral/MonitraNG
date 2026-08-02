@@ -27,6 +27,10 @@ export interface SiemDiscoveryAgentInfo {
   bootTimeUtc?: string | null;
   uptimeSeconds?: number | null;
   agentVersion?: string | null;
+  /** Agent-reported OS family: windows | linux */
+  platform?: string | null;
+  /** Environment.MachineName from host.up (may differ from scan IP hostname). */
+  machine?: string | null;
   localUiPort?: number | null;
   localUiHost?: string | null;
   /** true when agent binds beyond loopback (0.0.0.0 / LAN IP) */

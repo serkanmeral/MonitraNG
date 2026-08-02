@@ -10,12 +10,19 @@ import {
   eventLogLevelTone,
   fetchDiscoveryHostEventLogs,
   hostEventLogEventsLink,
+  isLinuxHostEventLog,
+  resolveHostEventLogSourceType,
   type DiscoveryHostEventLogItem,
   type DiscoveryHostEventLogSnapshot,
 } from '@/composables/useSiemDiscoveryHostEventLogs';
+import type { SiemOsFamily } from '@/types/apps/siemDiscovery';
 
 const props = defineProps<{
   hostname: string;
+  /** windows | linux — selects Event Log vs journal source. */
+  osFamily?: SiemOsFamily | string | null;
+  /** Full host hints (IP / agent machine) for scan-IP cards. */
+  host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null;
   /** When true, optional package assignment panel loads. */
   active?: boolean;
   staleMs?: number;
@@ -23,10 +30,14 @@ const props = defineProps<{
 
 const { t, locale } = useAppI18n();
 
+const isLinux = computed(() => isLinuxHostEventLog(props.osFamily));
+const sourceType = computed(() => resolveHostEventLogSourceType(props.osFamily));
+
 const innerTab = ref<'events' | 'packages'>('events');
 const loading = ref(false);
 const error = ref<string | null>(null);
 const snap = ref<DiscoveryHostEventLogSnapshot | null>(null);
+/** Cache key: hostname + sourceType */
 const loadedFor = ref<string | null>(null);
 const filterChannel = ref<string | null>(null);
 const filterPackage = ref<string | null>(null);
@@ -51,7 +62,57 @@ const staleThreshold = computed(() =>
 
 const dateLocale = computed(() => (locale.value === 'tr' ? 'tr-TR' : 'en-GB'));
 
-const eventsHref = computed(() => hostEventLogEventsLink(props.hostname));
+const hostHints = computed(() => props.host ?? {
+  hostname: props.hostname,
+  ip: props.hostname,
+  agent: null,
+});
+
+const eventsHref = computed(() =>
+  hostEventLogEventsLink(props.hostname, props.osFamily, hostHints.value),
+);
+
+const hintText = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogHintJournal')
+    : t('siemCenter.discovery.hostDetail.eventLogHint'),
+);
+
+const emptyText = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogEmptyJournal')
+    : t('siemCenter.discovery.hostDetail.eventLogEmpty'),
+);
+
+const staleText = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogStaleJournal')
+    : t('siemCenter.discovery.hostDetail.eventLogStale'),
+);
+
+const openEventsLabel = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogOpenEventsJournal')
+    : t('siemCenter.discovery.hostDetail.eventLogOpenEvents'),
+);
+
+const detailTitle = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogDetailTitleJournal')
+    : t('siemCenter.discovery.hostDetail.eventLogDetailTitle'),
+);
+
+const channelColLabel = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogColUnit')
+    : t('siemCenter.discovery.hostDetail.eventLogColChannel'),
+);
+
+const eventIdColLabel = computed(() =>
+  isLinux.value
+    ? t('siemCenter.discovery.hostDetail.eventLogColAction')
+    : t('siemCenter.discovery.hostDetail.eventLogColEventId'),
+);
 
 const isStale = computed(() => {
   const at = snap.value?.at;
@@ -62,7 +123,7 @@ const isStale = computed(() => {
 const channelOptions = computed(() => {
   const set = new Set<string>();
   for (const x of snap.value?.items ?? []) {
-    const key = channelFilterKey(x.channel);
+    const key = channelFilterKey(x.channel, x.packageName);
     if (key) set.add(key);
   }
   return [...set].sort((a, b) => a.localeCompare(b)).map((v) => ({ title: v, value: v }));
@@ -80,7 +141,9 @@ const packageOptions = computed(() => {
 const filteredItems = computed(() => {
   let list = snap.value?.items ?? [];
   if (filterChannel.value) {
-    list = list.filter((x) => channelFilterKey(x.channel) === filterChannel.value);
+    list = list.filter(
+      (x) => channelFilterKey(x.channel, x.packageName) === filterChannel.value,
+    );
   }
   if (filterPackage.value) {
     list = list.filter(
@@ -98,8 +161,8 @@ const hasAny = computed(() => (snap.value?.items.length ?? 0) > 0);
 
 const headers = computed(() => [
   { title: t('siemCenter.discovery.hostDetail.eventLogColTime'), key: 'at', sortable: true },
-  { title: t('siemCenter.discovery.hostDetail.eventLogColChannel'), key: 'channel', sortable: true },
-  { title: t('siemCenter.discovery.hostDetail.eventLogColEventId'), key: 'eventId', sortable: true },
+  { title: channelColLabel.value, key: 'channel', sortable: true },
+  { title: eventIdColLabel.value, key: 'eventId', sortable: true },
   { title: t('siemCenter.discovery.hostDetail.eventLogColPackage'), key: 'packageName', sortable: true },
   { title: t('siemCenter.discovery.hostDetail.eventLogColLevel'), key: 'level', sortable: true },
   { title: t('siemCenter.discovery.hostDetail.eventLogColPreview'), key: 'message', sortable: false },
@@ -191,7 +254,7 @@ async function openDetail(item: DiscoveryHostEventLogItem) {
     id: item.id,
     timestamp: item.timestamp,
     ingestedAt: item.timestamp,
-    sourceType: 'windows-eventlog',
+    sourceType: sourceType.value,
     sourceProduct: item.packageName,
     sourceHost: item.sourceHost ?? null,
     eventAction: item.eventAction || item.action || '',
@@ -209,6 +272,7 @@ async function openDetail(item: DiscoveryHostEventLogItem) {
       eventId: item.eventId,
       provider: item.provider,
       message: item.message,
+      package: item.packageName,
     },
   };
   try {
@@ -229,16 +293,24 @@ function closeDetail() {
   detailError.value = null;
 }
 
+function cacheKey(host: string): string {
+  return `${host}|${sourceType.value}`;
+}
+
 async function load(force = false) {
   const host = props.hostname.trim();
   if (!host) return;
-  if (!force && loadedFor.value === host && snap.value) return;
+  const key = cacheKey(host);
+  if (!force && loadedFor.value === key && snap.value) return;
 
   loading.value = true;
   error.value = null;
   try {
-    snap.value = await fetchDiscoveryHostEventLogs(host);
-    loadedFor.value = host;
+    snap.value = await fetchDiscoveryHostEventLogs(host, {
+      osFamily: props.osFamily,
+      host: hostHints.value,
+    });
+    loadedFor.value = key;
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : String(e);
     snap.value = null;
@@ -249,7 +321,7 @@ async function load(force = false) {
 }
 
 watch(
-  () => props.hostname,
+  () => [props.hostname, sourceType.value] as const,
   () => {
     snap.value = null;
     loadedFor.value = null;
@@ -263,8 +335,15 @@ watch(
   { immediate: true },
 );
 
+watch(isLinux, (linux) => {
+  if (linux && innerTab.value === 'packages') innerTab.value = 'events';
+});
+
 const packagesActive = computed(
-  () => props.active !== false && innerTab.value === 'packages',
+  () =>
+    !isLinux.value
+    && props.active !== false
+    && innerTab.value === 'packages',
 );
 </script>
 
@@ -273,11 +352,13 @@ const packagesActive = computed(
     <div class="d-flex align-center flex-wrap ga-2 px-4 pt-3 pb-1">
       <v-tabs v-model="innerTab" density="compact" color="primary" class="flex-grow-1">
         <v-tab value="events">{{ t('siemCenter.discovery.hostDetail.eventLogTabEvents') }}</v-tab>
-        <v-tab value="packages">{{ t('siemCenter.discovery.hostDetail.eventLogTabPackages') }}</v-tab>
+        <v-tab v-if="!isLinux" value="packages">
+          {{ t('siemCenter.discovery.hostDetail.eventLogTabPackages') }}
+        </v-tab>
       </v-tabs>
       <template v-if="innerTab === 'events'">
         <span class="text-caption text-medium-emphasis d-none d-sm-inline">
-          {{ t('siemCenter.discovery.hostDetail.eventLogHint') }}
+          {{ hintText }}
         </span>
         <v-btn
           size="small"
@@ -296,13 +377,13 @@ const packagesActive = computed(
           target="_blank"
           rel="noopener noreferrer"
         >
-          {{ t('siemCenter.discovery.hostDetail.eventLogOpenEvents') }}
+          {{ openEventsLabel }}
         </v-btn>
       </template>
     </div>
 
     <v-tabs-window v-model="innerTab">
-      <v-tabs-window-item value="packages">
+      <v-tabs-window-item v-if="!isLinux" value="packages">
         <div class="pa-4 pt-2">
           <AcSiemDiscoveryHostPackagesPanel
             :hostname="hostname"
@@ -321,7 +402,7 @@ const packagesActive = computed(
 
           <template v-else-if="!hasAny">
             <v-sheet border rounded class="pa-3 text-medium-emphasis text-body-2">
-              {{ t('siemCenter.discovery.hostDetail.eventLogEmpty') }}
+              {{ emptyText }}
             </v-sheet>
           </template>
 
@@ -333,7 +414,7 @@ const packagesActive = computed(
               density="compact"
               class="mb-3"
             >
-              {{ t('siemCenter.discovery.hostDetail.eventLogStale') }}
+              {{ staleText }}
               <span v-if="snap?.at" class="ms-1">
                 ({{ formatTs(snap.at) }}
                 <span v-if="ageLabel(snap.at)"> · {{ ageLabel(snap.at) }}</span>)
@@ -344,7 +425,7 @@ const packagesActive = computed(
               <v-select
                 v-model="filterChannel"
                 :items="channelOptions"
-                :label="t('siemCenter.discovery.hostDetail.eventLogColChannel')"
+                :label="channelColLabel"
                 density="compact"
                 clearable
                 hide-details
@@ -361,11 +442,11 @@ const packagesActive = computed(
               />
               <v-text-field
                 v-model="filterEventId"
-                :label="t('siemCenter.discovery.hostDetail.eventLogColEventId')"
+                :label="eventIdColLabel"
                 density="compact"
                 clearable
                 hide-details
-                style="max-width: 8rem"
+                style="max-width: 10rem"
               />
               <v-btn size="small" variant="text" @click="clearFilters">
                 {{ t('siemCenter.discovery.hostDetail.eventLogClearFilters') }}
@@ -452,7 +533,7 @@ const packagesActive = computed(
       <v-card v-if="selected">
         <v-card-title class="d-flex align-center flex-wrap ga-2 pe-2">
           <span class="text-subtitle-1">
-            {{ t('siemCenter.discovery.hostDetail.eventLogDetailTitle') }}
+            {{ detailTitle }}
           </span>
           <v-chip
             v-if="selected.eventId"

@@ -46,6 +46,12 @@ const coverageChipColor = computed(() =>
   props.host ? coverageColor(props.host.coverage) : 'grey',
 );
 
+const eventLogTabLabel = computed(() =>
+  props.host?.osFamily === 'linux'
+    ? t('siemCenter.discovery.hostDetail.tabJournal')
+    : t('siemCenter.discovery.hostDetail.tabEventLog'),
+);
+
 const agent = computed(() => props.host?.agent ?? null);
 
 const displayIp = computed(() => {
@@ -250,7 +256,7 @@ function close() {
               <v-tab value="status">{{ t('siemCenter.discovery.hostDetail.tabStatus') }}</v-tab>
               <v-tab value="metrics">{{ t('siemCenter.discovery.hostDetail.tabMetrics') }}</v-tab>
               <v-tab value="apps">{{ t('siemCenter.discovery.hostDetail.tabApps') }}</v-tab>
-              <v-tab value="eventlog">{{ t('siemCenter.discovery.hostDetail.tabEventLog') }}</v-tab>
+              <v-tab value="eventlog">{{ eventLogTabLabel }}</v-tab>
             </v-tabs>
           </div>
           <v-divider class="flex-shrink-0" />
@@ -267,6 +273,7 @@ function close() {
               <AcSiemDiscoveryHostMetricsPanel
                 v-if="activeTab === 'metrics' && host"
                 :hostname="host.hostname"
+                :host="host"
               />
             </v-tabs-window-item>
 
@@ -274,6 +281,7 @@ function close() {
               <AcSiemDiscoveryHostAppsPanel
                 v-if="activeTab === 'apps' && host"
                 :hostname="host.hostname"
+                :host="host"
               />
             </v-tabs-window-item>
 
@@ -281,6 +289,8 @@ function close() {
               <AcSiemDiscoveryHostEventLogsPanel
                 v-if="activeTab === 'eventlog' && host"
                 :hostname="host.hostname"
+                :os-family="host.osFamily"
+                :host="host"
                 :active="activeTab === 'eventlog'"
               />
             </v-tabs-window-item>

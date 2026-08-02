@@ -14,6 +14,7 @@ import type {
   HostAnalyticsLevelCount,
 } from '@/composables/useSiemHostAnalytics';
 import { securityMessageFromEventFields } from '@/utils/windowsSecurityLogonParse';
+import type { SiemOsFamily } from '@/types/apps/siemDiscovery';
 
 const props = defineProps<{
   channelCounts: HostAnalyticsChannelCount[];
@@ -22,12 +23,20 @@ const props = defineProps<{
   events: DiscoveryHostEventLogItem[];
   loading?: boolean;
   eventsHref?: string;
+  osFamily?: SiemOsFamily | string | null;
 }>();
 
 const { t, locale } = useAppI18n();
 const theme = useTheme();
 const getPrimary = computed(() => theme.current.value.colors.primary || '#5D87FF');
 const dateLocale = computed(() => (locale.value === 'tr' ? 'tr-TR' : 'en-GB'));
+
+const isLinux = computed(
+  () => (props.osFamily || '').toString().trim().toLowerCase() === 'linux',
+);
+const eventLogSourceType = computed(() =>
+  isLinux.value ? 'linux-journal' : 'windows-eventlog',
+);
 
 const selectedChannel = ref<string | null>(null);
 const page = ref(1);
@@ -47,14 +56,26 @@ const filteredEvents = computed(() => {
   const all = props.events ?? [];
   if (!selectedChannel.value) return all;
   const want = selectedChannel.value;
-  return all.filter((row) => channelFilterKey(row.channel) === want);
+  return all.filter((row) => channelFilterKey(row.channel, row.packageName) === want);
 });
 
 const headers = computed(() => [
   { title: t('siemCenter.hostDashboard.colTime'), key: 'at', sortable: true },
-  { title: t('siemCenter.hostDashboard.colChannel'), key: 'channel', sortable: true },
+  {
+    title: isLinux.value
+      ? t('siemCenter.hostDashboard.colUnit')
+      : t('siemCenter.hostDashboard.colChannel'),
+    key: 'channel',
+    sortable: true,
+  },
   { title: t('siemCenter.hostDashboard.colLevel'), key: 'level', sortable: true },
-  { title: t('siemCenter.hostDashboard.colEventId'), key: 'eventId', sortable: true },
+  {
+    title: isLinux.value
+      ? t('siemCenter.hostDashboard.colAction')
+      : t('siemCenter.hostDashboard.colEventId'),
+    key: 'eventId',
+    sortable: true,
+  },
   { title: t('siemCenter.hostDashboard.colMessage'), key: 'message', sortable: false },
   {
     title: t('siemCenter.hostDashboard.colActions'),
@@ -63,6 +84,30 @@ const headers = computed(() => [
     align: 'end' as const,
   },
 ]);
+
+const eventLogTitle = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.eventLogTitleJournal')
+    : t('siemCenter.hostDashboard.eventLogTitle'),
+);
+
+const eventLogHint = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.eventLogHintJournal')
+    : t('siemCenter.hostDashboard.eventLogHint'),
+);
+
+const eventLogEmpty = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.eventLogEmptyJournal')
+    : t('siemCenter.hostDashboard.eventLogEmpty'),
+);
+
+const eventLogDetailTitle = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.eventLogDetailTitleJournal')
+    : t('siemCenter.hostDashboard.eventLogDetailTitle'),
+);
 
 watch(selectedChannel, () => {
   page.value = 1;
@@ -216,7 +261,7 @@ async function openDetail(row: DiscoveryHostEventLogItem) {
     id: row.id,
     timestamp: row.timestamp,
     ingestedAt: row.timestamp,
-    sourceType: 'windows-eventlog',
+    sourceType: eventLogSourceType.value,
     sourceProduct: row.packageName,
     sourceHost: row.sourceHost ?? null,
     eventAction: row.eventAction || row.action || '',
@@ -265,10 +310,10 @@ function closeDetail() {
     <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-3">
       <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-0">
-          {{ t('siemCenter.hostDashboard.eventLogTitle') }}
+          {{ eventLogTitle }}
         </h3>
         <p class="text-caption text-medium-emphasis mb-0">
-          {{ t('siemCenter.hostDashboard.eventLogHint') }}
+          {{ eventLogHint }}
         </p>
       </div>
       <v-btn
@@ -289,7 +334,7 @@ function closeDetail() {
       <v-row dense class="mb-2">
         <v-col cols="12" md="4">
           <div v-if="!hasDonut" class="host-chart-empty">
-            {{ t('siemCenter.hostDashboard.eventLogEmpty') }}
+            {{ eventLogEmpty }}
           </div>
           <ClientOnly v-else>
             <apexchart
@@ -385,7 +430,11 @@ function closeDetail() {
               </v-chip>
             </template>
             <template #item.eventId="{ item }">
-              <span class="font-mono">{{ item.eventId || '—' }}</span>
+              <span class="font-mono">{{
+                isLinux
+                  ? (item.eventAction || item.action || item.eventId || '—')
+                  : (item.eventId || '—')
+              }}</span>
             </template>
             <template #item.message="{ item }">
               <span
@@ -423,7 +472,7 @@ function closeDetail() {
       <v-card v-if="selected">
         <v-card-title class="d-flex align-center flex-wrap ga-2 pe-2">
           <span class="text-subtitle-1">
-            {{ t('siemCenter.hostDashboard.eventLogDetailTitle') }}
+            {{ eventLogDetailTitle }}
           </span>
           <v-chip
             v-if="selected.eventId"
@@ -461,7 +510,11 @@ function closeDetail() {
                 <td>{{ formatTs(selected.at) }}</td>
               </tr>
               <tr>
-                <td class="text-medium-emphasis">{{ t('siemCenter.hostDashboard.colChannel') }}</td>
+                <td class="text-medium-emphasis">{{
+                  isLinux
+                    ? t('siemCenter.hostDashboard.colUnit')
+                    : t('siemCenter.hostDashboard.colChannel')
+                }}</td>
                 <td class="font-mono text-break">{{ selected.channel }}</td>
               </tr>
               <tr v-if="selected.provider">

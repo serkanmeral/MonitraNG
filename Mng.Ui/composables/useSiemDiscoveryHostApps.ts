@@ -1,5 +1,10 @@
 import { secEventQuery } from '@/services/secEventService';
 import type { SecEventListItem } from '@/types/apps/secEvent';
+import type { SiemDiscoveryHost } from '@/types/apps/siemDiscovery';
+import {
+  preferredSecEventSearchTerm,
+  secEventMatchesDiscoveryHost,
+} from '@/utils/siemDiscoveryHostMatch';
 
 export const DISCOVERY_APPS_STALE_MS = 5 * 60 * 1000;
 
@@ -45,19 +50,6 @@ export interface DiscoveryWatchActivitySnapshot {
 
 function fromHours(hours: number): string {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-}
-
-function shortHostKey(hostname: string): string {
-  const h = hostname.trim().toLowerCase();
-  return h.split('.')[0] || h;
-}
-
-function matchesHost(item: SecEventListItem, hostname: string): boolean {
-  const want = shortHostKey(hostname);
-  if (!want) return false;
-  const src = (item.sourceHost || '').trim().toLowerCase();
-  if (!src) return false;
-  return src === want || shortHostKey(src) === want || src.includes(want);
 }
 
 function asNumber(v: unknown): number | null {
@@ -132,24 +124,29 @@ function emptySnapshot(): DiscoveryHostAppsSnapshot {
 /**
  * Latest watch.inventory for a discovery host (services + applications).
  */
+type HostHints = Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null | undefined;
+
 export async function fetchDiscoveryHostApps(
   hostname: string,
-  options?: { from?: string; to?: string },
+  options?: { from?: string; to?: string; host?: HostHints },
 ): Promise<DiscoveryHostAppsSnapshot> {
-  const host = hostname.trim();
-  if (!host) return emptySnapshot();
+  const hostName = hostname.trim();
+  if (!hostName) return emptySnapshot();
 
+  const hostHints = options?.host ?? { hostname: hostName, ip: hostName, agent: null };
   const res = await secEventQuery({
     from: options?.from || fromHours(24),
     to: options?.to,
     sourceType: 'metric',
     eventAction: 'watch.inventory',
     excludeUnknown: false,
-    search: shortHostKey(host),
+    search: preferredSecEventSearchTerm(hostName, hostHints),
     limit: 20,
   });
 
-  const items = (res.items ?? []).filter((i) => matchesHost(i, host));
+  const items = (res.items ?? []).filter((i) =>
+    secEventMatchesDiscoveryHost(i, hostName, hostHints),
+  );
   const hit = items[0];
   if (!hit) return emptySnapshot();
 
@@ -164,21 +161,33 @@ export async function fetchDiscoveryHostApps(
   };
 }
 
-export function hostWatchEventsLink(hostname: string): string {
+export function hostWatchEventsLink(
+  hostname: string,
+  host?: HostHints,
+): string {
   const q = new URLSearchParams();
   q.set('sourceType', 'metric');
   q.set('eventAction', 'watch.inventory');
   q.set('timeRange', '24h');
-  const term = shortHostKey(hostname);
+  const term = preferredSecEventSearchTerm(
+    hostname,
+    host ?? { hostname, ip: hostname, agent: null },
+  );
   if (term) q.set('search', term);
   return `/apps/siem-center/events?${q.toString()}`;
 }
 
 /** Deep-link for service/app watch transitions (not inventory snapshots). */
-export function hostWatchActivityEventsLink(hostname: string): string {
+export function hostWatchActivityEventsLink(
+  hostname: string,
+  host?: HostHints,
+): string {
   const q = new URLSearchParams();
   q.set('timeRange', '24h');
-  const term = shortHostKey(hostname);
+  const term = preferredSecEventSearchTerm(
+    hostname,
+    host ?? { hostname, ip: hostname, agent: null },
+  );
   if (term) q.set('search', term);
   // Events UI is single-action; omit eventAction so host search covers all watch moves.
   return `/apps/siem-center/events?${q.toString()}`;
@@ -208,16 +217,17 @@ export function watchActivityTone(
  */
 export async function fetchDiscoveryHostWatchActivity(
   hostname: string,
-  options?: { from?: string; to?: string; limit?: number },
+  options?: { from?: string; to?: string; limit?: number; host?: HostHints },
 ): Promise<DiscoveryWatchActivitySnapshot> {
-  const host = hostname.trim();
-  if (!host) return emptyActivity();
+  const hostName = hostname.trim();
+  if (!hostName) return emptyActivity();
 
+  const hostHints = options?.host ?? { hostname: hostName, ip: hostName, agent: null };
   const base = {
     from: options?.from || fromHours(24),
     to: options?.to,
     excludeUnknown: false,
-    search: shortHostKey(host),
+    search: preferredSecEventSearchTerm(hostName, hostHints),
     limit: options?.limit ?? 80,
   } as const;
 
@@ -227,7 +237,11 @@ export async function fetchDiscoveryHostWatchActivity(
   ]);
 
   const merged = [...(svcRes.items ?? []), ...(appRes.items ?? [])]
-    .filter((i) => matchesHost(i, host) && isWatchActivityAction(i.eventAction))
+    .filter(
+      (i) =>
+        secEventMatchesDiscoveryHost(i, hostName, hostHints)
+        && isWatchActivityAction(i.eventAction),
+    )
     .map(toActivityItem)
     .filter((x): x is DiscoveryWatchActivityItem => x != null)
     .sort((a, b) => b.at - a.at);

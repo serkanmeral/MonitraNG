@@ -6,16 +6,21 @@ import AcSiemDiscoveryMetricDonut from '@/components/apps/siem-center/AcSiemDisc
 import AcSiemDiscoveryMetricGauge from '@/components/apps/siem-center/AcSiemDiscoveryMetricGauge.vue';
 import {
   DISCOVERY_METRICS_STALE_MS,
+  diskUsedBytes,
   diskUsedPercent,
   fetchDiscoveryHostMetrics,
   formatBytes,
   hostMetricsEventsLink,
   primaryDisk,
+  type DiscoveryDiskMetric,
   type DiscoveryHostMetricsSnapshot,
 } from '@/composables/useSiemDiscoveryHostMetrics';
+import type { SiemDiscoveryHost } from '@/types/apps/siemDiscovery';
 
 const props = defineProps<{
   hostname: string;
+  /** Full host (IP + agent) so scan-IP cards resolve to MachineName metrics. */
+  host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null;
   staleMs?: number;
 }>();
 
@@ -39,8 +44,9 @@ const hasAny = computed(() => {
   if (!s) return false;
   return (
     s.cpuPercent != null
+    || s.memoryUsedPercent != null
     || s.memoryAvailableBytes != null
-    || s.disks.length > 0
+    || s.disks.some((d) => diskUsedPercent(d) != null)
     || s.topCpu.length > 0
     || s.topMemory.length > 0
     || s.cpuSeries.length > 0
@@ -53,7 +59,13 @@ const isStale = computed(() => {
   return Date.now() - at > staleThreshold.value;
 });
 
-const metricsEventsHref = computed(() => hostMetricsEventsLink(props.hostname));
+const hostHints = computed(() => props.host ?? {
+  hostname: props.hostname,
+  ip: props.hostname,
+  agent: null,
+});
+
+const metricsEventsHref = computed(() => hostMetricsEventsLink(props.hostname, hostHints.value));
 
 const mainDisk = computed(() => (snap.value ? primaryDisk(snap.value.disks) : null));
 
@@ -62,7 +74,11 @@ const mainDiskUsed = computed(() =>
 );
 
 const cpuValues = computed(() => snap.value?.cpuSeries.map((p) => p.value) ?? []);
-const memoryValues = computed(() => snap.value?.memorySeries.map((p) => p.value) ?? []);
+const memoryValues = computed(() => {
+  const used = snap.value?.memoryUsedSeries ?? [];
+  if (used.length) return used.map((p) => p.value);
+  return [];
+});
 
 const diskSparkByVolume = computed(() => {
   const map = new Map<string, number[]>();
@@ -73,7 +89,12 @@ const diskSparkByVolume = computed(() => {
 });
 
 const cpuWarn = computed(() => (snap.value?.cpuPercent ?? 0) >= 80);
+const memoryWarn = computed(() => (snap.value?.memoryUsedPercent ?? 0) >= 90);
 const diskWarn = computed(() => (mainDiskUsed.value ?? 0) >= 90);
+
+const disksWithUsage = computed(() =>
+  (snap.value?.disks ?? []).filter((d) => diskUsedPercent(d) != null),
+);
 
 function formatTs(ms: number | null | undefined): string {
   if (ms == null || !Number.isFinite(ms)) return '—';
@@ -109,6 +130,18 @@ function fmtPct(n: number | null | undefined): string {
   return `${n.toLocaleString(dateLocale.value, { maximumFractionDigits: 1 })}%`;
 }
 
+function usedOfTotalLabel(used: number | null | undefined, total: number | null | undefined): string {
+  if (used == null || total == null) return '—';
+  return t('siemCenter.discovery.hostDetail.metricsUsedOfTotal', {
+    used: fmtBytes(used),
+    total: fmtBytes(total),
+  });
+}
+
+function diskUsedOfTotal(d: DiscoveryDiskMetric): string {
+  return usedOfTotalLabel(diskUsedBytes(d), d.totalBytes);
+}
+
 async function load(force = false) {
   const host = props.hostname.trim();
   if (!host) return;
@@ -117,7 +150,7 @@ async function load(force = false) {
   loading.value = true;
   error.value = null;
   try {
-    snap.value = await fetchDiscoveryHostMetrics(host);
+    snap.value = await fetchDiscoveryHostMetrics(host, { host: hostHints.value });
     loadedFor.value = host;
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : String(e);
@@ -129,7 +162,12 @@ async function load(force = false) {
 }
 
 watch(
-  () => props.hostname,
+  () => [
+    props.hostname,
+    props.host?.agent?.machine,
+    props.host?.agent?.primaryIp,
+    props.host?.ip,
+  ] as const,
   () => {
     snap.value = null;
     loadedFor.value = null;
@@ -209,7 +247,7 @@ watch(
         </div>
 
         <v-tabs-window v-model="innerTab">
-          <!-- Özet -->
+          <!-- Overview: usage % primary -->
           <v-tabs-window-item value="overview">
             <v-row dense>
               <v-col cols="12" sm="4">
@@ -225,7 +263,7 @@ watch(
                   <AcSiemDiscoveryMetricGauge
                     :value="snap?.cpuPercent ?? null"
                     :color="cpuWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))'"
-                    :caption="t('siemCenter.discovery.hostDetail.metricsCpu')"
+                    :caption="t('siemCenter.discovery.hostDetail.metricsUsage')"
                   />
                   <AcSiemDiscoveryMetricSparkline
                     class="mt-1 w-100"
@@ -235,22 +273,45 @@ watch(
                   />
                 </v-sheet>
               </v-col>
+
               <v-col cols="12" sm="4">
-                <v-sheet border rounded class="pa-3 h-100">
-                  <div class="text-caption text-medium-emphasis">
-                    {{ t('siemCenter.discovery.hostDetail.metricsMemoryAvail') }}
+                <v-sheet
+                  border
+                  rounded
+                  class="pa-3 h-100 d-flex flex-column align-center"
+                  :class="{ 'kpi-warn': memoryWarn }"
+                >
+                  <div class="text-caption text-medium-emphasis align-self-start w-100 mb-1">
+                    {{ t('siemCenter.discovery.hostDetail.metricsMemory') }}
                   </div>
-                  <div class="text-h5 font-weight-bold font-mono mt-1">
-                    {{ fmtBytes(snap?.memoryAvailableBytes) }}
-                  </div>
-                  <AcSiemDiscoveryMetricSparkline
-                    class="mt-3"
-                    :values="memoryValues"
-                    :height="48"
-                    color="rgb(var(--v-theme-secondary))"
-                  />
+                  <template v-if="snap?.memoryUsedPercent != null">
+                    <AcSiemDiscoveryMetricGauge
+                      :value="snap.memoryUsedPercent"
+                      :color="memoryWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-secondary))'"
+                      :caption="t('siemCenter.discovery.hostDetail.metricsUsage')"
+                    />
+                    <div class="text-caption text-medium-emphasis font-mono mt-2 text-center">
+                      {{ usedOfTotalLabel(snap.memoryUsedBytes, snap.memoryTotalBytes) }}
+                    </div>
+                    <AcSiemDiscoveryMetricSparkline
+                      v-if="memoryValues.length"
+                      class="mt-1 w-100"
+                      :values="memoryValues"
+                      :height="28"
+                      :color="memoryWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-secondary))'"
+                    />
+                  </template>
+                  <template v-else>
+                    <div class="text-caption text-medium-emphasis mt-2">
+                      {{ t('siemCenter.discovery.hostDetail.metricsMemoryAvailOnly') }}
+                    </div>
+                    <div class="text-h5 font-weight-bold font-mono mt-2">
+                      {{ fmtBytes(snap?.memoryAvailableBytes) }}
+                    </div>
+                  </template>
                 </v-sheet>
               </v-col>
+
               <v-col cols="12" sm="4">
                 <v-sheet
                   border
@@ -266,29 +327,17 @@ watch(
                     :used-percent="mainDiskUsed"
                     :used-color="diskWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-info))'"
                     :center-label="mainDiskUsed != null ? fmtPct(mainDiskUsed) : '—'"
-                    :center-caption="t('siemCenter.discovery.hostDetail.metricsUsed')"
+                    :center-caption="t('siemCenter.discovery.hostDetail.metricsUsage')"
                   />
-                  <div v-if="mainDisk" class="text-caption text-medium-emphasis font-mono mt-2 text-center">
-                    {{ fmtBytes(mainDisk.freeBytes) }}
-                    <span v-if="mainDisk.totalBytes"> / {{ fmtBytes(mainDisk.totalBytes) }}</span>
-                    {{ t('siemCenter.discovery.hostDetail.metricsFree') }}
-                  </div>
-                  <div class="d-flex align-center justify-center ga-3 mt-2 text-caption">
-                    <span class="d-inline-flex align-center ga-1">
-                      <span class="legend-swatch" :class="diskWarn ? 'bg-warning' : 'bg-info'" />
-                      {{ t('siemCenter.discovery.hostDetail.metricsUsed') }}
-                    </span>
-                    <span class="d-inline-flex align-center ga-1">
-                      <span class="legend-swatch legend-swatch--muted" />
-                      {{ t('siemCenter.discovery.hostDetail.metricsFree') }}
-                    </span>
+                  <div v-if="mainDisk && diskUsedBytes(mainDisk) != null" class="text-caption text-medium-emphasis font-mono mt-2 text-center">
+                    {{ diskUsedOfTotal(mainDisk) }}
                   </div>
                 </v-sheet>
               </v-col>
             </v-row>
           </v-tabs-window-item>
 
-          <!-- Kaynaklar -->
+          <!-- Resources -->
           <v-tabs-window-item value="resources">
             <v-sheet border rounded class="pa-3 mb-3" :class="{ 'kpi-warn': cpuWarn }">
               <div class="d-flex align-start flex-wrap ga-4">
@@ -296,7 +345,7 @@ watch(
                   :value="snap?.cpuPercent ?? null"
                   :size="128"
                   :color="cpuWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))'"
-                  :caption="t('siemCenter.discovery.hostDetail.metricsCpu')"
+                  :caption="t('siemCenter.discovery.hostDetail.metricsUsage')"
                 />
                 <div class="flex-grow-1" style="min-width: 160px">
                   <div class="text-subtitle-2 mb-2">{{ t('siemCenter.discovery.hostDetail.metricsCpu') }}</div>
@@ -312,25 +361,42 @@ watch(
               </div>
             </v-sheet>
 
-            <v-sheet border rounded class="pa-3 mb-3">
-              <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
-                <div class="text-subtitle-2">{{ t('siemCenter.discovery.hostDetail.metricsMemoryAvail') }}</div>
-                <div class="text-h6 font-weight-bold font-mono">{{ fmtBytes(snap?.memoryAvailableBytes) }}</div>
+            <v-sheet border rounded class="pa-3 mb-3" :class="{ 'kpi-warn': memoryWarn }">
+              <div class="d-flex align-start flex-wrap ga-4">
+                <template v-if="snap?.memoryUsedPercent != null">
+                  <AcSiemDiscoveryMetricGauge
+                    :value="snap.memoryUsedPercent"
+                    :size="128"
+                    :color="memoryWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-secondary))'"
+                    :caption="t('siemCenter.discovery.hostDetail.metricsUsage')"
+                  />
+                  <div class="flex-grow-1" style="min-width: 160px">
+                    <div class="text-subtitle-2 mb-1">{{ t('siemCenter.discovery.hostDetail.metricsMemory') }}</div>
+                    <div class="text-body-2 font-mono mb-2">
+                      {{ usedOfTotalLabel(snap.memoryUsedBytes, snap.memoryTotalBytes) }}
+                    </div>
+                    <AcSiemDiscoveryMetricSparkline
+                      v-if="memoryValues.length"
+                      :values="memoryValues"
+                      :height="56"
+                      :color="memoryWarn ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-secondary))'"
+                    />
+                  </div>
+                </template>
+                <div v-else class="w-100">
+                  <div class="text-subtitle-2 mb-1">{{ t('siemCenter.discovery.hostDetail.metricsMemoryAvailOnly') }}</div>
+                  <div class="text-h6 font-weight-bold font-mono">{{ fmtBytes(snap?.memoryAvailableBytes) }}</div>
+                </div>
               </div>
-              <AcSiemDiscoveryMetricSparkline
-                :values="memoryValues"
-                :height="56"
-                color="rgb(var(--v-theme-secondary))"
-              />
             </v-sheet>
 
             <div class="text-subtitle-2 mb-2">{{ t('siemCenter.discovery.hostDetail.metricsDisk') }}</div>
-            <v-sheet v-if="!snap?.disks?.length" border rounded class="pa-3 text-medium-emphasis text-body-2">
+            <v-sheet v-if="!disksWithUsage.length" border rounded class="pa-3 text-medium-emphasis text-body-2">
               —
             </v-sheet>
             <v-row v-else dense>
               <v-col
-                v-for="d in snap.disks"
+                v-for="d in disksWithUsage"
                 :key="d.volume"
                 cols="12"
                 sm="6"
@@ -348,12 +414,12 @@ watch(
                       :thickness="10"
                       :used-color="(diskUsedPercent(d) ?? 0) >= 90 ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-info))'"
                       :center-label="diskUsedPercent(d) != null ? fmtPct(diskUsedPercent(d)) : '—'"
+                      :center-caption="t('siemCenter.discovery.hostDetail.metricsUsage')"
                     />
                     <div class="flex-grow-1 min-w-0">
                       <div class="font-weight-medium font-mono mb-1">{{ d.volume }}</div>
                       <div class="text-caption text-medium-emphasis font-mono mb-2">
-                        {{ fmtBytes(d.freeBytes) }}
-                        <span v-if="d.totalBytes"> / {{ fmtBytes(d.totalBytes) }}</span>
+                        {{ diskUsedOfTotal(d) }}
                       </div>
                       <AcSiemDiscoveryMetricSparkline
                         :values="diskSparkByVolume.get(d.volume) || []"
@@ -367,7 +433,7 @@ watch(
             </v-row>
           </v-tabs-window-item>
 
-          <!-- Süreçler -->
+          <!-- Processes -->
           <v-tabs-window-item value="processes">
             <v-btn-toggle
               v-model="processMode"
@@ -438,15 +504,6 @@ watch(
 <style scoped>
 .kpi-warn {
   border-color: rgba(var(--v-theme-warning), 0.55) !important;
-}
-.legend-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-}
-.legend-swatch--muted {
-  background: rgba(var(--v-border-color), 0.45);
 }
 .metrics-table :deep(td),
 .metrics-table :deep(th) {

@@ -23,6 +23,11 @@ import type {
 } from '@/types/apps/siemDiscovery';
 import { resolveOsFamily } from '@/utils/siemDiscoveryOs';
 import {
+  isIpv4Literal,
+  resolveDisplayHostname,
+  secEventMatchesDiscoveryHost,
+} from '@/utils/siemDiscoveryHostMatch';
+import {
   DEFAULT_DISCOVERY_PREFIXES,
   NO_IP_SITE,
   UNSCOPED_SITE,
@@ -87,18 +92,22 @@ export function hostDashboardLink(
 
 /** Security-events deep-link shaped by dashboard / modal tab. */
 export function hostTabEventsLink(
-  host: Pick<SiemDiscoveryHost, 'hostname' | 'ip'> | string,
+  host: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'osFamily' | 'agent'> | string,
   tab: HostDashboardTab | string,
 ): string {
   const hostname = typeof host === 'string' ? host : (host.hostname || host.ip || '');
+  const osFamily = typeof host === 'string' ? undefined : host.osFamily;
+  const hints = typeof host === 'string'
+    ? { hostname, ip: hostname, agent: null }
+    : host;
   const t = parseHostDashboardTab(tab);
   switch (t) {
     case 'metrics':
-      return hostMetricsEventsLink(hostname);
+      return hostMetricsEventsLink(hostname, hints);
     case 'apps':
-      return hostWatchEventsLink(hostname);
+      return hostWatchEventsLink(hostname, hints);
     case 'eventlog':
-      return hostEventLogEventsLink(hostname);
+      return hostEventLogEventsLink(hostname, osFamily, hints);
     case 'status':
     default:
       return typeof host === 'string'
@@ -109,18 +118,27 @@ export function hostTabEventsLink(
 
 /**
  * Resolve a host view-model for the host dashboard page (AD inventory + latest host.up).
+ * Route may be a scan IP (e.g. 192.168.20.20) while host.up is indexed as machine name.
  */
 export async function loadHostDashboardHost(routeHostname: string): Promise<SiemDiscoveryHost> {
   const want = shortHostKey(routeHostname) || routeHostname.trim().toLowerCase();
   const displayName = routeHostname.trim() || want;
+  const routeIsIp = isIpv4Literal(want);
 
   let dto: DiscoveryHostDto | null = null;
+  let prefixes: DiscoveryPrefix[] = DEFAULT_DISCOVERY_PREFIXES;
   try {
     const hostsRes = await fetchDiscoveryHosts({ limit: 2000 });
+    prefixes = toPrefixes(hostsRes.prefixes);
     for (const h of hostsRes.items ?? []) {
       const hn = (h.hostname || h.samAccountName?.replace(/\$$/, '') || '').trim();
-      if (!hn) continue;
-      if (shortHostKey(hn) === want || hn.toLowerCase() === want) {
+      const ip = (h.ip || '').trim().toLowerCase();
+      if (!hn && !ip) continue;
+      const hnKey = shortHostKey(hn);
+      if (
+        (hn && (hnKey === want || hn.toLowerCase() === want))
+        || (ip && ip === want)
+      ) {
         dto = h;
         break;
       }
@@ -129,21 +147,30 @@ export async function loadHostDashboardHost(routeHostname: string): Promise<Siem
     dto = null;
   }
 
+  const matchHints: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> = {
+    hostname: dto?.hostname || displayName,
+    ip: dto?.ip || (routeIsIp ? want : '—'),
+    agent: null,
+  };
+
   let lastSeenAt: number | null = null;
   let agent: SiemDiscoveryAgentInfo | null = null;
   try {
+    // Prefer named search when we already know the inventory hostname; for bare IP
+    // pull a wider host.up window and match on primaryIp / machine client-side.
+    const searchTerm = routeIsIp
+      ? undefined
+      : (shortHostKey(dto?.hostname || want) || want);
     const res = await secEventQuery({
       from: from24h(),
       sourceType: 'metric',
       eventAction: 'host.up',
-      search: want,
-      limit: 50,
+      ...(searchTerm ? { search: searchTerm } : {}),
+      limit: routeIsIp ? 500 : 80,
       excludeUnknown: false,
     });
     for (const item of res.items ?? []) {
-      const key = (item.sourceHost || '').trim().toLowerCase();
-      if (!key) continue;
-      if (shortHostKey(key) !== want && key !== want && !key.includes(want)) continue;
+      if (!secEventMatchesDiscoveryHost(item, want, matchHints)) continue;
       const ts = Date.parse(item.timestamp || item.ingestedAt || '');
       if (!Number.isFinite(ts)) continue;
       if (lastSeenAt != null && ts <= lastSeenAt) continue;
@@ -158,17 +185,20 @@ export async function loadHostDashboardHost(routeHostname: string): Promise<Siem
   if (dto) {
     const baseCoverage: SiemCoverageStatus =
       liveCoverage ?? 'managedOffline';
-    return toViewHost(dto, baseCoverage, lastSeenAt, agent);
+    return toViewHost(dto, baseCoverage, lastSeenAt, agent, prefixes);
   }
 
-  return {
+  const liveOnly: SiemDiscoveryHost = {
     id: `live-${want}`,
-    hostname: displayName || want,
-    ip: agent?.primaryIp || '—',
+    hostname: resolveDisplayHostname(displayName || want, agent),
+    ip: agent?.primaryIp || (routeIsIp ? want : '—'),
+    osHint: agent?.platform || undefined,
     coverage: liveCoverage ?? 'discoveredUnmanaged',
     lastSeenAt,
     agent,
   };
+  liveOnly.osFamily = resolveOsFamily(liveOnly);
+  return liveOnly;
 }
 
 /** Default MngLogs Local UI port (agent system.json LocalUiPort). */
@@ -272,6 +302,8 @@ export function parseHostUpAgent(fields?: Record<string, unknown> | null): SiemD
   const bootTimeUtc = asString(fields.bootTimeUtc);
   const uptimeSeconds = asNumber(fields.uptimeSeconds);
   const agentVersion = asString(fields.agentVersion);
+  const platform = asString(fields.platform);
+  const machine = asString(fields.machine);
   const localUiPort = asNumber(fields.localUiPort);
   const localUiHost = asString(fields.localUiHost);
   const localUiRemoteAccess =
@@ -287,6 +319,8 @@ export function parseHostUpAgent(fields?: Record<string, unknown> | null): SiemD
     && !bootTimeUtc
     && uptimeSeconds == null
     && !agentVersion
+    && !platform
+    && !machine
     && localUiPort == null
     && !localUiHost
     && !sessions.length
@@ -301,6 +335,8 @@ export function parseHostUpAgent(fields?: Record<string, unknown> | null): SiemD
     bootTimeUtc,
     uptimeSeconds,
     agentVersion,
+    platform,
+    machine,
     localUiPort,
     localUiHost,
     localUiRemoteAccess,
@@ -331,9 +367,11 @@ function toViewHost(
     prefixes,
     { siteLabel: dto.siteLabel, subnetCidr: dto.subnetCidr },
   );
+  const rawHostname = dto.hostname || dto.samAccountName.replace(/\$$/, '');
   const draft: SiemDiscoveryHost = {
     id: dto.id || `ad-${dto.samAccountName}`,
-    hostname: dto.hostname || dto.samAccountName.replace(/\$$/, ''),
+    // Scan often stores bare IP as hostname; prefer agent MachineName when present.
+    hostname: resolveDisplayHostname(rawHostname, agent),
     ip,
     osHint: dto.osHint || undefined,
     openPorts,
@@ -631,8 +669,7 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
         id: `live-${hostKey}`,
         hostname: hostKey,
         ip,
-        osHint: undefined,
-        osFamily: 'unknown',
+        osHint: snap.agent?.platform || undefined,
         subnetCidr: site.subnetCidr,
         siteLabel: site.label === NO_IP_SITE ? undefined : site.label,
         coverage: cov,
@@ -640,6 +677,7 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
         lastSeenAt: snap.lastSeenAt,
         agent: snap.agent,
       };
+      extra.osFamily = resolveOsFamily(extra);
       extras.push(extra);
     }
 

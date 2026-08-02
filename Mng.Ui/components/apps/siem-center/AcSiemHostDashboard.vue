@@ -17,6 +17,7 @@ import {
   type HostRoleChip,
 } from '@/composables/useSiemHostAnalytics';
 import { coverageColor } from '@/composables/useSiemDiscoveryMock';
+import { preferredSecEventSearchTerm } from '@/utils/siemDiscoveryHostMatch';
 import AcSiemHostKpiStrip from '@/components/apps/siem-center/AcSiemHostKpiStrip.vue';
 import AcSiemHostResourceCharts from '@/components/apps/siem-center/AcSiemHostResourceCharts.vue';
 import AcSiemHostSessionsCard from '@/components/apps/siem-center/AcSiemHostSessionsCard.vue';
@@ -44,6 +45,17 @@ const customToLocal = ref('');
 const rangeMode = ref<'preset' | 'custom'>('preset');
 
 const shortName = computed(() => shortHostKey(props.hostname) || props.hostname.trim().toLowerCase());
+
+const isLinux = computed(
+  () => (host.value?.osFamily || '').toString().trim().toLowerCase() === 'linux',
+);
+
+const searchTerm = computed(() =>
+  preferredSecEventSearchTerm(
+    host.value?.hostname || props.hostname,
+    host.value,
+  ),
+);
 
 const coverageLabel = computed(() => {
   if (!host.value) return '';
@@ -81,22 +93,29 @@ const notInAd = computed(() =>
 const roles = computed(() => bundle.value?.roles ?? []);
 
 const eventsHref = computed(() => {
-  if (!bundle.value) return `/apps/siem-center/events?search=${encodeURIComponent(shortName.value)}`;
-  return hostAnalyticsEventsLink(shortName.value, bundle.value.range);
+  if (!bundle.value) {
+    return `/apps/siem-center/events?search=${encodeURIComponent(searchTerm.value || shortName.value)}`;
+  }
+  return hostAnalyticsEventsLink(searchTerm.value || shortName.value, bundle.value.range, {
+    host: host.value,
+  });
 });
 
 const watchEventsHref = computed(() => {
   if (!bundle.value) return eventsHref.value;
-  return hostAnalyticsEventsLink(shortName.value, bundle.value.range, {
+  return hostAnalyticsEventsLink(searchTerm.value || shortName.value, bundle.value.range, {
     sourceType: 'metric',
     eventAction: 'watch.inventory',
+    host: host.value,
   });
 });
 
 const eventLogEventsHref = computed(() => {
   if (!bundle.value) return eventsHref.value;
-  return hostAnalyticsEventsLink(shortName.value, bundle.value.range, {
-    sourceType: 'windows-eventlog',
+  const sourceType = isLinux.value ? 'linux-journal' : 'windows-eventlog';
+  return hostAnalyticsEventsLink(searchTerm.value || shortName.value, bundle.value.range, {
+    sourceType,
+    host: host.value,
   });
 });
 
@@ -185,7 +204,7 @@ async function loadAnalytics() {
       }
     }
     bundle.value = await loadHostAnalytics({
-      hostname: props.hostname,
+      hostname: host.value?.hostname || props.hostname,
       host: host.value,
       timeRange: tr,
       from,
@@ -394,6 +413,7 @@ onMounted(async () => {
         class="mb-4"
         :kpis="bundle.kpis"
         :loading="analyticsLoading"
+        :os-family="host.osFamily"
       />
       <v-skeleton-loader v-else-if="analyticsLoading" type="card@6" class="mb-4" />
 
@@ -433,6 +453,7 @@ onMounted(async () => {
         :events="bundle.eventLogItems"
         :loading="analyticsLoading"
         :events-href="eventLogEventsHref"
+        :os-family="host.osFamily"
       />
     </template>
   </div>

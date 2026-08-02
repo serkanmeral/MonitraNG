@@ -32,6 +32,9 @@ const dateLocale = computed(() => (locale.value === 'tr' ? 'tr-TR' : 'en-GB'));
 
 const agent = computed(() => props.host.agent ?? null);
 const sessions = computed(() => agent.value?.sessions ?? []);
+const isLinux = computed(
+  () => (props.host.osFamily || '').toString().trim().toLowerCase() === 'linux',
+);
 
 /** Default: human-oriented sessions; hide service/machine noise (e.g. type 5 + HOST$). */
 const historyFilter = ref<'users' | 'all'>('users');
@@ -40,7 +43,14 @@ const historyItemsPerPage = ref(10);
 const HISTORY_PAGE_SIZE_OPTIONS = [5, 10, 25, 50];
 
 function isUserFacingSessionEvent(row: HostSessionHistoryItem): boolean {
-  if (row.kind === 'failed') return true;
+  if (
+    row.kind === 'ssh_logon'
+    || row.kind === 'ssh_failed'
+    || row.kind === 'sudo'
+    || row.kind === 'failed'
+  ) {
+    return true;
+  }
 
   // RDP LocalSessionManager events are always user-oriented
   if (
@@ -109,8 +119,20 @@ const rangeLabel = computed(() => {
 const historyHeaders = computed(() => [
   { title: t('siemCenter.hostDashboard.colTime'), key: 'at', sortable: true },
   { title: t('siemCenter.hostDashboard.colKind'), key: 'kind', sortable: true },
-  { title: t('siemCenter.hostDashboard.colEventId'), key: 'eventId', sortable: true },
-  { title: t('siemCenter.hostDashboard.colLogonType'), key: 'logonType', sortable: true },
+  {
+    title: isLinux.value
+      ? t('siemCenter.hostDashboard.colAction')
+      : t('siemCenter.hostDashboard.colEventId'),
+    key: 'eventId',
+    sortable: true,
+  },
+  {
+    title: isLinux.value
+      ? t('siemCenter.hostDashboard.colSourceAddress')
+      : t('siemCenter.hostDashboard.colLogonType'),
+    key: 'logonType',
+    sortable: true,
+  },
   { title: t('siemCenter.hostDashboard.colUser'), key: 'user', sortable: true },
   {
     title: t('siemCenter.hostDashboard.colActions'),
@@ -119,6 +141,24 @@ const historyHeaders = computed(() => [
     align: 'end' as const,
   },
 ]);
+
+const sessionsHint = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.sessionsHintLinux')
+    : t('siemCenter.hostDashboard.sessionsHint'),
+);
+
+const sessionsHistoryHint = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.sessionsHistoryHintLinux')
+    : t('siemCenter.hostDashboard.sessionsHistoryHint'),
+);
+
+const sessionsHistoryEmpty = computed(() =>
+  isLinux.value
+    ? t('siemCenter.hostDashboard.sessionsHistoryEmptyLinux')
+    : t('siemCenter.hostDashboard.sessionsHistoryEmpty'),
+);
 
 watch(historyFilter, () => {
   historyPage.value = 1;
@@ -173,10 +213,12 @@ function kindLabel(kind: HostSessionHistoryKind): string {
 }
 
 function kindColor(kind: HostSessionHistoryKind): string {
-  if (kind === 'logon' || kind === 'rdp_logon' || kind === 'rdp_reconnect') return 'success';
+  if (kind === 'logon' || kind === 'rdp_logon' || kind === 'rdp_reconnect' || kind === 'ssh_logon') {
+    return 'success';
+  }
   if (kind === 'logoff' || kind === 'rdp_logoff') return 'info';
-  if (kind === 'rdp_disconnect') return 'warning';
-  if (kind === 'failed') return 'error';
+  if (kind === 'rdp_disconnect' || kind === 'sudo') return 'warning';
+  if (kind === 'failed' || kind === 'ssh_failed') return 'error';
   return 'primary';
 }
 
@@ -188,9 +230,11 @@ function logonTypeLabel(code: string | null | undefined): string | null {
 }
 
 function sessionTypeCell(row: HostSessionHistoryItem): string {
-  if (row.logonType) return logonTypeLabel(row.logonType) || row.logonType;
   if (row.sourceAddress) return row.sourceAddress;
+  if (row.logonType) return logonTypeLabel(row.logonType) || row.logonType;
   if (row.kind.startsWith('rdp_')) return 'RDP';
+  if (row.kind === 'ssh_logon' || row.kind === 'ssh_failed') return 'SSH';
+  if (row.kind === 'sudo') return 'sudo';
   return '—';
 }
 
@@ -288,7 +332,7 @@ function closeDetail() {
           {{ t('siemCenter.hostDashboard.sessionsTitle') }}
         </h3>
         <p class="text-caption text-medium-emphasis mb-0">
-          {{ t('siemCenter.hostDashboard.sessionsHint') }}
+          {{ sessionsHint }}
         </p>
       </div>
       <v-btn
@@ -319,38 +363,40 @@ function closeDetail() {
         <span class="font-mono">{{ agent?.agentVersion || '—' }}</span>
       </div>
 
-      <div class="text-subtitle-2 mb-2">
-        {{ t('siemCenter.hostDashboard.sessionsActiveTitle') }}
-      </div>
-      <div v-if="!sessions.length" class="text-body-2 text-medium-emphasis mb-4">
-        {{ t('siemCenter.hostDashboard.sessionsEmpty') }}
-      </div>
-      <v-table v-else density="compact" class="mb-4 host-sessions-table">
-        <thead>
-          <tr>
-            <th>{{ t('siemCenter.discovery.hostDetail.sessionUser') }}</th>
-            <th>{{ t('siemCenter.discovery.hostDetail.sessionType') }}</th>
-            <th>{{ t('siemCenter.discovery.hostDetail.sessionState') }}</th>
-            <th>{{ t('siemCenter.discovery.hostDetail.sessionDuration') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(s, i) in sessions" :key="`${s.sessionId ?? i}-${s.user}`">
-            <td class="font-mono text-break">{{ s.user }}</td>
-            <td>{{ s.clientProtocol || '—' }}</td>
-            <td>{{ s.state || '—' }}</td>
-            <td>{{ formatUptimeSeconds(s.durationSeconds) }}</td>
-          </tr>
-        </tbody>
-      </v-table>
-
-      <v-divider class="mb-3" />
+      <template v-if="!isLinux">
+        <div class="text-subtitle-2 mb-2">
+          {{ t('siemCenter.hostDashboard.sessionsActiveTitle') }}
+        </div>
+        <div v-if="!sessions.length" class="text-body-2 text-medium-emphasis mb-4">
+          {{ t('siemCenter.hostDashboard.sessionsEmpty') }}
+        </div>
+        <v-table v-else density="compact" class="mb-4 host-sessions-table">
+          <thead>
+            <tr>
+              <th>{{ t('siemCenter.discovery.hostDetail.sessionUser') }}</th>
+              <th>{{ t('siemCenter.discovery.hostDetail.sessionType') }}</th>
+              <th>{{ t('siemCenter.discovery.hostDetail.sessionState') }}</th>
+              <th>{{ t('siemCenter.discovery.hostDetail.sessionDuration') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(s, i) in sessions" :key="`${s.sessionId ?? i}-${s.user}`">
+              <td class="font-mono text-break">{{ s.user }}</td>
+              <td>{{ s.clientProtocol || '—' }}</td>
+              <td>{{ s.state || '—' }}</td>
+              <td>{{ formatUptimeSeconds(s.durationSeconds) }}</td>
+            </tr>
+          </tbody>
+        </v-table>
+        <v-divider class="mb-3" />
+      </template>
 
       <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-1">
         <div class="text-subtitle-2 mb-0">
           {{ t('siemCenter.hostDashboard.sessionsHistoryTitle') }}
         </div>
         <v-btn-toggle
+          v-if="!isLinux"
           v-model="historyFilter"
           mandatory
           density="compact"
@@ -367,7 +413,7 @@ function closeDetail() {
         </v-btn-toggle>
       </div>
       <p class="text-caption text-medium-emphasis mb-1">
-        {{ t('siemCenter.hostDashboard.sessionsHistoryHint') }}
+        {{ sessionsHistoryHint }}
       </p>
       <p v-if="rangeLabel" class="text-caption mb-1">
         <v-chip size="x-small" variant="tonal" color="primary" class="me-1">
@@ -375,7 +421,7 @@ function closeDetail() {
         </v-chip>
       </p>
       <p
-        v-if="historyFilter === 'users' && historyStats.noise > 0"
+        v-if="!isLinux && historyFilter === 'users' && historyStats.noise > 0"
         class="text-caption text-medium-emphasis mb-2"
       >
         {{
@@ -395,9 +441,9 @@ function closeDetail() {
         class="host-sessions-table host-history-table"
         :items-per-page-options="HISTORY_PAGE_SIZE_OPTIONS"
         :no-data-text="
-          historyFilter === 'users' && historyStats.total > 0
+          !isLinux && historyFilter === 'users' && historyStats.total > 0
             ? t('siemCenter.hostDashboard.sessionsHistoryEmptyFiltered')
-            : t('siemCenter.hostDashboard.sessionsHistoryEmpty')
+            : sessionsHistoryEmpty
         "
       >
         <template #item.at="{ item }">

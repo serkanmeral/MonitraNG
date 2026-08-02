@@ -6,9 +6,22 @@ import { useAppI18n } from '@/composables/useAppI18n';
 const props = defineProps<{
   kpis: HostAnalyticsKpis;
   loading?: boolean;
+  /** windows | linux — switches memory / journal KPI copy */
+  osFamily?: string | null;
 }>();
 
 const { t } = useAppI18n();
+
+const isLinux = computed(
+  () => (props.osFamily || '').toString().trim().toLowerCase() === 'linux',
+);
+
+function memoryTone(pct: number | null): string {
+  if (pct == null) return 'info';
+  if (pct >= 90) return 'error';
+  if (pct >= 80) return 'warning';
+  return 'success';
+}
 
 function formatAge(sec: number | null): string {
   if (sec == null) return '—';
@@ -67,10 +80,24 @@ const cards = computed(() => {
     },
     {
       key: 'memory',
-      title: t('siemCenter.hostDashboard.kpiMemory'),
-      value: k.memoryAvailableMb != null ? `${k.memoryAvailableMb} MB` : '—',
-      hint: t('siemCenter.hostDashboard.kpiMemoryHint'),
-      color: 'info',
+      title: isLinux.value || k.memoryUsedPercent != null
+        ? t('siemCenter.hostDashboard.kpiMemoryUsed')
+        : t('siemCenter.hostDashboard.kpiMemory'),
+      value:
+        k.memoryUsedPercent != null
+          ? `${k.memoryUsedPercent}%`
+          : k.memoryAvailableMb != null
+            ? `${k.memoryAvailableMb} MB`
+            : '—',
+      hint:
+        k.memoryUsedPercent != null
+          ? k.memoryAvailableMb != null
+            ? t('siemCenter.hostDashboard.kpiMemoryUsedHint', {
+              availableMb: k.memoryAvailableMb,
+            })
+            : t('siemCenter.hostDashboard.kpiMemoryUsedHintShort')
+          : t('siemCenter.hostDashboard.kpiMemoryHint'),
+      color: k.memoryUsedPercent != null ? memoryTone(k.memoryUsedPercent) : 'info',
       icon: 'mdi-memory',
     },
     {
@@ -96,12 +123,19 @@ const cards = computed(() => {
     },
     {
       key: 'eventlog',
-      title: t('siemCenter.hostDashboard.kpiEventLog'),
+      title: isLinux.value
+        ? t('siemCenter.hostDashboard.kpiEventLogJournal')
+        : t('siemCenter.hostDashboard.kpiEventLog'),
       value: String(k.eventLogErrors),
-      hint: t('siemCenter.hostDashboard.kpiEventLogHint', {
-        warn: k.eventLogWarnings,
-        total: k.eventLogTotal,
-      }),
+      hint: t(
+        isLinux.value
+          ? 'siemCenter.hostDashboard.kpiEventLogHintJournal'
+          : 'siemCenter.hostDashboard.kpiEventLogHint',
+        {
+          warn: k.eventLogWarnings,
+          total: k.eventLogTotal,
+        },
+      ),
       color: k.eventLogErrors > 0 ? 'error' : k.eventLogWarnings > 0 ? 'warning' : 'success',
       icon: 'mdi-file-document-alert-outline',
     },

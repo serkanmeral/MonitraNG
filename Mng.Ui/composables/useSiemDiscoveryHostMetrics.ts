@@ -1,5 +1,11 @@
 import { secEventQuery } from '@/services/secEventService';
 import type { SecEventListItem } from '@/types/apps/secEvent';
+import type { SiemDiscoveryHost } from '@/types/apps/siemDiscovery';
+import {
+  preferredSecEventSearchTerm,
+  secEventMatchesDiscoveryHost,
+  shortHostKey,
+} from '@/utils/siemDiscoveryHostMatch';
 
 /** Metrics older than this are shown as stale in Discovery host modal. */
 export const DISCOVERY_METRICS_STALE_MS = 5 * 60 * 1000;
@@ -11,7 +17,8 @@ export interface MetricPoint {
 
 export interface DiscoveryDiskMetric {
   volume: string;
-  freeBytes: number;
+  /** Null when only total was seen (avoid fake 100% used). */
+  freeBytes: number | null;
   totalBytes: number | null;
   at: number;
 }
@@ -35,9 +42,15 @@ export interface DiscoveryHostMetricsSnapshot {
   cpuSeries: MetricPoint[];
   memoryAvailableBytes: number | null;
   memoryAvailableMb: number | null;
+  /** Present when agent ships MemTotal / totalBytes with available. */
+  memoryTotalBytes: number | null;
+  memoryUsedBytes: number | null;
+  memoryUsedPercent: number | null;
   memoryAt: number | null;
-  /** Available memory bytes over time */
+  /** @deprecated prefer memoryUsedSeries — kept for callers that chart available bytes */
   memorySeries: MetricPoint[];
+  /** Used memory percent 0–100 over time (when total known). */
+  memoryUsedSeries: MetricPoint[];
   disks: DiscoveryDiskMetric[];
   diskSeries: DiscoveryDiskSeries[];
   topCpu: DiscoveryTopProcess[];
@@ -49,19 +62,6 @@ export interface DiscoveryHostMetricsSnapshot {
 
 function fromHours(hours: number): string {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-}
-
-function shortHostKey(hostname: string): string {
-  const h = hostname.trim().toLowerCase();
-  return h.split('.')[0] || h;
-}
-
-function matchesHost(item: SecEventListItem, hostname: string): boolean {
-  const want = shortHostKey(hostname);
-  if (!want) return false;
-  const src = (item.sourceHost || '').trim().toLowerCase();
-  if (!src) return false;
-  return src === want || shortHostKey(src) === want || src.includes(want);
 }
 
 function asNumber(v: unknown): number | null {
@@ -91,8 +91,12 @@ function fieldMetric(item: SecEventListItem): string | null {
   return asString(item.fields?.metric);
 }
 
-function pickForHost(items: SecEventListItem[], hostname: string): SecEventListItem[] {
-  return (items ?? []).filter((i) => matchesHost(i, hostname));
+function pickForHost(
+  items: SecEventListItem[],
+  hostname: string,
+  host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null,
+): SecEventListItem[] {
+  return (items ?? []).filter((i) => secEventMatchesDiscoveryHost(i, hostname, host));
 }
 
 function parseTopCpu(fields: Record<string, unknown> | null | undefined): DiscoveryTopProcess[] {
@@ -143,22 +147,33 @@ function buildDisks(items: SecEventListItem[]): DiscoveryDiskMetric[] {
       if (free == null) continue;
       const total = asNumber(item.fields?.totalBytes);
       const prev = byVol.get(volume);
-      if (!prev || ts > prev.at) {
-        byVol.set(volume, { volume, freeBytes: free, totalBytes: total, at: ts });
+      // Same-timestamp batches often emit total then free — must merge on ts === prev.at.
+      if (!prev || ts >= prev.at) {
+        byVol.set(volume, {
+          volume,
+          freeBytes: free,
+          totalBytes: total ?? prev?.totalBytes ?? null,
+          at: ts,
+        });
       }
     } else if (metric === 'disk.total_bytes') {
       const total = asNumber(item.fields?.value);
       if (total == null) continue;
       const prev = byVol.get(volume);
       if (!prev) {
-        byVol.set(volume, { volume, freeBytes: 0, totalBytes: total, at: ts });
-      } else if (prev.totalBytes == null || ts >= prev.at) {
-        byVol.set(volume, { ...prev, totalBytes: total });
+        // Total-only — free stays unknown until a free_bytes sample merges in.
+        byVol.set(volume, { volume, freeBytes: null, totalBytes: total, at: ts });
+      } else {
+        // Enrich total only; never clear freeBytes (same-ms total/free batches).
+        byVol.set(volume, {
+          ...prev,
+          totalBytes: total,
+        });
       }
     }
   }
   return [...byVol.values()]
-    .filter((d) => d.freeBytes > 0 || (d.totalBytes != null && d.totalBytes > 0))
+    .filter((d) => d.freeBytes != null && d.totalBytes != null && d.totalBytes > 0)
     .sort((a, b) => a.volume.localeCompare(b.volume));
 }
 
@@ -222,8 +237,12 @@ function emptySnapshot(): DiscoveryHostMetricsSnapshot {
     cpuSeries: [],
     memoryAvailableBytes: null,
     memoryAvailableMb: null,
+    memoryTotalBytes: null,
+    memoryUsedBytes: null,
+    memoryUsedPercent: null,
     memoryAt: null,
     memorySeries: [],
+    memoryUsedSeries: [],
     disks: [],
     diskSeries: [],
     topCpu: [],
@@ -233,21 +252,51 @@ function emptySnapshot(): DiscoveryHostMetricsSnapshot {
   };
 }
 
+function latestMemoryTotalBytes(items: SecEventListItem[]): number | null {
+  let best: { at: number; total: number } | null = null;
+  for (const item of items) {
+    if (fieldMetric(item) !== 'memory.available_bytes') continue;
+    const total = asNumber(item.fields?.totalBytes);
+    const at = itemTs(item);
+    if (total == null || total <= 0 || at == null) continue;
+    if (!best || at > best.at) best = { at, total };
+  }
+  return best?.total ?? null;
+}
+
+function buildMemoryUsedSeries(
+  availableSeries: MetricPoint[],
+  totalBytes: number | null,
+): MetricPoint[] {
+  if (totalBytes == null || totalBytes <= 0) return [];
+  return availableSeries.map((p) => ({
+    at: p.at,
+    value: Math.max(0, Math.min(100, Math.round(((totalBytes - p.value) / totalBytes) * 1000) / 10)),
+  }));
+}
+
 /**
  * Load host resource + top-process metrics (+ series) for Discovery / Host Analytics.
  */
 export async function fetchDiscoveryHostMetrics(
   hostname: string,
-  options?: { from?: string; to?: string; maxPoints?: number; limit?: number },
+  options?: {
+    from?: string;
+    to?: string;
+    maxPoints?: number;
+    limit?: number;
+    host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null;
+  },
 ): Promise<DiscoveryHostMetricsSnapshot> {
-  const host = hostname.trim();
-  if (!host) return emptySnapshot();
+  const hostName = hostname.trim();
+  if (!hostName) return emptySnapshot();
 
   const from = options?.from || fromHours(2);
   const to = options?.to;
   const maxPoints = options?.maxPoints ?? 40;
   const limit = options?.limit ?? Math.max(60, maxPoints + 20);
-  const search = shortHostKey(host);
+  const hostHints = options?.host ?? { hostname: hostName, ip: hostName, agent: null };
+  const search = preferredSecEventSearchTerm(hostName, hostHints);
   const base = {
     from,
     to,
@@ -264,11 +313,11 @@ export async function fetchDiscoveryHostMetrics(
     secEventQuery({ ...base, eventAction: 'process.top_memory', limit: 10 }),
   ]);
 
-  const cpuItems = pickForHost(cpuRes.items, host);
-  const memItems = pickForHost(memRes.items, host);
-  const diskItems = pickForHost(diskRes.items, host);
-  const topCpuItems = pickForHost(topCpuRes.items, host);
-  const topMemItems = pickForHost(topMemRes.items, host);
+  const cpuItems = pickForHost(cpuRes.items, hostName, hostHints);
+  const memItems = pickForHost(memRes.items, hostName, hostHints);
+  const diskItems = pickForHost(diskRes.items, hostName, hostHints);
+  const topCpuItems = pickForHost(topCpuRes.items, hostName, hostHints);
+  const topMemItems = pickForHost(topMemRes.items, hostName, hostHints);
 
   const snap = emptySnapshot();
   const times: number[] = [];
@@ -282,6 +331,7 @@ export async function fetchDiscoveryHostMetrics(
   }
 
   snap.memorySeries = buildValueSeries(memItems, 'memory.available_bytes', maxPoints);
+  snap.memoryTotalBytes = latestMemoryTotalBytes(memItems);
   if (snap.memorySeries.length) {
     const last = snap.memorySeries[snap.memorySeries.length - 1]!;
     snap.memoryAvailableBytes = last.value;
@@ -297,10 +347,25 @@ export async function fetchDiscoveryHostMetrics(
         ?? (snap.memoryAvailableBytes != null
           ? Math.round(snap.memoryAvailableBytes / (1024 * 1024))
           : null);
+      if (snap.memoryTotalBytes == null) {
+        snap.memoryTotalBytes = asNumber(memHit.fields?.totalBytes);
+      }
       snap.memoryAt = itemTs(memHit);
       if (snap.memoryAt != null) times.push(snap.memoryAt);
     }
   }
+  if (
+    snap.memoryAvailableBytes != null
+    && snap.memoryTotalBytes != null
+    && snap.memoryTotalBytes > 0
+  ) {
+    snap.memoryUsedBytes = Math.max(0, snap.memoryTotalBytes - snap.memoryAvailableBytes);
+    snap.memoryUsedPercent = memoryUsedPercent(
+      snap.memoryAvailableBytes,
+      snap.memoryTotalBytes,
+    );
+  }
+  snap.memoryUsedSeries = buildMemoryUsedSeries(snap.memorySeries, snap.memoryTotalBytes);
 
   snap.disks = buildDisks(diskItems);
   for (const d of snap.disks) times.push(d.at);
@@ -327,14 +392,19 @@ export async function fetchDiscoveryHostMetrics(
   return snap;
 }
 
-export function hostMetricsEventsLink(hostname: string): string {
+export function hostMetricsEventsLink(
+  hostname: string,
+  host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null,
+): string {
   const q = new URLSearchParams();
   q.set('sourceType', 'metric');
   q.set('timeRange', '24h');
-  const term = shortHostKey(hostname);
+  const term = preferredSecEventSearchTerm(hostname, host ?? { hostname, ip: hostname, agent: null });
   if (term) q.set('search', term);
   return `/apps/siem-center/events?${q.toString()}`;
 }
+
+export { shortHostKey };
 
 export function formatBytes(bytes: number | null | undefined, locale = 'tr-TR'): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return '—';
@@ -349,14 +419,32 @@ export function formatBytes(bytes: number | null | undefined, locale = 'tr-TR'):
   return `${n.toLocaleString(locale, { maximumFractionDigits: digits })} ${units[i]}`;
 }
 
+export function diskUsedBytes(disk: DiscoveryDiskMetric): number | null {
+  if (disk.freeBytes == null || disk.totalBytes == null || disk.totalBytes <= 0) return null;
+  return Math.max(0, disk.totalBytes - disk.freeBytes);
+}
+
 export function diskUsedPercent(disk: DiscoveryDiskMetric): number | null {
-  if (disk.totalBytes == null || disk.totalBytes <= 0) return null;
-  const used = disk.totalBytes - disk.freeBytes;
+  const used = diskUsedBytes(disk);
+  if (used == null || disk.totalBytes == null || disk.totalBytes <= 0) return null;
   return Math.max(0, Math.min(100, Math.round((used / disk.totalBytes) * 1000) / 10));
+}
+
+export function memoryUsedPercent(
+  availableBytes: number | null | undefined,
+  totalBytes: number | null | undefined,
+): number | null {
+  if (availableBytes == null || totalBytes == null || totalBytes <= 0) return null;
+  const used = totalBytes - availableBytes;
+  return Math.max(0, Math.min(100, Math.round((used / totalBytes) * 1000) / 10));
 }
 
 export function primaryDisk(disks: DiscoveryDiskMetric[]): DiscoveryDiskMetric | null {
   if (!disks.length) return null;
-  const c = disks.find((d) => /^c:?$/i.test(d.volume.replace(/\\/g, '')));
-  return c || disks[0] || null;
+  const withUsage = disks.filter((d) => diskUsedPercent(d) != null);
+  const pool = withUsage.length ? withUsage : disks;
+  const c = pool.find((d) => /^c:?$/i.test(d.volume.replace(/\\/g, '')));
+  if (c) return c;
+  const root = pool.find((d) => d.volume === '/' || d.volume === '');
+  return root || pool[0] || null;
 }

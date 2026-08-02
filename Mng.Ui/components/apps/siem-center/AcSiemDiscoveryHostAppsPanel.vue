@@ -13,11 +13,19 @@ import {
   type DiscoveryWatchActivitySnapshot,
   type DiscoveryWatchTarget,
 } from '@/composables/useSiemDiscoveryHostApps';
+import type { SiemDiscoveryHost } from '@/types/apps/siemDiscovery';
 
 const props = defineProps<{
   hostname: string;
+  host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null;
   staleMs?: number;
 }>();
+
+const hostHints = computed(() => props.host ?? {
+  hostname: props.hostname,
+  ip: props.hostname,
+  agent: null,
+});
 
 const { t, locale } = useAppI18n();
 
@@ -76,8 +84,8 @@ const dateLocale = computed(() => (locale.value === 'tr' ? 'tr-TR' : 'en-GB'));
 
 const eventsHref = computed(() =>
   innerTab.value === 'activity'
-    ? hostWatchActivityEventsLink(props.hostname)
-    : hostWatchEventsLink(props.hostname),
+    ? hostWatchActivityEventsLink(props.hostname, hostHints.value)
+    : hostWatchEventsLink(props.hostname, hostHints.value),
 );
 
 const isStale = computed(() => {
@@ -168,7 +176,7 @@ async function loadStatus(force = false) {
   loading.value = true;
   error.value = null;
   try {
-    snap.value = await fetchDiscoveryHostApps(host);
+    snap.value = await fetchDiscoveryHostApps(host, { host: hostHints.value });
     loadedFor.value = host;
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : String(e);
@@ -187,7 +195,7 @@ async function loadActivity(force = false) {
   loadingActivity.value = true;
   activityError.value = null;
   try {
-    activity.value = await fetchDiscoveryHostWatchActivity(host);
+    activity.value = await fetchDiscoveryHostWatchActivity(host, { host: hostHints.value });
     activityLoadedFor.value = host;
   } catch (e: unknown) {
     activityError.value = e instanceof Error ? e.message : String(e);

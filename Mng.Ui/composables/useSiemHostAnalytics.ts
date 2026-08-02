@@ -20,6 +20,7 @@ import {
 import { secEventQuery } from '@/services/secEventService';
 import type { SecEventListItem } from '@/types/apps/secEvent';
 import type { SiemDiscoveryHost } from '@/types/apps/siemDiscovery';
+import { preferredSecEventSearchTerm } from '@/utils/siemDiscoveryHostMatch';
 import {
   isWindowsMachineAccount,
   parseWindowsRdpSessionMessage,
@@ -47,6 +48,7 @@ export interface HostAnalyticsKpis {
   cpuAvg: number | null;
   cpuMax: number | null;
   memoryAvailableMb: number | null;
+  memoryUsedPercent: number | null;
   diskCriticalUsedPct: number | null;
   diskCriticalVolume: string | null;
   watchUnhealthy: number | null;
@@ -74,6 +76,9 @@ export type HostSessionHistoryKind =
   | 'rdp_logoff'
   | 'rdp_disconnect'
   | 'rdp_reconnect'
+  | 'ssh_logon'
+  | 'ssh_failed'
+  | 'sudo'
   | 'other';
 
 export interface HostSessionHistoryItem {
@@ -195,7 +200,7 @@ function isWarningLevel(level?: string | null): boolean {
 }
 
 export function detectHostRoles(
-  host: Pick<SiemDiscoveryHost, 'hostname' | 'osHint' | 'samAccountName'> | null | undefined,
+  host: Pick<SiemDiscoveryHost, 'hostname' | 'osHint' | 'osFamily' | 'samAccountName'> | null | undefined,
   apps: DiscoveryHostAppsSnapshot,
   eventLogs: DiscoveryHostEventLogSnapshot,
 ): HostRoleChip[] {
@@ -210,12 +215,21 @@ export function detectHostRoles(
     .join(' ')
     .toLowerCase();
 
+  const isLinux =
+    host?.osFamily === 'linux'
+    || blob.includes('linux')
+    || blob.includes('ubuntu')
+    || blob.includes('debian');
+
   if (
-    /\bdc\b/.test(blob)
-    || blob.includes('domain controller')
-    || blob.includes('ad-security')
-    || blob.includes('ntds')
-    || blob.includes('dfs replication')
+    !isLinux
+    && (
+      /\bdc\b/.test(blob)
+      || blob.includes('domain controller')
+      || blob.includes('ad-security')
+      || blob.includes('ntds')
+      || blob.includes('dfs replication')
+    )
   ) {
     roles.push('dc');
   }
@@ -224,15 +238,20 @@ export function detectHostRoles(
     blob.includes('sql server')
     || blob.includes('mssql')
     || blob.includes('sqlserver')
+    || blob.includes('mongod')
+    || blob.includes('postgres')
     || /\bsql\b/.test(blob)
   ) {
     roles.push('sql');
   }
 
   if (!roles.length) {
-    const os = (host?.osHint || '').toLowerCase();
-    if (os.includes('server')) roles.push('memberServer');
-    else roles.push('workstation');
+    if (isLinux) roles.push('memberServer');
+    else {
+      const os = (host?.osHint || '').toLowerCase();
+      if (os.includes('server')) roles.push('memberServer');
+      else roles.push('workstation');
+    }
   }
 
   return roles;
@@ -241,7 +260,7 @@ export function detectHostRoles(
 function buildChannelCounts(items: DiscoveryHostEventLogItem[]): HostAnalyticsChannelCount[] {
   const map = new Map<string, number>();
   for (const row of items) {
-    const key = channelFilterKey(row.channel) || row.channel || 'Other';
+    const key = channelFilterKey(row.channel, row.packageName) || row.channel || 'Other';
     map.set(key, (map.get(key) || 0) + 1);
   }
   return [...map.entries()]
@@ -432,6 +451,80 @@ function buildSessionHistoryFromEventLogs(
   return out;
 }
 
+function parseSshJournalMessage(message: string): {
+  user: string | null;
+  sourceAddress: string | null;
+} {
+  const m =
+    /(?:Accepted|Failed) \S+ for(?: invalid user)? (\S+) from (\S+)/i.exec(message)
+    || /(?:Accepted|Failed) \S+ for (\S+) from (\S+)/i.exec(message);
+  if (!m) return { user: null, sourceAddress: null };
+  return { user: m[1] || null, sourceAddress: m[2] || null };
+}
+
+function parseSudoJournalUser(message: string): string | null {
+  const m = /^(\S+)\s*:/.exec(message.trim()) || /\bsudo:\s+(\S+)\s*:/i.exec(message);
+  return m?.[1] || null;
+}
+
+/** SSH / sudo rows from linux-journal packages (modal Event Log / Host Analytics). */
+export function buildLinuxSessionHistoryFromJournal(
+  items: DiscoveryHostEventLogItem[],
+): HostSessionHistoryItem[] {
+  const out: HostSessionHistoryItem[] = [];
+  for (const row of items) {
+    const action = (
+      row.eventAction
+      || row.action
+      || row.eventId
+      || ''
+    ).trim().toLowerCase();
+    const pkg = (row.packageName || '').trim().toLowerCase();
+    const message = row.message || row.action || '';
+
+    let kind: HostSessionHistoryKind | null = null;
+    if (
+      action === 'ssh.login_success'
+      || action.includes('login_success')
+      || (pkg === 'sshd' && /accepted /i.test(message))
+    ) {
+      kind = 'ssh_logon';
+    } else if (
+      action === 'ssh.login_failed'
+      || action.includes('login_failed')
+      || (pkg === 'sshd' && /failed /i.test(message))
+    ) {
+      kind = 'ssh_failed';
+    } else if (action === 'sudo.event' || pkg === 'sudo' || action.startsWith('sudo.')) {
+      kind = 'sudo';
+    } else if (pkg === 'sshd' || action.startsWith('ssh.')) {
+      kind = 'other';
+    } else {
+      continue;
+    }
+
+    const ssh = kind === 'sudo' ? null : parseSshJournalMessage(message);
+    const user = kind === 'sudo' ? parseSudoJournalUser(message) : ssh?.user ?? null;
+    const previewSource = message || action;
+    out.push({
+      id: row.id,
+      at: row.at,
+      timestamp: row.timestamp,
+      eventId: row.eventId || action || pkg || 'journal',
+      kind,
+      user,
+      subjectUser: null,
+      logonType: null,
+      sourceAddress: ssh?.sourceAddress ?? null,
+      preview: previewSource.trim()
+        ? previewSource.replace(/\s+/g, ' ').trim().slice(0, 120)
+          + (previewSource.length > 120 ? '…' : '')
+        : null,
+    });
+  }
+  return out;
+}
+
 function mergeSessionHistoryItem(
   prev: HostSessionHistoryItem,
   row: HostSessionHistoryItem,
@@ -534,6 +627,7 @@ function buildKpis(
     cpuAvg: cpu.avg,
     cpuMax: cpu.max,
     memoryAvailableMb: metrics.memoryAvailableMb,
+    memoryUsedPercent: metrics.memoryUsedPercent,
     diskCriticalUsedPct,
     diskCriticalVolume,
     watchUnhealthy: apps.unhealthyCount,
@@ -573,19 +667,41 @@ export async function loadHostAnalytics(opts: {
   const limit = queryLimitForRange(range);
   const rangeOpts = { from: range.from, to: range.to };
 
+  const osFamily = opts.host?.osFamily;
+  const isLinux = (osFamily || '').toString().trim().toLowerCase() === 'linux';
+
   const [metrics, apps, activity, eventLogs, sessionHistoryRaw] = await Promise.all([
-    fetchDiscoveryHostMetrics(hostName, { ...rangeOpts, maxPoints, limit }),
+    fetchDiscoveryHostMetrics(hostName, {
+      ...rangeOpts,
+      maxPoints,
+      limit,
+      host: opts.host ?? { hostname: hostName, ip: hostName, agent: null },
+    }),
     // Latest defined-target status (inventory) — not limited to the chart range
-    fetchDiscoveryHostApps(hostName),
-    fetchDiscoveryHostWatchActivity(hostName, { ...rangeOpts, limit: 80 }),
-    fetchDiscoveryHostEventLogs(hostName, { ...rangeOpts, limit: 150 }),
-    fetchSessionAuthHistory(hostName, range),
+    fetchDiscoveryHostApps(hostName, {
+      host: opts.host ?? { hostname: hostName, ip: hostName, agent: null },
+    }),
+    fetchDiscoveryHostWatchActivity(hostName, {
+      ...rangeOpts,
+      limit: 80,
+      host: opts.host ?? { hostname: hostName, ip: hostName, agent: null },
+    }),
+    fetchDiscoveryHostEventLogs(hostName, {
+      ...rangeOpts,
+      limit: 150,
+      osFamily,
+      host: opts.host ?? { hostname: hostName, ip: hostName, agent: null },
+    }),
+    // Windows Security/RDP session history only — Linux journal sessions are L2.
+    isLinux ? Promise.resolve([] as HostSessionHistoryItem[]) : fetchSessionAuthHistory(hostName, range),
   ]);
 
   const kpis = buildKpis(opts.host, metrics, apps, eventLogs, range.toMs);
   const roles = detectHostRoles(opts.host ?? { hostname: hostName }, apps, eventLogs);
 
-  const sessionFromGeneral = buildSessionHistoryFromEventLogs(eventLogs.items);
+  const sessionFromGeneral = isLinux
+    ? buildLinuxSessionHistoryFromJournal(eventLogs.items)
+    : buildSessionHistoryFromEventLogs(eventLogs.items);
   const sessionMap = new Map<string, HostSessionHistoryItem>();
   for (const row of [...sessionHistoryRaw, ...sessionFromGeneral]) {
     const prev = sessionMap.get(row.id);
@@ -615,10 +731,14 @@ export async function loadHostAnalytics(opts: {
 export function hostAnalyticsEventsLink(
   hostname: string,
   range: HostAnalyticsRange,
-  extra?: { sourceType?: string; eventAction?: string },
+  extra?: {
+    sourceType?: string;
+    eventAction?: string;
+    host?: Pick<SiemDiscoveryHost, 'hostname' | 'ip' | 'agent'> | null;
+  },
 ): string {
   const q = new URLSearchParams();
-  const term = hostname.trim().toLowerCase().split('.')[0] || hostname.trim();
+  const term = preferredSecEventSearchTerm(hostname, extra?.host ?? null);
   if (term) q.set('search', term);
   if (extra?.sourceType) q.set('sourceType', extra.sourceType);
   if (extra?.eventAction) q.set('eventAction', extra.eventAction);
