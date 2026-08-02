@@ -646,6 +646,9 @@ services:
       - MngLogCollectorSettings__Ingest__MaxEventsPerBatch=${MNGLOGCOLLECTOR_MAX_EVENTS_PER_BATCH:-500}
       - MngLogCollectorSettings__MongoDB__ConnectionString=${MNGLOGCOLLECTOR_MONGODB_CONNECTION:-mongodb://admin:admin123@mongo:27017}
       - MngLogCollectorSettings__MongoDB__KeeperDatabaseName=${MNGLOGCOLLECTOR_KEEPER_DB:-mngkeeper}
+      - MngLogCollectorSettings__MongoDB__EventLogCatalogDatabaseName=${MNGLOGCOLLECTOR_EVENTLOG_CATALOG_DB:-mng_odak}
+      - MngLogCollectorSettings__Discovery__Prefixes__0__Cidr=${MNGLOGCOLLECTOR_PREFIX_0_CIDR:-192.168.20.0/24}
+      - MngLogCollectorSettings__Discovery__Prefixes__0__Label=${MNGLOGCOLLECTOR_PREFIX_0_LABEL:-Odak ofis}
     networks:
       - mng_common_mng_network
     restart: unless-stopped

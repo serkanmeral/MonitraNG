@@ -8560,7 +8560,24 @@
         "catalog": "Katalog",
         "sources": "Kaynaklar",
         "scenarios": "Senaryolar",
-        "dictionary": "Sözlük"
+        "dictionary": "Sözlük",
+        "prefixes": "Ağ dilimleri"
+      },
+      "prefixes": {
+        "title": "Site / ağ dilimi tablosu",
+        "hint": "IP’yi longest-prefix ile site etiketine oturtur. VLAN yalnızca siz yazarsanız gösterilir (IP’den uydurulmaz).",
+        "source": "Kaynak: {source}",
+        "refresh": "Yenile",
+        "add": "Satır ekle",
+        "save": "Kaydet",
+        "saved": "Ağ dilimleri kaydedildi. Keşif haritası bir sonraki yenilemede güncellenir.",
+        "colCidr": "CIDR",
+        "colLabel": "Site etiketi",
+        "colVlan": "VLAN (opsiyonel)",
+        "labelPlaceholder": "Örn. Odak ofis",
+        "vlanPlaceholder": "Örn. VLAN 20",
+        "invalidCidr": "Geçersiz CIDR: {cidr}",
+        "labelRequired": "Etiket gerekli: {cidr}"
       },
       "catalog": {
         "manageHint": "Paketleri burada tanımlayın. Yayınla sonrası ajanlar bir sonraki katalog sync’te (açılış / periyot) alır. Parser ayarları sonra eklenecek.",
@@ -8634,10 +8651,10 @@
     },
     "discovery": {
       "menuTitle": "Keşif haritası",
-      "pageTitle": "Keşif / coverage haritası",
-      "pageSubtitle": "Discovery sonuçlarını VLAN, DHCP, AP veya subnet dallarında görün; coverage legend ve özet kartlar harita üstünde.",
+      "pageTitle": "Keşif ve kapsam",
+      "pageSubtitle": "Ağda keşfedilen cihazlar ile Monitra ajan kapsamını yan yana görün. Kör nokta: keşfedildi ama ajan yok.",
       "mockBanner": "Discovery host listesi yüklenemedi (Collector). Coverage yine de host.up ile birleştirilir. Sync / Collector deploy gerekebilir.",
-      "liveBanner": "Canlı discovery_hosts (AD). Coverage: host.up — son 2 dk Online, sonrası Offline; otomatik yenileme 30 sn. Host’a tıklayınca detay açılır.",
+      "liveBanner": "Keşif envanteri (tarama + AD) + ajan kapsamı (host.up). Son 2 dk Online, sonrası Sessiz; yenileme 30 sn. Ajansız keşif = coverage boşluğu.",
       "coverageLoadError": "Discovery veya coverage yüklenirken hata oluştu.",
       "refreshCoverage": "Yenile",
       "autoRefreshOn": "Canlı · {s}s",
@@ -8645,21 +8662,94 @@
       "autoRefreshOnHint": "Coverage her {s} sn yenilenir (sekme gizliyken durur). Tıkla: duraklat.",
       "autoRefreshOffHint": "Otomatik coverage yenileme kapalı. Tıkla: aç.",
       "syncNow": "AD sync",
+      "osFamily": {
+        "windows": "Windows",
+        "linux": "Linux",
+        "unknown": "Bilinmeyen OS"
+      },
+      "deviceRole": {
+        "workstation": "İş istasyonu",
+        "server": "Sunucu/servis",
+        "printer": "Yazıcı",
+        "network_gear": "Ağ cihazı",
+        "iot_or_other": "Web/IoT",
+        "unknown": "Bilinmeyen rol"
+      },
+      "identityConfidence": {
+        "high": "Yüksek güven",
+        "medium": "Orta güven",
+        "low": "Düşük güven"
+      },
+      "clear": {
+        "button": "Temizle",
+        "buttonHint": "Discovery host kayıtlarını sil",
+        "title": "Discovery temizle",
+        "subtitle": "Seçilen kayıtlar silinir. Sonra yeniden tarama veya AD sync yapılabilir.",
+        "scopeAll": "Tümü (AD + tarama)",
+        "scopeScan": "Yalnızca tarama (scan)",
+        "scopeAd": "Yalnızca AD",
+        "confirm": "Sil",
+        "cancel": "Vazgeç",
+        "toastOk": "{n} kayıt silindi",
+        "toastFailed": "Temizleme başarısız"
+      },
+      "scan": {
+        "button": "Keşfet",
+        "buttonHint": "IP aralığı ağ taraması (Collector)",
+        "title": "Ağ keşfi",
+        "subtitle": "Ağı tarayarak canlı cihazları bulur; port / HTTP / TLS / SSH ile kimlik ipucu üretir (en fazla /24). AD şart değil.",
+        "cidrLabel": "IP aralığı / CIDR",
+        "cidrHint": "Örnek: 192.168.20.0/24 veya 192.168.20.1-254",
+        "cidrRequired": "IP aralığı gerekli",
+        "cidrInvalid": "Geçersiz aralık: {value}",
+        "cidrTooWide": "Prefix /{prefix} çok geniş (en fazla /24)",
+        "enrichAd": "İsim için AD eşlemesi (opsiyonel)",
+        "enrichAdHint": "Keşfin yerine geçmez; yalnızca bilinen hostname’leri yazar. Demo için kapalı bırakın.",
+        "start": "Taramayı başlat",
+        "cancel": "İptal",
+        "close": "Kapat",
+        "startFailed": "Tarama başlatılamadı",
+        "summary": "Sorgulanan {probed}/{total} · Alive {alive} (Win {win} · Linux {lin} · ? {unk}) · Kayıt {upserted}",
+        "toastCompleted": "Tarama tamamlandı · Alive {alive} · Kayıt {upserted}",
+        "toastCancelled": "Tarama iptal edildi",
+        "status": {
+          "queued": "Kuyrukta",
+          "running": "Taranıyor",
+          "completed": "Tamamlandı",
+          "failed": "Hata",
+          "cancelled": "İptal edildi"
+        }
+      },
       "liveBranchLabel": "Canlı agentlar",
       "liveBranchDetail": "host.up görüldü · AD envanterinde yok",
-      "legendTitle": "Coverage legend",
+      "legendTitle": "Kapsam durumu",
       "legendFilterHint": "Tıkla: duruma göre filtre (çoklu seçim). Boş = tümü.",
-      "clearCoverageFilter": "Temizle",
-      "kpiTitle": "Güvenlik özeti (gösterge)",
-      "topologyTitle": "Topoloji",
-      "rootLabel": "Odak site · discovery",
-      "rootHint": "{n} host · {b} dal — tıkla: tümünü aç/kapat",
+      "clearCoverageFilter": "Filtreyi temizle",
+      "kpiTitle": "Kapsam özeti",
+      "kpiHint": "Tıkla: filtrele. Kırmızı vurgu = ajanı olmayan keşif (boşluk).",
+      "kpiExpand": "Kapsam özetini aç",
+      "kpiCollapse": "Kapsam özetini kapat",
+      "mapTitle": "Keşif ve kapsam",
+      "topologyTitle": "Keşif ve kapsam",
+      "rootLabel": "Odak site · keşif",
+      "rootHint": "{n} host · {b} ağ dilimi — tıkla: tümünü aç/kapat",
       "expandAll": "Tümünü aç",
       "collapseAll": "Tümünü kapat",
       "layoutHint": "Tercih tarayıcıda saklanır",
       "toolbar": {
         "layout": "Görünüm",
-        "groupBy": "Grupla"
+        "groupBy": "Grupla",
+        "list": "Liste",
+        "live": "Canlılık",
+        "actions": "İşlemler",
+        "openShort": "Aç",
+        "closeShort": "Kapat",
+        "refreshShort": "Yenile",
+        "autoShort": "Oto {s}s",
+        "more": "Diğer işlemler",
+        "autoOn": "Otomatik yenileme: açık",
+        "autoOff": "Otomatik yenileme: kapalı",
+        "groupFixed": "Grup: {name}"
       },
       "layouts": {
         "tree": "Ağaç",
@@ -8680,13 +8770,17 @@
         "vlan": "VLAN",
         "dhcp": "DHCP",
         "ap": "Access Point",
-        "subnet": "Subnet"
+        "subnet": "Ağ dilimi"
+      },
+      "site": {
+        "unscoped": "Kapsam dışı",
+        "noIp": "IP yok"
       },
       "coverage": {
-        "managedOnline": "Managed Online",
-        "managedOffline": "Managed Offline",
-        "discoveredUnmanaged": "Discovered Unmanaged",
-        "unknown": "Unknown"
+        "managedOnline": "Kapsamda (canlı)",
+        "managedOffline": "Kapsamda (sessiz)",
+        "discoveredUnmanaged": "Keşfedildi, ajan yok",
+        "unknown": "Bilinmeyen"
       },
       "hostDetail": {
         "title": "Host detayı",
@@ -8728,6 +8822,13 @@
         "bootTime": "Boot (UTC)",
         "agentVersion": "Ajan sürümü",
         "os": "İşletim sistemi",
+        "site": "Site / ağ dilimi",
+        "subnetCidr": "CIDR",
+        "identity": "Kimlik (tarama)",
+        "httpTitle": "HTTP başlık",
+        "tlsCn": "TLS ortak adı",
+        "sshBanner": "SSH banner",
+        "openPorts": "Açık portlar",
         "sam": "sAMAccountName",
         "sources": "Kaynaklar",
         "lastSeenAd": "Son AD sync",

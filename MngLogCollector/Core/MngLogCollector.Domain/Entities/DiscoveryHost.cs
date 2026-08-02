@@ -51,6 +51,64 @@ public sealed class DiscoveryHost
     [BsonIgnoreIfNull]
     public DateTime? LastSeenFromAd { get; set; }
 
+    [BsonElement("lastSeenFromScan")]
+    [BsonIgnoreIfNull]
+    public DateTime? LastSeenFromScan { get; set; }
+
+    /// <summary>windows | linux | unknown — from network scan port profile.</summary>
+    [BsonElement("osFamilyHint")]
+    [BsonIgnoreIfNull]
+    public string? OsFamilyHint { get; set; }
+
+    [BsonElement("openPorts")]
+    [BsonIgnoreIfNull]
+    public List<int>? OpenPorts { get; set; }
+
+    /// <summary>workstation | server | printer | network_gear | iot_or_other | unknown</summary>
+    [BsonElement("deviceRoleHint")]
+    [BsonIgnoreIfNull]
+    public string? DeviceRoleHint { get; set; }
+
+    /// <summary>high | medium | low</summary>
+    [BsonElement("identityConfidence")]
+    [BsonIgnoreIfNull]
+    public string? IdentityConfidence { get; set; }
+
+    [BsonElement("identitySummary")]
+    [BsonIgnoreIfNull]
+    public string? IdentitySummary { get; set; }
+
+    [BsonElement("httpTitle")]
+    [BsonIgnoreIfNull]
+    public string? HttpTitle { get; set; }
+
+    [BsonElement("tlsCommonName")]
+    [BsonIgnoreIfNull]
+    public string? TlsCommonName { get; set; }
+
+    [BsonElement("sshBanner")]
+    [BsonIgnoreIfNull]
+    public string? SshBanner { get; set; }
+
+    /// <summary>Matched prefix CIDR from site table (longest-prefix-match).</summary>
+    [BsonElement("subnetCidr")]
+    [BsonIgnoreIfNull]
+    public string? SubnetCidr { get; set; }
+
+    /// <summary>Human site/subnet label from prefix table; "Unscoped" when IP unmatched.</summary>
+    [BsonElement("siteLabel")]
+    [BsonIgnoreIfNull]
+    public string? SiteLabel { get; set; }
+
+    /// <summary>Optional VLAN name from prefix table mapping (operator-defined, not IP heuristic).</summary>
+    [BsonElement("vlanName")]
+    [BsonIgnoreIfNull]
+    public string? VlanName { get; set; }
+
+    [BsonElement("scanRunId")]
+    [BsonIgnoreIfNull]
+    public string? ScanRunId { get; set; }
+
     [BsonElement("adEnabled")]
     [BsonIgnoreIfNull]
     public bool? AdEnabled { get; set; }

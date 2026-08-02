@@ -4,12 +4,13 @@ import { getCookie } from 'h3';
 /**
  * Dev/prod BFF → MngLogCollector (direct :5091).
  * Requires UI session cookie; forwards optional ingest API key for agent-gated routes.
- * Allows GET/HEAD and POST (discovery sync).
+ * GET/HEAD always; POST discovery/sync|scan*|hosts/clear; POST/PUT/DELETE policy/eventlog-packages*.
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const method = getMethod(event);
   const path = getRouterParam(event, 'path') || '';
+  const pathLower = path.toLowerCase();
 
   const token = getCookie(event, 'access_token');
   if (!token) {
@@ -19,18 +20,30 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const allowed = method === 'GET' || method === 'HEAD' || method === 'POST';
+  const isEventLogPolicyWrite =
+    pathLower.includes('policy/eventlog-packages')
+    && (method === 'POST' || method === 'PUT' || method === 'DELETE');
+
+  const isDiscoverySync = method === 'POST' && pathLower.includes('discovery/sync');
+  const isDiscoveryScanWrite =
+    method === 'POST'
+    && (pathLower.includes('discovery/scan') || pathLower.endsWith('discovery/scan'));
+  const isDiscoveryClear =
+    method === 'POST'
+    && (pathLower.includes('discovery/hosts/clear') || pathLower.endsWith('discovery/hosts/clear'));
+
+  const allowed =
+    method === 'GET'
+    || method === 'HEAD'
+    || isDiscoverySync
+    || isDiscoveryScanWrite
+    || isDiscoveryClear
+    || isEventLogPolicyWrite;
+
   if (!allowed) {
     throw createError({
       statusCode: 405,
       statusMessage: 'Method Not Allowed',
-    });
-  }
-
-  if (method === 'POST' && !path.toLowerCase().includes('discovery/sync')) {
-    throw createError({
-      statusCode: 405,
-      statusMessage: 'POST yalnızca discovery/sync için açık',
     });
   }
 
@@ -56,22 +69,30 @@ export default defineEventHandler(async (event) => {
     headers['X-MngLogs-ApiKey'] = apiKey;
   }
 
+  const domainName = getRequestHeader(event, 'x-domain-name');
+  if (domainName) {
+    headers['X-Domain-Name'] = domainName;
+  }
+
   const ifNoneMatch = getRequestHeader(event, 'if-none-match');
   if (ifNoneMatch) {
     headers['If-None-Match'] = ifNoneMatch;
   }
 
-  let body: unknown = undefined;
-  if (method === 'POST') {
+  const hasBody = method === 'POST' || method === 'PUT';
+  let body: string | undefined;
+  if (hasBody) {
     headers['Content-Type'] = 'application/json';
-    body = await readBody(event);
+    const raw = await readBody(event);
+    // Always forward a JSON string — avoids ofetch serializing quirks with pre-set Content-Type.
+    body = typeof raw === 'string' ? raw : JSON.stringify(raw ?? {});
   }
 
   try {
     return await $fetch(urlWithQuery, {
-      method: method as 'GET' | 'HEAD' | 'POST',
+      method: method as 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE',
       headers,
-      body: method === 'POST' ? body : undefined,
+      body,
     });
   } catch (error: any) {
     const status = error.statusCode || error.status || 500;

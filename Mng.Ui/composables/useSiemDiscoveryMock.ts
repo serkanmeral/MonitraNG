@@ -223,38 +223,51 @@ export function buildLegend(allHosts: SiemDiscoveryHost[]): SiemDiscoveryLegendI
   }));
 }
 
-/** Placeholder KPIs — visual legend strip only (not wired to live APIs yet). */
-export function buildMockKpis(): SiemDiscoveryKpi[] {
+/** Coverage gap KPIs — same counts as legend; clickable filters in the map rail. */
+export function buildCoverageKpis(allHosts: SiemDiscoveryHost[]): SiemDiscoveryKpi[] {
+  const count = (status: SiemCoverageStatus) =>
+    allHosts.filter((h) => h.coverage === status).length;
+
   return [
     {
-      key: 'openAlarms',
-      labelKey: 'siemCenter.dashboard.statOpenAlarms',
-      value: 3,
-      color: 'error',
-      icon: 'mdi-bell-alert',
+      key: 'managedOnline',
+      status: 'managedOnline',
+      labelKey: 'siemCenter.discovery.coverage.managedOnline',
+      value: count('managedOnline'),
+      color: 'success',
+      icon: 'mdi-shield-check',
     },
     {
-      key: 'loginFailed',
-      labelKey: 'siemCenter.dashboard.statLoginFailed',
-      value: 12,
+      key: 'managedOffline',
+      status: 'managedOffline',
+      labelKey: 'siemCenter.discovery.coverage.managedOffline',
+      value: count('managedOffline'),
       color: 'warning',
-      icon: 'mdi-account-lock',
+      icon: 'mdi-shield-alert',
     },
     {
-      key: 'deniedFlow',
-      labelKey: 'siemCenter.dashboard.statDeniedFlow',
-      value: 47,
-      color: 'deep-orange',
+      key: 'discoveredUnmanaged',
+      status: 'discoveredUnmanaged',
+      labelKey: 'siemCenter.discovery.coverage.discoveredUnmanaged',
+      value: count('discoveredUnmanaged'),
+      color: 'error',
       icon: 'mdi-shield-off-outline',
+      emphasize: true,
     },
     {
-      key: 'newFlow',
-      labelKey: 'siemCenter.dashboard.statNewFlow',
-      value: 2,
-      color: 'info',
-      icon: 'mdi-transit-connection-variant',
+      key: 'unknown',
+      status: 'unknown',
+      labelKey: 'siemCenter.discovery.coverage.unknown',
+      value: count('unknown'),
+      color: 'grey',
+      icon: 'mdi-help-circle-outline',
     },
   ];
+}
+
+/** @deprecated Use buildCoverageKpis — kept for any stray imports. */
+export function buildMockKpis(): SiemDiscoveryKpi[] {
+  return buildCoverageKpis([]);
 }
 
 export function getMockBranches(facet: SiemDiscoveryFacet): SiemDiscoveryBranch[] {
@@ -265,4 +278,5 @@ export function getMockHosts(): SiemDiscoveryHost[] {
   return hosts;
 }
 
-export const DISCOVERY_FACETS: SiemDiscoveryFacet[] = ['vlan', 'dhcp', 'ap', 'subnet'];
+/** Primary grouping only — VLAN/DHCP/AP hidden until real data sources exist. */
+export const DISCOVERY_FACETS: SiemDiscoveryFacet[] = ['subnet'];

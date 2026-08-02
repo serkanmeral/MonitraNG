@@ -13,8 +13,11 @@ public static class ApplicationServiceRegistration
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IIngestBatchService, IngestBatchService>();
-        services.AddSingleton<IEventLogPackageCatalogService, BuiltinEventLogPackageCatalogService>();
+        services.AddScoped<IEventLogPackageCatalogService, EventLogPackageCatalogService>();
         services.AddScoped<IDiscoveryService, DiscoveryService>();
+        services.AddScoped<DiscoveryScanRunner>();
+        services.AddSingleton<IDiscoveryScanQueue, DiscoveryScanQueue>();
+        services.AddHostedService<DiscoveryScanWorker>();
         return services;
     }
 }

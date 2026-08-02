@@ -6,6 +6,10 @@ import {
 } from '@/composables/useSiemDiscoveryData';
 import { DISCOVERY_FACETS, coverageColor } from '@/composables/useSiemDiscoveryMock';
 import AcSiemDiscoveryHostDetailDialog from '@/components/apps/siem-center/AcSiemDiscoveryHostDetailDialog.vue';
+import AcSiemDiscoveryHostNode from '@/components/apps/siem-center/AcSiemDiscoveryHostNode.vue';
+import AcSiemDiscoveryScanDialog from '@/components/apps/siem-center/AcSiemDiscoveryScanDialog.vue';
+import AcSiemDiscoveryPrefixesPanel from '@/components/apps/siem-center/AcSiemDiscoveryPrefixesPanel.vue';
+import { clearDiscoveryHosts } from '@/services/siemDiscoveryService';
 import type {
   SiemCoverageStatus,
   SiemDiscoveryBranch,
@@ -17,6 +21,7 @@ type LayoutMode = 'tree' | 'split' | 'tiers' | 'graph';
 
 const LAYOUTS: LayoutMode[] = ['tree', 'split', 'tiers', 'graph'];
 const LAYOUT_STORAGE_KEY = 'siem.discovery.layout';
+const KPI_OPEN_STORAGE_KEY = 'siem.discovery.kpiOpen';
 
 function loadLayoutPreference(): LayoutMode {
   if (!import.meta.client) return 'tree';
@@ -29,10 +34,23 @@ function loadLayoutPreference(): LayoutMode {
   return 'tree';
 }
 
+function loadKpiOpenPreference(): boolean {
+  if (!import.meta.client) return true;
+  try {
+    const raw = localStorage.getItem(KPI_OPEN_STORAGE_KEY);
+    if (raw === '0' || raw === 'false') return false;
+    if (raw === '1' || raw === 'true') return true;
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
 const { t, locale } = useAppI18n();
 
-const facet = ref<SiemDiscoveryFacet>('vlan');
+const facet = ref<SiemDiscoveryFacet>('subnet');
 const layout = ref<LayoutMode>(loadLayoutPreference());
+const kpiOpen = ref(loadKpiOpenPreference());
 
 const {
   loading,
@@ -40,11 +58,9 @@ const {
   coverageRefreshing,
   error,
   lastRefreshedAt,
-  usingLiveDiscovery,
   autoRefresh,
   pollIntervalMs,
   branches: rawBranches,
-  legend,
   kpis,
   refresh,
   syncNow,
@@ -54,6 +70,40 @@ const {
 
 const detailOpen = ref(false);
 const selectedHost = ref<SiemDiscoveryHost | null>(null);
+const scanOpen = ref(false);
+const prefixesOpen = ref(false);
+const clearOpen = ref(false);
+const clearing = ref(false);
+const clearScope = ref<'all' | 'scan' | 'ad'>('all');
+const clearSnackbar = ref(false);
+const clearSnackbarText = ref('');
+const clearSnackbarColor = ref<'success' | 'error'>('success');
+
+async function confirmClear() {
+  clearing.value = true;
+  try {
+    const source = clearScope.value === 'all' ? '' : clearScope.value;
+    const res = await clearDiscoveryHosts({ source });
+    if (res.status === 'error' || res.error) {
+      clearSnackbarColor.value = 'error';
+      clearSnackbarText.value = res.error || t('siemCenter.discovery.clear.toastFailed');
+      clearSnackbar.value = true;
+      return;
+    }
+    clearOpen.value = false;
+    clearSnackbarColor.value = 'success';
+    clearSnackbarText.value = t('siemCenter.discovery.clear.toastOk', { n: res.deleted });
+    clearSnackbar.value = true;
+    await refresh();
+  } catch (e: unknown) {
+    clearSnackbarColor.value = 'error';
+    clearSnackbarText.value =
+      (e instanceof Error ? e.message : String(e)) || t('siemCenter.discovery.clear.toastFailed');
+    clearSnackbar.value = true;
+  } finally {
+    clearing.value = false;
+  }
+}
 
 /** Empty set = show all coverage statuses (multi-select toggle via legend). */
 const coverageFilter = ref<Set<SiemCoverageStatus>>(new Set());
@@ -73,24 +123,27 @@ function clearCoverageFilter() {
   coverageFilter.value = new Set();
 }
 
+function localizeBranchLabel(label: string): string {
+  if (label === 'Unscoped') return t('siemCenter.discovery.site.unscoped');
+  if (label === 'No IP') return t('siemCenter.discovery.site.noIp');
+  return label;
+}
+
 const branches = computed((): SiemDiscoveryBranch[] => {
-  const localized = rawBranches.value.map((b) => {
-    if (b.id !== '__live-unplaced') return b;
-    return {
-      ...b,
-      label: t('siemCenter.discovery.liveBranchLabel'),
-      detail: t('siemCenter.discovery.liveBranchDetail'),
-    };
-  });
+  const source =
+    coverageFilter.value.size === 0
+      ? rawBranches.value
+      : rawBranches.value
+          .map((b) => ({
+            ...b,
+            hosts: b.hosts.filter((h) => coverageFilter.value.has(h.coverage)),
+          }))
+          .filter((b) => b.hosts.length > 0);
 
-  if (coverageFilter.value.size === 0) return localized;
-
-  return localized
-    .map((b) => ({
-      ...b,
-      hosts: b.hosts.filter((h) => coverageFilter.value.has(h.coverage)),
-    }))
-    .filter((b) => b.hosts.length > 0);
+  return source.map((b) => ({
+    ...b,
+    label: localizeBranchLabel(b.label),
+  }));
 });
 
 const hostCount = computed(() => branches.value.reduce((n, b) => n + b.hosts.length, 0));
@@ -122,6 +175,19 @@ watch(layout, (value) => {
     // ignore
   }
 });
+
+watch(kpiOpen, (value) => {
+  if (!import.meta.client) return;
+  try {
+    localStorage.setItem(KPI_OPEN_STORAGE_KEY, value ? '1' : '0');
+  } catch {
+    // ignore
+  }
+});
+
+function toggleKpiOpen() {
+  kpiOpen.value = !kpiOpen.value;
+}
 
 const facetItems = computed(() =>
   DISCOVERY_FACETS.map((id) => ({
@@ -222,9 +288,10 @@ const graphLayout = computed(() => {
   const ROOT_H = 44;
   const BRANCH_W = 188;
   const BRANCH_H = 56;
-  const HOST_W = 148;
-  const HOST_H = 44;
-  const HOST_GAP = 14;
+  // Match AcSiemDiscoveryHostNode (wide) footprint used in other layouts.
+  const HOST_W = 260;
+  const HOST_H = 118;
+  const HOST_GAP = 12;
   const COL_GAP = 28;
   const ROOT_TO_BRANCH = 56;
   const BRANCH_TO_HOST = 36;
@@ -276,69 +343,44 @@ const graphLayout = computed(() => {
 
 <template>
   <div class="discovery-map">
-    <v-alert
-      :type="usingLiveDiscovery ? 'success' : 'info'"
-      variant="tonal"
-      density="comfortable"
-      class="mb-3"
-    >
-      {{
-        usingLiveDiscovery
-          ? t('siemCenter.discovery.liveBanner')
-          : t('siemCenter.discovery.mockBanner')
-      }}
-    </v-alert>
-
-    <v-alert v-if="error" type="warning" variant="tonal" density="comfortable" class="mb-3">
-      {{ t('siemCenter.discovery.coverageLoadError') }}
-      <div class="text-caption mt-1">{{ error }}</div>
-    </v-alert>
-
-    <v-card variant="outlined" class="discovery-toolbar mb-3 pa-2">
-      <div class="d-flex flex-wrap align-center ga-2 ga-md-3">
-        <div class="d-flex align-center ga-2 toolbar-brand pe-md-2">
-          <v-icon size="20" color="primary">mdi-sitemap</v-icon>
-          <div class="d-none d-sm-block">
-            <div class="text-body-2 font-weight-medium lh-sm">
-              {{ t('siemCenter.discovery.topologyTitle') }}
-            </div>
-            <div class="text-caption text-medium-emphasis lh-sm">
-              {{ t('siemCenter.discovery.layoutHint') }}
-            </div>
-          </div>
+    <div class="discovery-header mb-3 pa-3 pa-md-4 rounded-lg">
+      <div class="d-flex flex-wrap align-start justify-space-between ga-3">
+        <div class="min-w-0">
+          <h1 class="text-h5 font-weight-bold mb-1">
+            {{ t('siemCenter.discovery.pageTitle') }}
+          </h1>
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            {{ t('siemCenter.discovery.pageSubtitle') }}
+            <span v-if="facetItems.length === 1" class="text-medium-emphasis">
+              · {{ t('siemCenter.discovery.toolbar.groupFixed', { name: facetItems[0]?.title }) }}
+            </span>
+          </p>
         </div>
 
-        <v-divider vertical class="d-none d-md-flex toolbar-divider" />
-
-        <div class="d-flex align-center ga-2 flex-grow-1 flex-wrap">
-          <span class="text-caption text-medium-emphasis text-no-wrap d-none d-sm-inline">
-            {{ t('siemCenter.discovery.toolbar.layout') }}
-          </span>
-          <v-btn-toggle
-            v-model="layout"
-            mandatory
-            density="compact"
-            color="primary"
-            variant="outlined"
-            divided
-            class="toolbar-toggle"
-          >
-            <v-btn
-              v-for="l in layoutItems"
-              :key="l.id"
-              :value="l.id"
-              size="small"
-              class="px-2"
-            >
-              <v-icon :icon="l.icon" size="18" start class="d-none d-sm-inline" />
-              {{ l.title }}
-              <v-tooltip activator="parent" location="bottom">{{ l.title }}</v-tooltip>
-            </v-btn>
-          </v-btn-toggle>
-
-          <v-divider vertical class="d-none d-md-flex toolbar-divider" />
-
+        <div class="d-flex flex-wrap align-center ga-2 flex-shrink-0">
           <v-select
+            v-model="layout"
+            :items="layoutItems"
+            item-title="title"
+            item-value="id"
+            :label="t('siemCenter.discovery.toolbar.layout')"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="toolbar-layout-select"
+          >
+            <template #selection="{ item }">
+              <span class="d-flex align-center ga-2 text-body-2">
+                <v-icon :icon="item.raw.icon" size="18" />
+                {{ item.title }}
+              </span>
+            </template>
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" :prepend-icon="item.raw.icon" />
+            </template>
+          </v-select>
+          <v-select
+            v-if="facetItems.length > 1"
             v-model="facet"
             :items="facetItems"
             item-title="title"
@@ -347,87 +389,157 @@ const graphLayout = computed(() => {
             variant="outlined"
             density="compact"
             hide-details
-            class="toolbar-select"
+            class="toolbar-layout-select"
           />
-
-          <v-divider vertical class="d-none d-md-flex toolbar-divider" />
-
-          <div class="d-flex align-center ga-1">
-            <v-btn
-              size="small"
-              variant="text"
-              prepend-icon="mdi-arrow-expand-vertical"
-              @click="expandAll"
-            >
-              <span class="d-none d-lg-inline">{{ t('siemCenter.discovery.expandAll') }}</span>
-              <v-tooltip activator="parent" location="bottom">
-                {{ t('siemCenter.discovery.expandAll') }}
-              </v-tooltip>
-            </v-btn>
-            <v-btn
-              size="small"
-              variant="text"
-              prepend-icon="mdi-arrow-collapse-vertical"
-              @click="collapseAll"
-            >
-              <span class="d-none d-lg-inline">{{ t('siemCenter.discovery.collapseAll') }}</span>
-              <v-tooltip activator="parent" location="bottom">
-                {{ t('siemCenter.discovery.collapseAll') }}
-              </v-tooltip>
-            </v-btn>
-            <v-btn
-              size="small"
-              :variant="autoRefresh ? 'tonal' : 'text'"
-              :color="autoRefresh ? 'success' : undefined"
-              :prepend-icon="autoRefresh ? 'mdi-broadcast' : 'mdi-broadcast-off'"
-              @click="toggleAutoRefresh"
-            >
-              <span class="d-none d-lg-inline">
-                {{
+          <v-btn
+            size="small"
+            variant="flat"
+            color="primary"
+            prepend-icon="mdi-radar"
+            @click="scanOpen = true"
+          >
+            {{ t('siemCenter.discovery.scan.button') }}
+          </v-btn>
+          <v-menu location="bottom end">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="menuProps"
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-dots-vertical"
+                append-icon="mdi-chevron-down"
+              >
+                {{ t('siemCenter.discovery.toolbar.more') }}
+              </v-btn>
+            </template>
+            <v-list density="compact" min-width="220" class="discovery-actions-menu">
+              <v-list-item
+                prepend-icon="mdi-ip-network"
+                :title="t('siemCenter.settings.tabs.prefixes')"
+                @click="prefixesOpen = true"
+              />
+              <v-list-item
+                prepend-icon="mdi-arrow-expand-vertical"
+                :title="t('siemCenter.discovery.expandAll')"
+                @click="expandAll"
+              />
+              <v-list-item
+                prepend-icon="mdi-arrow-collapse-vertical"
+                :title="t('siemCenter.discovery.collapseAll')"
+                @click="collapseAll"
+              />
+              <v-list-item
+                prepend-icon="mdi-refresh"
+                :title="t('siemCenter.discovery.toolbar.refreshShort')"
+                :disabled="loading || coverageRefreshing"
+                @click="refresh"
+              >
+                <template v-if="lastRefreshedLabel" #append>
+                  <v-tooltip location="left">
+                    <template #activator="{ props: tip }">
+                      <span v-bind="tip" class="text-caption text-medium-emphasis">
+                        {{ lastRefreshedLabel }}
+                      </span>
+                    </template>
+                    {{ t('siemCenter.discovery.refreshCoverage') }}
+                  </v-tooltip>
+                </template>
+              </v-list-item>
+              <v-list-item
+                :prepend-icon="autoRefresh ? 'mdi-broadcast' : 'mdi-broadcast-off'"
+                :title="
                   autoRefresh
-                    ? t('siemCenter.discovery.autoRefreshOn', { s: pollSeconds })
-                    : t('siemCenter.discovery.autoRefreshOff')
-                }}
-              </span>
-              <v-tooltip activator="parent" location="bottom">
-                {{
-                  autoRefresh
-                    ? t('siemCenter.discovery.autoRefreshOnHint', { s: pollSeconds })
-                    : t('siemCenter.discovery.autoRefreshOffHint')
-                }}
-              </v-tooltip>
-            </v-btn>
-            <v-btn
-              size="small"
-              variant="text"
-              :loading="loading || coverageRefreshing"
-              @click="refresh"
-            >
-              <v-icon>mdi-refresh</v-icon>
-              <v-tooltip activator="parent" location="bottom">
-                {{ t('siemCenter.discovery.refreshCoverage') }}
-                <span v-if="lastRefreshedLabel"> · {{ lastRefreshedLabel }}</span>
-              </v-tooltip>
-            </v-btn>
-            <v-btn
-              size="small"
-              variant="tonal"
-              color="primary"
-              :loading="syncing"
-              prepend-icon="mdi-sync"
-              @click="syncNow"
-            >
-              <span class="d-none d-lg-inline">{{ t('siemCenter.discovery.syncNow') }}</span>
-              <v-tooltip activator="parent" location="bottom">
-                {{ t('siemCenter.discovery.syncNow') }}
-              </v-tooltip>
-            </v-btn>
-          </div>
+                    ? t('siemCenter.discovery.toolbar.autoOn')
+                    : t('siemCenter.discovery.toolbar.autoOff')
+                "
+                @click="toggleAutoRefresh"
+              >
+                <template #append>
+                  <span
+                    class="menu-status-dot"
+                    :class="autoRefresh ? 'is-on' : 'is-off'"
+                    aria-hidden="true"
+                  />
+                </template>
+              </v-list-item>
+              <v-divider class="my-1" />
+              <v-list-item
+                prepend-icon="mdi-sync"
+                :title="t('siemCenter.discovery.syncNow')"
+                :disabled="syncing"
+                @click="syncNow"
+              />
+              <v-list-item
+                prepend-icon="mdi-delete-sweep"
+                :title="t('siemCenter.discovery.clear.button')"
+                base-color="error"
+                @click="clearOpen = true"
+              />
+            </v-list>
+          </v-menu>
         </div>
       </div>
-    </v-card>
+    </div>
 
-    <div class="discovery-body">
+    <v-alert v-if="error" type="warning" variant="tonal" density="comfortable" class="mb-3">
+      {{ t('siemCenter.discovery.coverageLoadError') }}
+      <div class="text-caption mt-1">{{ error }}</div>
+    </v-alert>
+
+    <AcSiemDiscoveryScanDialog v-model:open="scanOpen" @completed="refresh" />
+
+    <v-dialog v-model="prefixesOpen" max-width="920" scrollable>
+      <v-card>
+        <v-card-title class="d-flex align-center justify-space-between">
+          <span>{{ t('siemCenter.settings.prefixes.title') }}</span>
+          <v-btn icon="mdi-close" variant="text" @click="prefixesOpen = false" />
+        </v-card-title>
+        <v-card-text>
+          <AcSiemDiscoveryPrefixesPanel
+            @saved="() => { prefixesOpen = false; void refresh(); }"
+          />
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="clearOpen" max-width="480">
+      <v-card>
+        <v-card-title class="text-h6">
+          {{ t('siemCenter.discovery.clear.title') }}
+        </v-card-title>
+        <v-card-subtitle>
+          {{ t('siemCenter.discovery.clear.subtitle') }}
+        </v-card-subtitle>
+        <v-card-text>
+          <v-radio-group v-model="clearScope" density="compact" hide-details>
+            <v-radio value="all" :label="t('siemCenter.discovery.clear.scopeAll')" />
+            <v-radio value="scan" :label="t('siemCenter.discovery.clear.scopeScan')" />
+            <v-radio value="ad" :label="t('siemCenter.discovery.clear.scopeAd')" />
+          </v-radio-group>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" :disabled="clearing" @click="clearOpen = false">
+            {{ t('siemCenter.discovery.clear.cancel') }}
+          </v-btn>
+          <v-btn color="error" variant="flat" :loading="clearing" @click="confirmClear">
+            {{ t('siemCenter.discovery.clear.confirm') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar
+      v-model="clearSnackbar"
+      :color="clearSnackbarColor"
+      location="bottom right"
+      :timeout="4000"
+      rounded="md"
+    >
+      {{ clearSnackbarText }}
+    </v-snackbar>
+
+    <div class="discovery-body" :class="{ 'rail-collapsed': !kpiOpen }">
       <div class="discovery-main">
     <div v-if="layout === 'tree'" class="topo-canvas rounded-lg pa-4 pa-md-6">
       <div class="diagram">
@@ -486,20 +598,11 @@ const graphLayout = computed(() => {
                 :class="{ 'is-last': idx === branch.hosts.length - 1 }"
               >
                 <div class="diagram-elbow" />
-                <button
-                  type="button"
-                  class="node node-host node-host-link"
+                <AcSiemDiscoveryHostNode
+                  :host="host"
+                  density="tree"
                   @click="openHost(host)"
-                >
-                  <span class="legend-dot" :class="`bg-${coverageColor(host.coverage)}`" />
-                  <div class="min-w-0">
-                    <div class="text-body-2 font-weight-medium text-truncate">{{ host.hostname }}</div>
-                    <div class="text-caption text-medium-emphasis text-truncate">
-                      {{ host.ip }}<span v-if="host.osHint"> · {{ host.osHint }}</span>
-                    </div>
-                  </div>
-                  <v-icon icon="mdi-open-in-new" size="14" class="text-medium-emphasis ms-1" />
-                </button>
+                />
               </div>
             </div>
           </div>
@@ -558,20 +661,13 @@ const graphLayout = computed(() => {
             </div>
             <div class="text-caption text-medium-emphasis mb-2">{{ selectedBranch.detail }}</div>
             <div class="d-flex flex-wrap ga-2">
-              <button
+              <AcSiemDiscoveryHostNode
                 v-for="host in selectedBranch.hosts"
                 :key="host.id"
-                type="button"
-                class="node node-host node-host-link"
-                style="width: auto; min-width: 160px"
+                :host="host"
+                density="wide"
                 @click="openHost(host)"
-              >
-                <span class="legend-dot" :class="`bg-${coverageColor(host.coverage)}`" />
-                <div>
-                  <div class="text-body-2 font-weight-medium">{{ host.hostname }}</div>
-                  <div class="text-caption text-medium-emphasis">{{ host.ip }}</div>
-                </div>
-              </button>
+              />
             </div>
           </template>
           <div v-else class="text-body-2 text-medium-emphasis">
@@ -620,21 +716,14 @@ const graphLayout = computed(() => {
         <div class="tier-track">
           <template v-for="branch in branches" :key="`hosts-${branch.id}`">
             <template v-if="isExpanded(branch.id)">
-              <button
+              <AcSiemDiscoveryHostNode
                 v-for="host in branch.hosts"
                 :key="host.id"
-                type="button"
-                class="node node-host tier-node node-host-link"
+                :host="host"
+                density="wide"
+                class="tier-node"
                 @click="openHost(host)"
-              >
-                <span class="legend-dot" :class="`bg-${coverageColor(host.coverage)}`" />
-                <div class="min-w-0">
-                  <div class="text-body-2 font-weight-medium text-truncate">{{ host.hostname }}</div>
-                  <div class="text-caption text-medium-emphasis text-truncate">
-                    {{ host.ip }} · {{ branch.label.split('·')[0]?.trim() }}
-                  </div>
-                </div>
-              </button>
+              />
             </template>
           </template>
           <div
@@ -733,42 +822,23 @@ const graphLayout = computed(() => {
             </text>
           </g>
 
-          <!-- host nodes (stacked under branch column) -->
-          <g
+          <!-- Same host cards as tree/split/tiers (HTML via foreignObject) -->
+          <foreignObject
             v-for="hn in graphLayout.hosts"
             :key="hn.host.id"
-            class="graph-node-hit"
-            @click="openHost(hn.host)"
+            :x="hn.x - graphLayout.metrics.HOST_W / 2"
+            :y="hn.y - graphLayout.metrics.HOST_H / 2"
+            :width="graphLayout.metrics.HOST_W"
+            :height="graphLayout.metrics.HOST_H"
           >
-            <rect
-              :x="hn.x - graphLayout.metrics.HOST_W / 2"
-              :y="hn.y - graphLayout.metrics.HOST_H / 2"
-              :width="graphLayout.metrics.HOST_W"
-              :height="graphLayout.metrics.HOST_H"
-              rx="8"
-              class="graph-node-host"
-            />
-            <circle
-              :cx="hn.x - graphLayout.metrics.HOST_W / 2 + 16"
-              :cy="hn.y"
-              r="5"
-              :class="`graph-dot bg-${coverageColor(hn.host.coverage)}`"
-            />
-            <text
-              :x="hn.x - graphLayout.metrics.HOST_W / 2 + 28"
-              :y="hn.y - 2"
-              class="graph-text-sm"
-            >
-              {{ hn.host.hostname }}
-            </text>
-            <text
-              :x="hn.x - graphLayout.metrics.HOST_W / 2 + 28"
-              :y="hn.y + 12"
-              class="graph-text-muted"
-            >
-              {{ hn.host.ip }}
-            </text>
-          </g>
+            <div xmlns="http://www.w3.org/1999/xhtml" class="graph-host-fo">
+              <AcSiemDiscoveryHostNode
+                :host="hn.host"
+                density="wide"
+                @click="openHost(hn.host)"
+              />
+            </div>
+          </foreignObject>
         </svg>
       </div>
       <div class="text-caption text-medium-emphasis px-3 pb-2">
@@ -779,11 +849,37 @@ const graphLayout = computed(() => {
 
       <aside class="discovery-rail">
         <div class="discovery-rail-sticky">
-          <v-card variant="outlined" class="rail-section pa-3 mb-3">
-            <div class="d-flex align-center justify-space-between ga-2 mb-2">
-              <div class="text-caption text-medium-emphasis text-uppercase">
-                {{ t('siemCenter.discovery.legendTitle') }}
-              </div>
+          <v-card
+            v-if="!kpiOpen"
+            variant="outlined"
+            class="rail-section rail-collapsed-card"
+          >
+            <v-btn
+              block
+              variant="text"
+              class="rail-collapsed-btn"
+              :aria-label="t('siemCenter.discovery.kpiExpand')"
+              @click="toggleKpiOpen"
+            >
+              <v-icon icon="mdi-chevron-left" size="20" class="mb-1" />
+              <span class="rail-collapsed-label">{{ t('siemCenter.discovery.kpiTitle') }}</span>
+            </v-btn>
+          </v-card>
+
+          <v-card v-else variant="outlined" class="rail-section pa-3">
+            <div class="d-flex align-center justify-space-between ga-2 mb-1">
+              <button
+                type="button"
+                class="kpi-toggle-title d-flex align-center ga-1 min-w-0"
+                :aria-expanded="kpiOpen"
+                :aria-label="t('siemCenter.discovery.kpiCollapse')"
+                @click="toggleKpiOpen"
+              >
+                <v-icon icon="mdi-chevron-down" size="18" class="flex-shrink-0" />
+                <span class="text-caption text-medium-emphasis text-uppercase text-truncate">
+                  {{ t('siemCenter.discovery.kpiTitle') }}
+                </span>
+              </button>
               <v-btn
                 v-if="filterActive"
                 size="x-small"
@@ -795,41 +891,28 @@ const graphLayout = computed(() => {
               </v-btn>
             </div>
             <div class="text-caption text-medium-emphasis mb-2">
-              {{ t('siemCenter.discovery.legendFilterHint') }}
-            </div>
-            <div class="d-flex flex-column ga-2">
-              <div
-                v-for="item in legend"
-                :key="item.status"
-                class="legend-pill d-flex align-center ga-2 px-2 py-2 rounded-lg"
-                :class="{
-                  'legend-pill--active': isCoverageFilterActive(item.status),
-                  'legend-pill--dim': filterActive && !isCoverageFilterActive(item.status),
-                }"
-                role="button"
-                tabindex="0"
-                :aria-pressed="isCoverageFilterActive(item.status)"
-                @click="toggleCoverageFilter(item.status)"
-                @keydown.enter.prevent="toggleCoverageFilter(item.status)"
-                @keydown.space.prevent="toggleCoverageFilter(item.status)"
-              >
-                <span class="legend-dot" :class="`bg-${item.color}`" />
-                <span class="text-body-2 flex-grow-1">{{ t(item.labelKey) }}</span>
-                <v-chip size="x-small" :color="item.color" variant="flat">{{ item.count }}</v-chip>
-              </div>
-            </div>
-          </v-card>
-
-          <v-card variant="outlined" class="rail-section pa-3">
-            <div class="text-caption text-medium-emphasis mb-2 text-uppercase">
-              {{ t('siemCenter.discovery.kpiTitle') }}
+              {{ t('siemCenter.discovery.kpiHint') }}
             </div>
             <div class="d-flex flex-column ga-2">
               <div
                 v-for="kpi in kpis"
                 :key="kpi.key"
                 class="kpi-card pa-2 rounded-lg"
-                :class="`kpi-accent-${kpi.color}`"
+                :class="[
+                  `kpi-accent-${kpi.color}`,
+                  {
+                    'kpi-card--clickable': !!kpi.status,
+                    'kpi-card--active': kpi.status ? isCoverageFilterActive(kpi.status) : false,
+                    'kpi-card--dim': filterActive && kpi.status && !isCoverageFilterActive(kpi.status),
+                    'kpi-card--emphasize': kpi.emphasize && kpi.value > 0,
+                  },
+                ]"
+                role="button"
+                tabindex="0"
+                :aria-pressed="kpi.status ? isCoverageFilterActive(kpi.status) : undefined"
+                @click="kpi.status && toggleCoverageFilter(kpi.status)"
+                @keydown.enter.prevent="kpi.status && toggleCoverageFilter(kpi.status)"
+                @keydown.space.prevent="kpi.status && toggleCoverageFilter(kpi.status)"
               >
                 <div class="d-flex align-center ga-2">
                   <v-avatar size="28" :color="kpi.color" variant="tonal">
@@ -858,8 +941,32 @@ const graphLayout = computed(() => {
 </template>
 
 <style scoped>
-.discovery-toolbar {
-  background: rgb(var(--v-theme-surface));
+.discovery-header {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  background: linear-gradient(
+    135deg,
+    rgba(var(--v-theme-primary), 0.08) 0%,
+    rgba(var(--v-theme-surface), 1) 55%
+  );
+}
+.toolbar-layout-select {
+  min-width: 132px;
+  max-width: 160px;
+}
+.discovery-actions-menu :deep(.v-list-item__spacer) {
+  width: 16px;
+}
+.menu-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.menu-status-dot.is-on {
+  background: rgb(var(--v-theme-success));
+}
+.menu-status-dot.is-off {
+  background: rgba(var(--v-theme-on-surface), 0.28);
 }
 .discovery-body {
   display: grid;
@@ -870,6 +977,9 @@ const graphLayout = computed(() => {
 @media (min-width: 960px) {
   .discovery-body {
     grid-template-columns: minmax(0, 1fr) 260px;
+  }
+  .discovery-body.rail-collapsed {
+    grid-template-columns: minmax(0, 1fr) 48px;
   }
 }
 .discovery-main {
@@ -885,23 +995,35 @@ const graphLayout = computed(() => {
 .rail-section {
   background: rgb(var(--v-theme-surface));
 }
-.toolbar-brand {
-  min-width: 0;
+.kpi-toggle-title {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: start;
 }
-.toolbar-divider {
-  align-self: stretch;
-  margin-block: 4px;
-  opacity: 0.55;
+.kpi-toggle-title:hover {
+  color: rgb(var(--v-theme-primary));
 }
-.toolbar-select {
-  min-width: 140px;
-  max-width: 180px;
+.rail-collapsed-card {
+  overflow: hidden;
 }
-.toolbar-toggle :deep(.v-btn) {
-  text-transform: none;
-  letter-spacing: normal;
+.rail-collapsed-btn {
+  min-height: 140px !important;
+  height: auto !important;
+  flex-direction: column !important;
+  padding: 12px 4px !important;
 }
-
+.rail-collapsed-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  line-height: 1.2;
+}
 .legend-pill {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   background: rgb(var(--v-theme-surface));
@@ -918,6 +1040,9 @@ const graphLayout = computed(() => {
 }
 .legend-pill--dim {
   opacity: 0.45;
+}
+.legend-pill--gap {
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-error));
 }
 .legend-dot,
 .mini-dot {
@@ -955,14 +1080,38 @@ const graphLayout = computed(() => {
   border-left: 3px solid transparent;
   background: rgb(var(--v-theme-surface));
 }
+.kpi-card--clickable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.kpi-card--clickable:hover {
+  border-color: rgba(var(--v-theme-primary), 0.35);
+}
+.kpi-card--active {
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.2);
+  border-color: rgba(var(--v-theme-primary), 0.45);
+}
+.kpi-card--dim {
+  opacity: 0.45;
+}
+.kpi-card--emphasize {
+  border-left-width: 4px;
+  box-shadow: 0 0 0 1px rgba(var(--v-theme-error), 0.25);
+}
 .kpi-accent-error {
   border-left-color: rgb(var(--v-theme-error));
 }
 .kpi-accent-warning {
   border-left-color: rgb(var(--v-theme-warning));
 }
+.kpi-accent-success {
+  border-left-color: rgb(var(--v-theme-success));
+}
 .kpi-accent-info {
   border-left-color: rgb(var(--v-theme-info));
+}
+.kpi-accent-grey {
+  border-left-color: rgba(var(--v-theme-on-surface), 0.35);
 }
 .kpi-accent-deep-orange {
   border-left-color: #ff5722;
@@ -1175,18 +1324,8 @@ const graphLayout = computed(() => {
   stroke: rgba(var(--v-theme-primary), 0.55);
   stroke-width: 1.8;
 }
-.graph-node-host {
-  fill: rgb(var(--v-theme-surface));
-  stroke: rgba(var(--v-border-color), 0.7);
-  stroke-dasharray: 4 3;
-}
 .graph-text {
   font-size: 12px;
-  font-weight: 600;
-  fill: rgba(var(--v-theme-on-surface), 0.9);
-}
-.graph-text-sm {
-  font-size: 11px;
   font-weight: 600;
   fill: rgba(var(--v-theme-on-surface), 0.9);
 }
@@ -1197,16 +1336,18 @@ const graphLayout = computed(() => {
 .graph-node-hit {
   cursor: pointer;
 }
-.graph-dot.bg-success {
-  fill: rgb(var(--v-theme-success));
+.graph-host-fo {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 2px;
+  overflow: hidden;
 }
-.graph-dot.bg-warning {
-  fill: rgb(var(--v-theme-warning));
-}
-.graph-dot.bg-error {
-  fill: rgb(var(--v-theme-error));
-}
-.graph-dot.bg-grey {
-  fill: rgba(var(--v-theme-on-surface), 0.35);
+.graph-host-fo :deep(.host-node.density-wide) {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 </style>

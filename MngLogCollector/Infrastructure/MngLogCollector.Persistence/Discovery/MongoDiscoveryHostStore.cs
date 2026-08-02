@@ -41,7 +41,10 @@ public sealed class MongoDiscoveryHostStore : IDiscoveryHostStore
                     new CreateIndexOptions { Name = "ix_domain_sam", Unique = false }),
                 new CreateIndexModel<DiscoveryHost>(
                     Builders<DiscoveryHost>.IndexKeys.Ascending(x => x.Sources),
-                    new CreateIndexOptions { Name = "ix_sources" })
+                    new CreateIndexOptions { Name = "ix_sources" }),
+                new CreateIndexModel<DiscoveryHost>(
+                    Builders<DiscoveryHost>.IndexKeys.Ascending(x => x.IpAddresses),
+                    new CreateIndexOptions { Name = "ix_ipAddresses" })
             };
             await hosts.Indexes.CreateManyAsync(models, ct);
         }
@@ -88,6 +91,68 @@ public sealed class MongoDiscoveryHostStore : IDiscoveryHostStore
                 .Set(x => x.LastSyncRunId, host.LastSyncRunId)
                 .AddToSetEach(x => x.Sources, host.Sources);
 
+            if (host.IpAddresses is { Count: > 0 })
+                update = update.AddToSetEach(x => x.IpAddresses, host.IpAddresses);
+
+            writes.Add(new UpdateOneModel<DiscoveryHost>(filter, update) { IsUpsert = true });
+        }
+
+        await collection.BulkWriteAsync(writes, new BulkWriteOptions { IsOrdered = false }, ct);
+    }
+
+    public async Task UpsertScanHostsAsync(
+        string databaseName,
+        IReadOnlyList<DiscoveryHost> hosts,
+        CancellationToken ct = default)
+    {
+        if (hosts.Count == 0)
+            return;
+
+        var collection = Hosts(databaseName);
+        var writes = new List<WriteModel<DiscoveryHost>>(hosts.Count);
+
+        foreach (var host in hosts)
+        {
+            if (string.IsNullOrWhiteSpace(host.ObjectGuid))
+            {
+                var ipKey = host.IpAddresses?.FirstOrDefault() ?? host.SamAccountName;
+                host.ObjectGuid = $"scan:{ipKey}";
+            }
+
+            var filter = Builders<DiscoveryHost>.Filter.And(
+                Builders<DiscoveryHost>.Filter.Eq(x => x.DomainId, host.DomainId),
+                Builders<DiscoveryHost>.Filter.Eq(x => x.ObjectGuid, host.ObjectGuid));
+
+            var update = Builders<DiscoveryHost>.Update
+                .SetOnInsert(x => x.CreatedAt, host.CreatedAt)
+                .Set(x => x.DomainId, host.DomainId)
+                .Set(x => x.ObjectGuid, host.ObjectGuid)
+                .Set(x => x.SamAccountName, host.SamAccountName)
+                .Set(x => x.DnsHostName, host.DnsHostName)
+                .Set(x => x.DisplayName, host.DisplayName)
+                .Set(x => x.OperatingSystem, host.OperatingSystem)
+                .Set(x => x.OperatingSystemVersion, host.OperatingSystemVersion)
+                .Set(x => x.DistinguishedName, host.DistinguishedName)
+                .Set(x => x.LastSeenFromAd, host.LastSeenFromAd)
+                .Set(x => x.LastSeenFromScan, host.LastSeenFromScan)
+                .Set(x => x.OsFamilyHint, host.OsFamilyHint)
+                .Set(x => x.OpenPorts, host.OpenPorts)
+                .Set(x => x.DeviceRoleHint, host.DeviceRoleHint)
+                .Set(x => x.IdentityConfidence, host.IdentityConfidence)
+                .Set(x => x.IdentitySummary, host.IdentitySummary)
+                .Set(x => x.HttpTitle, host.HttpTitle)
+                .Set(x => x.TlsCommonName, host.TlsCommonName)
+                .Set(x => x.SshBanner, host.SshBanner)
+                .Set(x => x.SubnetCidr, host.SubnetCidr)
+                .Set(x => x.SiteLabel, host.SiteLabel)
+                .Set(x => x.VlanName, host.VlanName)
+                .Set(x => x.ScanRunId, host.ScanRunId)
+                .Set(x => x.AdEnabled, host.AdEnabled)
+                .Set(x => x.UpdatedAt, host.UpdatedAt)
+                .Set(x => x.LastSyncRunId, host.LastSyncRunId)
+                .AddToSetEach(x => x.Sources, host.Sources)
+                .AddToSetEach(x => x.IpAddresses, host.IpAddresses ?? []);
+
             writes.Add(new UpdateOneModel<DiscoveryHost>(filter, update) { IsUpsert = true });
         }
 
@@ -112,6 +177,15 @@ public sealed class MongoDiscoveryHostStore : IDiscoveryHostStore
             .Limit(limit)
             .ToListAsync(ct);
         return (items, total);
+    }
+
+    public async Task<IReadOnlyList<DiscoveryHost>> ListAllAsync(
+        string databaseName,
+        string domainId,
+        CancellationToken ct = default)
+    {
+        var filter = Builders<DiscoveryHost>.Filter.Eq(x => x.DomainId, domainId);
+        return await Hosts(databaseName).Find(filter).ToListAsync(ct);
     }
 
     public Task<long> CountAsync(string databaseName, string domainId, CancellationToken ct = default) =>
@@ -145,6 +219,25 @@ public sealed class MongoDiscoveryHostStore : IDiscoveryHostStore
             result[key] = doc.GetValue("count", 0).ToInt32();
         }
         return result;
+    }
+
+    public async Task<long> DeleteAsync(
+        string databaseName,
+        string domainId,
+        string? source = null,
+        CancellationToken ct = default)
+    {
+        var filters = new List<FilterDefinition<DiscoveryHost>>
+        {
+            Builders<DiscoveryHost>.Filter.Eq(x => x.DomainId, domainId)
+        };
+        if (!string.IsNullOrWhiteSpace(source))
+            filters.Add(Builders<DiscoveryHost>.Filter.AnyEq(x => x.Sources, source.Trim()));
+
+        var result = await Hosts(databaseName).DeleteManyAsync(
+            Builders<DiscoveryHost>.Filter.And(filters),
+            ct);
+        return result.DeletedCount;
     }
 
     public Task SaveSyncStateAsync(

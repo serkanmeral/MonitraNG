@@ -3,9 +3,11 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MngLogCollector.Application.Abstractions.Discovery;
 using MngLogCollector.Application.Abstractions.OpenSearch;
+using MngLogCollector.Application.Abstractions.Policy;
 using MngLogCollector.Application.Configuration;
 using MngLogCollector.Persistence.Discovery;
 using MngLogCollector.Persistence.OpenSearch;
+using MngLogCollector.Persistence.Policy;
 
 namespace MngLogCollector.Persistence;
 
@@ -35,6 +37,9 @@ public static class PersistenceServiceRegistration
 
         services.AddScoped<IKeeperDomainDirectoryReader, KeeperDomainDirectoryReader>();
         services.AddScoped<IDiscoveryHostStore, MongoDiscoveryHostStore>();
+        services.AddScoped<IDiscoveryScanJobStore, MongoDiscoveryScanJobStore>();
+        services.AddScoped<IDiscoveryPrefixStore, MongoDiscoveryPrefixStore>();
+        services.AddScoped<IEventLogPackageCatalogStore, MongoEventLogPackageCatalogStore>();
         services.AddScoped<IAdComputerDirectoryClient, AdComputerDirectoryClient>();
 
         return services;

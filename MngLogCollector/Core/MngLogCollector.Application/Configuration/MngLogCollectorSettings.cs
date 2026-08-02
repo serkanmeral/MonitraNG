@@ -8,6 +8,25 @@ public sealed class MngLogCollectorSettings
     public OpenSearchSettings OpenSearch { get; set; } = new();
     public IngestSettings Ingest { get; set; } = new();
     public MongoDbSettings MongoDB { get; set; } = new();
+    public DiscoverySettings Discovery { get; set; } = new();
+}
+
+/// <summary>Site/subnet prefix table for honest discovery grouping (IPAM-style LPM).</summary>
+public sealed class DiscoverySettings
+{
+    public List<DiscoveryPrefixEntry> Prefixes { get; set; } = [];
+}
+
+public sealed class DiscoveryPrefixEntry
+{
+    /// <summary>IPv4 CIDR, e.g. 192.168.20.0/24</summary>
+    public string Cidr { get; set; } = string.Empty;
+
+    /// <summary>Human label, e.g. Odak ofis</summary>
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>Optional operator-mapped VLAN name (not inferred from IP).</summary>
+    public string? VlanName { get; set; }
 }
 
 public sealed class ServerSettings
@@ -49,4 +68,9 @@ public sealed class MongoDbSettings
 
     /// <summary>MngKeeper database that holds the domains collection.</summary>
     public string KeeperDatabaseName { get; set; } = "mngkeeper";
+
+    /// <summary>
+    /// Tenant DB for editable Event Log package catalog (Odak: mng_odak).
+    /// </summary>
+    public string EventLogCatalogDatabaseName { get; set; } = "mng_odak";
 }

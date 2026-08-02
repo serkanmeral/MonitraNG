@@ -33,48 +33,6 @@ onMounted(() => {
       :breadcrumbs="breadcrumbs"
     />
 
-    <div class="siem-hero mb-4 pa-4 pa-md-5 rounded-lg">
-      <div class="d-flex flex-wrap align-start justify-space-between gap-3">
-        <div>
-          <h1 class="text-h5 font-weight-bold mb-2">
-            {{ t('siemCenter.discovery.pageTitle') }}
-          </h1>
-          <p class="text-body-2 text-medium-emphasis mb-0">
-            {{ t('siemCenter.discovery.pageSubtitle') }}
-          </p>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-          <v-btn
-            variant="outlined"
-            color="primary"
-            prepend-icon="mdi-cog-outline"
-            to="/apps/siem-center/settings"
-          >
-            {{ t('siemCenter.settings.menuTitle') }}
-          </v-btn>
-          <v-btn
-            variant="outlined"
-            color="primary"
-            prepend-icon="mdi-shield-search"
-            to="/apps/siem-center"
-          >
-            {{ t('siemCenter.dashboard.menuTitle') }}
-          </v-btn>
-        </div>
-      </div>
-    </div>
-
     <AcSiemDiscoveryCoverageMap />
   </div>
 </template>
-
-<style scoped>
-.siem-hero {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: linear-gradient(
-    135deg,
-    rgba(var(--v-theme-primary), 0.08) 0%,
-    rgba(var(--v-theme-surface), 1) 55%
-  );
-}
-</style>

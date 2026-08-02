@@ -1,49 +1,49 @@
 # Event Log paket kataloğu — Collector API
 
-Agent, sunucuyu paket kaynağı olarak çeker. Bu belge P2 sözleşmesinin kısa kaydıdır.
+Agent, sunucuyu paket kaynağı olarak çeker. Katalog Mongo’da düzenlenebilir (`eventlog_packages`); **Yayınla** sürümü yükseltir.
 
-## Endpoint
+## Agent pull
 
 ```http
 GET /api/v1/policy/eventlog-packages
 X-MngLogs-ApiKey: <ingest ile aynı key>
 ```
 
-Auth: ingest ile aynı (`IngestApiKey`). Key boş yapılandırılmışsa gate kapalı (dev).
+`ETag` = `"version"`. `If-None-Match` eşleşirse **304**.
 
-`ETag` = `"version"`. Agent, collector kaynaklı cache varken `If-None-Match` gönderir; değişmemişse **304** ve yerel katalog korunur.
+| Alan | Anlam |
+|------|--------|
+| `packages` | `IsDefault=true` paketler (fleet tabanı) |
+| `optionalPackages` | `IsDefault=false` |
+| `version` | Son **Yayınla** sürümü |
 
-## Yanıt
+DB: `MngLogCollectorSettings:MongoDB:EventLogCatalogDatabaseName` (Odak: `mng_odak`). İlk istekte builtin seed.
 
-```json
-{
-  "version": "2026-07-30.1",
-  "source": "collector",
-  "generatedUtc": "2026-07-30T00:00:00Z",
-  "packages": [
-    { "name": "system-lifecycle", "channel": "System", "eventIds": [41, 104, 6005] }
-  ],
-  "optionalPackages": [
-    { "name": "security-auth", "channel": "Security", "eventIds": [4624, 4625] }
-  ]
-}
-```
+## Yönetim (Settings UI / BFF)
 
-| Alan | Agent kullanımı |
-|------|------------------|
-| `packages` | Sunucu tabanı → merge (override / disabled) |
-| `optionalPackages` | UI’da açılabilir opsiyoneller |
-| `version` / `source` | `server-packages.json` cache meta |
+| Method | Path |
+|--------|------|
+| GET | `/api/v1/policy/eventlog-packages/manage` |
+| GET | `/api/v1/policy/eventlog-packages/channels` |
+| POST | `/api/v1/policy/eventlog-packages` |
+| PUT | `/api/v1/policy/eventlog-packages/{name}` |
+| DELETE | `/api/v1/policy/eventlog-packages/{name}` |
+| POST | `/api/v1/policy/eventlog-packages/publish` |
 
-## Agent davranışı
+Auth: ingest API key (UI BFF session + key forward).
 
-1. `PackageCatalogSyncWorker` periyodik `RefreshAsync`
-2. Başarılı pull → `%ProgramData%\MngLogs\Agent\server-packages.json`, `source=collector`
-3. Collector yok / hata → son iyi cache; yoksa `builtin`
-4. Manuel: Local UI `POST /api/eventlog/sync-catalog` (PIN)
+Hard push yok — ajanlar açılış / `PackageCatalogSyncIntervalSeconds` ile çeker. Acil: Local UI sync.
+
+## Host ataması (E3)
+
+- Mongo: `eventlog_host_assignments` (`HostKey` = kısa hostname).
+- Manage: `GET/PUT/DELETE .../eventlog-packages/assignments/{hostname}`
+- Agent pull: `X-MngLogs-Hostname` (veya `?hostname=`) → `packages` = **tüm fleet defaults** + enabled optionals; ETag sürümü host+assignment damgası içerir.
+- Fleet defaults host’tan kapatılamaz (`DisabledServerPackages` yok sayılır / kayıtlarda temizlenir).
+- SIEM Discovery host modal → **Event Log** sekmesi: opsiyonel atama tablosu + olay listesi (tablo filtreleri).
 
 ## Notlar
 
-- İlk sürüm katalog collector içinde **builtin** seed (`BuiltinEventLogPackageCatalogService`); admin CRUD sonra.
-- Parser kuralları bu endpoint’e henüz dahil değil (P5).
-- MSI/Service smoke: admin yetkisi olan ortamda sonra test (2026-07-30 notu).
+- Paket = tek Windows kanalı + Event ID listesi.
+- Parser kuralları henüz yok (P5).
+- Host ataması: yukarıdaki E3 bölümü.

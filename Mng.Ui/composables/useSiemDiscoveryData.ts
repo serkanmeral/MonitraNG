@@ -4,10 +4,11 @@ import {
   fetchDiscoveryHosts,
   triggerDiscoverySync,
   type DiscoveryHostDto,
+  type DiscoveryPrefixDto,
 } from '@/services/siemDiscoveryService';
 import {
+  buildCoverageKpis,
   buildLegend,
-  buildMockKpis,
 } from '@/composables/useSiemDiscoveryMock';
 import { hostMetricsEventsLink } from '@/composables/useSiemDiscoveryHostMetrics';
 import { hostWatchEventsLink } from '@/composables/useSiemDiscoveryHostApps';
@@ -20,6 +21,14 @@ import type {
   SiemDiscoveryHost,
   SiemDiscoveryHostSession,
 } from '@/types/apps/siemDiscovery';
+import { resolveOsFamily } from '@/utils/siemDiscoveryOs';
+import {
+  DEFAULT_DISCOVERY_PREFIXES,
+  NO_IP_SITE,
+  UNSCOPED_SITE,
+  resolveBestSiteBucket,
+  type DiscoveryPrefix,
+} from '@/utils/discoveryPrefixTable';
 
 /** host.up older than this → Managed Offline (aligned with ~20s agent heartbeat). */
 export const DISCOVERY_STALE_MS = 2 * 60 * 1000;
@@ -197,23 +206,16 @@ function coverageFromLastSeen(lastSeenMs: number | null): SiemCoverageStatus | n
   return 'managedOffline';
 }
 
-function subnetLabel(ip: string): string {
-  const parts = ip.split('.');
-  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p))) {
-    return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
-  }
-  return 'No IP (AD)';
-}
-
-function osFamily(osHint?: string | null): string {
-  const s = (osHint || '').toLowerCase();
-  if (!s) return 'Unknown OS';
-  if (s.includes('server')) return 'Windows Server';
-  if (s.includes('windows')) return 'Windows Client';
-  if (s.includes('linux') || s.includes('ubuntu') || s.includes('centos') || s.includes('redhat')) {
-    return 'Linux';
-  }
-  return osHint!.trim() || 'Unknown OS';
+function toPrefixes(raw?: DiscoveryPrefixDto[] | null): DiscoveryPrefix[] {
+  if (!raw?.length) return DEFAULT_DISCOVERY_PREFIXES;
+  const mapped = raw
+    .filter((p) => !!p?.cidr)
+    .map((p) => ({
+      cidr: p.cidr,
+      label: p.label || p.cidr,
+      vlanName: p.vlanName ?? null,
+    }));
+  return mapped.length ? mapped : DEFAULT_DISCOVERY_PREFIXES;
 }
 
 function asString(v: unknown): string | null {
@@ -319,12 +321,31 @@ function toViewHost(
   coverage: SiemCoverageStatus,
   lastSeenAt: number | null,
   agent: SiemDiscoveryAgentInfo | null,
+  prefixes: DiscoveryPrefix[],
 ): SiemDiscoveryHost {
-  return {
+  const openPorts = dto.openPorts?.length ? [...dto.openPorts] : undefined;
+  const ip = resolveDisplayIp(dto.ip, agent);
+  // Site from scan/AD IP first — agent primaryIp can sit outside the prefix table.
+  const site = resolveBestSiteBucket(
+    [dto.ip, ip, agent?.primaryIp, ...(agent?.ipAddresses ?? [])],
+    prefixes,
+    { siteLabel: dto.siteLabel, subnetCidr: dto.subnetCidr },
+  );
+  const draft: SiemDiscoveryHost = {
     id: dto.id || `ad-${dto.samAccountName}`,
     hostname: dto.hostname || dto.samAccountName.replace(/\$$/, ''),
-    ip: resolveDisplayIp(dto.ip, agent),
+    ip,
     osHint: dto.osHint || undefined,
+    openPorts,
+    deviceRoleHint: dto.deviceRoleHint || undefined,
+    identityConfidence: dto.identityConfidence || undefined,
+    identitySummary: dto.identitySummary || undefined,
+    httpTitle: dto.httpTitle || undefined,
+    tlsCommonName: dto.tlsCommonName || undefined,
+    sshBanner: dto.sshBanner || undefined,
+    subnetCidr: site.subnetCidr || dto.subnetCidr || undefined,
+    siteLabel: site.label !== NO_IP_SITE ? site.label : (dto.siteLabel || undefined),
+    vlanName: dto.vlanName || undefined,
     coverage,
     samAccountName: dto.samAccountName || undefined,
     sources: dto.sources?.length ? [...dto.sources] : undefined,
@@ -332,11 +353,14 @@ function toViewHost(
     lastSeenAt,
     agent,
   };
+  draft.osFamily = resolveOsFamily(draft);
+  return draft;
 }
 
 function groupHosts(
   facet: SiemDiscoveryFacet,
   hosts: SiemDiscoveryHost[],
+  prefixes: DiscoveryPrefix[],
 ): SiemDiscoveryBranch[] {
   const buckets = new Map<string, SiemDiscoveryBranch>();
 
@@ -345,21 +369,44 @@ function groupHosts(
     let label: string;
     let detail: string | undefined;
 
-    if (facet === 'subnet' || facet === 'vlan') {
-      const net = subnetLabel(host.ip === '—' ? '' : host.ip);
-      id = `net-${net}`;
-      label = facet === 'vlan' ? net : net;
-      detail = facet === 'vlan' ? 'AD / IP heuristic' : undefined;
+    if (facet === 'subnet') {
+      // Prefer already-resolved site on the host (scan IP / API enrich), not only display IP.
+      if (host.siteLabel && host.siteLabel !== UNSCOPED_SITE && host.siteLabel !== NO_IP_SITE) {
+        id = host.subnetCidr ? `site-${host.subnetCidr}` : `site-label-${host.siteLabel}`;
+        label = host.siteLabel;
+        detail = host.subnetCidr;
+      } else {
+        const site = resolveBestSiteBucket(
+          [host.ip, host.agent?.primaryIp, ...(host.agent?.ipAddresses ?? [])],
+          prefixes,
+          { siteLabel: host.siteLabel, subnetCidr: host.subnetCidr },
+        );
+        id = site.id;
+        label = site.label;
+        detail = site.subnetCidr || site.detail;
+      }
+    } else if (facet === 'vlan') {
+      // Only real operator-mapped VLAN; never invent from IP.
+      const vlan = (host.vlanName || '').trim();
+      if (vlan) {
+        id = `vlan-${vlan}`;
+        label = vlan;
+        detail = host.subnetCidr;
+      } else {
+        id = 'vlan-unknown';
+        label = 'Unknown VLAN';
+        detail = 'No VLAN mapping on prefix table';
+      }
     } else if (facet === 'dhcp') {
       id = 'src-ad';
       label = 'Active Directory';
       detail = 'DHCP not wired yet';
     } else {
-      // ap — group by OS until AP/DHCP exist
-      const fam = osFamily(host.osHint);
+      // ap — group by OS family until AP/DHCP exist
+      const fam = resolveOsFamily(host);
       id = `os-${fam}`;
-      label = fam;
-      detail = 'OS from AD';
+      label = fam === 'windows' ? 'Windows' : fam === 'linux' ? 'Linux' : 'Unknown OS';
+      detail = host.osHint && host.osHint !== fam ? host.osHint : undefined;
     }
 
     let branch = buckets.get(id);
@@ -396,6 +443,7 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
   const error = ref<string | null>(null);
   const liveByHost = ref<Map<string, LiveHostSnapshot>>(new Map());
   const discovered = ref<DiscoveryHostDto[]>([]);
+  const prefixes = ref<DiscoveryPrefix[]>(DEFAULT_DISCOVERY_PREFIXES);
   const lastRefreshedAt = ref<number | null>(null);
   const usingLiveDiscovery = ref(false);
   const autoRefresh = ref(true);
@@ -417,6 +465,12 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
       const agent = parseHostUpAgent(item.fields ?? null);
       putLive(map, key, ts, agent);
       putLive(map, shortHostKey(key), ts, agent);
+      if (agent?.primaryIp?.trim()) {
+        putLive(map, agent.primaryIp.trim().toLowerCase(), ts, agent);
+      }
+      for (const ip of agent?.ipAddresses ?? []) {
+        if (ip?.trim()) putLive(map, ip.trim().toLowerCase(), ts, agent);
+      }
     }
     liveByHost.value = map;
   }
@@ -447,11 +501,13 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
         }),
       ]);
       discovered.value = hostsRes.items ?? [];
+      prefixes.value = toPrefixes(hostsRes.prefixes);
       usingLiveDiscovery.value = true;
       lastRefreshedAt.value = Date.now();
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : String(e);
       discovered.value = [];
+      prefixes.value = DEFAULT_DISCOVERY_PREFIXES;
       usingLiveDiscovery.value = false;
       try {
         await refreshCoverageOnly();
@@ -517,13 +573,15 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
   const branches = computed((): SiemDiscoveryBranch[] => {
     const facetValue = toValue(facet);
     const live = liveByHost.value;
+    const prefixTable = prefixes.value;
 
     const mapped: SiemDiscoveryHost[] = discovered.value.map((dto) => {
       const keys = [
         dto.hostname.trim().toLowerCase(),
         shortHostKey(dto.hostname),
         dto.samAccountName.replace(/\$$/, '').toLowerCase(),
-      ];
+        (dto.ip || '').trim().toLowerCase(),
+      ].filter(Boolean);
       let snap: LiveHostSnapshot | null = null;
       for (const k of keys) {
         const cur = live.get(k);
@@ -531,47 +589,66 @@ export function useSiemDiscoveryData(facet: MaybeRefOrGetter<SiemDiscoveryFacet>
       }
       const lastSeen = snap?.lastSeenAt ?? null;
       const fromLive = coverageFromLastSeen(lastSeen);
-      return toViewHost(dto, fromLive ?? 'discoveredUnmanaged', lastSeen, snap?.agent ?? null);
+      return toViewHost(
+        dto,
+        fromLive ?? 'discoveredUnmanaged',
+        lastSeen,
+        snap?.agent ?? null,
+        prefixTable,
+      );
     });
 
-    const base = groupHosts(facetValue, mapped);
+    const known = new Set<string>();
+    for (const h of mapped) {
+      known.add(h.hostname.trim().toLowerCase());
+      known.add(shortHostKey(h.hostname));
+      if (h.ip && h.ip !== '—') known.add(h.ip.trim().toLowerCase());
+      if (h.agent?.primaryIp) known.add(h.agent.primaryIp.trim().toLowerCase());
+      for (const ip of h.agent?.ipAddresses ?? []) {
+        if (ip?.trim()) known.add(ip.trim().toLowerCase());
+      }
+    }
 
-    const known = new Set(
-      mapped.flatMap((h) => [h.hostname.trim().toLowerCase(), shortHostKey(h.hostname)]),
-    );
+    // Agents not yet in discovery_hosts — same tree as everyone else (no separate branch).
     const extras: SiemDiscoveryHost[] = [];
     for (const [hostKey, snap] of live) {
       if (hostKey.includes('.')) continue; // prefer short keys for extras
       if (known.has(hostKey)) continue;
+      const pip = (snap.agent?.primaryIp || '').trim().toLowerCase();
+      if (pip && known.has(pip)) continue;
+      const agentIps = (snap.agent?.ipAddresses ?? [])
+        .map((x) => x.trim().toLowerCase())
+        .filter(Boolean);
+      if (agentIps.some((ip) => known.has(ip))) continue;
       const cov = coverageFromLastSeen(snap.lastSeenAt);
       if (!cov) continue;
-      extras.push({
+      const ip = resolveDisplayIp(null, snap.agent);
+      const site = resolveBestSiteBucket(
+        [ip, snap.agent?.primaryIp, ...(snap.agent?.ipAddresses ?? [])],
+        prefixTable,
+      );
+      const extra: SiemDiscoveryHost = {
         id: `live-${hostKey}`,
         hostname: hostKey,
-        ip: resolveDisplayIp(null, snap.agent),
-        osHint: 'agent',
+        ip,
+        osHint: undefined,
+        osFamily: 'unknown',
+        subnetCidr: site.subnetCidr,
+        siteLabel: site.label === NO_IP_SITE ? undefined : site.label,
         coverage: cov,
         sources: ['agent'],
         lastSeenAt: snap.lastSeenAt,
         agent: snap.agent,
-      });
+      };
+      extras.push(extra);
     }
 
-    if (extras.length) {
-      base.push({
-        id: '__live-unplaced',
-        label: 'Live agents',
-        detail: 'host.up',
-        hosts: extras,
-      });
-    }
-
-    return base;
+    return groupHosts(facetValue, [...mapped, ...extras], prefixTable);
   });
 
   const allHosts = computed(() => branches.value.flatMap((b) => b.hosts));
   const legend = computed(() => buildLegend(allHosts.value));
-  const kpis = computed(() => buildMockKpis());
+  const kpis = computed(() => buildCoverageKpis(allHosts.value));
 
   return {
     loading,

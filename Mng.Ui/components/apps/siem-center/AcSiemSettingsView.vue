@@ -5,9 +5,10 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import AcSiemSettingsCatalogPanel from '@/components/apps/siem-center/AcSiemSettingsCatalogPanel.vue';
 import AcSiemSettingsSourcesPanel from '@/components/apps/siem-center/AcSiemSettingsSourcesPanel.vue';
 import AcSiemSettingsScenariosPanel from '@/components/apps/siem-center/AcSiemSettingsScenariosPanel.vue';
+import AcSiemDiscoveryPrefixesPanel from '@/components/apps/siem-center/AcSiemDiscoveryPrefixesPanel.vue';
 import AcSiemParserReference from '@/components/apps/siem-center/AcSiemParserReference.vue';
 
-const TAB_IDS = ['catalog', 'sources', 'scenarios', 'dictionary'] as const;
+const TAB_IDS = ['catalog', 'sources', 'scenarios', 'dictionary', 'prefixes'] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 const { t } = useAppI18n();
@@ -68,6 +69,11 @@ const tabs = computed(() =>
       <v-tabs-window-item value="dictionary">
         <v-card variant="outlined" class="rounded-lg pa-4 pa-md-5">
           <AcSiemParserReference />
+        </v-card>
+      </v-tabs-window-item>
+      <v-tabs-window-item value="prefixes">
+        <v-card variant="outlined" class="rounded-lg pa-4 pa-md-5">
+          <AcSiemDiscoveryPrefixesPanel />
         </v-card>
       </v-tabs-window-item>
     </v-tabs-window>

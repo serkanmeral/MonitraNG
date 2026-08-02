@@ -34,11 +34,30 @@ export interface SiemDiscoveryAgentInfo {
   sessions?: SiemDiscoveryHostSession[];
 }
 
+export type SiemOsFamily = 'windows' | 'linux' | 'unknown';
+
 export interface SiemDiscoveryHost {
   id: string;
   hostname: string;
   ip: string;
+  /** Raw hint: windows|linux|unknown or AD OS string */
   osHint?: string;
+  /** Normalized family for icons / filters */
+  osFamily?: SiemOsFamily;
+  /** TCP ports seen during network scan */
+  openPorts?: number[];
+  deviceRoleHint?: string;
+  identityConfidence?: 'high' | 'medium' | 'low' | string;
+  identitySummary?: string;
+  httpTitle?: string;
+  tlsCommonName?: string;
+  sshBanner?: string;
+  /** Matched prefix CIDR (LPM) */
+  subnetCidr?: string;
+  /** Site/subnet label from prefix table */
+  siteLabel?: string;
+  /** Optional operator-mapped VLAN name on the prefix row */
+  vlanName?: string;
   coverage: SiemCoverageStatus;
   /** Optional detail fields for host modal */
   samAccountName?: string;
@@ -63,6 +82,10 @@ export interface SiemDiscoveryKpi {
   value: number;
   color: string;
   icon: string;
+  /** When set, KPI toggles this coverage filter. */
+  status?: SiemCoverageStatus;
+  /** Visual emphasis (e.g. coverage gap / no agent). */
+  emphasize?: boolean;
 }
 
 export interface SiemDiscoveryLegendItem {

@@ -54,6 +54,14 @@ const displayIp = computed(() => {
   return agent.value?.primaryIp || (h.ip && h.ip !== '—' ? h.ip : '—');
 });
 
+const siteLabelDisplay = computed(() => {
+  const label = props.host?.siteLabel;
+  if (!label) return '—';
+  if (label === 'Unscoped') return t('siemCenter.discovery.site.unscoped');
+  if (label === 'No IP') return t('siemCenter.discovery.site.noIp');
+  return label;
+});
+
 const displayUser = computed(() => {
   const a = agent.value;
   if (!a) return null;
@@ -162,6 +170,14 @@ function close() {
               <dt>{{ t('siemCenter.discovery.hostDetail.ip') }}</dt>
               <dd class="font-mono">{{ displayIp }}</dd>
             </div>
+            <div v-if="host.siteLabel">
+              <dt>{{ t('siemCenter.discovery.hostDetail.site') }}</dt>
+              <dd>{{ siteLabelDisplay }}</dd>
+            </div>
+            <div v-if="host.subnetCidr">
+              <dt>{{ t('siemCenter.discovery.hostDetail.subnetCidr') }}</dt>
+              <dd class="font-mono">{{ host.subnetCidr }}</dd>
+            </div>
             <div>
               <dt>{{ t('siemCenter.discovery.hostDetail.activeUser') }}</dt>
               <dd class="font-mono text-break">{{ displayUser || '—' }}</dd>
@@ -173,6 +189,26 @@ function close() {
             <div>
               <dt>{{ t('siemCenter.discovery.hostDetail.os') }}</dt>
               <dd>{{ host.osHint || '—' }}</dd>
+            </div>
+            <div v-if="host.identitySummary">
+              <dt>{{ t('siemCenter.discovery.hostDetail.identity') }}</dt>
+              <dd class="text-break">{{ host.identitySummary }}</dd>
+            </div>
+            <div v-if="host.httpTitle">
+              <dt>{{ t('siemCenter.discovery.hostDetail.httpTitle') }}</dt>
+              <dd class="text-break">{{ host.httpTitle }}</dd>
+            </div>
+            <div v-if="host.tlsCommonName">
+              <dt>{{ t('siemCenter.discovery.hostDetail.tlsCn') }}</dt>
+              <dd class="font-mono text-break">{{ host.tlsCommonName }}</dd>
+            </div>
+            <div v-if="host.sshBanner">
+              <dt>{{ t('siemCenter.discovery.hostDetail.sshBanner') }}</dt>
+              <dd class="font-mono text-break text-caption">{{ host.sshBanner }}</dd>
+            </div>
+            <div v-if="host.openPorts?.length">
+              <dt>{{ t('siemCenter.discovery.hostDetail.openPorts') }}</dt>
+              <dd class="font-mono">{{ host.openPorts.join(', ') }}</dd>
             </div>
             <div>
               <dt>{{ t('siemCenter.discovery.hostDetail.sam') }}</dt>

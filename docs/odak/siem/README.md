@@ -2,7 +2,13 @@
 
 Canlı durum ve sıradaki adımlar: **[current_status.md](./current_status.md)**
 
-**Host paneli (Windows Host Analytics):** [HOST_ANALYTICS.md](./HOST_ANALYTICS.md) · route `/apps/siem-center/hosts/[hostname]`
+| Konu | Doküman | Route |
+|------|---------|--------|
+| Keşif ve kapsam (Coverage) | [DISCOVERY_COVERAGE.md](./DISCOVERY_COVERAGE.md) | `/apps/siem-center/discovery` |
+| Windows Host Analytics | [HOST_ANALYTICS.md](./HOST_ANALYTICS.md) | `/apps/siem-center/hosts/[hostname]` |
+| Event Log paketleri | [mnglogs/POLICY_EVENTLOG_PACKAGES.md](./mnglogs/POLICY_EVENTLOG_PACKAGES.md) | Settings → Katalog |
+
+**Park (dönülecek):** Ajansız host aksiyonları — kararlar `DISCOVERY_COVERAGE.md` ve `current_status.md` içinde.
 
 ## Ürün ayrımı (G3)
 
