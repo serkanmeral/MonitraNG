@@ -297,6 +297,29 @@ internal sealed class SecEventOpenSearchReader
             });
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.SourceProduct))
+        {
+            var product = filter.SourceProduct.Trim();
+            filters.Add(new Dictionary<string, object>
+            {
+                ["bool"] = new Dictionary<string, object>
+                {
+                    ["should"] = new object[]
+                    {
+                        new Dictionary<string, object>
+                        {
+                            ["term"] = new Dictionary<string, object> { ["source.product"] = product }
+                        },
+                        new Dictionary<string, object>
+                        {
+                            ["term"] = new Dictionary<string, object> { ["source.product.keyword"] = product }
+                        }
+                    },
+                    ["minimum_should_match"] = 1
+                }
+            });
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.EventAction))
         {
             var action = filter.EventAction.Trim();
@@ -507,6 +530,53 @@ internal sealed class SecEventOpenSearchReader
                 }
             });
         }
+        else if (!string.IsNullOrWhiteSpace(filter.SourceHosts))
+        {
+            var hosts = SecEventQueryFilterBuilder.ParseCsv(filter.SourceHosts);
+            if (hosts.Count == 1)
+            {
+                var host = EscapeWildcard(hosts[0]);
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["wildcard"] = new Dictionary<string, object>
+                    {
+                        ["source.host"] = new Dictionary<string, object>
+                        {
+                            ["value"] = $"*{host}*",
+                            ["case_insensitive"] = true
+                        }
+                    }
+                });
+            }
+            else if (hosts.Count > 1)
+            {
+                var hostShould = new List<object>();
+                foreach (var h in hosts)
+                {
+                    var host = EscapeWildcard(h);
+                    hostShould.Add(new Dictionary<string, object>
+                    {
+                        ["wildcard"] = new Dictionary<string, object>
+                        {
+                            ["source.host"] = new Dictionary<string, object>
+                            {
+                                ["value"] = $"*{host}*",
+                                ["case_insensitive"] = true
+                            }
+                        }
+                    });
+                }
+
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["bool"] = new Dictionary<string, object>
+                    {
+                        ["should"] = hostShould,
+                        ["minimum_should_match"] = 1
+                    }
+                });
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.EventCode))
         {
@@ -514,6 +584,38 @@ internal sealed class SecEventOpenSearchReader
             {
                 ["term"] = new Dictionary<string, object> { ["event.code"] = filter.EventCode.Trim() }
             });
+        }
+        else if (!string.IsNullOrWhiteSpace(filter.EventCodes))
+        {
+            var codes = SecEventQueryFilterBuilder.ParseCsv(filter.EventCodes);
+            if (codes.Count == 1)
+            {
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["term"] = new Dictionary<string, object> { ["event.code"] = codes[0] }
+                });
+            }
+            else if (codes.Count > 1)
+            {
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["bool"] = new Dictionary<string, object>
+                    {
+                        ["should"] = new object[]
+                        {
+                            new Dictionary<string, object>
+                            {
+                                ["terms"] = new Dictionary<string, object> { ["event.code"] = codes }
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["terms"] = new Dictionary<string, object> { ["event.code.keyword"] = codes }
+                            }
+                        },
+                        ["minimum_should_match"] = 1
+                    }
+                });
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))

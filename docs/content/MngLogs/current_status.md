@@ -5,7 +5,7 @@
 
 ## Son çalışılan konu
 
-Prod sabitleme + host cutover: agent’lar ve lokal UI prod’a; RDP action normalize LogCollector’da; NXLog/Linux syslog ingest kapalı.
+Prod Collector deploy (RDP normalizer) + SIEM Events filtre kataloğu doğrulaması (OS → Reactor). Agent varsayılanı prod `:5091`.
 
 ## Plan / faz
 
@@ -61,4 +61,4 @@ pwsh -File .\scripts\tests\MngLogs\linux\deploy-agent-odak-test.ps1
 ## Kontrol
 
 Local UI Durum: `collectorBaseUrl` = prod `:5091`, `collectorHealthy: true`  
-SIEM Events (prod UI): RDP intent / host filtreleri OpenSearch üzerinden
+SIEM Events: filtre kataloğu modal · RDP `sourceProduct` / `event.code` OpenSearch üzerinden (prod Reactor ✓)

@@ -9,6 +9,7 @@ Canlı durum ve sıradaki adımlar: **[current_status.md](./current_status.md)**
 | Host Analytics (Windows + Linux) | [HOST_ANALYTICS.md](./HOST_ANALYTICS.md) | `/apps/siem-center/hosts/[hostname]` |
 | Event Log paketleri | [mnglogs/POLICY_EVENTLOG_PACKAGES.md](./mnglogs/POLICY_EVENTLOG_PACKAGES.md) | Settings → Event Log → Paket kataloğu |
 | Parse kuralları (P5) | [PARSE_RULES_CATALOG.md](./PARSE_RULES_CATALOG.md) | Settings → Event Log → Parse kuralları (`?tab=eventlog&section=parsers`) |
+| Güvenlik olayları / filtre kataloğu | [../monitoring/SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md) | `/apps/siem-center/events` |
 
 **Park (dönülecek):** Host Analytics L3 / genel Analytics dönüşü; ajansız host aksiyonları — `HOST_ANALYTICS.md`, `DISCOVERY_COVERAGE.md`, `current_status.md`.  
 **P5:** Parse Rules Dilím 0–5 ✅ (spec + API + sihirbazlar + seed) — [PARSE_RULES_CATALOG.md](./PARSE_RULES_CATALOG.md).

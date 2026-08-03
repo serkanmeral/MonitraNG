@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.RegularExpressions;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -33,6 +34,9 @@ internal static class SecEventQueryFilterBuilder
 
         if (!string.IsNullOrWhiteSpace(filter.SourceType))
             clauses.Add(builder.Eq("source.type", filter.SourceType.Trim()));
+
+        if (!string.IsNullOrWhiteSpace(filter.SourceProduct))
+            clauses.Add(builder.Eq("source.product", filter.SourceProduct.Trim()));
 
         if (!string.IsNullOrWhiteSpace(filter.EventAction))
         {
@@ -105,9 +109,33 @@ internal static class SecEventQueryFilterBuilder
             var hostEscaped = Regex.Escape(filter.SourceHost.Trim());
             clauses.Add(builder.Regex("source.host", new BsonRegularExpression(hostEscaped, "i")));
         }
+        else if (!string.IsNullOrWhiteSpace(filter.SourceHosts))
+        {
+            var hosts = ParseCsv(filter.SourceHosts);
+            if (hosts.Count == 1)
+            {
+                var hostEscaped = Regex.Escape(hosts[0]);
+                clauses.Add(builder.Regex("source.host", new BsonRegularExpression(hostEscaped, "i")));
+            }
+            else if (hosts.Count > 1)
+            {
+                var hostClauses = hosts
+                    .Select(h => builder.Regex("source.host", new BsonRegularExpression(Regex.Escape(h), "i")))
+                    .ToList();
+                clauses.Add(builder.Or(hostClauses));
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.EventCode))
             clauses.Add(builder.Eq("event.code", filter.EventCode.Trim()));
+        else if (!string.IsNullOrWhiteSpace(filter.EventCodes))
+        {
+            var codes = ParseCsv(filter.EventCodes);
+            if (codes.Count == 1)
+                clauses.Add(builder.Eq("event.code", codes[0]));
+            else if (codes.Count > 1)
+                clauses.Add(builder.In("event.code", codes));
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {

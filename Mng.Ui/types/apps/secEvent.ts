@@ -30,6 +30,8 @@ export interface SecEventQuery {
   from?: string;
   to?: string;
   sourceType?: string;
+  /** Exact match on source.product */
+  sourceProduct?: string;
   eventAction?: string;
   /** Comma-separated event.action OR list (ignored when eventAction is set). */
   eventActions?: string;
@@ -41,7 +43,11 @@ export interface SecEventQuery {
   dstPort?: string;
   actorUser?: string;
   sourceHost?: string;
+  /** Comma-separated source.host OR list (ignored when sourceHost is set). */
+  sourceHosts?: string;
   eventCode?: string;
+  /** Comma-separated event.code OR list (ignored when eventCode is set). */
+  eventCodes?: string;
   search?: string;
   excludeUnknown?: boolean;
   skip?: number;

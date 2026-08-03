@@ -5,6 +5,8 @@ public sealed class SecEventQueryFilter
     public DateTime? From { get; init; }
     public DateTime? To { get; init; }
     public string? SourceType { get; init; }
+    /// <summary>Exact match on source.product.</summary>
+    public string? SourceProduct { get; init; }
     public string? EventAction { get; init; }
     /// <summary>Comma-separated event.action values (OR). Ignored when <see cref="EventAction"/> is set.</summary>
     public string? EventActions { get; init; }
@@ -19,8 +21,12 @@ public sealed class SecEventQueryFilter
     public string? ActorUser { get; init; }
     /// <summary>Case-insensitive contains on source.host.</summary>
     public string? SourceHost { get; init; }
+    /// <summary>Comma-separated source.host values (OR contains). Ignored when <see cref="SourceHost"/> is set.</summary>
+    public string? SourceHosts { get; init; }
     /// <summary>Exact match on event.code (e.g. Windows Event ID).</summary>
     public string? EventCode { get; init; }
+    /// <summary>Comma-separated event.code values (OR). Ignored when <see cref="EventCode"/> is set.</summary>
+    public string? EventCodes { get; init; }
     public string? Search { get; init; }
     /// <summary>Varsayılan true — bilinmeyen (event.action=unknown) olayları listeden çıkar.</summary>
     public bool ExcludeUnknown { get; init; } = true;

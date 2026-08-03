@@ -35,9 +35,10 @@ Mongo `sec_events` host NXLog dönemi geçmiş veri içerebilir; canlı host ola
 | 24 | `rdp.disconnect` |
 | 25 | `rdp.reconnect` |
 
-- LogCollector: `AgentSecEventActionNormalizer` (+ EventData actor/network).
-- Reactor/UI sorgu: `eventActionPrefix=rdp.` ayrıca `event.code` 21–25 ve `source.product=rdp-session` ile genişler.
+- LogCollector: `AgentSecEventActionNormalizer` (+ EventData actor/network). Prod Collector 3 Ağu deploy.
+- Reactor/UI sorgu: `sourceProduct=rdp-session`, `eventCodes`, `eventActionPrefix=rdp.` (code/product OR). Prod Reactor 3 Ağu deploy.
 - Paket: katalog `rdp-session` (LocalSessionManager/Operational).
+- SIEM Events UI: filtre kataloğu modal — [SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md).
 
 ## Ortam (PROD varsayılan)
 

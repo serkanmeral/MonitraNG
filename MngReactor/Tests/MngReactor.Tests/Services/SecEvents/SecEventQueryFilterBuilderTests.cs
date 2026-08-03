@@ -41,12 +41,14 @@ public sealed class SecEventQueryFilterBuilderTests
     }
 
     [Fact]
-    public void Build_ExcludeUnknown_DoesNotThrow()
+    public void Build_WithSourceProductAndEventCodes_DoesNotThrow()
     {
         var filter = SecEventQueryFilterBuilder.Build(new SecEventQueryFilter
         {
-            ExcludeUnknown = true,
-            EventAction = "login_failed"
+            SourceProduct = "rdp-session",
+            EventCodes = "24,25",
+            SourceHosts = "TERMINAL,HOST2",
+            ExcludeUnknown = false
         });
 
         Assert.NotNull(filter);

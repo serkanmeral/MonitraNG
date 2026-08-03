@@ -1,6 +1,6 @@
 # SIEM / Monitoring — Oturum Handoff
 
-**Son güncelleme:** 3 Ağustos 2026 (host agent cutover · RDP · prod sabitleme)  
+**Son güncelleme:** 3 Ağustos 2026 (filtre kataloğu · Reactor query · prod backend deploy)  
 **Canlı SIEM durum:** [../siem/current_status.md](../siem/current_status.md) · [../siem/HOST_TELEMETRY_CUTOVER.md](../siem/HOST_TELEMETRY_CUTOVER.md)  
 **Ana DEVAM (eski özet):** [DEVAM.md](./DEVAM.md)  
 **Platform UI (ayrı chat):** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-**Host telemetrisi = MngLogs agent → LogCollector → OpenSearch** · NXLog/Linux syslog Engine/Reactor kapalı · FortiGate syslog açık · Lokal UI + agent varsayılanı **prod `192.168.20.8`** · RDP `rdp.*` normalize + SIEM filtre · **Sıradaki:** prod SIEM doğrulama · park Analytics L3 / Discovery / G4 alarm köprü
+**Host = agent → Collector → OpenSearch** · Filtre kataloğu modal (Type/Product/Host + seed RDP) · Reactor `sourceProduct`/`eventCodes` prod’da ✓ · **`mngui` deploy bekliyor** · Park: Analytics L3 / Discovery / G4
 
 ---
 
@@ -17,15 +17,16 @@
 
 | Konu | Durum |
 |------|--------|
-| MngReactor Odak | ✅ `mngreactor` (OS read + NXLog/Linux guards) |
+| MngReactor Odak | ✅ prod deploy (OS read + `sourceProduct`/`eventCodes`/`sourceHosts`) |
+| MngLogCollector | ✅ prod deploy (RDP normalizer) |
 | MngEngine syslog | ✅ FortiGate `:541/:542` · NXLog/Linux host UDP **kapalı** |
 | Host yolu | ✅ Agent → Collector `:5091` → OpenSearch |
-| RDP LocalSessionManager | ✅ normalize `rdp.logon/logoff/disconnect/reconnect` |
+| RDP LocalSessionManager | ✅ OS’te doğrulandı; normalizer prod Collector’da |
 | Lokal Mng.Ui / agent | ✅ varsayılan **prod** (test ayrı script) |
+| SIEM Events filtre | ✅ katalog modal (lokal Nuxt); canlı `mngui` ⏳ |
 | SIEM `sec_events` (legacy NXLog Mongo) | ⚠️ tarihsel; canlı host OS |
 | sec_events → observation → alarm | ✅ (firewall / kurallar; host agent zinciri doğrulanacak) |
 | LogAlarm / 5651 (Faz 5) | ⬜ ertelendi |
-| SIEM UI | ✅ `/apps/siem-center` · Events intent filtreleri |
 
 > Eski NXLog/WEC/Linux rsyslog satırları tarihsel referans için [DEVAM.md](./DEVAM.md) ve aşağıdaki arşiv bölümlerinde kalır; **operasyonel host yolu agent’tır.**
 

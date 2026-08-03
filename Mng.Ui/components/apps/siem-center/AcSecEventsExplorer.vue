@@ -4,9 +4,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { SecEventListItem, SecEventRangeMode, SecEventTimeRange } from '@/types/apps/secEvent';
+import type { SecEventSavedFilter } from '@/types/apps/secEventFilterCatalog';
 import { secEventQuery, secEventGet } from '@/services/secEventService';
+import { fetchDiscoveryHosts } from '@/services/siemDiscoveryService';
 import {
-  actionColor,
+  findFilterById,
+  loadSecEventFilterCatalog,
+} from '@/services/secEventFilterCatalogService';
+import {
   buildSecEventQueryRange,
   computeSecEventListStats,
   computePresetRangeFrom,
@@ -19,21 +24,15 @@ import {
   secEventActionI18nKey,
   sourceTypeLabelKey,
   toDatetimeLocalInput,
+  actionColor,
 } from '@/composables/useSecEventList';
 import {
-  clearSecEventSmartField,
-  hasSecEventSmartFilters,
-  type SecEventSmartSearchFieldKey,
-  type SecEventSmartSearchFields,
-} from '@/utils/secEventSmartSearch';
-import {
-  getSecEventFilterIntent,
-  resolveSecEventIntentActions,
-  rowMatchesActionConstraint,
-  type SecEventFilterBuilderResult,
-} from '@/utils/secEventFilterIntents';
+  createEmptyActiveFilter,
+  mapSecEventSavedFilterToQuery,
+} from '@/utils/secEventFilterQueryMap';
+import { rowMatchesActionConstraint } from '@/utils/secEventFilterIntents';
 import AcSecEventDetailPanel from '@/components/apps/siem-center/AcSecEventDetailPanel.vue';
-import AcSecEventFilterBuilderDialog from '@/components/apps/siem-center/AcSecEventFilterBuilderDialog.vue';
+import AcSecEventFilterCatalogDialog from '@/components/apps/siem-center/AcSecEventFilterCatalogDialog.vue';
 
 const { t, locale } = useAppI18n();
 const route = useRoute();
@@ -54,24 +53,16 @@ const suppressPageWatch = ref(false);
 const page = ref(1);
 const itemsPerPage = ref(SEC_EVENT_DEFAULT_PAGE_SIZE);
 
-/** Full-text search draft (applied → free-text `search` chip). */
 const searchDraft = ref('');
-/** Structured + free-text applied filters. */
-const smartFilters = ref<SecEventSmartSearchFields>({});
+const activeFilter = ref<SecEventSavedFilter>(createEmptyActiveFilter());
+const selectedFilterId = ref<string | null>(null);
+const filterDialogOpen = ref(false);
+const hostOptions = ref<string[]>([]);
 
-const sourceType = ref<string | null>(null);
-const eventAction = ref<string | null>(null);
-const eventActions = ref<string | null>(null);
-const eventActionPrefix = ref<string | null>(null);
-const eventOutcome = ref<string | null>(null);
-const dstPort = ref<string | null>(null);
-const intentId = ref<string | null>(null);
-const filterBuilderOpen = ref(false);
 const rangeMode = ref<SecEventRangeMode>('preset');
 const timeRange = ref<SecEventTimeRange>('24h');
 const customFromLocal = ref('');
 const customToLocal = ref('');
-/** Log explorer: include unknown by default (all ingested events). */
 const showUnknown = ref(true);
 
 const VALID_TIME_RANGES: SecEventTimeRange[] = ['1h', '24h', '7d'];
@@ -104,19 +95,6 @@ const headers = computed(() => [
   { title: t('siemCenter.events.colSource'), key: 'source', sortable: false },
 ]);
 
-const filterBuilderInitialValues = computed(() => ({
-  actorUser: smartFilters.value.actorUser ?? null,
-  srcIp: smartFilters.value.srcIp ?? null,
-  dstIp: smartFilters.value.dstIp ?? null,
-  dstPort: dstPort.value,
-  sourceHost: smartFilters.value.sourceHost ?? null,
-  eventCode: smartFilters.value.eventCode ?? null,
-  eventOutcome: eventOutcome.value,
-  eventAction: eventAction.value,
-  sourceType: sourceType.value,
-  search: smartFilters.value.search ?? null,
-}));
-
 type FilterChip = {
   key: string;
   label: string;
@@ -126,136 +104,99 @@ type FilterChip = {
 
 const activeFilterChips = computed((): FilterChip[] => {
   const chips: FilterChip[] = [];
-  const f = smartFilters.value;
+  const f = activeFilter.value;
+  const mapped = mapSecEventSavedFilterToQuery(f);
 
-  if (intentId.value) {
-    const intent = getSecEventFilterIntent(intentId.value);
+  if (selectedFilterId.value) {
+    const catalog = loadSecEventFilterCatalog();
+    const saved = findFilterById(catalog, selectedFilterId.value);
     chips.push({
-      key: 'intent',
-      label: intent
-        ? t(intent.titleKey)
-        : `${t('siemCenter.events.filterBuilder.intentChip')}: ${intentId.value}`,
-      color: intent?.color || 'primary',
-      remove: () => {
-        intentId.value = null;
-        eventActions.value = null;
-        eventActionPrefix.value = null;
-        page.value = 1;
-        void loadRows({ syncUrl: true, resetSelection: true });
-      },
+      key: 'savedFilter',
+      label: saved?.name
+        || f.name
+        || t('siemCenter.events.filterCatalog.activeFilter'),
+      color: 'primary',
+      remove: () => clearFilters(),
     });
   }
 
-  if (f.search?.trim()) {
-    chips.push({
-      key: 'search',
-      label: `${t('siemCenter.events.chipText')}: ${f.search.trim()}`,
-      color: 'secondary',
-      remove: () => removeSmartChip('search'),
-    });
-  }
-  if (f.actorUser?.trim()) {
-    chips.push({
-      key: 'actorUser',
-      label: `${t('siemCenter.events.chipUser')}: ${f.actorUser.trim()}`,
-      color: 'primary',
-      remove: () => removeSmartChip('actorUser'),
-    });
-  }
-  if (f.srcIp?.trim()) {
-    chips.push({
-      key: 'srcIp',
-      label: `${t('siemCenter.events.chipSrcIp')}: ${f.srcIp.trim()}`,
-      color: 'primary',
-      remove: () => removeSmartChip('srcIp'),
-    });
-  }
-  if (f.dstIp?.trim()) {
-    chips.push({
-      key: 'dstIp',
-      label: `${t('siemCenter.events.chipDstIp')}: ${f.dstIp.trim()}`,
-      color: 'primary',
-      remove: () => removeSmartChip('dstIp'),
-    });
-  }
-  if (dstPort.value?.trim()) {
-    chips.push({
-      key: 'dstPort',
-      label: `${t('siemCenter.events.chipDstPort')}: ${dstPort.value.trim()}`,
-      color: 'primary',
-      remove: () => {
-        dstPort.value = null;
-        page.value = 1;
-        void loadRows({ syncUrl: true, resetSelection: true });
-      },
-    });
-  }
-  if (f.sourceHost?.trim()) {
-    chips.push({
-      key: 'sourceHost',
-      label: `${t('siemCenter.events.chipHost')}: ${f.sourceHost.trim()}`,
-      color: 'primary',
-      remove: () => removeSmartChip('sourceHost'),
-    });
-  }
-  if (f.eventCode?.trim()) {
-    chips.push({
-      key: 'eventCode',
-      label: `${t('siemCenter.events.chipEventCode')}: ${f.eventCode.trim()}`,
-      color: 'primary',
-      remove: () => removeSmartChip('eventCode'),
-    });
-  }
-  if (eventOutcome.value?.trim()) {
-    chips.push({
-      key: 'eventOutcome',
-      label: `${t('siemCenter.events.chipOutcome')}: ${outcomeLabel(eventOutcome.value)}`,
-      remove: () => {
-        eventOutcome.value = null;
-        page.value = 1;
-        void loadRows({ syncUrl: true, resetSelection: true });
-      },
-    });
-  }
-  if (sourceType.value) {
+  if (mapped.sourceType) {
     chips.push({
       key: 'sourceType',
-      label: `${t('siemCenter.events.colSource')}: ${t(sourceTypeLabelKey(sourceType.value))}`,
+      label: `${t('siemCenter.events.filterCatalog.type')}: ${t(sourceTypeLabelKey(mapped.sourceType))}`,
       remove: () => {
-        sourceType.value = null;
+        activeFilter.value = {
+          ...activeFilter.value,
+          scope: { ...activeFilter.value.scope, type: null },
+        };
+        selectedFilterId.value = null;
         page.value = 1;
         void loadRows({ syncUrl: true, resetSelection: true });
       },
     });
   }
-  if (eventAction.value) {
+  if (mapped.sourceProduct) {
     chips.push({
-      key: 'eventAction',
-      label: `${t('siemCenter.events.colAction')}: ${actionLabel(eventAction.value)}`,
-      color: actionColor(eventAction.value),
+      key: 'sourceProduct',
+      label: `${t('siemCenter.events.filterCatalog.product')}: ${mapped.sourceProduct}`,
       remove: () => {
-        eventAction.value = null;
-        page.value = 1;
-        void loadRows({ syncUrl: true, resetSelection: true });
-      },
-    });
-  } else if (eventActions.value?.trim()) {
-    const intent = intentId.value ? getSecEventFilterIntent(intentId.value) : null;
-    chips.push({
-      key: 'eventActions',
-      label: intent
-        ? t('siemCenter.events.filterBuilder.familyActionsChip', { name: t(intent.titleKey) })
-        : `${t('siemCenter.events.colAction')}: ${eventActions.value.split(',').length}`,
-      color: 'info',
-      remove: () => {
-        eventActions.value = null;
-        eventActionPrefix.value = null;
-        intentId.value = null;
+        activeFilter.value = {
+          ...activeFilter.value,
+          scope: { ...activeFilter.value.scope, product: null },
+        };
+        selectedFilterId.value = null;
         page.value = 1;
         void loadRows({ syncUrl: true, resetSelection: true });
       },
     });
   }
+  const hosts = f.scope?.hosts ?? [];
+  if (hosts.length) {
+    chips.push({
+      key: 'hosts',
+      label: `${t('siemCenter.events.filterCatalog.host')}: ${hosts.join(', ')}`,
+      remove: () => {
+        activeFilter.value = {
+          ...activeFilter.value,
+          scope: { ...activeFilter.value.scope, hosts: [] },
+        };
+        selectedFilterId.value = null;
+        page.value = 1;
+        void loadRows({ syncUrl: true, resetSelection: true });
+      },
+    });
+  }
+
+  for (const clause of f.fields) {
+    if (!clause.value?.trim()) continue;
+    chips.push({
+      key: `field-${clause.field}`,
+      label: `${clause.field}: ${clause.value}`,
+      color: 'secondary',
+      remove: () => {
+        activeFilter.value = {
+          ...activeFilter.value,
+          fields: activeFilter.value.fields.filter((x) => x.field !== clause.field),
+        };
+        selectedFilterId.value = null;
+        page.value = 1;
+        void loadRows({ syncUrl: true, resetSelection: true });
+      },
+    });
+  }
+
+  if (searchDraft.value.trim() && !f.fields.some((x) => x.field === 'search' && x.value === searchDraft.value.trim())) {
+    chips.push({
+      key: 'search',
+      label: `${t('siemCenter.events.chipText')}: ${searchDraft.value.trim()}`,
+      color: 'secondary',
+      remove: () => {
+        searchDraft.value = '';
+        applySearch();
+      },
+    });
+  }
+
   if (!showUnknown.value) {
     chips.push({
       key: 'hideUnknown',
@@ -270,6 +211,21 @@ const activeFilterChips = computed((): FilterChip[] => {
 
   return chips;
 });
+
+function hasActiveFilters(): boolean {
+  const f = activeFilter.value;
+  return !!(
+    selectedFilterId.value
+    || f.scope?.type
+    || f.scope?.product
+    || (f.scope?.hosts?.length ?? 0) > 0
+    || f.fields.some((x) => x.value?.trim())
+    || searchDraft.value.trim()
+    || rangeMode.value !== 'preset'
+    || timeRange.value !== '24h'
+    || !showUnknown.value
+  );
+}
 
 function formatDate(value?: string | null): string {
   if (!value) return '—';
@@ -293,12 +249,6 @@ function actionLabel(action: string): string {
   return translated !== key ? translated : action;
 }
 
-function outcomeLabel(outcome: string): string {
-  const key = `siemCenter.events.filterBuilder.outcomes.${outcome}`;
-  const translated = t(key);
-  return translated !== key ? translated : outcome;
-}
-
 function initCustomRangeFromPreset() {
   const fromIso = computePresetRangeFrom(timeRange.value);
   const toIso = new Date().toISOString();
@@ -310,11 +260,7 @@ function resolveQueryRange(): { from: string; to?: string } | null {
   if (rangeMode.value === 'custom') {
     const from = fromDatetimeLocalInput(customFromLocal.value);
     const to = fromDatetimeLocalInput(customToLocal.value) ?? new Date().toISOString();
-    if (!from) {
-      errorLocal.value = t('siemCenter.events.invalidDateRange');
-      return null;
-    }
-    if (!isValidCustomRange(from, to)) {
+    if (!from || !isValidCustomRange(from, to)) {
       errorLocal.value = t('siemCenter.events.invalidDateRange');
       return null;
     }
@@ -337,29 +283,68 @@ function onTimeRangeSelect(value: SecEventTimeRange | 'custom') {
   }
 }
 
+function applyFilterDefinition(filter: SecEventSavedFilter, filterId: string | null) {
+  activeFilter.value = {
+    ...filter,
+    scope: {
+      type: filter.scope?.type ?? null,
+      product: filter.scope?.product ?? null,
+      hosts: [...(filter.scope?.hosts ?? [])],
+    },
+    fields: filter.fields.map((x) => ({ ...x })),
+  };
+  selectedFilterId.value = filterId;
+  const searchField = filter.fields.find((x) => x.field === 'search');
+  if (searchField?.value) searchDraft.value = searchField.value;
+}
+
+function onFilterDialogApply(payload: { filter: SecEventSavedFilter; filterId: string | null }) {
+  applyFilterDefinition(payload.filter, payload.filterId);
+  page.value = 1;
+  void loadRows({ syncUrl: true, resetSelection: true });
+}
+
+function clearFilters() {
+  searchDraft.value = '';
+  applyFilterDefinition(createEmptyActiveFilter(), null);
+  rangeMode.value = 'preset';
+  timeRange.value = '24h';
+  customFromLocal.value = '';
+  customToLocal.value = '';
+  showUnknown.value = true;
+  page.value = 1;
+  void loadRows({ syncUrl: true, resetSelection: true });
+}
+
+function applySearch() {
+  const draft = (searchDraft.value ?? '').trim();
+  const fields = activeFilter.value.fields.filter((x) => x.field !== 'search');
+  if (draft) fields.push({ field: 'search', op: 'contains', value: draft });
+  activeFilter.value = { ...activeFilter.value, fields };
+  selectedFilterId.value = null;
+  page.value = 1;
+  void loadRows({ syncUrl: true, resetSelection: true });
+}
+
 function syncQueryToUrl() {
   const query: Record<string, string> = {};
-  const f = smartFilters.value;
-  const actionQuery = resolveSecEventIntentActions(
-    intentId.value,
-    eventAction.value,
-    eventActions.value,
-    eventActionPrefix.value,
-  );
-  if (f.search?.trim()) query.search = f.search.trim();
-  if (f.actorUser?.trim()) query.actorUser = f.actorUser.trim();
-  if (f.srcIp?.trim()) query.srcIp = f.srcIp.trim();
-  if (f.dstIp?.trim()) query.dstIp = f.dstIp.trim();
-  if (f.sourceHost?.trim()) query.sourceHost = f.sourceHost.trim();
-  if (f.eventCode?.trim()) query.eventCode = f.eventCode.trim();
-  if (dstPort.value?.trim()) query.dstPort = dstPort.value.trim();
-  if (eventOutcome.value?.trim()) query.eventOutcome = eventOutcome.value.trim();
-  if (sourceType.value) query.sourceType = sourceType.value;
-  if (actionQuery.eventAction) query.eventAction = actionQuery.eventAction;
-  else if (actionQuery.eventActionPrefix) query.eventActionPrefix = actionQuery.eventActionPrefix;
-  else if (actionQuery.eventActions) query.eventActions = actionQuery.eventActions;
-  if (intentId.value) query.intent = intentId.value;
-  // Default is show unknown; only persist when hidden
+  const mapped = mapSecEventSavedFilterToQuery(activeFilter.value);
+  if (selectedFilterId.value) query.filterId = selectedFilterId.value;
+  if (mapped.sourceType) query.sourceType = mapped.sourceType;
+  if (mapped.sourceProduct) query.sourceProduct = mapped.sourceProduct;
+  if (mapped.sourceHost) query.sourceHost = mapped.sourceHost;
+  if (mapped.sourceHosts) query.sourceHosts = mapped.sourceHosts;
+  if (mapped.eventAction) query.eventAction = mapped.eventAction;
+  if (mapped.eventActions) query.eventActions = mapped.eventActions;
+  if (mapped.eventActionPrefix) query.eventActionPrefix = mapped.eventActionPrefix;
+  if (mapped.eventOutcome) query.eventOutcome = mapped.eventOutcome;
+  if (mapped.eventCode) query.eventCode = mapped.eventCode;
+  if (mapped.eventCodes) query.eventCodes = mapped.eventCodes;
+  if (mapped.actorUser) query.actorUser = mapped.actorUser;
+  if (mapped.srcIp) query.srcIp = mapped.srcIp;
+  if (mapped.dstIp) query.dstIp = mapped.dstIp;
+  if (mapped.dstPort) query.dstPort = mapped.dstPort;
+  if (mapped.search) query.search = mapped.search;
   if (!showUnknown.value) query.hideUnknown = '1';
 
   if (rangeMode.value === 'custom') {
@@ -376,44 +361,40 @@ function syncQueryToUrl() {
 
 function applyFromRoute() {
   const q = route.query;
-  const fields: SecEventSmartSearchFields = {};
-  if (typeof q.search === 'string' && q.search.trim()) fields.search = q.search.trim();
-  if (typeof q.actorUser === 'string' && q.actorUser.trim()) fields.actorUser = q.actorUser.trim();
-  if (typeof q.srcIp === 'string' && q.srcIp.trim()) fields.srcIp = q.srcIp.trim();
-  if (typeof q.dstIp === 'string' && q.dstIp.trim()) fields.dstIp = q.dstIp.trim();
-  if (typeof q.sourceHost === 'string' && q.sourceHost.trim()) fields.sourceHost = q.sourceHost.trim();
-  if (typeof q.eventCode === 'string' && q.eventCode.trim()) fields.eventCode = q.eventCode.trim();
-  smartFilters.value = fields;
-  searchDraft.value = fields.search ?? '';
-
-  sourceType.value = typeof q.sourceType === 'string' ? q.sourceType : null;
-  eventAction.value = typeof q.eventAction === 'string' ? q.eventAction : null;
-  eventActions.value =
-    !eventAction.value && typeof q.eventActions === 'string' && q.eventActions.trim()
-      ? q.eventActions.trim()
-      : null;
-  eventActionPrefix.value =
-    typeof q.eventActionPrefix === 'string' && q.eventActionPrefix.trim()
-      ? q.eventActionPrefix.trim()
-      : null;
-  intentId.value = typeof q.intent === 'string' ? q.intent : null;
-  // Restore prefix/family from intent when URL only has intent=
-  if (!eventAction.value && !eventActions.value && !eventActionPrefix.value && intentId.value) {
-    const intent = getSecEventFilterIntent(intentId.value);
-    if (intent?.eventActionPrefix) eventActionPrefix.value = intent.eventActionPrefix;
-    else if (intent?.eventActions?.length) eventActions.value = intent.eventActions.join(',');
-  }
-  eventOutcome.value = typeof q.eventOutcome === 'string' ? q.eventOutcome : null;
-  dstPort.value = typeof q.dstPort === 'string' ? q.dstPort : null;
-
-  // Legacy showUnknown=1 kept; new default is include unknown unless hideUnknown=1
-  if (q.hideUnknown === '1' || q.hideUnknown === 'true') {
-    showUnknown.value = false;
-  } else if (q.showUnknown === '0' || q.showUnknown === 'false') {
-    showUnknown.value = false;
+  if (typeof q.filterId === 'string' && q.filterId.trim()) {
+    const catalog = loadSecEventFilterCatalog();
+    const found = findFilterById(catalog, q.filterId.trim());
+    if (found) applyFilterDefinition(found, found.id);
   } else {
-    showUnknown.value = true;
+    const draft = createEmptyActiveFilter();
+    if (typeof q.sourceType === 'string') draft.scope.type = q.sourceType;
+    if (typeof q.sourceProduct === 'string') draft.scope.product = q.sourceProduct;
+    if (typeof q.sourceHost === 'string') draft.scope.hosts = [q.sourceHost];
+    else if (typeof q.sourceHosts === 'string') {
+      draft.scope.hosts = q.sourceHosts.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    const fields: SecEventSavedFilter['fields'] = [];
+    if (typeof q.eventCode === 'string') fields.push({ field: 'event.code', op: 'eq', value: q.eventCode });
+    else if (typeof q.eventCodes === 'string') fields.push({ field: 'event.code', op: 'in', value: q.eventCodes });
+    if (typeof q.eventOutcome === 'string') fields.push({ field: 'event.outcome', op: 'eq', value: q.eventOutcome });
+    if (typeof q.eventAction === 'string') fields.push({ field: 'event.action', op: 'eq', value: q.eventAction });
+    if (typeof q.eventActionPrefix === 'string') {
+      fields.push({ field: 'event.actionPrefix', op: 'eq', value: q.eventActionPrefix });
+    }
+    if (typeof q.actorUser === 'string') fields.push({ field: 'actor.user', op: 'eq', value: q.actorUser });
+    if (typeof q.srcIp === 'string') fields.push({ field: 'network.srcIp', op: 'eq', value: q.srcIp });
+    if (typeof q.dstIp === 'string') fields.push({ field: 'network.dstIp', op: 'eq', value: q.dstIp });
+    if (typeof q.dstPort === 'string') fields.push({ field: 'network.dstPort', op: 'eq', value: q.dstPort });
+    if (typeof q.search === 'string') {
+      fields.push({ field: 'search', op: 'contains', value: q.search });
+      searchDraft.value = q.search;
+    }
+    draft.fields = fields;
+    applyFilterDefinition(draft, null);
   }
+
+  if (q.hideUnknown === '1' || q.hideUnknown === 'true') showUnknown.value = false;
+  else showUnknown.value = true;
 
   const routeFrom = typeof q.from === 'string' ? q.from : null;
   const routeTo = typeof q.to === 'string' ? q.to : null;
@@ -431,89 +412,6 @@ function applyFromRoute() {
     : '24h';
 }
 
-function applyFilterBuilder(result: SecEventFilterBuilderResult) {
-  const intent = getSecEventFilterIntent(result.intentId);
-  intentId.value = result.intentId;
-
-  const refined = result.eventAction?.trim() || null;
-  eventAction.value = refined;
-  if (refined) {
-    eventActions.value = null;
-    eventActionPrefix.value = null;
-  } else if (intent?.eventActionPrefix || result.eventActionPrefix) {
-    eventActionPrefix.value = (result.eventActionPrefix || intent?.eventActionPrefix || null);
-    eventActions.value = intent?.eventActions?.length ? intent.eventActions.join(',') : null;
-  } else if (intent?.eventActions?.length) {
-    eventActionPrefix.value = null;
-    eventActions.value = intent.eventActions.join(',');
-  } else if (result.eventActions?.length) {
-    eventActionPrefix.value = null;
-    eventActions.value = result.eventActions.join(',');
-  } else {
-    eventActionPrefix.value = null;
-    eventActions.value = null;
-  }
-
-  eventOutcome.value = result.eventOutcome ?? null;
-  dstPort.value = result.dstPort ?? null;
-  sourceType.value = result.sourceType ?? null;
-  // Intent filter replaces free-text unless the builder explicitly set message/search.
-  smartFilters.value = {
-    actorUser: result.actorUser ?? undefined,
-    srcIp: result.srcIp ?? undefined,
-    dstIp: result.dstIp ?? undefined,
-    sourceHost: result.sourceHost ?? undefined,
-    eventCode: result.eventCode ?? undefined,
-    search: result.search ?? undefined,
-  };
-  searchDraft.value = smartFilters.value.search ?? '';
-  page.value = 1;
-  void loadRows({ syncUrl: true, resetSelection: true });
-}
-
-function removeSmartChip(key: SecEventSmartSearchFieldKey) {
-  smartFilters.value = clearSecEventSmartField(smartFilters.value, key);
-  if (key === 'search') searchDraft.value = '';
-  page.value = 1;
-  void loadRows({ syncUrl: true, resetSelection: true });
-}
-
-function clearFilters() {
-  searchDraft.value = '';
-  smartFilters.value = {};
-  sourceType.value = null;
-  eventAction.value = null;
-  eventActions.value = null;
-  eventActionPrefix.value = null;
-  eventOutcome.value = null;
-  dstPort.value = null;
-  intentId.value = null;
-  rangeMode.value = 'preset';
-  timeRange.value = '24h';
-  customFromLocal.value = '';
-  customToLocal.value = '';
-  showUnknown.value = true;
-  page.value = 1;
-  void loadRows({ syncUrl: true, resetSelection: true });
-}
-
-function hasActiveFilters(): boolean {
-  return !!(
-    hasSecEventSmartFilters(smartFilters.value)
-    || (searchDraft.value ?? '').trim()
-    || sourceType.value
-    || eventAction.value
-    || eventActions.value
-    || eventActionPrefix.value
-    || eventOutcome.value
-    || dstPort.value
-    || intentId.value
-    || rangeMode.value !== 'preset'
-    || timeRange.value !== '24h'
-    || !showUnknown.value
-  );
-}
-
 async function loadRows(options: { syncUrl?: boolean; resetSelection?: boolean } = {}) {
   const { syncUrl = false, resetSelection = false } = options;
   const range = resolveQueryRange();
@@ -523,57 +421,66 @@ async function loadRows(options: { syncUrl?: boolean; resetSelection?: boolean }
   errorLocal.value = null;
   if (syncUrl) syncQueryToUrl();
 
-  const f = smartFilters.value;
-  const actionQuery = resolveSecEventIntentActions(
-    intentId.value,
-    eventAction.value,
-    eventActions.value,
-    eventActionPrefix.value,
-  );
+  const mapped = mapSecEventSavedFilterToQuery(activeFilter.value);
   try {
     const res = await secEventQuery({
       from: range.from,
       to: range.to,
-      sourceType: sourceType.value ?? undefined,
-      eventAction: actionQuery.eventAction,
-      eventActions: actionQuery.eventActions,
-      eventActionPrefix: actionQuery.eventActionPrefix,
-      eventOutcome: eventOutcome.value ?? undefined,
-      actorUser: f.actorUser?.trim() || undefined,
-      srcIp: f.srcIp?.trim() || undefined,
-      dstIp: f.dstIp?.trim() || undefined,
-      dstPort: dstPort.value?.trim() || undefined,
-      sourceHost: f.sourceHost?.trim() || undefined,
-      eventCode: f.eventCode?.trim() || undefined,
-      search: f.search?.trim() || undefined,
+      ...mapped,
       excludeUnknown: !showUnknown.value,
       skip: skip.value,
       limit: itemsPerPage.value,
     });
 
-    // Guard: if API ignored action constraints, do not show unrelated rows.
+    let items = res.items;
+    let totalCount = res.total;
+
+    const codeFilter = mapped.eventCode || mapped.eventCodes;
+    if (codeFilter) {
+      const allowed = new Set(codeFilter.split(',').map((s) => s.trim()).filter(Boolean));
+      const matchedCodes = items.filter((item) => allowed.has((item.eventCode ?? '').trim()));
+      if (matchedCodes.length !== items.length) {
+        items = matchedCodes;
+        if (matchedCodes.length === 0) totalCount = 0;
+      }
+    }
+
+    const product = mapped.sourceProduct?.trim().toLowerCase();
+    if (product) {
+      const matchedProduct = items.filter(
+        (item) => (item.sourceProduct ?? '').trim().toLowerCase() === product,
+      );
+      if (matchedProduct.length !== items.length) {
+        items = matchedProduct;
+        if (matchedProduct.length === 0) totalCount = 0;
+      }
+    }
+
     const hasActionConstraint = !!(
-      actionQuery.eventAction
-      || actionQuery.eventActions
-      || actionQuery.eventActionPrefix
+      mapped.eventAction
+      || mapped.eventActions
+      || mapped.eventActionPrefix
     );
     if (hasActionConstraint) {
-      const matched = res.items.filter((item) =>
-        rowMatchesActionConstraint(item.eventAction, actionQuery, {
-          eventCode: item.eventCode,
-          sourceProduct: item.sourceProduct,
-        }),
+      const matched = items.filter((item) =>
+        rowMatchesActionConstraint(
+          item.eventAction,
+          {
+            eventAction: mapped.eventAction,
+            eventActions: mapped.eventActions,
+            eventActionPrefix: mapped.eventActionPrefix,
+          },
+          {
+            eventCode: item.eventCode,
+            sourceProduct: item.sourceProduct,
+          },
+        ),
       );
-      if (matched.length === 0) {
-        rows.value = [];
-        total.value = 0;
-      } else {
-        rows.value = matched;
-        total.value = res.total;
-      }
+      rows.value = matched.length === 0 ? [] : matched;
+      total.value = matched.length === 0 ? 0 : totalCount;
     } else {
-      rows.value = res.items;
-      total.value = res.total;
+      rows.value = items;
+      total.value = totalCount;
     }
 
     const maxPage = Math.max(1, Math.ceil(total.value / itemsPerPage.value));
@@ -614,22 +521,6 @@ async function loadRows(options: { syncUrl?: boolean; resetSelection?: boolean }
   } finally {
     loading.value = false;
   }
-}
-
-/** Apply full-text search (does not clear structured filters). */
-function applySearch() {
-  const draft = (searchDraft.value ?? '').trim();
-  smartFilters.value = {
-    ...smartFilters.value,
-    search: draft || undefined,
-  };
-  if (!draft) {
-    const next = { ...smartFilters.value };
-    delete next.search;
-    smartFilters.value = next;
-  }
-  page.value = 1;
-  void loadRows({ syncUrl: true, resetSelection: true });
 }
 
 function refreshList() {
@@ -673,6 +564,20 @@ function actorNetSummary(item: SecEventListItem): string {
   return user || src || dst || '—';
 }
 
+async function loadHostOptions() {
+  try {
+    const res = await fetchDiscoveryHosts({ limit: 1000 });
+    const names = res.items
+      .map((h) => (h.hostname || h.samAccountName || h.ip || '').trim())
+      .filter(Boolean);
+    hostOptions.value = Array.from(new Set(names)).sort((a, b) =>
+      String(a).localeCompare(String(b)),
+    ) as string[];
+  } catch {
+    hostOptions.value = [];
+  }
+}
+
 watch(lgAndUp, (wide) => {
   if (wide) drawerOpen.value = false;
 });
@@ -685,6 +590,7 @@ watch([page, itemsPerPage], () => {
 onMounted(() => {
   applyFromRoute();
   listReady.value = true;
+  void loadHostOptions();
   void loadRows({ resetSelection: true });
 });
 </script>
@@ -748,7 +654,7 @@ onMounted(() => {
           <v-btn color="primary" prepend-icon="mdi-magnify" :loading="loading" @click="applySearch">
             {{ t('siemCenter.events.search') }}
           </v-btn>
-          <v-btn variant="tonal" prepend-icon="mdi-filter-plus" @click="filterBuilderOpen = true">
+          <v-btn variant="tonal" prepend-icon="mdi-filter-plus" @click="filterDialogOpen = true">
             {{ t('siemCenter.events.filterBuilder.open') }}
           </v-btn>
           <v-btn variant="text" prepend-icon="mdi-refresh" :loading="loading" @click="refreshList">
@@ -833,6 +739,9 @@ onMounted(() => {
               <div v-if="item.sourceHost" class="text-caption text-medium-emphasis text-truncate" style="max-width: 12rem">
                 {{ item.sourceHost }}
               </div>
+              <div v-if="item.sourceProduct" class="text-caption text-medium-emphasis">
+                {{ item.sourceProduct }}
+              </div>
             </div>
           </template>
         </v-data-table-server>
@@ -852,11 +761,12 @@ onMounted(() => {
       />
     </v-navigation-drawer>
 
-    <AcSecEventFilterBuilderDialog
-      v-model="filterBuilderOpen"
-      :initial-intent-id="intentId"
-      :initial-values="filterBuilderInitialValues"
-      @apply="applyFilterBuilder"
+    <AcSecEventFilterCatalogDialog
+      v-model="filterDialogOpen"
+      :initial-filter="activeFilter"
+      :initial-filter-id="selectedFilterId"
+      :host-options="hostOptions"
+      @apply="onFilterDialogApply"
     />
   </div>
 </template>
