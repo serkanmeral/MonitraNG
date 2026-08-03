@@ -348,7 +348,8 @@
               v-if="!eventLogRows.length"
               class="text-sm text-gray-500 py-6 text-center rounded-lg border border-dashed border-gray-200 dark:border-gray-700"
             >
-              Bu sekmede gösterilecek olay yok. Event Log kapalıysa veya henüz geçiş yoksa normal.
+              Bu sekmede gösterilecek olay yok.
+              {{ isLinux ? 'Journal kapalıysa veya henüz yeni olay yoksa normal.' : 'Event Log kapalıysa veya henüz geçiş yoksa normal.' }}
             </div>
             <div v-else class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
               <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -356,8 +357,12 @@
                   <tr>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zaman</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tür</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Event ID</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kanal</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      {{ isLinux ? 'Action' : 'Event ID' }}
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      {{ isLinux ? 'Unit / kaynak' : 'Kanal' }}
+                    </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Paket</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Özet</th>
                     <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase"> </th>
@@ -375,10 +380,10 @@
                       </UBadge>
                     </td>
                     <td class="px-3 py-2 text-sm tabular-nums font-mono">
-                      {{ e.eventId ?? '—' }}
+                      {{ isLinux ? (e.action || '—') : (e.eventId ?? '—') }}
                     </td>
-                    <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 max-w-[8rem] truncate" :title="e.channel || ''">
-                      {{ e.channel || '—' }}
+                    <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 max-w-[8rem] truncate" :title="e.channel || e.detail || ''">
+                      {{ e.channel || e.detail || '—' }}
                     </td>
                     <td class="px-3 py-2 text-sm text-gray-500 max-w-[7rem] truncate" :title="e.package || ''">
                       {{ e.package || '—' }}
@@ -783,6 +788,7 @@ import {
 } from '~/composables/useAgentApi'
 
 const { getStatus } = useAgentApi()
+const { applyFromStatus, isLinux, logSourceLabel } = useAgentPlatform()
 
 const status = ref<AgentStatus | null>(null)
 const loading = ref(false)
@@ -866,7 +872,7 @@ const eventTile = computed(() => {
     nowMs.value
   )
   return buildTile(
-    'Olay günlüğü',
+    logSourceLabel.value,
     !!s?.eventLogEnabled,
     s?.lastEventLogUtc,
     s?.eventLogPollIntervalSeconds,
@@ -902,7 +908,7 @@ const tabItems = computed(() => [
   },
   {
     key: 'eventlog',
-    label: 'Olay günlüğü',
+    label: logSourceLabel.value,
     slot: 'eventlog',
     badge: freshnessLabel(eventTile.value.freshness)
   },
@@ -923,7 +929,8 @@ const eventLogRows = computed(() =>
   (status.value?.latestLogs || []).filter(
     e =>
       e.source === 'event-log' ||
-      e.source === 'windows-eventlog'
+      e.source === 'windows-eventlog' ||
+      e.source === 'linux-journal'
   )
 )
 
@@ -957,6 +964,15 @@ function watchHealthLabel(h?: string) {
 const selectedMetaCells = computed(() => {
   const e = selectedEvent.value
   if (!e) return [] as { label: string; value: string; mono?: boolean }[]
+  if (isLinux.value) {
+    return [
+      { label: 'Action', value: e.action || '—', mono: true },
+      { label: 'Paket', value: e.package || '—' },
+      { label: 'Unit / kaynak', value: e.channel || e.detail || '—' },
+      { label: 'Kaynak', value: e.source || '—' },
+      { label: 'Id', value: e.id || '—', mono: true }
+    ]
+  }
   return [
     { label: 'Event ID', value: e.eventId != null ? String(e.eventId) : '—', mono: true },
     { label: 'Record ID', value: e.recordId != null ? String(e.recordId) : '—', mono: true },
@@ -1151,9 +1167,17 @@ function metricHint(s: AgentStatus | null, freshness: FreshnessKind) {
 }
 
 function eventLogHint(s: AgentStatus | null, freshness: FreshnessKind) {
-  if (!s?.eventLogEnabled) return 'Politika: olay günlüğü kapalı (admin gerekir)'
+  if (!s?.eventLogEnabled) {
+    return isLinux.value
+      ? 'Politika: journal kapalı'
+      : 'Politika: olay günlüğü kapalı (admin gerekir)'
+  }
   if (s.lastEventLogError) return s.lastEventLogError
-  if (freshness === 'none') return 'Henüz olay toplanmadı'
+  if (freshness === 'none') {
+    return isLinux.value
+      ? 'Henüz journal olayı yok (bookmark seed sonrası yeni olaylar gelir)'
+      : 'Henüz olay toplanmadı'
+  }
   return null
 }
 
@@ -1190,6 +1214,7 @@ async function refresh() {
   error.value = ''
   try {
     status.value = await getStatus()
+    applyFromStatus(status.value)
     nowMs.value = Date.now()
   } catch (e: any) {
     error.value = e?.message || 'Durum alınamadı'

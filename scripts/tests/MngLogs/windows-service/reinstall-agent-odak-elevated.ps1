@@ -2,14 +2,14 @@
 #Requires -RunAsAdministrator
 $ErrorActionPreference = "Stop"
 $repo = "C:\Users\monitra\Dev\MonitraNG\MonitraNG"
-$log = Join-Path $env:TEMP "mnglogs-reinstall-1.0.4.log"
+$log = Join-Path $env:TEMP "mnglogs-reinstall-1.0.7.log"
 function Log([string]$m) {
   $line = "$(Get-Date -Format o) $m"
   Add-Content -Path $log -Value $line
   Write-Host $line
 }
 
-Log "=== Reinstall MngLogs Agent 1.0.4 (LocalUiHost=0.0.0.0) ==="
+Log "=== Reinstall MngLogs Agent 1.0.7 (selectionMode all/selected + catalog sync status) ==="
 $source = Join-Path $repo "MngLogs\artifacts\agent\win-x64"
 if (-not (Test-Path (Join-Path $source "MngLogs.Agent.exe"))) {
   throw "Publish missing: $source"

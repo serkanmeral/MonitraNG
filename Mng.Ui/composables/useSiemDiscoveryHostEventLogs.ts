@@ -206,8 +206,6 @@ export function hostEventLogEventsLink(
   return `/apps/siem-center/events?${q.toString()}`;
 }
 
-export { shortHostKey };
-
 export function eventLogLevelTone(
   level?: string | null,
 ): 'success' | 'warning' | 'error' | 'info' {

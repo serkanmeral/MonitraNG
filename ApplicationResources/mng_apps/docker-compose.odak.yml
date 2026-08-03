@@ -42,44 +42,53 @@ services:
       - MngReactorSettings__SecEvents__HotTtlDays=60
       - MngReactorSettings__SecEvents__DropUnknownEvents=true
       - MngReactorSettings__SecEvents__PersistFullRaw=false
+      # Agent host events live in OpenSearch via LogCollector — SIEM reads OS
+      - MngReactorSettings__SecEvents__OpenSearchDualWriteEnabled=true
+      - MngReactorSettings__SecEvents__OpenSearchReadEnabled=true
+      - MngReactorSettings__SecEvents__OpenSearchUrl=http://opensearch:9200
+      # NXLog + Linux UDP syslog retired — host Windows/Linux via MngLogs agent only
+      - MngReactorSettings__SecEvents__AcceptNxlogIngest=false
+      - MngReactorSettings__SecEvents__AcceptLinuxSyslogIngest=false
 
   mngengine:
     ports:
       - "5037:5037"
-      - "5514:5514/udp"
-      # IT merkezi toplayici portlari (NxLog JSON / FortiGate syslog) — relay yerine dogrudan dinleme
-      - "1514:1514/udp"
-      - "1541:1541/udp"
-      - "1542:1542/udp"
+      # FortiGate syslog only (NXLog + Linux rsyslog UDP removed)
       - "541:541/udp"
       - "542:542/udp"
     environment:
       - MngEngine__Mqtt__Host=mosquitto
       - MngEngine__Mqtt__UserName=${MQTT_USERNAME:-monitrang}
       - MngEngine__Mqtt__Password=${MQTT_PASSWORD:-!2345qawsedrf}
-      - MngEngine__SecEventQueue__UdpPort=5514
-      - MngEngine__SecEventQueue__UdpListeners__0__UdpPort=5514
-      - MngEngine__SecEventQueue__UdpListeners__0__SourceType=endpoint
-      - MngEngine__SecEventQueue__UdpListeners__0__SourceProduct=linux-syslog
-      - MngEngine__SecEventQueue__UdpListeners__1__UdpPort=1514
-      - MngEngine__SecEventQueue__UdpListeners__1__SourceType=ad
-      - MngEngine__SecEventQueue__UdpListeners__1__SourceProduct=windows-nxlog
-      - MngEngine__SecEventQueue__UdpListeners__2__UdpPort=1541
-      - MngEngine__SecEventQueue__UdpListeners__2__SourceType=ad
-      - MngEngine__SecEventQueue__UdpListeners__2__SourceProduct=windows-nxlog
-      - MngEngine__SecEventQueue__UdpListeners__3__UdpPort=1542
-      - MngEngine__SecEventQueue__UdpListeners__3__SourceType=ad
-      - MngEngine__SecEventQueue__UdpListeners__3__SourceProduct=windows-nxlog
-      - MngEngine__SecEventQueue__UdpListeners__4__UdpPort=541
-      - MngEngine__SecEventQueue__UdpListeners__4__SourceType=firewall
-      - MngEngine__SecEventQueue__UdpListeners__4__SourceProduct=fortigate
-      - MngEngine__SecEventQueue__UdpListeners__5__UdpPort=542
-      - MngEngine__SecEventQueue__UdpListeners__5__SourceType=firewall
-      - MngEngine__SecEventQueue__UdpListeners__5__SourceProduct=fortigate
+      - MngEngine__SecEventQueue__AcceptNxlogIngest=false
+      - MngEngine__SecEventQueue__AcceptLinuxSyslogIngest=false
+      - MngEngine__SecEventQueue__WecIngestEnabled=false
+      - MngEngine__SecEventQueue__UdpPort=541
+      - MngEngine__SecEventQueue__UdpListeners__0__UdpPort=541
+      - MngEngine__SecEventQueue__UdpListeners__0__SourceType=firewall
+      - MngEngine__SecEventQueue__UdpListeners__0__SourceProduct=fortigate
+      - MngEngine__SecEventQueue__UdpListeners__1__UdpPort=542
+      - MngEngine__SecEventQueue__UdpListeners__1__SourceType=firewall
+      - MngEngine__SecEventQueue__UdpListeners__1__SourceProduct=fortigate
 
   mnghub:
     ports:
       - "5020:5020"
+
+  mnglogcollector:
+    ports:
+      - "5091:5091"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - EnableSwagger=false
+      - MngLogCollectorSettings__OpenSearch__Url=http://opensearch:9200
+      - MngLogCollectorSettings__OpenSearch__WriteEnabled=true
+      - MngLogCollectorSettings__Ingest__ApiKey=${MNGLOGCOLLECTOR_INGEST_API_KEY:-}
+      - MngLogCollectorSettings__MongoDB__ConnectionString=mongodb://admin:${MONGO_PASSWORD:-admin123}@mongo:27017
+      - MngLogCollectorSettings__MongoDB__KeeperDatabaseName=mngkeeper
+      - MngLogCollectorSettings__MongoDB__EventLogCatalogDatabaseName=mng_odak
+      - MngLogCollectorSettings__Discovery__Prefixes__0__Cidr=192.168.20.0/24
+      - MngLogCollectorSettings__Discovery__Prefixes__0__Label=Odak ofis
 
   # Ollama/MngLLM kapalı; mngui nginx "mngllm" upstream + depends_on için stub
   ollama:

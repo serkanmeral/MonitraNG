@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngLogCollector.Application.Abstractions.OpenSearch;
 using MngLogCollector.Application.Configuration;
+using MngLogCollector.Application.Services.Ingest;
 
 namespace MngLogCollector.Persistence.OpenSearch;
 
@@ -119,9 +120,17 @@ public sealed class OpenSearchBulkWriter : IOpenSearchBulkWriter
         var hostName = string.IsNullOrWhiteSpace(doc.Hostname) ? doc.HostId : doc.Hostname;
         var sourceType = string.IsNullOrWhiteSpace(doc.Source) ? "endpoint" : doc.Source;
         var actionFromFields = ExtractEventAction(doc.Fields);
-        var action = !string.IsNullOrWhiteSpace(actionFromFields)
-            ? actionFromFields!
-            : (string.IsNullOrWhiteSpace(doc.Message) ? sourceType : doc.Message);
+        var eventCode = ExtractEventCode(doc.Fields);
+        var normalized = AgentSecEventActionNormalizer.TryNormalize(
+            doc.SourceProduct,
+            doc.Source,
+            eventCode,
+            doc.Message ?? doc.RawPreview);
+        var action = !string.IsNullOrWhiteSpace(normalized)
+            ? normalized!
+            : !string.IsNullOrWhiteSpace(actionFromFields)
+                ? actionFromFields!
+                : (string.IsNullOrWhiteSpace(doc.Message) ? sourceType : doc.Message);
 
         var payload = new Dictionary<string, object?>
         {
@@ -138,7 +147,7 @@ public sealed class OpenSearchBulkWriter : IOpenSearchBulkWriter
             {
                 ["action"] = action,
                 ["outcome"] = MapOutcome(doc.Severity),
-                ["code"] = ExtractEventCode(doc.Fields)
+                ["code"] = eventCode
             },
             ["parser"] = new Dictionary<string, object?>
             {
@@ -156,6 +165,8 @@ public sealed class OpenSearchBulkWriter : IOpenSearchBulkWriter
                 ["id"] = doc.HostId
             }
         };
+
+        TryAddRdpActorAndNetwork(payload, doc.Fields);
 
         if (doc.Fields is { Count: > 0 })
             payload["fields"] = doc.Fields;
@@ -195,6 +206,85 @@ public sealed class OpenSearchBulkWriter : IOpenSearchBulkWriter
             return id.ToString();
         if (fields.TryGetValue("EventID", out var id2) && id2 is not null)
             return id2.ToString();
+        return null;
+    }
+
+    private static void TryAddRdpActorAndNetwork(
+        Dictionary<string, object?> payload,
+        Dictionary<string, object?>? fields)
+    {
+        if (fields is null || fields.Count == 0)
+            return;
+
+        var user = ReadField(fields, "User", "eventData.User", "TargetUserName");
+        var address = ReadField(fields, "Address", "eventData.Address", "SourceNetworkAddress");
+
+        if (!string.IsNullOrWhiteSpace(user))
+        {
+            payload["actor"] = new Dictionary<string, object?> { ["user"] = user.Trim() };
+        }
+
+        if (!string.IsNullOrWhiteSpace(address)
+            && !address.Equals("-", StringComparison.Ordinal)
+            && !address.Equals("LOCAL", StringComparison.OrdinalIgnoreCase))
+        {
+            payload["network"] = new Dictionary<string, object?> { ["srcIp"] = address.Trim() };
+        }
+    }
+
+    private static string? ReadField(Dictionary<string, object?> fields, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (!fields.TryGetValue(key, out var value) || value is null)
+                continue;
+            if (value is JsonElement el)
+            {
+                if (el.ValueKind == JsonValueKind.String)
+                {
+                    var s = el.GetString();
+                    if (!string.IsNullOrWhiteSpace(s))
+                        return s;
+                }
+                continue;
+            }
+
+            var text = value.ToString();
+            if (!string.IsNullOrWhiteSpace(text))
+                return text;
+        }
+
+        // Nested eventData dictionary from agent payload.
+        if (fields.TryGetValue("eventData", out var ed) && ed is not null)
+        {
+            if (ed is JsonElement jel && jel.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var key in keys)
+                {
+                    var shortKey = key.Contains('.') ? key[(key.LastIndexOf('.') + 1)..] : key;
+                    if (jel.TryGetProperty(shortKey, out var prop) && prop.ValueKind == JsonValueKind.String)
+                    {
+                        var s = prop.GetString();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            return s;
+                    }
+                }
+            }
+            else if (ed is Dictionary<string, object?> dict)
+            {
+                foreach (var key in keys)
+                {
+                    var shortKey = key.Contains('.') ? key[(key.LastIndexOf('.') + 1)..] : key;
+                    if (dict.TryGetValue(shortKey, out var v) && v is not null)
+                    {
+                        var s = v.ToString();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            return s;
+                    }
+                }
+            }
+        }
+
         return null;
     }
 

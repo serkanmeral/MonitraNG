@@ -238,6 +238,124 @@ public sealed class SecEventIngestProcessingTests
     }
 
     [Fact]
+    public async Task ProcessAsync_NxlogPayload_SkippedWhenAcceptNxlogIngestFalse()
+    {
+        var repo = new Mock<ISecEventsRepository>();
+        var observationPublisher = new Mock<IObservationPublisher>();
+        var sut = CreateSut(
+            repo,
+            observationPublisherMock: observationPublisher,
+            secEventsSettings: new SecEventsSettings
+            {
+                DropUnknownEvents = false,
+                AcceptNxlogIngest = false
+            });
+
+        var item = new SecEventIngestItem
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventIngestSource
+            {
+                Type = "ad",
+                Product = "windows-nxlog",
+                Host = "dc01"
+            },
+            Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("nxlog_terminal_4625.json.txt"))
+        };
+
+        var response = await sut.ProcessAsync(
+            new SecEventIngestRequest { Items = [item] },
+            "odak");
+
+        Assert.Equal(0, response.Accepted);
+        Assert.Equal(1, response.Skipped);
+        Assert.Equal(0, response.Published);
+
+        repo.Verify(
+            r => r.InsertManyAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<SecEventDocument>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        observationPublisher.Verify(
+            o => o.PublishSecEventAsync(
+                It.IsAny<MngReactor.Application.Observations.SecEventObservationPayload>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_NxlogJsonShapeWithoutProduct_SkippedWhenAcceptNxlogIngestFalse()
+    {
+        var repo = new Mock<ISecEventsRepository>();
+        var sut = CreateSut(
+            repo,
+            secEventsSettings: new SecEventsSettings
+            {
+                DropUnknownEvents = false,
+                AcceptNxlogIngest = false
+            });
+
+        var item = new SecEventIngestItem
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventIngestSource { Type = "ad", Product = "windows", Host = "dc01" },
+            Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("nxlog_terminal_4625.json.txt"))
+        };
+
+        var response = await sut.ProcessAsync(
+            new SecEventIngestRequest { Items = [item] },
+            "odak");
+
+        Assert.Equal(0, response.Accepted);
+        Assert.Equal(1, response.Skipped);
+        repo.Verify(
+            r => r.InsertManyAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<SecEventDocument>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_LinuxSyslogPayload_SkippedWhenAcceptLinuxSyslogIngestFalse()
+    {
+        var repo = new Mock<ISecEventsRepository>();
+        var sut = CreateSut(
+            repo,
+            secEventsSettings: new SecEventsSettings
+            {
+                DropUnknownEvents = false,
+                AcceptLinuxSyslogIngest = false
+            });
+
+        var item = new SecEventIngestItem
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventIngestSource
+            {
+                Type = "endpoint",
+                Product = "linux-syslog",
+                Host = "app01"
+            },
+            Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("linux_sshd_failed_password.syslog.txt"))
+        };
+
+        var response = await sut.ProcessAsync(
+            new SecEventIngestRequest { Items = [item] },
+            "odak");
+
+        Assert.Equal(0, response.Accepted);
+        Assert.Equal(1, response.Skipped);
+        repo.Verify(
+            r => r.InsertManyAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<SecEventDocument>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task ProcessAsync_RejectsOversizedBatch()
     {
         var sut = CreateSut();

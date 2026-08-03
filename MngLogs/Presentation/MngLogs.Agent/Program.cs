@@ -72,6 +72,7 @@ builder.Services.AddSingleton(sp =>
     var config = sp.GetRequiredService<IAgentConfigStore>();
     return new EventLogBookmarkStore(config.ResolveDataDirectory());
 });
+builder.Services.AddSingleton<EventLogCursorService>();
 builder.Services.AddHostedService<HeartbeatProducerWorker>();
 builder.Services.AddHostedService<PackageCatalogSyncWorker>();
 builder.Services.AddHostedService<EventLogCollectorWorker>();

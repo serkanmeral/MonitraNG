@@ -8456,13 +8456,103 @@
     "events": {
       "menuTitle": "Güvenlik olayları",
       "pageTitle": "Güvenlik olayları",
-      "pageSubtitle": "Normalize edilmiş sec_events kayıtlarında filtreleme ve timeline.",
+      "pageSubtitle": "Gelen tüm güvenlik olaylarını arayın ve filtreleyin (alarm ve senaryolardan bağımsız).",
       "loadError": "Olaylar yüklenemedi.",
       "refresh": "Yenile",
       "apply": "Uygula",
       "search": "Ara",
-      "searchPlaceholder": "IP, kullanıcı, host, mesaj…",
+      "fullTextSearch": "Tam metin arama",
+      "fullTextSearchPlaceholder": "IP, kullanıcı, host, mesaj, aksiyon…",
+      "searchPlaceholder": "user:admin ip:10.0.0.1 host:dc01 4625 …",
+      "searchHint": "Önekler: user: · ip:/src: · dst: · host: · id:/4625. Düz metin hâlâ IP, kullanıcı, host, mesaj arar.",
+      "activeFilters": "Aktif filtreler",
+      "chipUser": "Kullanıcı",
+      "chipSrcIp": "Kaynak IP",
+      "chipDstIp": "Hedef IP",
+      "chipHost": "Host",
+      "chipEventCode": "Event ID",
+      "chipText": "Metin",
+      "chipDstPort": "Hedef port",
+      "chipOutcome": "Sonuç",
+      "hideUnknown": "Bilinmeyen olaylar gizli",
       "clearFilters": "Filtreleri temizle",
+      "filterBuilder": {
+        "open": "Filtre ekle",
+        "title": "Filtre oluştur",
+        "subtitle": "Önce olay niyetini seçin, sonra sadece önemsediğiniz alanları doldurun. Boş = Herhangi biri.",
+        "stepIntent": "1. Ne arıyorsunuz?",
+        "stepFields": "2. Parse alanlarıyla daraltın",
+        "any": "Herhangi biri",
+        "anyHint": "Boş alanlar “herhangi bir değer” demektir. Zaman aralığı ana ekranda kalır.",
+        "apply": "Filtreyi uygula",
+        "applyIntent": "Bu filtreyi kullan",
+        "cancel": "İptal",
+        "intentChip": "Niyet",
+        "familyActionsChip": "Tüm {name} aksiyonları",
+        "outcomes": {
+          "success": "Başarılı",
+          "failure": "Başarısız",
+          "unknown": "Bilinmeyen"
+        },
+        "intents": {
+          "rdp": {
+            "title": "RDP oturumları",
+            "desc": "Uzak masaüstü logon, logoff, disconnect, reconnect"
+          },
+          "login": {
+            "title": "Oturum açma",
+            "desc": "Başarılı/başarısız logon, kilit, explicit credentials"
+          },
+          "firewall": {
+            "title": "Firewall / akışlar",
+            "desc": "İzin, deny, yeni akış ve kural değişiklikleri"
+          },
+          "directory": {
+            "title": "Dizin / hesaplar",
+            "desc": "Hesap ve grup değişiklikleri, dizin nesneleri"
+          },
+          "linux_auth": {
+            "title": "Linux kimlik doğrulama",
+            "desc": "sshd ve sudo (journal) olayları"
+          },
+          "custom": {
+            "title": "Özel",
+            "desc": "İstediğiniz aksiyon ve ortak parse alanları"
+          }
+        },
+        "fields": {
+          "rdpAction": "RDP aksiyonu",
+          "loginAction": "Logon aksiyonu",
+          "flowAction": "Akış aksiyonu",
+          "directoryAction": "Dizin aksiyonu",
+          "linuxAction": "Linux aksiyonu",
+          "anyAction": "Aksiyon",
+          "user": "Kullanıcı",
+          "clientIp": "İstemci IP",
+          "sourceIp": "Kaynak IP",
+          "destIp": "Hedef IP",
+          "destPort": "Hedef port",
+          "sessionHost": "Oturum hostu (RDP hedefi)",
+          "host": "Host",
+          "eventCode": "Event ID",
+          "outcome": "Sonuç",
+          "sourceType": "Kaynak tipi",
+          "message": "Mesaj / metin"
+        },
+        "placeholders": {
+          "anyUser": "Herhangi bir kullanıcı",
+          "anyIp": "Herhangi bir IP",
+          "anyHost": "Herhangi bir host",
+          "anyPort": "Herhangi bir port",
+          "eventCode": "örn. 4625",
+          "message": "İçerir…"
+        },
+        "hints": {
+          "rdpUser": "actor.user — boş bırakırsanız herkesin RDP’si",
+          "rdpClientIp": "network.srcIp — RDP’yi başlatan istemci",
+          "rdpSessionHost": "source.host — RDP oturumunun koştuğu makine (hedef)"
+        }
+      },
       "timeRange": "Zaman aralığı",
       "range1h": "Son 1 saat",
       "range24h": "Son 24 saat",
@@ -8484,7 +8574,7 @@
       "sourceLinuxJournal": "Linux Journal",
       "sourceUnknown": "Bilinmeyen kaynak",
       "empty": "Filtreye uyan olay yok.",
-      "emptyHint": "Zaman aralığını genişletin, filtreleri temizleyin veya bilinmeyen olayları gösterin.",
+      "emptyHint": "Zaman aralığını genişletin veya filtreleri temizleyin. Uygulanan niyet için parse edilmiş olay yoksa liste boş kalır.",
       "statTotal": "{shown} / {total} olay",
       "statShown": "Gösterilen",
       "statMatching": "Eşleşen toplam",
@@ -8533,14 +8623,28 @@
         "login_success": "Başarılı giriş",
         "login_success_after_failures": "Fail→success giriş",
         "privileged_login_outside_window": "Bakım dışı privileged giriş",
+        "logoff": "Oturum kapatma",
+        "explicit_credentials": "Explicit credentials",
+        "account_locked": "Hesap kilitlendi",
         "denied_flow": "Engellenen akış",
         "allowed_flow": "İzin verilen trafik",
         "rule_change": "Kural değişikliği",
         "new_flow": "Yeni akış",
         "group_member_added": "Gruba üye eklendi",
+        "group_changed": "Grup değişti",
         "account_created": "Hesap oluşturuldu",
+        "account_deleted": "Hesap silindi",
+        "account_enabled": "Hesap etkinleştirildi",
         "directory_object_modified": "Dizin nesnesi değişti",
+        "directory_object_created": "Dizin nesnesi oluşturuldu",
+        "directory_object_deleted": "Dizin nesnesi silindi",
+        "privileged_assigned": "Ayrıcalık atandı",
         "privilege_denied": "Ayrıcalık reddedildi",
+        "privilege_escalation": "Ayrıcalık yükseltme",
+        "rdp_logon": "RDP logon",
+        "rdp_logoff": "RDP logoff",
+        "rdp_disconnect": "RDP disconnect",
+        "rdp_reconnect": "RDP reconnect",
         "host_up": "Host ayakta (host.up)",
         "watch_inventory": "İzleme envanteri (watch.inventory)",
         "unknown": "Bilinmeyen"

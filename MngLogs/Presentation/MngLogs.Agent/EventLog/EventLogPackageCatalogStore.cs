@@ -13,7 +13,8 @@ public interface IEventLogPackageCatalogStore
     string? Version { get; }
     IReadOnlyList<EventLogPackage> ServerPackages { get; }
     IReadOnlyList<EventLogPackage> OptionalPackages { get; }
-    Task RefreshAsync(CancellationToken cancellationToken = default);
+    /// <param name="force">When true, skip If-None-Match so a full catalog body is always pulled.</param>
+    Task<CatalogRefreshResult> RefreshAsync(bool force = false, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -25,7 +26,8 @@ public sealed class EventLogPackageCatalogStore : IEventLogPackageCatalogStore
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
     };
 
     private readonly IAgentConfigStore _config;
@@ -86,21 +88,24 @@ public sealed class EventLogPackageCatalogStore : IEventLogPackageCatalogStore
         }
     }
 
-    public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    public async Task<CatalogRefreshResult> RefreshAsync(
+        bool force = false,
+        CancellationToken cancellationToken = default)
     {
-        // Only send If-None-Match when we already trust a collector-sourced cache.
         string? ifNoneMatch = null;
-        lock (_gate)
+        if (!force)
         {
-            if (!string.IsNullOrWhiteSpace(_file.Version) &&
-                !string.Equals(_file.Source, "builtin", StringComparison.OrdinalIgnoreCase))
+            lock (_gate)
             {
-                ifNoneMatch = _file.Version;
+                if (!string.IsNullOrWhiteSpace(_file.Version) &&
+                    !string.Equals(_file.Source, "builtin", StringComparison.OrdinalIgnoreCase))
+                {
+                    ifNoneMatch = _file.Version;
+                }
             }
         }
 
         var pull = await _collector.GetEventLogPackageCatalogAsync(ifNoneMatch, cancellationToken);
-        CatalogFile next;
 
         if (pull.NotModified)
         {
@@ -108,24 +113,16 @@ public sealed class EventLogPackageCatalogStore : IEventLogPackageCatalogStore
             {
                 _file.LastSyncedUtc = DateTime.UtcNow;
                 try { SaveUnlocked(_file); } catch { /* ignore */ }
+                return CatalogRefreshResult.Unchanged(
+                    Source,
+                    _file.Version,
+                    _file.Packages.Count,
+                    _file.OptionalPackages.Count);
             }
-            return;
         }
 
-        if (pull is { Success: true, Catalog: { Packages.Count: > 0 } remote })
+        if (!pull.Success || pull.Catalog is null)
         {
-            next = new CatalogFile
-            {
-                Source = string.IsNullOrWhiteSpace(remote.Source) ? "collector" : remote.Source.Trim(),
-                Version = string.IsNullOrWhiteSpace(remote.Version) ? remote.GeneratedUtc.ToString("o") : remote.Version,
-                LastSyncedUtc = DateTime.UtcNow,
-                Packages = MapPackages(remote.Packages),
-                OptionalPackages = MapPackages(remote.OptionalPackages)
-            };
-        }
-        else
-        {
-            // Collector unreachable or empty → keep last good cache if present; else builtin seed.
             lock (_gate)
             {
                 if (_file.Packages is { Count: > 0 } &&
@@ -133,29 +130,82 @@ public sealed class EventLogPackageCatalogStore : IEventLogPackageCatalogStore
                 {
                     _file.LastSyncedUtc = DateTime.UtcNow;
                     try { SaveUnlocked(_file); } catch { /* ignore */ }
-                    return;
+                    return CatalogRefreshResult.Failed(
+                        "Collector katalogu alınamadı; önceki collector cache korundu.",
+                        Source,
+                        _file.Version,
+                        _file.Packages.Count,
+                        _file.OptionalPackages.Count);
                 }
             }
 
-            next = new CatalogFile
+            var builtin = SeedBuiltinFile();
+            lock (_gate)
             {
-                Source = "builtin",
-                Version = "builtin-" + DateTime.UtcNow.ToString("yyyyMMdd"),
-                LastSyncedUtc = DateTime.UtcNow,
-                Packages = DefaultEventLogPackages.Defaults.Select(EventLogPackageMerger.Clone).ToList(),
-                OptionalPackages = DefaultEventLogPackages.AllKnown
-                    .Where(p => !DefaultEventLogPackages.Defaults.Any(d =>
-                        string.Equals(d.Name, p.Name, StringComparison.OrdinalIgnoreCase)))
-                    .Select(EventLogPackageMerger.Clone)
-                    .ToList()
-            };
+                _file = builtin;
+                try { SaveUnlocked(builtin); } catch { /* ignore */ }
+            }
+
+            return CatalogRefreshResult.Failed(
+                "Collector katalogu alınamadı (URL/API key/ağ). Builtin paketler kullanılıyor.",
+                "builtin",
+                builtin.Version,
+                builtin.Packages.Count,
+                builtin.OptionalPackages.Count);
         }
+
+        var remote = pull.Catalog;
+        var packages = MapPackages(remote.Packages);
+        var optional = MapPackages(remote.OptionalPackages);
+        var remoteCount = (remote.Packages?.Count ?? 0) + (remote.OptionalPackages?.Count ?? 0);
+
+        if (packages.Count == 0 && (remote.Packages?.Count ?? 0) > 0)
+        {
+            lock (_gate)
+            {
+                return CatalogRefreshResult.Failed(
+                    "Collector paketleri agent tarafından reddedildi (muhtemel neden: selectionMode=all için agent güncellemesi gerekir). Önceki katalog korundu.",
+                    Source,
+                    Version,
+                    _file.Packages.Count,
+                    _file.OptionalPackages.Count);
+            }
+        }
+
+        if (packages.Count == 0 && optional.Count == 0 && remoteCount == 0)
+        {
+            lock (_gate)
+            {
+                return CatalogRefreshResult.Failed(
+                    "Collector boş katalog döndü; önceki katalog korundu.",
+                    Source,
+                    Version,
+                    _file.Packages.Count,
+                    _file.OptionalPackages.Count);
+            }
+        }
+
+        var next = new CatalogFile
+        {
+            Source = string.IsNullOrWhiteSpace(remote.Source) ? "collector" : remote.Source.Trim(),
+            Version = string.IsNullOrWhiteSpace(remote.Version) ? remote.GeneratedUtc.ToString("o") : remote.Version,
+            LastSyncedUtc = DateTime.UtcNow,
+            Packages = packages,
+            OptionalPackages = optional
+        };
 
         lock (_gate)
         {
             _file = next;
             SaveUnlocked(next);
         }
+
+        return CatalogRefreshResult.Succeeded(
+            next.Source,
+            next.Version,
+            next.Packages.Count,
+            next.OptionalPackages.Count,
+            $"Katalog güncellendi ({next.Packages.Count} varsayılan, {next.OptionalPackages.Count} opsiyonel).");
     }
 
     private static List<EventLogPackage> MapPackages(IEnumerable<EventLogPackageCatalogItem>? items)
@@ -168,7 +218,12 @@ public sealed class EventLogPackageCatalogStore : IEventLogPackageCatalogStore
             {
                 Name = p.Name?.Trim() ?? "",
                 Channel = p.Channel?.Trim() ?? "",
-                EventIds = p.EventIds?.Distinct().OrderBy(x => x).ToList() ?? []
+                SelectionMode = string.Equals(p.SelectionMode?.Trim(), "all", StringComparison.OrdinalIgnoreCase)
+                    ? "all"
+                    : "selected",
+                EventIds = p.EventIds?.Distinct().OrderBy(x => x).ToList() ?? [],
+                ExcludedEventIds = p.ExcludedEventIds?.Distinct().OrderBy(x => x).ToList() ?? [],
+                IsDefault = p.IsDefault
             })
             .Where(EventLogPackageMerger.IsValid)
             .Select(EventLogPackageMerger.Clone)
@@ -192,10 +247,15 @@ public sealed class EventLogPackageCatalogStore : IEventLogPackageCatalogStore
             // fall through to seed
         }
 
+        return SeedBuiltinFile();
+    }
+
+    private CatalogFile SeedBuiltinFile()
+    {
         var seeded = new CatalogFile
         {
             Source = "builtin",
-            Version = "builtin-seed",
+            Version = "builtin-" + DateTime.UtcNow.ToString("yyyyMMdd"),
             LastSyncedUtc = DateTime.UtcNow,
             Packages = DefaultEventLogPackages.Defaults.Select(EventLogPackageMerger.Clone).ToList(),
             OptionalPackages = DefaultEventLogPackages.AllKnown

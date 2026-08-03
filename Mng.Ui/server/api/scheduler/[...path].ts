@@ -3,7 +3,7 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
 
-  const odakHost = process.env.ODAK_HOST?.trim() || '192.168.20.20';
+  const odakHost = process.env.ODAK_HOST?.trim() || '192.168.20.8';
   const schedulerUrl =
     process.env.SERVER_SCHEDULER_URL ||
     process.env.SCHEDULER_URL ||

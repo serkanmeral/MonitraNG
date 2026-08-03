@@ -79,6 +79,48 @@ public class EventLogPackageCatalogStoreTests
     }
 
     [Fact]
+    public async Task RefreshAsync_AcceptsAllChannelPackages()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "MngLogs-Catalog-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var collector = new FakeCollectorClient
+            {
+                Catalog = new EventLogPackageCatalogResponse
+                {
+                    Source = "collector",
+                    Version = "all-1",
+                    Packages =
+                    [
+                        new EventLogPackageCatalogItem
+                        {
+                            Name = "system-all",
+                            Channel = "System",
+                            SelectionMode = "all",
+                            EventIds = [],
+                            ExcludedEventIds = [7036]
+                        }
+                    ]
+                }
+            };
+
+            var store = new EventLogPackageCatalogStore(CreateConfig(dir), collector);
+            var result = await store.RefreshAsync();
+
+            Assert.True(result.Ok);
+            Assert.Equal("collector", store.Source);
+            Assert.Single(store.ServerPackages);
+            Assert.Equal("all", store.ServerPackages[0].SelectionMode);
+            Assert.Equal(new[] { 7036 }, store.ServerPackages[0].ExcludedEventIds);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
     public async Task RefreshAsync_NotModified_KeepsCatalog()
     {
         var dir = Path.Combine(Path.GetTempPath(), "MngLogs-Catalog-" + Guid.NewGuid().ToString("N"));

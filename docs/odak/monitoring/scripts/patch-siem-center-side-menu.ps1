@@ -257,11 +257,33 @@ Upsert-MenuItem -AllItems $items -Label "Güvenlik olayları" -FindExisting {
     disabled  = $false
 } | Out-Null
 
-# --- Kaldir: eski alarm header, kurallar menu (olaylar kalir) ---
+# --- SIEM ayarları ---
+$settingsItemOrder = $eventsItemOrder + 1
+Upsert-MenuItem -AllItems $items -Label "SIEM ayarları" -FindExisting {
+    $_.pageCode -eq "siemCenter.settings.menuTitle" -or
+    $_.to -eq "/apps/siem-center/settings" -or
+    $_.to -eq "/apps/siem-center/reference"
+} -Body @{
+    order     = $settingsItemOrder
+    itemType  = "item"
+    level     = 1
+    parentId  = $headerId
+    pageType  = "manager"
+    pageCode  = "siemCenter.settings.menuTitle"
+    title     = "SIEM ayarları"
+    icon      = "SettingsIcon"
+    iconType  = "tabler"
+    to        = "/apps/siem-center/settings"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Kaldir: eski alarm header, kurallar menu (olaylar kalir); eski reference menü ---
 $removeRows = $items | Where-Object {
     ($_.itemType -eq "header" -and $_.pageCode -eq "alarmCenter.menuHeader" -and (Get-ItemId $_) -ne $headerId) -or
     $_.pageCode -eq "alarmCenter.rules.menuTitle" -or
-    $_.to -eq "/apps/alarm-center/rules"
+    $_.to -eq "/apps/alarm-center/rules" -or
+    ($_.pageCode -eq "siemCenter.reference.menuTitle" -and $_.to -ne "/apps/siem-center/settings")
 }
 foreach ($row in $removeRows) {
     $rowId = Get-ItemId $row

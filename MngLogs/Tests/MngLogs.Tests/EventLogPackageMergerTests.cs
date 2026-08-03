@@ -66,6 +66,22 @@ public class EventLogPackageMergerTests
     }
 
     [Fact]
+    public void IsValid_allows_all_channel_without_event_ids()
+    {
+        var p = new EventLogPackage
+        {
+            Name = "system-all",
+            Channel = "System",
+            SelectionMode = "all",
+            EventIds = []
+        };
+        Assert.True(EventLogPackageMerger.IsValid(p));
+        var clone = EventLogPackageMerger.Clone(p);
+        Assert.Equal("all", clone.SelectionMode);
+        Assert.Empty(clone.EventIds);
+    }
+
+    [Fact]
     public void Resolve_prefers_override_model_over_legacy_packages()
     {
         var policy = new EventLogPolicy

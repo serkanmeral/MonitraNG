@@ -31,8 +31,17 @@ export interface SecEventQuery {
   to?: string;
   sourceType?: string;
   eventAction?: string;
+  /** Comma-separated event.action OR list (ignored when eventAction is set). */
+  eventActions?: string;
+  /** Prefix match on event.action (e.g. rdp.). Ignored when eventAction/eventActions set. */
+  eventActionPrefix?: string;
+  eventOutcome?: string;
   srcIp?: string;
+  dstIp?: string;
+  dstPort?: string;
   actorUser?: string;
+  sourceHost?: string;
+  eventCode?: string;
   search?: string;
   excludeUnknown?: boolean;
   skip?: number;

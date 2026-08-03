@@ -26,6 +26,7 @@ import {
   isIpv4Literal,
   resolveDisplayHostname,
   secEventMatchesDiscoveryHost,
+  shortHostKey,
 } from '@/utils/siemDiscoveryHostMatch';
 import {
   DEFAULT_DISCOVERY_PREFIXES,
@@ -44,15 +45,6 @@ export const DISCOVERY_COVERAGE_POLL_MS = 30 * 1000;
 interface LiveHostSnapshot {
   lastSeenAt: number;
   agent: SiemDiscoveryAgentInfo | null;
-}
-
-/** Bare hostname for sec-events search (FQDN often does not match indexed host fields). */
-export function shortHostKey(hostname: string): string {
-  const h = hostname.trim().toLowerCase();
-  if (!h) return '';
-  // Keep IPv4 as-is; splitting on '.' would truncate to the first octet.
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return h;
-  return h.split('.')[0] || h;
 }
 
 /** Deep-link: host heartbeat / status events for a discovery host. */
@@ -293,6 +285,23 @@ function parseSessions(v: unknown): SiemDiscoveryHostSession[] {
   return out;
 }
 
+function inferPlatformFromOs(os: string | null | undefined): string | null {
+  const s = (os || '').trim().toLowerCase();
+  if (!s) return null;
+  if (s.includes('windows') || s.includes('win32') || s.includes('win64')) return 'windows';
+  if (
+    s.includes('linux')
+    || s.includes('ubuntu')
+    || s.includes('debian')
+    || s.includes('centos')
+    || s.includes('redhat')
+    || s.includes('rhel')
+  ) {
+    return 'linux';
+  }
+  return null;
+}
+
 export function parseHostUpAgent(fields?: Record<string, unknown> | null): SiemDiscoveryAgentInfo | null {
   if (!fields || typeof fields !== 'object') return null;
   const primaryIp = asString(fields.primaryIp);
@@ -302,7 +311,8 @@ export function parseHostUpAgent(fields?: Record<string, unknown> | null): SiemD
   const bootTimeUtc = asString(fields.bootTimeUtc);
   const uptimeSeconds = asNumber(fields.uptimeSeconds);
   const agentVersion = asString(fields.agentVersion);
-  const platform = asString(fields.platform);
+  const os = asString(fields.os);
+  const platform = asString(fields.platform) || inferPlatformFromOs(os);
   const machine = asString(fields.machine);
   const localUiPort = asNumber(fields.localUiPort);
   const localUiHost = asString(fields.localUiHost);

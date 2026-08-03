@@ -79,11 +79,14 @@ public sealed class EventLogPackageCatalogService : IEventLogPackageCatalogServi
             throw new InvalidOperationException($"Package '{name}' already exists.");
 
         var now = DateTime.UtcNow;
+        var mode = NormalizeSelectionMode(request.SelectionMode);
         var doc = new EventLogPackageDocument
         {
             Name = name,
             Channel = request.Channel.Trim(),
-            EventIds = NormalizeIds(request.EventIds),
+            SelectionMode = mode,
+            EventIds = mode == "all" ? [] : NormalizeIds(request.EventIds),
+            ExcludedEventIds = mode == "all" ? NormalizeIds(request.ExcludedEventIds ?? []) : [],
             IsDefault = request.IsDefault,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
@@ -113,9 +116,12 @@ public sealed class EventLogPackageCatalogService : IEventLogPackageCatalogServi
         if (!string.Equals(newName, key, StringComparison.Ordinal))
             await _store.DeleteByNameAsync(DatabaseName, key, ct);
 
+        var mode = NormalizeSelectionMode(request.SelectionMode);
         existing.Name = newName;
         existing.Channel = request.Channel.Trim();
-        existing.EventIds = NormalizeIds(request.EventIds);
+        existing.SelectionMode = mode;
+        existing.EventIds = mode == "all" ? [] : NormalizeIds(request.EventIds);
+        existing.ExcludedEventIds = mode == "all" ? NormalizeIds(request.ExcludedEventIds ?? []) : [];
         existing.IsDefault = request.IsDefault;
         existing.UpdatedAtUtc = DateTime.UtcNow;
         await _store.UpsertAsync(DatabaseName, existing, ct);
@@ -307,25 +313,37 @@ public sealed class EventLogPackageCatalogService : IEventLogPackageCatalogServi
         UpdatedAtUtc = doc?.UpdatedAtUtc
     };
 
-    private static EventLogPackageDto ToDto(EventLogPackageDocument d, bool isDefault) => new()
+    private static EventLogPackageDto ToDto(EventLogPackageDocument d, bool isDefault)
     {
-        Name = d.Name,
-        Channel = d.Channel,
-        EventIds = [.. d.EventIds],
-        IsDefault = isDefault
-    };
+        var mode = ResolveSelectionMode(d);
+        return new EventLogPackageDto
+        {
+            Name = d.Name,
+            Channel = d.Channel,
+            SelectionMode = mode,
+            EventIds = mode == "all" ? [] : [.. (d.EventIds ?? [])],
+            ExcludedEventIds = mode == "all" ? [.. (d.ExcludedEventIds ?? [])] : [],
+            IsDefault = isDefault
+        };
+    }
 
     private static EventLogPackageDto ToDto(EventLogPackageDocument d) => ToDto(d, d.IsDefault);
 
-    private static EventLogPackageManageItemDto ToManageItem(EventLogPackageDocument d) => new()
+    private static EventLogPackageManageItemDto ToManageItem(EventLogPackageDocument d)
     {
-        Id = d.Id,
-        Name = d.Name,
-        Channel = d.Channel,
-        EventIds = [.. d.EventIds],
-        IsDefault = d.IsDefault,
-        UpdatedAtUtc = d.UpdatedAtUtc
-    };
+        var mode = ResolveSelectionMode(d);
+        return new EventLogPackageManageItemDto
+        {
+            Id = d.Id,
+            Name = d.Name,
+            Channel = d.Channel,
+            SelectionMode = mode,
+            EventIds = mode == "all" ? [] : [.. (d.EventIds ?? [])],
+            ExcludedEventIds = mode == "all" ? [.. (d.ExcludedEventIds ?? [])] : [],
+            IsDefault = d.IsDefault,
+            UpdatedAtUtc = d.UpdatedAtUtc
+        };
+    }
 
     private static void Validate(EventLogPackageUpsertRequest request, bool isCreate)
     {
@@ -333,12 +351,21 @@ public sealed class EventLogPackageCatalogService : IEventLogPackageCatalogServi
             throw new ArgumentException("Name is required.");
         if (string.IsNullOrWhiteSpace(request.Channel))
             throw new ArgumentException("Channel is required.");
-        if (request.EventIds is null || request.EventIds.Count == 0)
-            throw new ArgumentException("At least one Event ID is required.");
+
+        var mode = NormalizeSelectionMode(request.SelectionMode);
+        if (mode == "selected" && (request.EventIds is null || NormalizeIds(request.EventIds).Count == 0))
+            throw new ArgumentException("At least one Event ID is required when selectionMode is selected.");
     }
 
-    private static List<int> NormalizeIds(IEnumerable<int> ids) =>
-        ids.Where(x => x > 0).Distinct().OrderBy(x => x).ToList();
+    /// <summary>Legacy docs without SelectionMode behave as selected.</summary>
+    private static string ResolveSelectionMode(EventLogPackageDocument d) =>
+        NormalizeSelectionMode(d.SelectionMode);
+
+    private static string NormalizeSelectionMode(string? mode) =>
+        string.Equals(mode?.Trim(), "all", StringComparison.OrdinalIgnoreCase) ? "all" : "selected";
+
+    private static List<int> NormalizeIds(IEnumerable<int>? ids) =>
+        (ids ?? []).Where(x => x > 0).Distinct().OrderBy(x => x).ToList();
 
     private static string NormalizeName(string name) =>
         (name ?? string.Empty).Trim().ToLowerInvariant();

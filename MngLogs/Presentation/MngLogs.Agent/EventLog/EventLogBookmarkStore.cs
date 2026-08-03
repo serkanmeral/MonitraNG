@@ -36,6 +36,17 @@ public sealed class EventLogBookmarkStore
         }
     }
 
+    public IReadOnlyDictionary<string, ChannelBookmark> Snapshot()
+    {
+        lock (_gate)
+        {
+            return _map.ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value with { },
+                StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
     private Dictionary<string, ChannelBookmark> Load()
     {
         if (!File.Exists(_path))
@@ -66,4 +77,8 @@ public sealed class EventLogBookmarkStore
 public sealed record ChannelBookmark(
     long LastRecordId,
     DateTime? SeededAtUtc,
-    bool CatchUpFromNow);
+    bool CatchUpFromNow,
+    /// <summary><c>now</c> | <c>hours</c> — last cursor action from Local UI / first seed.</summary>
+    string? CursorMode = null,
+    int? HistoryHours = null,
+    DateTime? HistoryFromUtc = null);

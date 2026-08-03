@@ -8362,13 +8362,103 @@
     "events": {
       "menuTitle": "Security events",
       "pageTitle": "Security events",
-      "pageSubtitle": "Filter and browse normalized sec_events records.",
+      "pageSubtitle": "Search and filter all ingested security events (independent of alarms and scenarios).",
       "loadError": "Failed to load events.",
       "refresh": "Refresh",
       "apply": "Apply",
       "search": "Search",
-      "searchPlaceholder": "IP, user, host, message…",
+      "fullTextSearch": "Full-text search",
+      "fullTextSearchPlaceholder": "IP, user, host, message, action…",
+      "searchPlaceholder": "user:admin ip:10.0.0.1 host:dc01 4625 …",
+      "searchHint": "Prefixes: user: · ip:/src: · dst: · host: · id:/4625. Plain text still searches IP, user, host, message.",
+      "activeFilters": "Active filters",
+      "chipUser": "User",
+      "chipSrcIp": "Src IP",
+      "chipDstIp": "Dst IP",
+      "chipHost": "Host",
+      "chipEventCode": "Event ID",
+      "chipText": "Text",
+      "chipDstPort": "Dst port",
+      "chipOutcome": "Outcome",
+      "hideUnknown": "Unknown events hidden",
       "clearFilters": "Clear filters",
+      "filterBuilder": {
+        "open": "Add filter",
+        "title": "Build a filter",
+        "subtitle": "Pick an event intent, then fill only the fields you care about. Leave blank for Any.",
+        "stepIntent": "1. What are you looking for?",
+        "stepFields": "2. Narrow with parsed fields",
+        "any": "Any",
+        "anyHint": "Empty fields mean “any value”. Time range stays on the main screen.",
+        "apply": "Apply filter",
+        "applyIntent": "Use this filter",
+        "cancel": "Cancel",
+        "intentChip": "Intent",
+        "familyActionsChip": "All {name} actions",
+        "outcomes": {
+          "success": "Success",
+          "failure": "Failure",
+          "unknown": "Unknown"
+        },
+        "intents": {
+          "rdp": {
+            "title": "RDP sessions",
+            "desc": "Remote Desktop logon, logoff, disconnect, reconnect"
+          },
+          "login": {
+            "title": "Logons",
+            "desc": "Failed/successful logons, lockouts, explicit credentials"
+          },
+          "firewall": {
+            "title": "Firewall / flows",
+            "desc": "Allowed, denied, new flows and rule changes"
+          },
+          "directory": {
+            "title": "Directory / accounts",
+            "desc": "Account and group changes, directory objects"
+          },
+          "linux_auth": {
+            "title": "Linux auth",
+            "desc": "sshd and sudo (journal) authentication events"
+          },
+          "custom": {
+            "title": "Custom",
+            "desc": "Pick any action and common parsed fields"
+          }
+        },
+        "fields": {
+          "rdpAction": "RDP action",
+          "loginAction": "Logon action",
+          "flowAction": "Flow action",
+          "directoryAction": "Directory action",
+          "linuxAction": "Linux action",
+          "anyAction": "Action",
+          "user": "User",
+          "clientIp": "Client IP",
+          "sourceIp": "Source IP",
+          "destIp": "Destination IP",
+          "destPort": "Destination port",
+          "sessionHost": "Session host (RDP target)",
+          "host": "Host",
+          "eventCode": "Event ID",
+          "outcome": "Outcome",
+          "sourceType": "Source type",
+          "message": "Message / text"
+        },
+        "placeholders": {
+          "anyUser": "Any user",
+          "anyIp": "Any IP",
+          "anyHost": "Any host",
+          "anyPort": "Any port",
+          "eventCode": "e.g. 4625",
+          "message": "Contains…"
+        },
+        "hints": {
+          "rdpUser": "actor.user — leave empty for anyone’s RDP",
+          "rdpClientIp": "network.srcIp — client that initiated RDP",
+          "rdpSessionHost": "source.host — machine where the RDP session ran (target)"
+        }
+      },
       "timeRange": "Time range",
       "range1h": "Last 1 hour",
       "range24h": "Last 24 hours",
@@ -8390,7 +8480,7 @@
       "sourceLinuxJournal": "Linux Journal",
       "sourceUnknown": "Unknown source",
       "empty": "No events match the filter.",
-      "emptyHint": "Widen the time range, clear filters, or show unknown events.",
+      "emptyHint": "Widen the time range or clear filters. An applied intent with no matching parsed events shows an empty list.",
       "statTotal": "{shown} / {total} events",
       "statShown": "Shown",
       "statMatching": "Matching total",
@@ -8439,14 +8529,28 @@
         "login_success": "Successful login",
         "login_success_after_failures": "Fail→success login",
         "privileged_login_outside_window": "Privileged login outside window",
+        "logoff": "Logoff",
+        "explicit_credentials": "Explicit credentials",
+        "account_locked": "Account locked",
         "denied_flow": "Denied flow",
         "allowed_flow": "Allowed traffic",
         "rule_change": "Rule change",
         "new_flow": "New flow",
         "group_member_added": "Group member added",
+        "group_changed": "Group changed",
         "account_created": "Account created",
+        "account_deleted": "Account deleted",
+        "account_enabled": "Account enabled",
         "directory_object_modified": "Directory object modified",
+        "directory_object_created": "Directory object created",
+        "directory_object_deleted": "Directory object deleted",
+        "privileged_assigned": "Privileges assigned",
         "privilege_denied": "Privilege denied",
+        "privilege_escalation": "Privilege escalation",
+        "rdp_logon": "RDP logon",
+        "rdp_logoff": "RDP logoff",
+        "rdp_disconnect": "RDP disconnect",
+        "rdp_reconnect": "RDP reconnect",
         "host_up": "Host up (host.up)",
         "watch_inventory": "Watch inventory (watch.inventory)",
         "unknown": "Unknown"

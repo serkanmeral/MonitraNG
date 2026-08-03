@@ -27,6 +27,11 @@ public sealed class SecEventQueryFilterBuilderTests
         {
             SourceType = "ad",
             EventAction = "login_failed",
+            SrcIp = "10.0.0.1",
+            DstIp = "10.0.0.2",
+            ActorUser = "admin",
+            SourceHost = "dc01",
+            EventCode = "4625",
             Search = "admin",
             From = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
             To = new DateTime(2026, 6, 2, 0, 0, 0, DateTimeKind.Utc)

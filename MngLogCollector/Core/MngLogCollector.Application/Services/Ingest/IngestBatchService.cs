@@ -103,6 +103,8 @@ public sealed class IngestBatchService : IIngestBatchService
         if (string.IsNullOrEmpty(text))
             return null;
 
-        return text.Length <= 512 ? text : text[..512];
+        // Keep enough Event Log XML / EventData in rawPreview for UI + parser triage.
+        const int max = 8192;
+        return text.Length <= max ? text : text[..max];
     }
 }

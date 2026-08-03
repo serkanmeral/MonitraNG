@@ -1,9 +1,8 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 3 Ağustos 2026 (P5 Parse Rules + Settings Event Log IA)  
-**Ortam notu:** Odak production; Collector `:5091`; UI çoğu zaman local Nuxt → prod API.  
-**Reactor:** parse katalog seed + sample API Odak’a deploy edildi (`SeedRevision` 5).  
-**Mng.Ui:** local (parse sihirbazları / Settings IA henüz prod `mngui` deploy edilmedi — hard refresh local).
+**Son güncelleme:** 3 Ağustos 2026 (host telemetry cutover + RDP + prod sabitleme)  
+**Ortam:** Günlük çalışma = **Odak production** (`192.168.20.8`). Lokal Nuxt ve MngLogs agent collector varsayılanı prod.  
+**Detay cutover:** [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md)
 
 ## Çalışma kuralı
 
@@ -14,57 +13,53 @@ Kapsam → kazanım → onay → kod.
 - Firewall parse kurallarının katalog seed’e taşınması (hâlâ C# parser)  
 - Periyodik discovery scan · Hard publish · Host paket ataması (E3)  
 - UI’den parametreli agent indir  
-**Freeze:** Eski SIEM security paneli.
+- G4 kalan: alarm/Mongo köprü (gözlem)  
+**Freeze:** Eski SIEM security paneli · NXLog / Linux rsyslog host ingest.
 
 ---
 
 ## Son çalışılan konu
 
-**P5 — Parse Rules kataloğu + Windows/Linux sihirbazları + Settings Event Log IA**
-
-Detay: [PARSE_RULES_CATALOG.md](./PARSE_RULES_CATALOG.md)
+**Host telemetrisi = yalnızca MngLogs agent** (NXLog + Linux syslog Engine/Reactor kapalı) · RDP `event.action` normalize · Güvenlik Olayları RDP filtresi · lokal UI/agent **prod** sabitleme.
 
 ---
 
-## Tamamlananlar (bu oturum / P5)
+## Tamamlananlar (bu dilim)
 
-### Parse kuralları (Reactor + UI) ✓
+### Cutover ✓
 
-- Mongo katalog + manage/publish API + `SecEventCatalogParseEngine` (C# fallback)
-- Builtin seed **SeedRevision 5:** Security hizası (4624/4625/4634/4648/4672/4720/4722/4726/4728/4732/4738/4740 + 5136/5137/5139) + RDP 21–25 + Linux sshd/sudo
-- Seed sync: revision bump’ta eski builtin silinir (örn. 65002 Application builtin kaldırıldı)
-- `custom.*` alanlar + `sec_event_custom_fields` + ExtraFields → `fields`
-- Agent `mnglogs-agent` + `linux-journal` → katalog `sourceProduct` eşlemesi
-- `when.op = contains`; journal `MESSAGE` → `message`
+- Engine/Reactor: `AcceptNxlogIngest=false`, `AcceptLinuxSyslogIngest=false`, WEC kapalı  
+- Compose: NXLog/Linux UDP portları kaldırıldı; FortiGate `:541/:542` kaldı  
+- Agent → LogCollector → OpenSearch; Reactor `OpenSearchReadEnabled`  
+- RDP: LogCollector normalizer (21/23/24/25 → `rdp.*`); Reactor/UI prefix genişletmesi  
 
-### Sihirbazlar ✓
+### SIEM Events UI ✓
 
-- **Windows:** Event ID örnek + Tanımlı Alanlar | Custom Regex sekmeleri  
-- **Linux:** paket/query örnek API + Custom Regex odaklı; package `when.eq` + family/contains zorunluluğu  
-- «Kural oluştur» kaldırıldı → yalnızca Windows / Linux sihirbazı
+- Akıllı arama / intent filtreleri (`secEventFilterIntents`, RDP → `eventActionPrefix=rdp.`)  
+- `shortHostKey` tek kaynak (`siemDiscoveryHostMatch.ts`)  
 
-### Settings IA ✓
+### Ortam disiplini ✓
 
-Üst: **Event Log · Keşif · Referans**  
-Event Log alt: **Paket kataloğu · Parse kuralları · Alan kataloğu**  
-Parse + Alan listeleri: sayfalama / sıralama / filtre
+- `Mng.Ui` Nuxt `ODAK_HOST` fallback + `.env` → **192.168.20.8**  
+- Windows/Linux agent scriptleri varsayılan prod Collector  
+- `deploy-agent-odak-prod.ps1` · `retarget-collector-elevated.ps1`  
+- Test scriptleri bilinçli test için ayrıldı (`*-odak-test.ps1`)  
 
-### Toplama seed notu
+### Önceki (P5) ✓
 
-`security-auth` Event ID listesi seed’de genişletildi; **mevcut Odak katalog otomatik güncellenmez** — Settings → Paket kataloğu’ndan elle ID ekleyip Yayınla gerekir.
+Parse Rules katalog + Windows/Linux sihirbazları + Settings Event Log IA — [PARSE_RULES_CATALOG.md](./PARSE_RULES_CATALOG.md)
 
 ---
 
 ## Sıradaki adım
 
-1. **Firewall / bastion** parse kurallarını katalog seed + message family’ye taşı (opsiyonel dilim)  
-2. **Prod `mngui` deploy** (sihirbaz + Settings IA) — kullanıcı isterse  
-3. Odak **security-auth** paket ID’lerini yayınla (yeni Security Event ID’ler için)  
-4. Park: Host Analytics L3 · Discovery ajansız host aksiyonları  
+1. Prod üzerinde RDP / host olaylarının SIEM Events’te doğrulanması (agent → OS → UI)  
+2. İsteğe bağlı: prod `mngui` deploy (local Nuxt yeterse atlanabilir)  
+3. Park: Analytics L3 · Discovery · firewall katalog · G4 alarm köprü  
 
 ---
 
 ## Nerede kalmıştık
 
-P5 parse/settings dilimi kod + Reactor deploy + doküman ile kapatıldı.  
-**Kaldığımız nokta:** firewall katalog taşıma ve/veya mngui deploy; Analytics L3 / Discovery park duruyor.
+Cutover + RDP normalize + prod sabitleme kod/doküman hazır.  
+**Kaldığımız nokta:** yeni chat’te prod SIEM doğrulama ve park maddeleri; test/prod ortam karıştırmadan devam.

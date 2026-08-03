@@ -9,9 +9,9 @@
 | **IP** | `192.168.20.20` | `192.168.20.8` |
 | **Rol** | Günlük kod, deploy, smoke, LDAP POC, diagnostic | Müşteri canlı / üretim benzeri |
 | **Deploy dokümanı** | [../deploy/README.md](../deploy/README.md) | [DEPLOY_PRODUCTION.md](./DEPLOY_PRODUCTION.md) |
-| **Script varsayılanı** | `-Server` belirtilmezse `192.168.20.20` | Her zaman `-Server 192.168.20.8` |
+| **Script varsayılanı** | Odak test scriptleri (`*-odak-test.ps1`) | Günlük lokal UI + MngLogs agent = **prod** (`20.8`) |
 
-Geliştirme PC’deki workspace, `appsettings.Development.json` ve yerel `npm run dev` bağlantıları **test sunucuya** (`20.20`) yönelmeye devam eder. Production’a geçiş yalnızca bilinçli deploy komutuyla yapılır.
+**Günlük geliştirme varsayılanı = production (`192.168.20.8`).** Lokal `Mng.Ui/.env`, Nuxt `ODAK_HOST` fallback ve MngLogs agent Collector URL’leri prod’a bakar. Test’e (`20.20`) yalnızca bilinçli geçici çalışma için dönülür; bitince mutlaka prod’a geri alınır — karışık ortam (UI test / agent prod) login ve SIEM boş liste hatalarına yol açar. Ayrıntı: [../siem/HOST_TELEMETRY_CUTOVER.md](../siem/HOST_TELEMETRY_CUTOVER.md).
 
 ---
 
@@ -24,6 +24,7 @@ Aynı portlar; yalnızca host IP değişir.
 | MngUI | http://192.168.20.20:3000 | http://192.168.20.8:3000 |
 | MngDomainUI | http://192.168.20.20:3001/domain/ | http://192.168.20.8:3001/domain/ |
 | API Gateway | http://192.168.20.20:5040 | http://192.168.20.8:5040 |
+| MngLogCollector | http://192.168.20.20:5091 | http://192.168.20.8:5091 |
 | Keycloak Admin | http://192.168.20.20:8080/keycloak/admin/... | http://192.168.20.8:8080/keycloak/admin/... |
 | MngKeeper (doğrudan) | http://192.168.20.20:5001 | http://192.168.20.8:5001 |
 
@@ -91,3 +92,13 @@ docker compose -f docker-compose.production.yml -f docker-compose.odak.prod.yml 
 | Production | `.env.odak.prod.local` → `ODAK_PROD_SSH_PASSWORD` | Deploy öncesi `$env:ODAK_SSH_PASSWORD = $env:ODAK_PROD_SSH_PASSWORD` veya agent talimatı — bkz. [AGENT_PRODUCTION_DEPLOY.md](./AGENT_PRODUCTION_DEPLOY.md) |
 
 Test parolası ile production parolası **farklıdır** (müşteri bildirimi).
+
+## Lokal Mng.Ui — hangi backend?
+
+| Dosya | Ortam |
+|-------|--------|
+| `Mng.Ui/.env` (günlük) | **Prod** — `cp .env.odak.prod.example .env` |
+| `Mng.Ui/.env.odak.test.example` | Yalnızca bilinçli test |
+| Nuxt kod fallback (`ODAK_HOST`) | `192.168.20.8` |
+
+`.env` değişince `nuxi dev` yeniden başlatılmalıdır.

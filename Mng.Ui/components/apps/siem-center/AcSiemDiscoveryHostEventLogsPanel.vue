@@ -15,6 +15,11 @@ import {
   type DiscoveryHostEventLogItem,
   type DiscoveryHostEventLogSnapshot,
 } from '@/composables/useSiemDiscoveryHostEventLogs';
+import {
+  eventLogDetailFieldsJson,
+  eventLogDetailMessageText,
+} from '@/utils/windowsSecurityLogonParse';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import type { SiemOsFamily } from '@/types/apps/siemDiscovery';
 
 const props = defineProps<{
@@ -175,22 +180,43 @@ const headers = computed(() => [
   },
 ]);
 
+const detailBodyTab = ref<'message' | 'fields'>('message');
+const detailCopyHint = ref<string | null>(null);
+
+/** Mesaj = düz metin; Alanlar = fields JSON (birbirinin kopyası değil). */
 const detailMessage = computed(() => {
   const full = detailFull.value;
-  if (full?.raw) return full.raw;
-  if (full?.rawPreview) return full.rawPreview;
-  return selected.value?.message || '—';
+  return eventLogDetailMessageText(
+    full?.fields ?? selected.value?.fields,
+    full?.raw,
+    full?.rawPreview || selected.value?.rawPreview,
+    selected.value?.message,
+  );
 });
 
 const detailFieldsJson = computed(() => {
-  const fields = detailFull.value?.fields ?? null;
-  if (!fields || typeof fields !== 'object') return null;
-  try {
-    return JSON.stringify(fields, null, 2);
-  } catch {
-    return null;
-  }
+  const full = detailFull.value;
+  return eventLogDetailFieldsJson(
+    full?.fields ?? selected.value?.fields,
+    full?.raw,
+    full?.rawPreview || selected.value?.rawPreview,
+  );
 });
+
+async function copyDetailTab(kind: 'message' | 'fields') {
+  const label = kind === 'message'
+    ? t('siemCenter.discovery.hostDetail.eventLogDetailTabMessage')
+    : t('siemCenter.discovery.hostDetail.eventLogDetailTabFields');
+  const value = kind === 'message' ? detailMessage.value : detailFieldsJson.value;
+  if (!value?.trim()) return;
+  const ok = await copyTextToClipboard(value);
+  detailCopyHint.value = ok
+    ? t('siemCenter.discovery.hostDetail.eventLogDetailCopied', { label })
+    : t('siemCenter.discovery.hostDetail.eventLogDetailCopyFailed');
+  window.setTimeout(() => {
+    detailCopyHint.value = null;
+  }, 2000);
+}
 
 watch([filterChannel, filterPackage, filterEventId], () => {
   page.value = 1;
@@ -248,6 +274,8 @@ function clearFilters() {
 async function openDetail(item: DiscoveryHostEventLogItem) {
   selected.value = item;
   detailOpen.value = true;
+  detailBodyTab.value = 'message';
+  detailCopyHint.value = null;
   detailError.value = null;
   detailLoading.value = true;
   detailFull.value = {
@@ -291,6 +319,8 @@ function closeDetail() {
   selected.value = null;
   detailFull.value = null;
   detailError.value = null;
+  detailBodyTab.value = 'message';
+  detailCopyHint.value = null;
 }
 
 function cacheKey(host: string): string {
@@ -583,28 +613,61 @@ const packagesActive = computed(
                   </v-chip>
                 </td>
               </tr>
-              <tr v-if="selected.action">
+              <tr v-if="selected.action && selected.action.trim() !== detailMessage.trim()">
                 <td class="text-medium-emphasis">{{ t('siemCenter.discovery.hostDetail.appsColAction') }}</td>
                 <td class="font-mono text-break">{{ selected.action }}</td>
               </tr>
             </tbody>
           </v-table>
 
-          <div class="text-subtitle-2 mb-2">
-            {{ t('siemCenter.discovery.hostDetail.eventLogColMessage') }}
-          </div>
-          <v-sheet border rounded class="pa-3 mb-4 eventlog-detail-body">
-            <pre class="ma-0 text-body-2">{{ detailMessage }}</pre>
-          </v-sheet>
+          <v-alert
+            v-if="detailCopyHint"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ detailCopyHint }}
+          </v-alert>
 
-          <template v-if="detailFieldsJson">
-            <div class="text-subtitle-2 mb-2">
-              {{ t('siemCenter.discovery.hostDetail.eventLogDetailFields') }}
-            </div>
-            <v-sheet border rounded class="pa-3 eventlog-detail-body">
-              <pre class="ma-0 text-body-2">{{ detailFieldsJson }}</pre>
-            </v-sheet>
-          </template>
+          <div class="d-flex align-center flex-wrap ga-2 mb-2">
+            <v-tabs v-model="detailBodyTab" density="compact" color="primary" class="flex-grow-1">
+              <v-tab value="message">
+                {{ t('siemCenter.discovery.hostDetail.eventLogDetailTabMessage') }}
+              </v-tab>
+              <v-tab value="fields">
+                {{ t('siemCenter.discovery.hostDetail.eventLogDetailTabFields') }}
+              </v-tab>
+            </v-tabs>
+            <v-btn
+              size="small"
+              variant="tonal"
+              prepend-icon="mdi-content-copy"
+              :disabled="detailBodyTab === 'message' ? !detailMessage.trim() : !detailFieldsJson.trim()"
+              @click="copyDetailTab(detailBodyTab)"
+            >
+              {{ t('siemCenter.discovery.hostDetail.eventLogDetailCopy') }}
+            </v-btn>
+          </div>
+
+          <v-tabs-window v-model="detailBodyTab">
+            <v-tabs-window-item value="message">
+              <v-sheet border rounded class="pa-3 eventlog-detail-body">
+                <pre v-if="detailMessage.trim()" class="ma-0 text-body-2">{{ detailMessage }}</pre>
+                <div v-else class="text-body-2 text-medium-emphasis">
+                  {{ t('siemCenter.discovery.hostDetail.eventLogDetailNoMessage') }}
+                </div>
+              </v-sheet>
+            </v-tabs-window-item>
+            <v-tabs-window-item value="fields">
+              <v-sheet border rounded class="pa-3 eventlog-detail-body">
+                <pre v-if="detailFieldsJson.trim()" class="ma-0 text-body-2">{{ detailFieldsJson }}</pre>
+                <div v-else class="text-body-2 text-medium-emphasis">
+                  {{ t('siemCenter.discovery.hostDetail.eventLogDetailNoFields') }}
+                </div>
+              </v-sheet>
+            </v-tabs-window-item>
+          </v-tabs-window>
         </v-card-text>
         <v-divider />
         <v-card-actions class="pa-3">

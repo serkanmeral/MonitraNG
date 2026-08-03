@@ -4,7 +4,10 @@ public sealed class EventLogPackageDto
 {
     public string Name { get; set; } = string.Empty;
     public string Channel { get; set; } = string.Empty;
+    /// <summary><c>selected</c> or <c>all</c>.</summary>
+    public string SelectionMode { get; set; } = "selected";
     public List<int> EventIds { get; set; } = [];
+    public List<int> ExcludedEventIds { get; set; } = [];
 
     /// <summary>
     /// Fleet default when true. Host-assigned optional promoted into <c>packages</c> when false.
@@ -27,7 +30,9 @@ public sealed class EventLogPackageManageItemDto
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Channel { get; set; } = string.Empty;
+    public string SelectionMode { get; set; } = "selected";
     public List<int> EventIds { get; set; } = [];
+    public List<int> ExcludedEventIds { get; set; } = [];
     public bool IsDefault { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }
@@ -44,7 +49,10 @@ public sealed class EventLogPackageUpsertRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Channel { get; set; } = string.Empty;
+    /// <summary><c>selected</c> (default) or <c>all</c>.</summary>
+    public string? SelectionMode { get; set; }
     public List<int> EventIds { get; set; } = [];
+    public List<int>? ExcludedEventIds { get; set; }
     public bool IsDefault { get; set; }
 }
 

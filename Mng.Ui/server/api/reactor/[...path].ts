@@ -1,5 +1,29 @@
-import { defineEventHandler, getQuery, getMethod, getRouterParam, getHeader, readBody } from 'h3';
+import { defineEventHandler, getQuery, getMethod, getRouterParam, getHeader, readBody, getRequestURL } from 'h3';
 import { getCookie } from 'h3';
+
+function buildForwardQueryString(event: Parameters<typeof getRequestURL>[0]): string {
+  // Prefer the raw incoming query string so commas/special chars are not
+  // re-parsed/re-serialized incorrectly by getQuery + URLSearchParams.
+  try {
+    const search = getRequestURL(event).search;
+    if (search && search.length > 1) return search.startsWith('?') ? search.slice(1) : search;
+  } catch {
+    /* fall through */
+  }
+
+  const query = getQuery(event);
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      // Re-join comma-split arrays (ufo may split CSV values).
+      qs.set(key, value.map(String).join(','));
+    } else {
+      qs.set(key, String(value));
+    }
+  }
+  return qs.toString();
+}
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -19,8 +43,7 @@ export default defineEventHandler(async (event) => {
     ? `${gatewayUrl}/reactor/api/${path}`
     : `http://localhost:5003/api/${path}`;
 
-  const query = getQuery(event);
-  const queryString = new URLSearchParams(query as Record<string, string>).toString();
+  const queryString = buildForwardQueryString(event);
   const urlWithQuery = queryString ? `${fullUrl}?${queryString}` : fullUrl;
 
   const domainName = getHeader(event, 'x-domain-name');

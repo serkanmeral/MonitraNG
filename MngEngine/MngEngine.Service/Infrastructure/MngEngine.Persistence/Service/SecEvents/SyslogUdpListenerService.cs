@@ -85,6 +85,26 @@ public sealed class SyslogUdpListenerService : BackgroundService
 
                 var raw = Encoding.UTF8.GetString(packet.Buffer);
                 var item = _itemBuilder.FromSyslog(raw, packet.RemoteEndPoint, DateTime.UtcNow, listener);
+                if (SecEventNxlogIngestGuard.ShouldReject(item, _options.AcceptNxlogIngest))
+                {
+                    _logger.Debug(
+                        "SecEvent NXLog UDP dropped port={Port} host={Host} product={Product}",
+                        listener.UdpPort,
+                        item.Source?.Host,
+                        item.Source?.Product);
+                    continue;
+                }
+
+                if (SecEventLinuxSyslogIngestGuard.ShouldReject(item, _options.AcceptLinuxSyslogIngest))
+                {
+                    _logger.Debug(
+                        "SecEvent Linux syslog UDP dropped port={Port} host={Host} product={Product}",
+                        listener.UdpPort,
+                        item.Source?.Host,
+                        item.Source?.Product);
+                    continue;
+                }
+
                 _queue.Enqueue(item);
                 _sendCoordinator.RequestFlushIfThresholdReached();
             }

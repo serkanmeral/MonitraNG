@@ -16,6 +16,18 @@ public class SecEventsSettings
     public bool DropUnknownEvents { get; set; } = true;
 
     /// <summary>
+    /// When false (default), reject legacy NXLog payloads (product windows-nxlog / EventID+Hostname JSON).
+    /// Windows/Linux host events must arrive via MngLogs agent → LogCollector, not NXLog → Engine → Reactor.
+    /// </summary>
+    public bool AcceptNxlogIngest { get; set; }
+
+    /// <summary>
+    /// When false (default), reject legacy Linux UDP syslog (product linux-syslog / sshd|sudo lines).
+    /// Linux host events must arrive via MngLogs agent (journal) → LogCollector.
+    /// </summary>
+    public bool AcceptLinuxSyslogIngest { get; set; }
+
+    /// <summary>
     /// Tam ham mesajı (raw) Mongo'da sakla. false ise yalnızca rawPreview (512 byte).
     /// </summary>
     public bool PersistFullRaw { get; set; } = false;

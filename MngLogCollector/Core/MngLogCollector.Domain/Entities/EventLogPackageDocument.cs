@@ -15,7 +15,18 @@ public sealed class EventLogPackageDocument
 
     public string Channel { get; set; } = string.Empty;
 
+    /// <summary>
+    /// <c>selected</c> = collect listed <see cref="EventIds"/>;
+    /// <c>all</c> = collect entire channel except optional <see cref="ExcludedEventIds"/>.
+    /// Missing/legacy documents are treated as <c>selected</c>.
+    /// </summary>
+    public string SelectionMode { get; set; } = "selected";
+
+    /// <summary>Include list when <see cref="SelectionMode"/> is <c>selected</c>.</summary>
     public List<int> EventIds { get; set; } = [];
+
+    /// <summary>Exclude list when <see cref="SelectionMode"/> is <c>all</c>.</summary>
+    public List<int> ExcludedEventIds { get; set; } = [];
 
     /// <summary>When true, included in agent <c>packages</c> (fleet defaults).</summary>
     public bool IsDefault { get; set; }

@@ -123,6 +123,96 @@ export function isInteractiveLogonType(logonType: string | null | undefined): bo
   return INTERACTIVE_LOGON_TYPES.has(String(logonType).trim());
 }
 
+function tryExtractMessageFromRawBlob(blob?: string | null): string | null {
+  if (!blob?.trim()) return null;
+  const trimmed = blob.trim();
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    if (typeof parsed?.message === 'string' && parsed.message.trim()) return parsed.message.trim();
+    if (typeof parsed?.eventDataText === 'string' && parsed.eventDataText.trim()) {
+      return parsed.eventDataText.trim();
+    }
+  } catch {
+    /* plain / truncated JSON */
+  }
+  return null;
+}
+
+/**
+ * Event Log detail "Mesaj" tab — human-readable log text only.
+ * Not full raw/fields JSON, and not event.action (shown separately as hareket).
+ */
+export function eventLogDetailMessageText(
+  fields?: Record<string, unknown> | null,
+  raw?: string | null,
+  rawPreview?: string | null,
+  fallbackPlain?: string | null,
+): string {
+  const fromFieldsMsg = fields?.message;
+  if (typeof fromFieldsMsg === 'string' && fromFieldsMsg.trim()) return fromFieldsMsg.trim();
+
+  const eventDataText = fields?.eventDataText;
+  if (typeof eventDataText === 'string' && eventDataText.trim()) return eventDataText.trim();
+
+  const fromRaw = tryExtractMessageFromRawBlob(raw) || tryExtractMessageFromRawBlob(rawPreview);
+  if (fromRaw) return fromRaw;
+
+  const plain = (fallbackPlain || '').trim();
+  if (plain && !plain.startsWith('{') && !plain.startsWith('[')) return plain;
+
+  // Plain (non-JSON) rawPreview as last resort — never dump the full JSON blob here.
+  if (rawPreview && rawPreview.trim() && !rawPreview.trim().startsWith('{')) {
+    return rawPreview.trim();
+  }
+  return '';
+}
+
+/**
+ * Event Log detail "Alanlar" tab — structured fields JSON.
+ * Prefer API fields; if missing, derive from raw JSON without treating the whole blob as "message".
+ */
+export function eventLogDetailFieldsJson(
+  fields?: Record<string, unknown> | null,
+  raw?: string | null,
+  rawPreview?: string | null,
+): string {
+  if (fields && typeof fields === 'object' && Object.keys(fields).length > 0) {
+    try {
+      return JSON.stringify(fields, null, 2);
+    } catch {
+      /* fall through */
+    }
+  }
+
+  for (const blob of [raw, rawPreview]) {
+    if (!blob?.trim() || !(blob.trim().startsWith('{') || blob.trim().startsWith('['))) continue;
+    try {
+      const parsed = JSON.parse(blob.trim()) as Record<string, unknown>;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        // Prefer nested fields if present; else show raw object minus duplicate top-level message-only view.
+        if (parsed.fields && typeof parsed.fields === 'object') {
+          return JSON.stringify(parsed.fields, null, 2);
+        }
+        return JSON.stringify(parsed, null, 2);
+      }
+    } catch {
+      /* truncated */
+    }
+  }
+  return '';
+}
+
+/** @deprecated use eventLogDetailMessageText / eventLogDetailFieldsJson */
+export function eventLogDetailRawData(
+  raw?: string | null,
+  rawPreview?: string | null,
+  fallbackPlain?: string | null,
+): string {
+  return eventLogDetailMessageText(null, raw, rawPreview, fallbackPlain);
+}
+
+/** Human-readable message for parsers / session cards — may use eventAction as last resort. */
 export function securityMessageFromEventFields(
   fields?: Record<string, unknown> | null,
   raw?: string | null,
@@ -131,12 +221,22 @@ export function securityMessageFromEventFields(
   eventAction?: string | null,
 ): string {
   const fromFields = fields?.message;
-  if (typeof fromFields === 'string' && fromFields.trim()) return fromFields;
-  if (raw && raw.trim()) return raw;
+  if (typeof fromFields === 'string' && fromFields.trim()) return fromFields.trim();
+
+  const eventDataText = fields?.eventDataText;
+  if (typeof eventDataText === 'string' && eventDataText.trim()) return eventDataText.trim();
+
+  const fromRaw = tryExtractMessageFromRawBlob(raw) || tryExtractMessageFromRawBlob(rawPreview);
+  if (fromRaw) return fromRaw;
+
   // Prefer long eventAction blob over short rawPreview when present
-  if (eventAction && eventAction.trim().length > 40) return eventAction;
-  if (rawPreview && rawPreview.trim()) return rawPreview;
-  if (eventAction && eventAction.trim()) return eventAction;
+  if (eventAction && eventAction.trim().length > 40) return eventAction.trim();
+
+  if (rawPreview && rawPreview.trim() && !rawPreview.trim().startsWith('{')) {
+    return rawPreview.trim();
+  }
+  if (eventAction && eventAction.trim()) return eventAction.trim();
+  if (rawPreview && rawPreview.trim()) return rawPreview.trim();
   return '';
 }
 

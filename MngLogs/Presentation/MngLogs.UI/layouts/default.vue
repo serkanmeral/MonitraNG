@@ -11,6 +11,10 @@
                 v-if="agentVersion"
                 class="text-xs font-mono text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700"
               >v{{ agentVersion }}</span>
+              <span
+                v-if="platformBadge"
+                class="text-[10px] uppercase tracking-wide font-semibold text-primary-700 dark:text-primary-300 px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-900/30"
+              >{{ platformBadge }}</span>
             </NuxtLink>
             <nav class="flex gap-1 sm:gap-2 overflow-x-auto">
               <NuxtLink
@@ -41,8 +45,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAgentApi } from '~/composables/useAgentApi'
+import { useAgentPlatform } from '~/composables/useAgentPlatform'
 
 const links = [
   { to: '/', label: 'Durum' },
@@ -54,10 +59,17 @@ const links = [
 
 const agentVersion = ref<string | null>(null)
 const { getStatus } = useAgentApi()
+const { applyFromStatus, isLinux } = useAgentPlatform()
+
+const platformBadge = computed(() => {
+  if (isLinux.value) return 'Linux'
+  return null
+})
 
 onMounted(async () => {
   try {
     const s = await getStatus()
+    applyFromStatus(s)
     agentVersion.value = s.version || s.hostInventory?.agentVersion || null
   } catch {
     agentVersion.value = null

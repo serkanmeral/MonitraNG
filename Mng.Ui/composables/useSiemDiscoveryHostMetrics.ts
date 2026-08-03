@@ -404,8 +404,6 @@ export function hostMetricsEventsLink(
   return `/apps/siem-center/events?${q.toString()}`;
 }
 
-export { shortHostKey };
-
 export function formatBytes(bytes: number | null | undefined, locale = 'tr-TR'): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return '—';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];

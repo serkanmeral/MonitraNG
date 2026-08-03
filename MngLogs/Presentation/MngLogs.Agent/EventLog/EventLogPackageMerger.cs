@@ -40,16 +40,32 @@ public static class EventLogPackageMerger
             .ToArray();
     }
 
-    public static bool IsValid(EventLogPackage? p) =>
-        p is not null &&
-        !string.IsNullOrWhiteSpace(p.Name) &&
-        !string.IsNullOrWhiteSpace(p.Channel) &&
-        p.EventIds is { Count: > 0 };
-
-    public static EventLogPackage Clone(EventLogPackage p) => new()
+    public static bool IsValid(EventLogPackage? p)
     {
-        Name = p.Name.Trim(),
-        Channel = p.Channel.Trim(),
-        EventIds = p.EventIds.Distinct().OrderBy(x => x).ToList()
-    };
+        if (p is null || string.IsNullOrWhiteSpace(p.Name) || string.IsNullOrWhiteSpace(p.Channel))
+            return false;
+
+        if (p.IsAllChannel)
+            return true;
+
+        return p.EventIds is { Count: > 0 };
+    }
+
+    public static EventLogPackage Clone(EventLogPackage p)
+    {
+        var all = p.IsAllChannel;
+        return new EventLogPackage
+        {
+            Name = p.Name.Trim(),
+            Channel = p.Channel.Trim(),
+            SelectionMode = all ? "all" : "selected",
+            EventIds = all
+                ? []
+                : (p.EventIds ?? []).Distinct().OrderBy(x => x).ToList(),
+            ExcludedEventIds = all
+                ? (p.ExcludedEventIds ?? []).Distinct().OrderBy(x => x).ToList()
+                : [],
+            IsDefault = p.IsDefault
+        };
+    }
 }

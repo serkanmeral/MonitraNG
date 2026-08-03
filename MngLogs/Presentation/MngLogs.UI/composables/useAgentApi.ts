@@ -86,6 +86,8 @@ export interface HostInventorySnapshot {
 
 export interface AgentStatus {
   service: string
+  /** windows | linux — Linux agent sets this; older Windows builds omit it */
+  platform?: string
   version?: string
   startedAtUtc: string
   hostId: string
@@ -105,6 +107,7 @@ export interface AgentStatus {
   heartbeatsProduced: number
   metricEventsProduced: number
   eventLogEventsProduced: number
+  journalEventsProduced?: number
   serviceWatchEventsProduced: number
   eventsShipped: number
   metricsEnabled: boolean
@@ -121,6 +124,8 @@ export interface AgentStatus {
   latestLogs?: RecentEventEntry[]
   topProcesses?: TopProcessSnapshot | null
   watchSnapshot?: WatchSnapshotItem[]
+  lastJournalUtc?: string | null
+  lastJournalError?: string | null
 }
 
 export interface AgentConfig {
@@ -133,6 +138,7 @@ export interface AgentConfig {
     dataDirectory: string
   }
   policy: PolicyConfig
+  platform?: string
 }
 
 export interface PolicyConfig {
@@ -145,10 +151,37 @@ export interface PolicyConfig {
     enabled: boolean
     pollIntervalSeconds: number
     maxEventsPerPoll: number
-    packages: { name: string; channel: string; eventIds: number[] }[]
-    agentOverrides?: { name: string; channel: string; eventIds: number[] }[]
+    packages: {
+      name: string
+      channel: string
+      selectionMode?: 'selected' | 'all'
+      eventIds: number[]
+      excludedEventIds?: number[]
+    }[]
+    agentOverrides?: {
+      name: string
+      channel: string
+      selectionMode?: 'selected' | 'all'
+      eventIds: number[]
+      excludedEventIds?: number[]
+    }[]
     disabledServerPackages?: string[]
     packageCatalogSyncIntervalSeconds?: number
+  }
+  /** Linux journald policy (round-trip on save; UI editing later) */
+  journal?: {
+    enabled: boolean
+    pollIntervalSeconds: number
+    maxEventsPerPoll: number
+    disabledPackages?: string[]
+    packages?: {
+      name: string
+      unit?: string | null
+      identifier?: string | null
+      grep?: string | null
+      priority?: string | null
+      isDefault?: boolean
+    }[]
   }
   serviceWatch: {
     enabled: boolean
@@ -183,6 +216,7 @@ export interface QueueResponse {
 
 export interface SourcesResponse {
   readOnly?: boolean
+  platform?: string
   producers?: {
     sourceType: string
     label: string
@@ -211,8 +245,22 @@ export interface SourcesResponse {
     }[]
   }
   eventLog: Record<string, unknown> & {
-    packages?: { name: string; channel: string; eventIds: number[]; enabled: boolean }[]
-    knownOptional?: { name: string; channel: string; eventIds: number[]; requiresElevation?: boolean }[]
+    packages?: {
+      name: string
+      channel: string
+      selectionMode?: 'selected' | 'all'
+      eventIds: number[]
+      excludedEventIds?: number[]
+      enabled: boolean
+    }[]
+    knownOptional?: {
+      name: string
+      channel: string
+      selectionMode?: 'selected' | 'all'
+      eventIds: number[]
+      excludedEventIds?: number[]
+      requiresElevation?: boolean
+    }[]
     lastError?: string | null
     pollIntervalSeconds?: number
     maxEventsPerPoll?: number
@@ -323,10 +371,30 @@ export function useAgentApi() {
   const getEventLogPackagePlan = () =>
     $fetch<EventLogPackagePlan>(`${API_BASE}/eventlog/package-plan`)
   const syncEventLogCatalog = () =>
-    $fetch<{ synced: boolean; source: string; lastSyncedUtc?: string; count: number }>(
-      `${API_BASE}/eventlog/sync-catalog`,
-      { method: 'POST', headers: authHeaders() }
-    )
+    $fetch<{
+      synced: boolean
+      notModified?: boolean
+      source: string
+      version?: string
+      lastSyncedUtc?: string
+      count: number
+      optionalCount?: number
+      message?: string
+    }>(`${API_BASE}/eventlog/sync-catalog`, {
+      method: 'POST',
+      headers: authHeaders()
+    })
+
+  const getEventLogBookmarks = () =>
+    $fetch<EventLogBookmarksResponse>(`${API_BASE}/eventlog/bookmarks`)
+
+  const setEventLogCursor = (body: EventLogCursorRequest) =>
+    $fetch<EventLogCursorResponse>(`${API_BASE}/eventlog/bookmarks/cursor`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body
+    })
+
   /** Opens a native OpenFileDialog on the agent host; may take a long time while the dialog is open. */
   const browseExecutable = () =>
     $fetch<BrowseExecutableResult>(`${API_BASE}/host/browse-executable`, {
@@ -385,6 +453,8 @@ export function useAgentApi() {
     getKnownEventLogPackages,
     getEventLogPackagePlan,
     syncEventLogCatalog,
+    getEventLogBookmarks,
+    setEventLogCursor,
     browseExecutable,
     getAuthStatus,
     setupPin,
@@ -425,7 +495,9 @@ export interface HostServiceItem {
 export interface KnownEventLogPackage {
   name: string
   channel: string
+  selectionMode?: 'selected' | 'all'
   eventIds: number[]
+  excludedEventIds?: number[]
   optional?: boolean
 }
 
@@ -437,16 +509,67 @@ export interface KnownEventLogPackagesResponse {
   lastSyncedUtc?: string | null
 }
 
+export interface EventLogCursorStatus {
+  packageName: string
+  channel: string
+  selectionMode?: string
+  lastRecordId?: number | null
+  seededAtUtc?: string | null
+  cursorMode?: string | null
+  historyHours?: number | null
+  historyFromUtc?: string | null
+  hasBookmark: boolean
+}
+
+export interface EventLogBookmarksResponse {
+  allowedHistoryHours: number[]
+  items: EventLogCursorStatus[]
+}
+
+export interface EventLogCursorRequest {
+  packageName: string
+  mode: 'now' | 'hours'
+  hours?: number
+}
+
+export interface EventLogCursorResponse {
+  ok: boolean
+  item?: EventLogCursorStatus
+  message?: string
+  error?: string
+}
+
 export interface EventLogPackagePlan {
   source: string
   lastSyncedUtc?: string | null
   syncIntervalSeconds: number
   legacyMode: boolean
-  server: { name: string; channel: string; eventIds: number[]; disabled: boolean }[]
-  optional: KnownEventLogPackage[]
-  agentOverrides: { name: string; channel: string; eventIds: number[] }[]
+  server: {
+    name: string
+    channel: string
+    selectionMode?: 'selected' | 'all'
+    eventIds: number[]
+    excludedEventIds?: number[]
+    disabled: boolean
+    isDefault?: boolean
+    kind?: string
+  }[]
+  optional: (KnownEventLogPackage & { kind?: string })[]
+  agentOverrides: {
+    name: string
+    channel: string
+    selectionMode?: 'selected' | 'all'
+    eventIds: number[]
+    excludedEventIds?: number[]
+  }[]
   disabledServerPackages: string[]
-  effective: { name: string; channel: string; eventIds: number[] }[]
+  effective: {
+    name: string
+    channel: string
+    selectionMode?: 'selected' | 'all'
+    eventIds: number[]
+    excludedEventIds?: number[]
+  }[]
 }
 
 export interface BrowseExecutableResult {
@@ -567,7 +690,9 @@ export function sourceLabel(s: string) {
     metric: 'metrik',
     'event-log': 'olay günlüğü',
     'windows-eventlog': 'olay günlüğü',
+    'linux-journal': 'journal',
     'service-watch': 'servis izleme',
+    'app-watch': 'uygulama izleme',
     unknown: 'bilinmiyor'
   }
   return map[s] || s

@@ -1,20 +1,39 @@
 # SIEM / Monitoring — Oturum Handoff
 
-**Son güncelleme:** 6 Haziran 2026 (IT merkezi port modeli · Engine çoklu UDP · NxLog/FortiGate E2E tamam)  
-**Ana DEVAM:** [DEVAM.md](./DEVAM.md)  
+**Son güncelleme:** 3 Ağustos 2026 (host agent cutover · RDP · prod sabitleme)  
+**Canlı SIEM durum:** [../siem/current_status.md](../siem/current_status.md) · [../siem/HOST_TELEMETRY_CUTOVER.md](../siem/HOST_TELEMETRY_CUTOVER.md)  
+**Ana DEVAM (eski özet):** [DEVAM.md](./DEVAM.md)  
 **Platform UI (ayrı chat):** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
 ---
 
 ## 1. Tek cümlede durum
 
-**SIEM Faz 1–4 ✅** · Odak **deploy ✅** (mngreactor/engine/ui) · **IT merkezi syslog ✅** (NxLog UDP :1514 · FortiGate :541/542 · Engine çoklu port) · **Windows TERMINAL canlı olay ✅** · Linux 2× U1 pilot ✅ · Faz 5 ertelendi · **Sıradaki:** commit (kullanıcı talebi) · opsiyonel Sysmon filtresi / FortiGate `source.host` iyileştirmesi
+**Host telemetrisi = MngLogs agent → LogCollector → OpenSearch** · NXLog/Linux syslog Engine/Reactor kapalı · FortiGate syslog açık · Lokal UI + agent varsayılanı **prod `192.168.20.8`** · RDP `rdp.*` normalize + SIEM filtre · **Sıradaki:** prod SIEM doğrulama · park Analytics L3 / Discovery / G4 alarm köprü
 
 ---
 
 ## 2. Platform durumu (güncel)
 
 | Konu | Durum |
+|------|--------|
+| MngReactor Odak | ✅ `mngreactor` (OS read + NXLog/Linux guards) |
+| MngEngine syslog | ✅ FortiGate `:541/:542` · NXLog/Linux host UDP **kapalı** |
+| Host yolu | ✅ Agent → Collector `:5091` → OpenSearch |
+| RDP LocalSessionManager | ✅ normalize `rdp.logon/logoff/disconnect/reconnect` |
+| Lokal Mng.Ui / agent | ✅ varsayılan **prod** (test ayrı script) |
+| SIEM `sec_events` (legacy NXLog Mongo) | ⚠️ tarihsel; canlı host OS |
+| sec_events → observation → alarm | ✅ (firewall / kurallar; host agent zinciri doğrulanacak) |
+| LogAlarm / 5651 (Faz 5) | ⬜ ertelendi |
+| SIEM UI | ✅ `/apps/siem-center` · Events intent filtreleri |
+
+> Eski NXLog/WEC/Linux rsyslog satırları tarihsel referans için [DEVAM.md](./DEVAM.md) ve aşağıdaki arşiv bölümlerinde kalır; **operasyonel host yolu agent’tır.**
+
+---
+
+## 2b. Arşiv — önceki platform tablosu (Haziran 2026)
+
+| Konu | Durum (o dönem) |
 |------|--------|
 | MngReactor Odak | ✅ `mngreactor:latest` |
 | MngEngine syslog | ✅ Çoklu UDP: `:5514` linux · `:1514/1541/1542` windows-nxlog · `:541/542` fortigate |
@@ -49,11 +68,11 @@
 | SIEM UI | ✅ `/apps/siem-center` · `/apps/siem-center/events` — [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) · [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) |
 | Odak deploy (6 Haz) | ✅ `mngreactor` + `mngengine` + `mngui` — `-NoCache` |
 | Engine config (6 Haz) | ⚠️ `setup-mngengine-odak.ps1 -ApplyConfig` → **LICENSE_EXPIRED** (DataGateway PUT); Reactor `config-string` → Engine `/api/Config` ile düzeltildi |
-| **Windows NxLog (IT merkezi)** | ✅ `windows.nxlog-json.v1` · TERMINAL → `:1514` · canlı 4624/4625/4672 |
+| **Windows NxLog (IT merkezi)** | ⛔ **retired 2026-08** — yerini MngLogs agent aldı |
 | **FortiGate syslog (IT merkezi)** | ✅ `firewall.vendor.v1` · `:541` · U4 alarm + workflow E2E |
-| NxLog şablon / script (commitlenmedi) | `templates/nxlog*.conf` · relay şablonu · `install/apply-nxlog-endpoint-config.ps1` · `install-it-syslog-relay-odak.ps1` (relay artık kapalı) |
-| **Engine çoklu port (kod, commitlenmedi)** | `SyslogUdpListenerService` · `SecEventQueueOptions.UdpListeners[]` · `docker-compose.odak.yml` port map |
-| **NxLog parser (kod, commitlenmedi)** | `WindowsNxlogJsonParser` · `windows.nxlog-json.v1` · Security kanalı; Sysmon → drop |
+| NxLog şablon / script | Tarihsel — host ingest kapalı |
+| **Engine çoklu port** | FortiGate portları aktif; NXLog/Linux host portları compose’dan çıkarıldı |
+| **NxLog parser** | Kod kalabilir; ingest guard drop |
 
 ---
 

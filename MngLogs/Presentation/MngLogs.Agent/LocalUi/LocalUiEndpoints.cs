@@ -172,7 +172,9 @@ public static class LocalUiEndpoints
                 {
                     p.Name,
                     p.Channel,
+                    selectionMode = p.IsAllChannel ? "all" : "selected",
                     eventIds = p.EventIds,
+                    excludedEventIds = p.ExcludedEventIds,
                     enabled = policy.EventLog.Enabled
                 });
 
@@ -310,7 +312,9 @@ public static class LocalUiEndpoints
             {
                 name = p.Name,
                 channel = p.Channel,
+                selectionMode = p.IsAllChannel ? "all" : "selected",
                 eventIds = p.EventIds,
+                excludedEventIds = p.ExcludedEventIds,
                 optional
             };
 
@@ -345,20 +349,37 @@ public static class LocalUiEndpoints
                 {
                     p.Name,
                     p.Channel,
+                    selectionMode = p.IsAllChannel ? "all" : "selected",
                     eventIds = p.EventIds,
+                    excludedEventIds = p.ExcludedEventIds,
+                    isDefault = p.IsDefault,
+                    kind = p.IsDefault ? "default" : "assigned",
                     disabled = el.DisabledServerPackages.Any(d =>
                         string.Equals(d, p.Name, StringComparison.OrdinalIgnoreCase))
                 }),
-                optional = catalog.OptionalPackages.Select(p => new
+                optional = catalog.OptionalPackages
+                    .Where(p => !server.Any(s =>
+                        string.Equals(s.Name, p.Name, StringComparison.OrdinalIgnoreCase)))
+                    .Select(p => new
+                    {
+                        p.Name,
+                        p.Channel,
+                        selectionMode = p.IsAllChannel ? "all" : "selected",
+                        eventIds = p.EventIds,
+                        excludedEventIds = p.ExcludedEventIds,
+                        optional = true,
+                        kind = "optional"
+                    }),
+                agentOverrides = el.AgentOverrides,
+                disabledServerPackages = el.DisabledServerPackages,
+                effective = effective.Select(p => new
                 {
                     p.Name,
                     p.Channel,
+                    selectionMode = p.IsAllChannel ? "all" : "selected",
                     eventIds = p.EventIds,
-                    optional = true
-                }),
-                agentOverrides = el.AgentOverrides,
-                disabledServerPackages = el.DisabledServerPackages,
-                effective = effective.Select(p => new { p.Name, p.Channel, eventIds = p.EventIds })
+                    excludedEventIds = p.ExcludedEventIds
+                })
             });
         });
 
@@ -367,14 +388,61 @@ public static class LocalUiEndpoints
             if (!TryAuthorize(req, auth, out var denied))
                 return denied!;
 
-            await catalog.RefreshAsync(req.HttpContext.RequestAborted);
+            // Manual sync must bypass ETag — a prior agent may have cached a filtered catalog.
+            var result = await catalog.RefreshAsync(force: true, req.HttpContext.RequestAborted);
             return Results.Ok(new
             {
-                synced = true,
-                source = catalog.Source,
+                synced = result.Ok,
+                notModified = result.NotModified,
+                source = result.Source,
+                version = result.Version,
                 lastSyncedUtc = catalog.LastSyncedUtc,
-                count = catalog.ServerPackages.Count
+                count = result.PackageCount,
+                optionalCount = result.OptionalCount,
+                message = result.Message
             });
+        });
+
+        api.MapGet("/eventlog/bookmarks", (EventLogCursorService cursors) =>
+            Results.Json(new
+            {
+                allowedHistoryHours = EventLogCursorService.AllowedHistoryHours,
+                items = cursors.ListStatuses()
+            }));
+
+        api.MapPost("/eventlog/bookmarks/cursor", (
+            HttpRequest req,
+            EventLogCursorRequest body,
+            ILocalUiPinAuth auth,
+            EventLogCursorService cursors) =>
+        {
+            if (!TryAuthorize(req, auth, out var denied))
+                return denied!;
+
+            try
+            {
+                var status = cursors.Apply(body.PackageName, body.Mode, body.Hours);
+                return Results.Ok(new
+                {
+                    ok = true,
+                    item = status,
+                    message = status.CursorMode == "hours"
+                        ? $"«{status.PackageName}»: son {status.HistoryHours} saatlik geçmişe konumlandı (RecordId > {status.LastRecordId})."
+                        : $"«{status.PackageName}»: şimdiden dinlemeye alındı (RecordId > {status.LastRecordId})."
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { ok = false, error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.NotFound(new { ok = false, error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new { ok = false, error = ex.Message }, statusCode: 500);
+            }
         });
 
         api.MapGet("/host/services", (HttpRequest req, ILocalUiPinAuth auth) =>

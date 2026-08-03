@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const gatewayUrl = config.public.gatewayUrl as string | undefined;
-  const odakHost = process.env.ODAK_HOST?.trim() || '192.168.20.20';
+  const odakHost = process.env.ODAK_HOST?.trim() || '192.168.20.8';
   const fullUrl = gatewayUrl
     ? `${gatewayUrl}/notifier/api/${path}`
     : `http://${odakHost}:5070/api/${path}`;

@@ -97,7 +97,18 @@ public sealed class EventLogPackage
     /// <summary>Windows channel, e.g. Security, System, Application.</summary>
     public string Channel { get; set; } = string.Empty;
 
+    /// <summary><c>selected</c> (include EventIds) or <c>all</c> (channel minus ExcludedEventIds).</summary>
+    public string SelectionMode { get; set; } = "selected";
+
     public List<int> EventIds { get; set; } = [];
+
+    public List<int> ExcludedEventIds { get; set; } = [];
+
+    /// <summary>True for fleet defaults; false when host-assigned optional was promoted into server packages.</summary>
+    public bool IsDefault { get; set; } = true;
+
+    public bool IsAllChannel =>
+        string.Equals(SelectionMode?.Trim(), "all", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class ServiceWatchPolicy

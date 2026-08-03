@@ -14,7 +14,8 @@ public sealed class PackageCatalogSyncWorker(
         // Initial sync shortly after start.
         try
         {
-            await catalog.RefreshAsync(stoppingToken);
+            // Force on boot so a catalog filtered by an older agent is not kept via 304.
+            await catalog.RefreshAsync(force: true, stoppingToken);
             logger.LogInformation(
                 "Event log package catalog synced from {Source} at {At:o}",
                 catalog.Source,
@@ -46,7 +47,7 @@ public sealed class PackageCatalogSyncWorker(
 
             try
             {
-                await catalog.RefreshAsync(stoppingToken);
+                await catalog.RefreshAsync(force: false, stoppingToken);
                 logger.LogDebug(
                     "Event log package catalog refreshed ({Source}, {Count} packages)",
                     catalog.Source,

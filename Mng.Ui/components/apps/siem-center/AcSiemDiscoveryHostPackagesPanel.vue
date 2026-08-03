@@ -53,6 +53,18 @@ function formatUtc(iso?: string | null): string {
   }
 }
 
+function formatPackageIds(item: EventLogPackageManageItem): string {
+  if (item.selectionMode === 'all') {
+    const exclude = item.excludedEventIds.length
+      ? t('siemCenter.settings.catalog.idsSummaryExclude', {
+          ids: item.excludedEventIds.join(', '),
+        })
+      : '';
+    return t('siemCenter.settings.catalog.idsSummaryAll', { exclude });
+  }
+  return item.eventIds.join(', ');
+}
+
 function isOptionalEnabled(name: string): boolean {
   return enabledOptional.value.some((n) => n.toLowerCase() === name.toLowerCase());
 }
@@ -190,7 +202,7 @@ defineExpose({ refresh: load });
         <span class="text-body-2 text-truncate d-inline-block packages-channel">{{ item.channel }}</span>
       </template>
       <template #item.eventIds="{ item }">
-        <span class="font-mono text-caption">{{ item.eventIds.join(', ') }}</span>
+        <span class="font-mono text-caption">{{ formatPackageIds(item) }}</span>
       </template>
       <template #item.enabled="{ item }">
         <v-switch

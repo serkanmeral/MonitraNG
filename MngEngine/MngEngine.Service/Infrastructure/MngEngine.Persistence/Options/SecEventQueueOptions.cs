@@ -15,19 +15,33 @@ public sealed class SecEventQueueOptions
 
     public IReadOnlyList<SecEventSyslogListenerOptions> GetEffectiveListeners()
     {
-        if (UdpListeners is { Count: > 0 })
-            return UdpListeners;
+        IReadOnlyList<SecEventSyslogListenerOptions> listeners = UdpListeners is { Count: > 0 }
+            ? UdpListeners
+            :
+            [
+                new SecEventSyslogListenerOptions
+                {
+                    UdpPort = UdpPort,
+                    SourceType = DefaultSourceType,
+                    SourceProduct = DefaultSourceProduct
+                }
+            ];
 
-        return
-        [
-            new SecEventSyslogListenerOptions
-            {
-                UdpPort = UdpPort,
-                SourceType = DefaultSourceType,
-                SourceProduct = DefaultSourceProduct
-            }
-        ];
+        return listeners
+            .Where(l =>
+                (AcceptNxlogIngest || !IsNxlogListenerProduct(l.SourceProduct))
+                && (AcceptLinuxSyslogIngest || !IsLinuxSyslogListenerProduct(l.SourceProduct)))
+            .ToList();
     }
+
+    private static bool IsNxlogListenerProduct(string? product) =>
+        !string.IsNullOrWhiteSpace(product)
+        && (product.Equals("windows-nxlog", StringComparison.OrdinalIgnoreCase)
+            || product.Equals("windows-nxlog-json", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsLinuxSyslogListenerProduct(string? product) =>
+        !string.IsNullOrWhiteSpace(product)
+        && product.Equals("linux-syslog", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Kuyruk üst sınırı; aşıldığında en eski öğeler atılır.</summary>
     public int MaxItems { get; set; } = 5000;
@@ -47,8 +61,20 @@ public sealed class SecEventQueueOptions
     /// <summary>Tek syslog datagram üst sınırı (byte).</summary>
     public int MaxMessageBytes { get; set; } = 8192;
 
-    /// <summary>WEC HTTP batch ingest (POST /api/SecEvents/wec-batch).</summary>
-    public bool WecIngestEnabled { get; set; } = true;
+    /// <summary>
+    /// When false (default), drop NXLog JSON / windows-nxlog listeners and WEC items that look like NXLog.
+    /// Host Windows/Linux telemetry must use MngLogs agent.
+    /// </summary>
+    public bool AcceptNxlogIngest { get; set; }
+
+    /// <summary>
+    /// When false (default), do not bind linux-syslog UDP listeners and drop sshd/sudo syslog payloads.
+    /// Linux host telemetry must use MngLogs agent (journal).
+    /// </summary>
+    public bool AcceptLinuxSyslogIngest { get; set; }
+
+    /// <summary>WEC HTTP batch ingest (POST /api/SecEvents/wec-batch). Default false — was NXLog om_http path.</summary>
+    public bool WecIngestEnabled { get; set; }
 
     /// <summary>WEC batch source.host varsayılanı (forwarder host adı).</summary>
     public string? DefaultWecHost { get; set; }

@@ -1,8 +1,8 @@
 # MngLogs Roadmap
 
-> **2026-07-30 PARK:** Aktif geliştirme duraklatıldı. Detay: `current_status.md`. Sonraki odak: Mng.Ui SIEM Center UI planlaması (ayrı chat). Dönüşte P5 parser.
+> **2026-08-03:** Linux P3a–P3c + host cutover (agent-only → prod Collector) tamam. Günlük hedef: Odak **prod** `192.168.20.8:5091`.
 
-## Tamamlanan (Faz 1 saha agent)
+## Tamamlanan
 
 - Metrik + Event Log + service/app watch + disk kuyruk + collector ship
 - Yerel Nuxt UI (Durum / Kuyruk / Kaynaklar / Loglar / Politika)
@@ -11,19 +11,22 @@
 - Event Log: sunucu katalog ⊕ agent override; collector policy pull (ETag)
 - MSI paketi + IT helper; HostId varsayılan = PC adı
 - SIEM Center ince agent health paneli
+- **Linux agent** (Core + journal + systemd watch + Local UI)
+- **Host NXLog/rsyslog cutover** — SIEM host yolu yalnızca agent (FortiGate syslog ayrı)
 
-## Sıradaki (park sonrası)
+## Sıradaki
 
-- **P5** — Parser kuralları (Event ID → `event.action` / alan map; sunucu ağırlıklı)
-- MSI / Windows Service kurulum smoke — **admin yetkili ortamda**
+- **P3d** — `.deb` paketleme
+- Host Analytics L3 (SIEM Center)
+- MSI / Windows Service kurulum smoke — admin ortam
 - Opt-in otomatik alternatif port — düşük öncelik
-- **P3 Linux iskelet** — ertelendi
-- P4 genişletme (opsiyonel)
+- Windows → Core refactor (devam)
 
 ## Kararlar
 
-- Local UI loopback; yazma işlemleri PIN + session ister.
+- Local UI loopback / LAN bind; yazma işlemleri PIN + session ister.
 - Port çakışmasında fail-fast + CLI; sessiz rastgele port yok (varsayılan).
 - Paket kaynağı: sunucu gerçek; agent override istisna.
 - Self-update yok → GPO/MSI MajorUpgrade.
-- Linux acele değil; önce Windows filo + merkez UI + parser.
+- **Collector varsayılanı = Odak prod** (`http://192.168.20.8:5091`); test ayrı script.
+- **Linux rsyslog köprüsü** artık birincil yol değil (Engine/Reactor Linux syslog ingest kapalı).

@@ -19,7 +19,8 @@ public sealed class CollectorClient : ICollectorClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
     };
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -89,6 +90,10 @@ public sealed class CollectorClient : ICollectorClient
         if (!string.IsNullOrWhiteSpace(settings.ApiKey))
             message.Headers.TryAddWithoutValidation("X-MngLogs-ApiKey", settings.ApiKey);
 
+        var hostname = Environment.MachineName;
+        if (!string.IsNullOrWhiteSpace(hostname))
+            message.Headers.TryAddWithoutValidation("X-MngLogs-Hostname", hostname);
+
         if (!string.IsNullOrWhiteSpace(ifNoneMatchVersion))
         {
             var etag = ifNoneMatchVersion.Trim();
@@ -107,7 +112,14 @@ public sealed class CollectorClient : ICollectorClient
                 return EventLogPackageCatalogPullResult.Failed();
 
             var body = await response.Content.ReadFromJsonAsync<EventLogPackageCatalogResponse>(JsonOptions, cancellationToken);
-            return body?.Packages is { Count: > 0 }
+            if (body is null)
+                return EventLogPackageCatalogPullResult.Failed();
+
+            // Accept catalogs that only contain optional packages (rare) or defaults.
+            var hasAny =
+                (body.Packages?.Count ?? 0) > 0 ||
+                (body.OptionalPackages?.Count ?? 0) > 0;
+            return hasAny
                 ? EventLogPackageCatalogPullResult.Ok(body)
                 : EventLogPackageCatalogPullResult.Failed();
         }

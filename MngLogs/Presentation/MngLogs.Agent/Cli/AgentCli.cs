@@ -428,7 +428,7 @@ public static class AgentCli
                 return 0;
 
             case "sync":
-                await catalog.RefreshAsync();
+                await catalog.RefreshAsync(force: true);
                 Console.WriteLine($"Catalog sync OK — source={catalog.Source} version={catalog.Version} packages={catalog.ServerPackages.Count}");
                 Console.WriteLine($"LastSyncedUtc : {catalog.LastSyncedUtc?.ToString("o")}");
                 if (string.Equals(catalog.Source, "builtin", StringComparison.OrdinalIgnoreCase))

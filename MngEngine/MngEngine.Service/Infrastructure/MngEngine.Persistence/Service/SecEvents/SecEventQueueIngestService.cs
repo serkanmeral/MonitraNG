@@ -45,6 +45,7 @@ public sealed class SecEventQueueIngestService : ISecEventQueueIngestService
         }
 
         var enqueued = 0;
+        var rejectedNxlog = 0;
         foreach (var item in request.Items)
         {
             var source = item.Source ?? new SecEventIngestSource
@@ -54,13 +55,29 @@ public sealed class SecEventQueueIngestService : ISecEventQueueIngestService
                 Host = _options.DefaultWecHost ?? "wec"
             };
 
-            _queue.Enqueue(new SecEventIngestItem
+            var enqueueItem = new SecEventIngestItem
             {
                 ReceivedAt = item.ReceivedAt == default ? DateTime.UtcNow : item.ReceivedAt,
                 Source = source,
                 Raw = ToRawObject(item.Raw)
-            });
+            };
+
+            if (SecEventNxlogIngestGuard.ShouldReject(enqueueItem, _options.AcceptNxlogIngest))
+            {
+                rejectedNxlog++;
+                continue;
+            }
+
+            _queue.Enqueue(enqueueItem);
             enqueued++;
+        }
+
+        if (rejectedNxlog > 0)
+        {
+            _logger.Warning(
+                "WEC batch rejected {Rejected} NXLog item(s); AcceptNxlogIngest=false. Enqueued={Enqueued}",
+                rejectedNxlog,
+                enqueued);
         }
 
         _logger.Information(

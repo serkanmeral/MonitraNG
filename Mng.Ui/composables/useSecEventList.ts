@@ -12,14 +12,28 @@ export const SEC_EVENT_ACTION_OPTIONS: SecEventActionOption[] = [
   { value: 'login_success', labelKey: 'siemCenter.events.actions.login_success' },
   { value: 'login_success_after_failures', labelKey: 'siemCenter.events.actions.login_success_after_failures', scenarioId: 'U2' },
   { value: 'privileged_login_outside_window', labelKey: 'siemCenter.events.actions.privileged_login_outside_window', scenarioId: 'U3' },
+  { value: 'logoff', labelKey: 'siemCenter.events.actions.logoff' },
+  { value: 'explicit_credentials', labelKey: 'siemCenter.events.actions.explicit_credentials' },
+  { value: 'account_locked', labelKey: 'siemCenter.events.actions.account_locked' },
   { value: 'denied_flow', labelKey: 'siemCenter.events.actions.denied_flow', scenarioId: 'U4' },
   { value: 'allowed_flow', labelKey: 'siemCenter.events.actions.allowed_flow', scenarioId: 'U5' },
   { value: 'rule_change', labelKey: 'siemCenter.events.actions.rule_change', scenarioId: 'U6' },
   { value: 'new_flow', labelKey: 'siemCenter.events.actions.new_flow', scenarioId: 'U7' },
   { value: 'group_member_added', labelKey: 'siemCenter.events.actions.group_member_added', scenarioId: 'U8' },
+  { value: 'group_changed', labelKey: 'siemCenter.events.actions.group_changed' },
   { value: 'account_created', labelKey: 'siemCenter.events.actions.account_created', scenarioId: 'U9' },
+  { value: 'account_deleted', labelKey: 'siemCenter.events.actions.account_deleted' },
+  { value: 'account_enabled', labelKey: 'siemCenter.events.actions.account_enabled' },
   { value: 'directory_object_modified', labelKey: 'siemCenter.events.actions.directory_object_modified', scenarioId: 'U10' },
+  { value: 'directory_object_created', labelKey: 'siemCenter.events.actions.directory_object_created' },
+  { value: 'directory_object_deleted', labelKey: 'siemCenter.events.actions.directory_object_deleted' },
+  { value: 'privileged_assigned', labelKey: 'siemCenter.events.actions.privileged_assigned' },
   { value: 'privilege_denied', labelKey: 'siemCenter.events.actions.privilege_denied' },
+  { value: 'privilege_escalation', labelKey: 'siemCenter.events.actions.privilege_escalation' },
+  { value: 'rdp.logon', labelKey: 'siemCenter.events.actions.rdp_logon' },
+  { value: 'rdp.logoff', labelKey: 'siemCenter.events.actions.rdp_logoff' },
+  { value: 'rdp.disconnect', labelKey: 'siemCenter.events.actions.rdp_disconnect' },
+  { value: 'rdp.reconnect', labelKey: 'siemCenter.events.actions.rdp_reconnect' },
   { value: 'host.up', labelKey: 'siemCenter.events.actions.host_up' },
   { value: 'watch.inventory', labelKey: 'siemCenter.events.actions.watch_inventory' },
   { value: 'unknown', labelKey: 'siemCenter.events.actions.unknown' },
@@ -68,9 +82,13 @@ export function getScenarioIdForAction(eventAction: string): string | null {
   return fromOpt?.scenarioId ?? null;
 }
 
+export function secEventActionI18nKey(action: string): string {
+  return `siemCenter.events.actions.${action.replace(/\./g, '_')}`;
+}
+
 export function actionColor(action: string): string {
   if (action.includes('fail') || action.includes('denied') || action === 'unknown') return 'error';
-  if (action.includes('success') || action === 'host.up') return 'success';
+  if (action.includes('success') || action === 'host.up' || action.startsWith('rdp.')) return 'success';
   if (action.includes('new_flow') || action.includes('privileged') || action.includes('rule_change') || action === 'watch.inventory') return 'warning';
   return 'info';
 }

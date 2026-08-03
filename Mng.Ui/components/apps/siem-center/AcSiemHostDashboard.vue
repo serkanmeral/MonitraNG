@@ -5,7 +5,6 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import {
   hostLocalUiLink,
   loadHostDashboardHost,
-  shortHostKey,
 } from '@/composables/useSiemDiscoveryData';
 import {
   hostAnalyticsEventsLink,
@@ -17,7 +16,7 @@ import {
   type HostRoleChip,
 } from '@/composables/useSiemHostAnalytics';
 import { coverageColor } from '@/composables/useSiemDiscoveryMock';
-import { preferredSecEventSearchTerm } from '@/utils/siemDiscoveryHostMatch';
+import { preferredSecEventSearchTerm, shortHostKey } from '@/utils/siemDiscoveryHostMatch';
 import AcSiemHostKpiStrip from '@/components/apps/siem-center/AcSiemHostKpiStrip.vue';
 import AcSiemHostResourceCharts from '@/components/apps/siem-center/AcSiemHostResourceCharts.vue';
 import AcSiemHostSessionsCard from '@/components/apps/siem-center/AcSiemHostSessionsCard.vue';

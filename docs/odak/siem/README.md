@@ -4,6 +4,7 @@ Canlı durum ve sıradaki adımlar: **[current_status.md](./current_status.md)**
 
 | Konu | Doküman | Route |
 |------|---------|--------|
+| Host telemetry cutover (agent-only) | [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md) | — |
 | Keşif ve kapsam (Coverage) | [DISCOVERY_COVERAGE.md](./DISCOVERY_COVERAGE.md) | `/apps/siem-center/discovery` |
 | Host Analytics (Windows + Linux) | [HOST_ANALYTICS.md](./HOST_ANALYTICS.md) | `/apps/siem-center/hosts/[hostname]` |
 | Event Log paketleri | [mnglogs/POLICY_EVENTLOG_PACKAGES.md](./mnglogs/POLICY_EVENTLOG_PACKAGES.md) | Settings → Event Log → Paket kataloğu |
@@ -28,7 +29,8 @@ Canlı durum ve sıradaki adımlar: **[current_status.md](./current_status.md)**
 | G2 UI → OpenSearch okuma | ✓ |
 | G3 Collector + MngLogs ajan + service watch + Edge UI | ✓ |
 | **MngLogs Faz 1 metrik toplama** | ✓ (30 Tem) — host + top-process ship |
-| G4 Cutover | Bekliyor |
+| **Host NXLog/rsyslog cutover** | ✓ (3 Ağu) — agent-only; FortiGate syslog kaldı — [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md) |
+| G4 Cutover (alarm/Mongo köprü) | Kısmi / park |
 
 ### Metrik özeti (Faz 1)
 

@@ -22,7 +22,9 @@ public sealed class BuiltinEventLogPackageCatalogService
                 {
                     Name = d.Name,
                     Channel = d.Channel,
+                    SelectionMode = "selected",
                     EventIds = [.. d.EventIds],
+                    ExcludedEventIds = [],
                     IsDefault = true
                 })
                 .ToList(),
@@ -31,7 +33,9 @@ public sealed class BuiltinEventLogPackageCatalogService
                 {
                     Name = d.Name,
                     Channel = d.Channel,
+                    SelectionMode = "selected",
                     EventIds = [.. d.EventIds],
+                    ExcludedEventIds = [],
                     IsDefault = false
                 })
                 .ToList()

@@ -96,10 +96,16 @@ export default defineEventHandler(async (event) => {
     });
   } catch (error: any) {
     const status = error.statusCode || error.status || 500;
+    const detail =
+      error?.data?.error
+      || error?.data?.title
+      || error?.data?.message
+      || error.statusMessage
+      || error.message
+      || 'MngLogCollector API hatası';
     throw createError({
       statusCode: status,
-      statusMessage:
-        error.statusMessage || error.message || 'MngLogCollector API hatası',
+      statusMessage: typeof detail === 'string' ? detail : 'MngLogCollector API hatası',
       data: error.data,
     });
   }

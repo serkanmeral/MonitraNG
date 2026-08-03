@@ -1,8 +1,9 @@
 # SIEM-Hafif — Dijital Banka / Finans Dikeyi (Kapsam Notu)
 
 **Durum:** Taslak — iç değerlendirme; müşteri sunumu değil
-**Son güncelleme:** 3 Haziran 2026
+**Son güncelleme:** 11 Temmuz 2026 (kapsam matrisi eklendi)
 **Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md)
+**Kapsam matrisi (hazır / planlı / yapılmayacak):** [SIEM_VERTICAL_FINANCE_SCOPE.md](./SIEM_VERTICAL_FINANCE_SCOPE.md)
 
 > Enpara benzeri **online / dijital banka** kurulumlarında MonitraNG'nin **nerede değer ürettiği**, **nerede yetmediği** ve **nasıl konumlandırılması gerektiği**. Regülasyon (BDDK vb.) için **hukuki danışmanlık değildir** — teknik ürün kapsamı notudur.
 
@@ -157,6 +158,7 @@ Savunma tedarikçisi T0+T1 mantığıyla hizalı, **iç IT odaklı** pilot:
 
 ## 9. Referanslar
 
+- [SIEM_VERTICAL_FINANCE_SCOPE.md](./SIEM_VERTICAL_FINANCE_SCOPE.md) — hazır / planlı / yapılmayacak matrisi
 - [SIEM_PLANNING.md](./SIEM_PLANNING.md)
 - `docs/content/security/CYBERSECURITY_SOLUTION_PLANNING.md`
 - `docs/odak/compliance/ISO27001_PLAN.md`

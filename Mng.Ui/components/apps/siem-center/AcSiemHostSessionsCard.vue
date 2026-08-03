@@ -14,9 +14,12 @@ import {
   isWindowsMachineAccount,
   parseWindowsRdpSessionMessage,
   parseWindowsSecurityLogonMessage,
+  eventLogDetailFieldsJson,
+  eventLogDetailMessageText,
   securityMessageFromEventFields,
   SESSION_HISTORY_RDP_EVENT_IDS,
 } from '@/utils/windowsSecurityLogonParse';
+import { copyTextToClipboard } from '@/utils/clipboard';
 
 const props = defineProps<{
   host: SiemDiscoveryHost;
@@ -288,22 +291,45 @@ const detailSourceAddress = computed(() => {
   return detailRdp.value.sourceAddress || selected.value?.sourceAddress || null;
 });
 
-const detailMessage = computed(() => detailMessageBlob.value || '—');
+/** Mesaj tab = human text; parsing still uses detailMessageBlob (may include eventAction). */
+const detailMessage = computed(() => {
+  const full = detailFull.value;
+  return eventLogDetailMessageText(
+    full?.fields,
+    full?.raw,
+    full?.rawPreview || selected.value?.preview,
+    selected.value?.preview,
+  );
+});
+
+const detailBodyTab = ref<'message' | 'fields'>('message');
+const detailCopyHint = ref<string | null>(null);
 
 const detailFieldsJson = computed(() => {
-  const fields = detailFull.value?.fields ?? null;
-  if (!fields || typeof fields !== 'object') return null;
-  // Prefer showing message separately; omit huge duplicate in JSON preview if desired — keep full fields.
-  try {
-    return JSON.stringify(fields, null, 2);
-  } catch {
-    return null;
-  }
+  const full = detailFull.value;
+  return eventLogDetailFieldsJson(full?.fields, full?.raw, full?.rawPreview);
 });
+
+async function copyDetailTab(kind: 'message' | 'fields') {
+  const label = kind === 'message'
+    ? t('siemCenter.discovery.hostDetail.eventLogDetailTabMessage')
+    : t('siemCenter.discovery.hostDetail.eventLogDetailTabFields');
+  const value = kind === 'message' ? detailMessage.value : detailFieldsJson.value;
+  if (!value?.trim()) return;
+  const ok = await copyTextToClipboard(value);
+  detailCopyHint.value = ok
+    ? t('siemCenter.discovery.hostDetail.eventLogDetailCopied', { label })
+    : t('siemCenter.discovery.hostDetail.eventLogDetailCopyFailed');
+  window.setTimeout(() => {
+    detailCopyHint.value = null;
+  }, 2000);
+}
 
 async function openDetail(row: HostSessionHistoryItem) {
   selected.value = row;
   detailOpen.value = true;
+  detailBodyTab.value = 'message';
+  detailCopyHint.value = null;
   detailFull.value = null;
   detailError.value = null;
   detailLoading.value = true;
@@ -321,6 +347,8 @@ function closeDetail() {
   selected.value = null;
   detailFull.value = null;
   detailError.value = null;
+  detailBodyTab.value = 'message';
+  detailCopyHint.value = null;
 }
 </script>
 
@@ -557,21 +585,54 @@ function closeDetail() {
             </tbody>
           </v-table>
 
-          <div class="text-subtitle-2 mb-2">
-            {{ t('siemCenter.hostDashboard.colMessage') }}
-          </div>
-          <v-sheet border rounded class="pa-3 mb-4 session-detail-body">
-            <pre class="ma-0 text-body-2">{{ detailMessage }}</pre>
-          </v-sheet>
+          <v-alert
+            v-if="detailCopyHint"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ detailCopyHint }}
+          </v-alert>
 
-          <template v-if="detailFieldsJson">
-            <div class="text-subtitle-2 mb-2">
-              {{ t('siemCenter.discovery.hostDetail.eventLogDetailFields') }}
-            </div>
-            <v-sheet border rounded class="pa-3 session-detail-body">
-              <pre class="ma-0 text-body-2">{{ detailFieldsJson }}</pre>
-            </v-sheet>
-          </template>
+          <div class="d-flex align-center flex-wrap ga-2 mb-2">
+            <v-tabs v-model="detailBodyTab" density="compact" color="primary" class="flex-grow-1">
+              <v-tab value="message">
+                {{ t('siemCenter.discovery.hostDetail.eventLogDetailTabMessage') }}
+              </v-tab>
+              <v-tab value="fields">
+                {{ t('siemCenter.discovery.hostDetail.eventLogDetailTabFields') }}
+              </v-tab>
+            </v-tabs>
+            <v-btn
+              size="small"
+              variant="tonal"
+              prepend-icon="mdi-content-copy"
+              :disabled="detailBodyTab === 'message' ? !detailMessage.trim() : !detailFieldsJson.trim()"
+              @click="copyDetailTab(detailBodyTab)"
+            >
+              {{ t('siemCenter.discovery.hostDetail.eventLogDetailCopy') }}
+            </v-btn>
+          </div>
+
+          <v-tabs-window v-model="detailBodyTab">
+            <v-tabs-window-item value="message">
+              <v-sheet border rounded class="pa-3 session-detail-body">
+                <pre v-if="detailMessage.trim()" class="ma-0 text-body-2">{{ detailMessage }}</pre>
+                <div v-else class="text-body-2 text-medium-emphasis">
+                  {{ t('siemCenter.discovery.hostDetail.eventLogDetailNoMessage') }}
+                </div>
+              </v-sheet>
+            </v-tabs-window-item>
+            <v-tabs-window-item value="fields">
+              <v-sheet border rounded class="pa-3 session-detail-body">
+                <pre v-if="detailFieldsJson.trim()" class="ma-0 text-body-2">{{ detailFieldsJson }}</pre>
+                <div v-else class="text-body-2 text-medium-emphasis">
+                  {{ t('siemCenter.discovery.hostDetail.eventLogDetailNoFields') }}
+                </div>
+              </v-sheet>
+            </v-tabs-window-item>
+          </v-tabs-window>
         </v-card-text>
         <v-divider />
         <v-card-actions class="pa-3">

@@ -9,6 +9,12 @@ namespace MngLogs.Agent.EventLog;
 public interface IWindowsEventLogReader
 {
     IReadOnlyList<IngestEventItem> ReadNew(EventLogPackage package, ChannelBookmark? bookmark, int maxEvents, out ChannelBookmark? updatedBookmark);
+
+    /// <summary>Seed bookmark at channel end (live-only from now).</summary>
+    ChannelBookmark SeedFromNow(EventLogPackage package);
+
+    /// <summary>Seed bookmark just before the oldest event in the last <paramref name="hours"/>.</summary>
+    ChannelBookmark SeedFromLastHours(EventLogPackage package, int hours);
 }
 
 /// <summary>Windows-only Event Log reader. First run seeds "now" (no historical flood).</summary>
@@ -30,8 +36,7 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
         // First run: seed at current end so we only ship events after agent start.
         if (bookmark is null || bookmark.CatchUpFromNow)
         {
-            var seedId = TryReadLatestRecordId(package);
-            updatedBookmark = new ChannelBookmark(seedId ?? 0, DateTime.UtcNow, CatchUpFromNow: false);
+            updatedBookmark = SeedFromNow(package);
             return [];
         }
 
@@ -75,6 +80,46 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
         return items;
     }
 
+    public ChannelBookmark SeedFromNow(EventLogPackage package)
+    {
+        var seedId = TryReadLatestRecordId(package) ?? 0;
+        return new ChannelBookmark(
+            seedId,
+            DateTime.UtcNow,
+            CatchUpFromNow: false,
+            CursorMode: "now",
+            HistoryHours: null,
+            HistoryFromUtc: null);
+    }
+
+    public ChannelBookmark SeedFromLastHours(EventLogPackage package, int hours)
+    {
+        hours = Math.Clamp(hours, 1, 168);
+        var fromUtc = DateTime.UtcNow.AddHours(-hours);
+        var oldestId = TryReadOldestRecordIdInWindow(package, hours);
+        if (oldestId is null)
+        {
+            // Nothing in window — behave like start-from-now.
+            var nowBm = SeedFromNow(package);
+            return nowBm with
+            {
+                CursorMode = "hours",
+                HistoryHours = hours,
+                HistoryFromUtc = fromUtc
+            };
+        }
+
+        // Resume just before the oldest in-window event.
+        var cursor = Math.Max(0, oldestId.Value - 1);
+        return new ChannelBookmark(
+            cursor,
+            DateTime.UtcNow,
+            CatchUpFromNow: false,
+            CursorMode: "hours",
+            HistoryHours: hours,
+            HistoryFromUtc: fromUtc);
+    }
+
     private static long? TryReadLatestRecordId(EventLogPackage package)
     {
         try
@@ -82,6 +127,26 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             var query = new EventLogQuery(package.Channel, PathType.LogName, "*")
             {
                 ReverseDirection = true
+            };
+            using var reader = new EventLogReader(query);
+            using var record = reader.ReadEvent();
+            return record?.RecordId;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Oldest matching event within the timediff window (forward read).</summary>
+    private static long? TryReadOldestRecordIdInWindow(EventLogPackage package, int hours)
+    {
+        try
+        {
+            var queryText = DefaultEventLogPackages.BuildHistoryWindowQuery(package, hours);
+            var query = new EventLogQuery(package.Channel, PathType.LogName, queryText)
+            {
+                ReverseDirection = false
             };
             using var reader = new EventLogReader(query);
             using var record = reader.ReadEvent();
@@ -105,9 +170,16 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             _ => "info"
         };
 
-        string? message = null;
-        try { message = record.FormatDescription(); }
+        string? formatted = null;
+        try { formatted = record.FormatDescription(); }
         catch { /* provider message DLL missing */ }
+
+        var props = ReadPropertyStrings(record);
+        string? xml = null;
+        try { xml = record.ToXml(); }
+        catch { /* rare provider XML failures */ }
+
+        var payload = WindowsEventPayloadBuilder.Build(record.Id, formatted, props, xml);
 
         var fields = new Dictionary<string, object?>
         {
@@ -118,12 +190,15 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             ["provider"] = record.ProviderName
         };
 
-        var props = ReadPropertyStrings(record);
-        if (ServiceControlEventEnricher.TryEnrich(record.Id, props, fields, out var action) &&
+        WindowsEventPayloadBuilder.ApplyToFields(fields, payload);
+
+        var message = payload.Message;
+        if (ServiceControlEventEnricher.TryEnrich(record.Id, payload.Properties, fields, out var action) &&
             !string.IsNullOrWhiteSpace(action) &&
-            string.IsNullOrWhiteSpace(message))
+            (string.IsNullOrWhiteSpace(formatted) || message.StartsWith("EventID ", StringComparison.Ordinal)))
         {
-            message = action;
+            message = action!;
+            fields["event.action"] = action;
         }
 
         var rawObj = new Dictionary<string, object?>
@@ -136,7 +211,11 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             ["level"] = record.Level,
             ["timeCreated"] = record.TimeCreated,
             ["machine"] = record.MachineName,
-            ["message"] = message
+            ["message"] = message,
+            ["eventData"] = payload.EventData,
+            ["eventDataText"] = payload.EventDataText,
+            ["properties"] = payload.Properties,
+            ["xml"] = payload.Xml
         };
         foreach (var kv in fields)
         {
@@ -153,7 +232,7 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             Source = "windows-eventlog",
             SourceProduct = package.Name,
             Severity = level,
-            Message = Truncate(message ?? $"EventID {record.Id}", 512),
+            Message = message,
             Raw = rawJson,
             Fields = fields
         };
@@ -177,7 +256,4 @@ public sealed class WindowsEventLogReader : IWindowsEventLogReader
             return [];
         }
     }
-
-    private static string Truncate(string value, int max) =>
-        value.Length <= max ? value : value[..max];
 }

@@ -11,9 +11,10 @@ public static class SecEventParseRuleCatalogSeed
     public const string InitialVersion = "0";
 
     /// <summary>Increment when seed match/extract/name/description changes.</summary>
-    public const int SeedRevision = 5;
+    public const int SeedRevision = 6;
 
     private const string WindowsProduct = "windows";
+    private const string RdpSessionProduct = "rdp-session";
     private const string SecurityChannel = "Security";
     private const string RdpChannel =
         "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational";
@@ -326,7 +327,7 @@ public static class SecEventParseRuleCatalogSeed
                 now,
                 match: new SecEventParseRuleMatch
                 {
-                    SourceProduct = [WindowsProduct],
+                    SourceProduct = [WindowsProduct, RdpSessionProduct],
                     SourceType = ["endpoint", "windows-eventlog"],
                     Channel = [RdpChannel],
                     EventIds = [21]
@@ -340,7 +341,7 @@ public static class SecEventParseRuleCatalogSeed
                 now,
                 match: new SecEventParseRuleMatch
                 {
-                    SourceProduct = [WindowsProduct],
+                    SourceProduct = [WindowsProduct, RdpSessionProduct],
                     SourceType = ["endpoint", "windows-eventlog"],
                     Channel = [RdpChannel],
                     EventIds = [23]
@@ -354,7 +355,7 @@ public static class SecEventParseRuleCatalogSeed
                 now,
                 match: new SecEventParseRuleMatch
                 {
-                    SourceProduct = [WindowsProduct],
+                    SourceProduct = [WindowsProduct, RdpSessionProduct],
                     SourceType = ["endpoint", "windows-eventlog"],
                     Channel = [RdpChannel],
                     EventIds = [24]
@@ -368,7 +369,7 @@ public static class SecEventParseRuleCatalogSeed
                 now,
                 match: new SecEventParseRuleMatch
                 {
-                    SourceProduct = [WindowsProduct],
+                    SourceProduct = [WindowsProduct, RdpSessionProduct],
                     SourceType = ["endpoint", "windows-eventlog"],
                     Channel = [RdpChannel],
                     EventIds = [25]

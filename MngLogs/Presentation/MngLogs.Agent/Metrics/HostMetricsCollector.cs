@@ -309,6 +309,8 @@ public sealed class HostMetricsCollector : IHostMetricsCollector
         return new Dictionary<string, object?>
         {
             ["os"] = Environment.OSVersion.ToString(),
+            // Host Analytics / Discovery resolve OS family from platform (linux|windows).
+            ["platform"] = "windows",
             ["machine"] = Environment.MachineName,
             ["agentVersion"] = AgentVersion.Current,
             ["ipAddresses"] = ips.ToList(),

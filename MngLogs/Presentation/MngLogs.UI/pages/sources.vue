@@ -68,15 +68,19 @@
             v-if="!(sources.eventLog.packages?.length)"
             class="text-sm text-gray-500 py-6 text-center rounded-lg border border-dashed border-gray-200 dark:border-gray-700"
           >
-            Aktif Event Log paketi yok.
+            {{ isLinux ? 'Aktif journal paketi yok.' : 'Aktif Event Log paketi yok.' }}
           </div>
           <div v-else class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
               <thead class="bg-gray-50 dark:bg-gray-800/80">
                 <tr>
                   <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Paket</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kanal</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Event ID</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    {{ isLinux ? 'Unit / filtre' : 'Kanal' }}
+                  </th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    {{ isLinux ? 'Not' : 'Event ID' }}
+                  </th>
                   <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase"> </th>
                 </tr>
               </thead>
@@ -84,11 +88,24 @@
                 <tr v-for="p in sources.eventLog.packages || []" :key="p.name">
                   <td class="px-3 py-2 font-medium">{{ p.name }}</td>
                   <td class="px-3 py-2 font-mono text-xs">{{ p.channel }}</td>
-                  <td class="px-3 py-2 font-mono text-xs">{{ p.eventIds.join(', ') }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">
+                    {{
+                      isLinux
+                        ? (p.eventIds?.length ? p.eventIds.join(', ') : 'journal filtre')
+                        : formatPackageIds(p)
+                    }}
+                  </td>
                   <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <UButton size="xs" variant="soft" color="primary" @click="openPackageDetail(p)">
+                    <UButton
+                      v-if="!isLinux"
+                      size="xs"
+                      variant="soft"
+                      color="primary"
+                      @click="openPackageDetail(p)"
+                    >
                       Detay
                     </UButton>
+                    <span v-else class="text-xs text-gray-400">—</span>
                   </td>
                 </tr>
               </tbody>
@@ -421,7 +438,17 @@
           />
         </div>
         <p class="text-sm text-gray-500 mb-3">
-          Bu pakette toplanan Event ID’ler ve bilinen açıklamalar:
+          {{
+            selectedPackage.selectionMode === 'all'
+              ? 'Tüm kanal toplanır. Hariç tutulan Event ID’ler (varsa):'
+              : 'Bu pakette toplanan Event ID’ler ve bilinen açıklamalar:'
+          }}
+        </p>
+        <p
+          v-if="selectedPackage.selectionMode === 'all' && !selectedEventInfos.length"
+          class="text-sm text-gray-600 dark:text-gray-300"
+        >
+          Hariç tutulan ID yok — kanalın tamamı.
         </p>
         <div class="space-y-2 max-h-[60vh] overflow-y-auto">
           <div
@@ -444,32 +471,52 @@
 </template>
 
 <script setup lang="ts">
-import type { SourcesResponse } from '~/composables/useAgentApi'
+import type { AgentStatus, SourcesResponse } from '~/composables/useAgentApi'
 import { formatDate } from '~/composables/useAgentApi'
 import { describeEventIds } from '~/utils/eventLogIdCatalog'
 
 const { getSources } = useAgentApi()
+const { isLinux, logSourceLabel, applyFromStatus } = useAgentPlatform()
 const sources = ref<SourcesResponse | null>(null)
 const loading = ref(false)
 const activeTab = ref(0)
 
-const packageDetailOpen = ref(false)
-const selectedPackage = ref<{
+type PackageRow = {
   name: string
   channel: string
+  selectionMode?: 'selected' | 'all'
   eventIds: number[]
-} | null>(null)
+  excludedEventIds?: number[]
+}
 
-const selectedEventInfos = computed(() =>
-  selectedPackage.value ? describeEventIds(selectedPackage.value.eventIds) : []
-)
+const packageDetailOpen = ref(false)
+const selectedPackage = ref<PackageRow | null>(null)
+
+const selectedEventInfos = computed(() => {
+  if (!selectedPackage.value) return []
+  const ids =
+    selectedPackage.value.selectionMode === 'all'
+      ? selectedPackage.value.excludedEventIds || []
+      : selectedPackage.value.eventIds
+  return describeEventIds(ids)
+})
+
+function formatPackageIds(p: PackageRow): string {
+  if (p.selectionMode === 'all') {
+    const ex = (p.excludedEventIds || []).length
+      ? ` (− ${(p.excludedEventIds || []).join(', ')})`
+      : ''
+    return `Tümü${ex}`
+  }
+  return (p.eventIds || []).join(', ')
+}
 
 const tabItems = computed(() => {
   const s = sources.value
   return [
     {
       key: 'eventlog',
-      label: 'Olay günlüğü',
+      label: logSourceLabel.value,
       slot: 'eventlog',
       badge: s?.eventLog?.enabled ? 'Açık' : 'Kapalı'
     },
@@ -499,7 +546,7 @@ const tabItems = computed(() => {
   ]
 })
 
-function openPackageDetail(p: { name: string; channel: string; eventIds: number[] }) {
+function openPackageDetail(p: PackageRow) {
   selectedPackage.value = p
   packageDetailOpen.value = true
 }
@@ -561,6 +608,9 @@ async function refresh() {
   loading.value = true
   try {
     sources.value = await getSources()
+    if (sources.value?.platform) {
+      applyFromStatus({ platform: sources.value.platform } as AgentStatus)
+    }
   } finally {
     loading.value = false
   }

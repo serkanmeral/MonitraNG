@@ -1,45 +1,64 @@
 # MngLogs — Son durum
 
-**Son güncelleme:** 2026-07-31  
-**Durum:** Ajan **1.0.4** — Windows Service kurulu (TERMINAL); watch prune + host.up zenginleştirme + Local UI LAN bind.
+**Son güncelleme:** 2026-08-03  
+**Durum:** Windows + Linux agent canlı. **Günlük hedef = Odak PROD Collector** `http://192.168.20.8:5091`. Host telemetrisi NXLog/rsyslog yerine yalnızca agent.
 
 ## Son çalışılan konu
 
-Service/App Watch snapshot prune; process adı normalize; ajan 1.0.4 publish + elevated reinstall (`LocalUiHost=0.0.0.0`).
+Prod sabitleme + host cutover: agent’lar ve lokal UI prod’a; RDP action normalize LogCollector’da; NXLog/Linux syslog ingest kapalı.
 
-## Bu dilimde tamamlananlar
+## Plan / faz
 
-- Sürüm **1.0.4** (csproj / UI package / WiX yolu)
-- `host.up` / inventory: IP, users, boot, uptime, sessions, `localUiPort` / `localUiHost`
-- Watch snapshot: politika dışı hedefler budanır; inventory boşalınca ship
-- `NormalizeProcessName`: path / `.exe` → kısa process adı; policy save dedupe
-- Local UI Politika: uygulama kaydında ad normalize
-- Session 0 notu: servisten başlatılan GUI (notepad) masaüstünde görünmez; process Task Manager’da görünür
-- Reinstall script: `scripts/tests/MngLogs/windows-service/reinstall-agent-odak-elevated.ps1`
+`P3a ✅ → P3b ✅ → P3c ✅ → host cutover ✅ → P3d (deb) → Host Analytics L3 → P3c-bridge (opsiyonel)`
 
-## Bekleyen
+| Faz | Durum |
+|-----|--------|
+| P3a metrik/iskelet | ✅ |
+| P3b systemd/app watch + restart | ✅ |
+| P3c journald (sshd/sudo/unit-fail) | ✅ |
+| Host NXLog cutover | ✅ — [HOST_TELEMETRY_CUTOVER.md](../../odak/siem/HOST_TELEMETRY_CUTOVER.md) |
+| P3d .deb | Sonraki |
+| Host Analytics L3 | Park |
+| P3c-bridge (rsyslog köprü) | İptale yakın / opsiyonel (ingest kapalı) |
 
-1. P5 Event Log parser (park)
-2. Uygulama restart’ı aktif kullanıcı oturumuna alma (WTS / CreateProcessAsUser) — ürün kararı
-3. MSI/GPO saha yayılımı (lab kurulumu yapıldı)
+## Pilot / canlı
 
-## Önceki ertelemeler
+| | Windows (TERMINAL) | Linux |
+|--|-------------------|--------|
+| HostId | `TERMINAL-pilot` | `monitrang-linux-pilot` (20.20) · `monitrang-prod` (20.8) |
+| Collector | **`http://192.168.20.8:5091`** | aynı (prod host’ta `127.0.0.1:5091`) |
+| Local UI | `:5092` | `:5092` |
+| Paketler | Security + `rdp-session` vb. | journal sshd/sudo/unit-fail |
 
-| Madde | Not |
-|--------|-----|
-| P5 parser | Park |
-| P3 Linux | Sonra |
-| Alarm/Notifier watch kuralları | SIEM tarafında erken |
+### Deploy / retarget
 
-## Önemli yollar
+```powershell
+# Prod Linux deploy
+pwsh -File .\scripts\tests\MngLogs\linux\deploy-agent-odak-prod.ps1
+
+# Kurulu Windows agent → prod collector (elevated)
+pwsh -File .\scripts\tests\MngLogs\windows-service\retarget-collector-elevated.ps1
+
+# Yalnızca bilinçli TEST (sonra prod'a geri dön!)
+pwsh -File .\scripts\tests\MngLogs\linux\deploy-agent-odak-test.ps1
+```
+
+## Kod
 
 | Öğe | Yol |
 |-----|-----|
-| Agent | `MngLogs\Presentation\MngLogs.Agent\` |
-| Publish | `.\MngLogs\scripts\publish-agent.ps1` |
-| Service install | `.\MngLogs\scripts\install-windows-service.ps1` |
-| Reinstall (Odak) | `.\scripts\tests\MngLogs\windows-service\reinstall-agent-odak-elevated.ps1` |
-| Local UI | `http://127.0.0.1:5092/` · LAN `:5092` |
-| Collector | `http://192.168.20.8:5091` |
-| HostId (pilot) | `TERMINAL-pilot` |
-| Sürüm | csproj `Version` / `AgentVersion.Current` → **1.0.4** |
+| Core | `MngLogs/Presentation/MngLogs.Agent.Core/` |
+| Windows | `MngLogs/Presentation/MngLogs.Agent/` |
+| Linux | `MngLogs/Presentation/MngLogs.Agent.Linux/` |
+| RDP normalize (sunucu) | `MngLogCollector/.../AgentSecEventActionNormalizer.cs` |
+
+## Park
+
+- UI’den parametreli agent indir
+- P3d deb · Analytics L3
+- Windows→Core refactor (devam)
+
+## Kontrol
+
+Local UI Durum: `collectorBaseUrl` = prod `:5091`, `collectorHealthy: true`  
+SIEM Events (prod UI): RDP intent / host filtreleri OpenSearch üzerinden

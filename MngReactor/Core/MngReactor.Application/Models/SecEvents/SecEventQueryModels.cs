@@ -6,8 +6,21 @@ public sealed class SecEventQueryFilter
     public DateTime? To { get; init; }
     public string? SourceType { get; init; }
     public string? EventAction { get; init; }
+    /// <summary>Comma-separated event.action values (OR). Ignored when <see cref="EventAction"/> is set.</summary>
+    public string? EventActions { get; init; }
+    /// <summary>Prefix match on event.action (e.g. "rdp."). Ignored when EventAction/EventActions set.</summary>
+    public string? EventActionPrefix { get; init; }
+    /// <summary>Exact match on event.outcome (success | failure | …).</summary>
+    public string? EventOutcome { get; init; }
     public string? SrcIp { get; init; }
+    public string? DstIp { get; init; }
+    /// <summary>Exact match on network.dstPort (string or numeric stored as string).</summary>
+    public string? DstPort { get; init; }
     public string? ActorUser { get; init; }
+    /// <summary>Case-insensitive contains on source.host.</summary>
+    public string? SourceHost { get; init; }
+    /// <summary>Exact match on event.code (e.g. Windows Event ID).</summary>
+    public string? EventCode { get; init; }
     public string? Search { get; init; }
     /// <summary>Varsayılan true — bilinmeyen (event.action=unknown) olayları listeden çıkar.</summary>
     public bool ExcludeUnknown { get; init; } = true;

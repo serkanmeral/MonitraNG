@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MngReactor.Application.Configuration;
 using MngReactor.Application.Models.SecEvents;
+using MngReactor.Application.Services.SecEvents;
 
 namespace MngReactor.Persistence.Services.SecEvents;
 
@@ -314,6 +315,125 @@ internal sealed class SecEventOpenSearchReader
                 });
             }
         }
+        else if (!string.IsNullOrWhiteSpace(filter.EventActions))
+        {
+            var actions = SecEventQueryFilterBuilder.ParseCsv(filter.EventActions);
+            if (actions.Count == 1)
+            {
+                var only = actions[0];
+                if (string.Equals(only, SecEventFlowBaselineRules.NewFlowAction, StringComparison.OrdinalIgnoreCase))
+                {
+                    filters.Add(new Dictionary<string, object>
+                    {
+                        ["term"] = new Dictionary<string, object> { ["baseline.newFlowPair"] = true }
+                    });
+                }
+                else
+                {
+                    filters.Add(new Dictionary<string, object>
+                    {
+                        ["term"] = new Dictionary<string, object> { ["event.action"] = only }
+                    });
+                }
+            }
+            else if (actions.Count > 1)
+            {
+                var shouldActions = new List<object>();
+                foreach (var action in actions)
+                {
+                    if (string.Equals(action, SecEventFlowBaselineRules.NewFlowAction, StringComparison.OrdinalIgnoreCase))
+                    {
+                        shouldActions.Add(new Dictionary<string, object>
+                        {
+                            ["term"] = new Dictionary<string, object> { ["baseline.newFlowPair"] = true }
+                        });
+                    }
+                    else
+                    {
+                        shouldActions.Add(new Dictionary<string, object>
+                        {
+                            ["term"] = new Dictionary<string, object> { ["event.action"] = action }
+                        });
+                    }
+                }
+
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["bool"] = new Dictionary<string, object>
+                    {
+                        ["should"] = shouldActions,
+                        ["minimum_should_match"] = 1
+                    }
+                });
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(filter.EventActionPrefix))
+        {
+            var prefix = filter.EventActionPrefix.Trim();
+            if (SecEventRdpActionCodes.IsRdpActionPrefix(prefix))
+            {
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["bool"] = new Dictionary<string, object>
+                    {
+                        ["should"] = new object[]
+                        {
+                            new Dictionary<string, object>
+                            {
+                                ["prefix"] = new Dictionary<string, object> { ["event.action"] = prefix }
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["terms"] = new Dictionary<string, object>
+                                {
+                                    ["event.code"] = SecEventRdpActionCodes.EventCodes
+                                }
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["terms"] = new Dictionary<string, object>
+                                {
+                                    ["event.code.keyword"] = SecEventRdpActionCodes.EventCodes
+                                }
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["term"] = new Dictionary<string, object>
+                                {
+                                    ["source.product"] = SecEventRdpActionCodes.ProductRdpSession
+                                }
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["term"] = new Dictionary<string, object>
+                                {
+                                    ["source.product.keyword"] = SecEventRdpActionCodes.ProductRdpSession
+                                }
+                            }
+                        },
+                        ["minimum_should_match"] = 1
+                    }
+                });
+            }
+            else
+            {
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["prefix"] = new Dictionary<string, object>
+                    {
+                        ["event.action"] = prefix
+                    }
+                });
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.EventOutcome))
+        {
+            filters.Add(new Dictionary<string, object>
+            {
+                ["term"] = new Dictionary<string, object> { ["event.outcome"] = filter.EventOutcome.Trim() }
+            });
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.SrcIp))
         {
@@ -323,11 +443,76 @@ internal sealed class SecEventOpenSearchReader
             });
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.DstIp))
+        {
+            filters.Add(new Dictionary<string, object>
+            {
+                ["term"] = new Dictionary<string, object> { ["network.dstIp"] = filter.DstIp.Trim() }
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.DstPort))
+        {
+            var portRaw = filter.DstPort.Trim();
+            if (int.TryParse(portRaw, out var portNum))
+            {
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["bool"] = new Dictionary<string, object>
+                    {
+                        ["should"] = new object[]
+                        {
+                            new Dictionary<string, object>
+                            {
+                                ["term"] = new Dictionary<string, object> { ["network.dstPort"] = portNum }
+                            },
+                            new Dictionary<string, object>
+                            {
+                                ["term"] = new Dictionary<string, object> { ["network.dstPort"] = portRaw }
+                            }
+                        },
+                        ["minimum_should_match"] = 1
+                    }
+                });
+            }
+            else
+            {
+                filters.Add(new Dictionary<string, object>
+                {
+                    ["term"] = new Dictionary<string, object> { ["network.dstPort"] = portRaw }
+                });
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.ActorUser))
         {
             filters.Add(new Dictionary<string, object>
             {
                 ["term"] = new Dictionary<string, object> { ["actor.user"] = filter.ActorUser.Trim() }
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.SourceHost))
+        {
+            var host = EscapeWildcard(filter.SourceHost.Trim());
+            filters.Add(new Dictionary<string, object>
+            {
+                ["wildcard"] = new Dictionary<string, object>
+                {
+                    ["source.host"] = new Dictionary<string, object>
+                    {
+                        ["value"] = $"*{host}*",
+                        ["case_insensitive"] = true
+                    }
+                }
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.EventCode))
+        {
+            filters.Add(new Dictionary<string, object>
+            {
+                ["term"] = new Dictionary<string, object> { ["event.code"] = filter.EventCode.Trim() }
             });
         }
 
@@ -341,7 +526,8 @@ internal sealed class SecEventOpenSearchReader
                     ["query"] = q,
                     ["fields"] = new[]
                     {
-                        "rawPreview", "event.action", "actor.user", "network.srcIp", "network.dstIp", "source.host"
+                        "rawPreview", "event.action", "event.code", "actor.user",
+                        "network.srcIp", "network.dstIp", "source.host"
                     },
                     ["type"] = "best_fields"
                 }
@@ -372,6 +558,12 @@ internal sealed class SecEventOpenSearchReader
 
         return new Dictionary<string, object> { ["bool"] = boolQuery };
     }
+
+    private static string EscapeWildcard(string value) =>
+        value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("*", "\\*", StringComparison.Ordinal)
+            .Replace("?", "\\?", StringComparison.Ordinal);
 
     private async Task<JsonDocument?> PostSearchAsync(
         string domain,

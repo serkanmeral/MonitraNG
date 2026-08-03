@@ -6,6 +6,7 @@ using MngReactor.Application.Configuration;
 using MngReactor.Application.Features.Commands.Ingest;
 using MngReactor.Application.Models.SecEvents;
 using MngReactor.Application.Observations;
+using MngReactor.Application.Services.SecEvents;
 using MngReactor.Persistence.Services.SecEvents.Parsers;
 
 namespace MngReactor.Persistence.Services.SecEvents;
@@ -91,6 +92,28 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
 
         foreach (var item in items)
         {
+            if (SecEventNxlogIngestGuard.ShouldReject(item, _settings.AcceptNxlogIngest))
+            {
+                skipped++;
+                _logger.LogDebug(
+                    "sec_events NXLog rejected domain={Domain} product={Product} host={Host} AcceptNxlogIngest=false",
+                    domain,
+                    item.Source?.Product,
+                    item.Source?.Host);
+                continue;
+            }
+
+            if (SecEventLinuxSyslogIngestGuard.ShouldReject(item, _settings.AcceptLinuxSyslogIngest))
+            {
+                skipped++;
+                _logger.LogDebug(
+                    "sec_events Linux syslog rejected domain={Domain} product={Product} host={Host} AcceptLinuxSyslogIngest=false",
+                    domain,
+                    item.Source?.Product,
+                    item.Source?.Host);
+                continue;
+            }
+
             var ctx = SecEventRawContext.From(item);
             var parsed = await ParseSafeAsync(domain, ctx, cancellationToken);
             if (_settings.DropUnknownEvents && SecEventUnknownFilter.IsUnknown(parsed))

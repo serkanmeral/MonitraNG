@@ -6,7 +6,7 @@ import AcSiemHostDashboard from '@/components/apps/siem-center/AcSiemHostDashboa
 import { useSiemCenterBreadcrumbs } from '@/composables/useSiemCenterBreadcrumbs';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
-import { shortHostKey } from '@/composables/useSiemDiscoveryData';
+import { shortHostKey } from '@/utils/siemDiscoveryHostMatch';
 
 definePageMeta({ layout: 'default' });
 
