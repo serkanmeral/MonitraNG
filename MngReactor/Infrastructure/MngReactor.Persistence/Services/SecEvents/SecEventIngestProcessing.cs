@@ -13,6 +13,7 @@ namespace MngReactor.Persistence.Services.SecEvents;
 public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
 {
     private readonly ILogger<SecEventIngestProcessing> _logger;
+    private readonly ISecEventCatalogParseEngine _catalogEngine;
     private readonly ISecEventParserRegistry _registry;
     private readonly UnknownSecEventFallback _fallback;
     private readonly ISecEventsRepository _repository;
@@ -23,6 +24,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
 
     public SecEventIngestProcessing(
         ILogger<SecEventIngestProcessing> logger,
+        ISecEventCatalogParseEngine catalogEngine,
         ISecEventParserRegistry registry,
         UnknownSecEventFallback fallback,
         ISecEventsRepository repository,
@@ -32,6 +34,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         IOptions<MngReactorSettings> options)
     {
         _logger = logger;
+        _catalogEngine = catalogEngine;
         _registry = registry;
         _fallback = fallback;
         _repository = repository;
@@ -89,7 +92,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         foreach (var item in items)
         {
             var ctx = SecEventRawContext.From(item);
-            var parsed = ParseSafe(ctx);
+            var parsed = await ParseSafeAsync(domain, ctx, cancellationToken);
             if (_settings.DropUnknownEvents && SecEventUnknownFilter.IsUnknown(parsed))
             {
                 skipped++;
@@ -141,8 +144,22 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         };
     }
 
-    private ParsedSecEvent ParseSafe(SecEventRawContext ctx)
+    private async Task<ParsedSecEvent> ParseSafeAsync(
+        string domain,
+        SecEventRawContext ctx,
+        CancellationToken cancellationToken)
     {
+        try
+        {
+            var fromCatalog = await _catalogEngine.TryParseAsync(domain, ctx, cancellationToken);
+            if (fromCatalog is not null)
+                return fromCatalog;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "sec_events catalog parse failed domain={Domain}", domain);
+        }
+
         try
         {
             return _registry.Resolve(ctx).Parse(ctx);

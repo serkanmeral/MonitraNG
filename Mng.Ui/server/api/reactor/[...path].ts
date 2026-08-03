@@ -1,4 +1,4 @@
-import { defineEventHandler, getQuery, getMethod, getRouterParam, getHeader } from 'h3';
+import { defineEventHandler, getQuery, getMethod, getRouterParam, getHeader, readBody } from 'h3';
 import { getCookie } from 'h3';
 
 export default defineEventHandler(async (event) => {
@@ -26,10 +26,18 @@ export default defineEventHandler(async (event) => {
   const domainName = getHeader(event, 'x-domain-name');
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
+    Accept: 'application/json',
   };
   if (domainName) {
     headers['X-Domain-Name'] = domainName;
+  }
+
+  const hasBody = method === 'POST' || method === 'PUT' || method === 'PATCH';
+  let body: string | undefined;
+  if (hasBody) {
+    headers['Content-Type'] = 'application/json';
+    const raw = await readBody(event);
+    body = typeof raw === 'string' ? raw : JSON.stringify(raw ?? {});
   }
 
   const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
@@ -41,6 +49,7 @@ export default defineEventHandler(async (event) => {
     return await $fetch(urlWithQuery, {
       method: method as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
       headers,
+      body,
     });
   } catch (error: any) {
     throw createError({

@@ -1,7 +1,11 @@
+export type EventLogSelectionMode = 'selected' | 'all';
+
 export interface EventLogPackageDto {
   name: string;
   channel: string;
+  selectionMode: EventLogSelectionMode;
   eventIds: number[];
+  excludedEventIds: number[];
 }
 
 export interface EventLogPackageCatalogResponse {
@@ -16,7 +20,9 @@ export interface EventLogPackageManageItem {
   id: string;
   name: string;
   channel: string;
+  selectionMode: EventLogSelectionMode;
   eventIds: number[];
+  excludedEventIds: number[];
   isDefault: boolean;
   updatedAtUtc: string;
 }
@@ -31,7 +37,9 @@ export interface EventLogPackageManageListResponse {
 export interface EventLogPackageUpsertPayload {
   name: string;
   channel: string;
+  selectionMode: EventLogSelectionMode;
   eventIds: number[];
+  excludedEventIds: number[];
   isDefault: boolean;
 }
 

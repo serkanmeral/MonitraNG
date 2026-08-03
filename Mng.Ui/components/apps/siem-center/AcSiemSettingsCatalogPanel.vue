@@ -15,7 +15,31 @@ import type {
   EventLogPackageManageItem,
   EventLogPackageManageListResponse,
   EventLogPackagePreset,
+  EventLogSelectionMode,
 } from '@/types/apps/eventLogPackageCatalog';
+
+function asPositiveIntIds(values: unknown[]): number[] {
+  return [
+    ...new Set(
+      values
+        .map((n) => Number(n))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    ),
+  ].sort((a, b) => a - b);
+}
+
+function formatApiError(e: unknown): string {
+  if (e && typeof e === 'object') {
+    const err = e as {
+      data?: { data?: { error?: string }; error?: string; message?: string };
+      message?: string;
+    };
+    const nested =
+      err.data?.data?.error || err.data?.error || err.data?.message || err.message;
+    if (nested) return String(nested);
+  }
+  return e instanceof Error ? e.message : String(e);
+}
 
 const { t, locale } = useAppI18n();
 
@@ -30,13 +54,31 @@ const presets = ref<EventLogPackagePreset[]>([]);
 
 const dialogOpen = ref(false);
 const editingName = ref<string | null>(null);
+/** Snapshot of IDs when edit opened — save fallback if UI select gets cleared. */
+const editingOriginalIds = ref<number[]>([]);
 const formName = ref('');
 const formChannel = ref('System');
+const formSelectionMode = ref<EventLogSelectionMode>('selected');
 const formIsDefault = ref(true);
-const formSelectedIds = ref<number[]>([]);
-const formExtraIds = ref('');
+/** Canonical Event ID list (include or exclude depending on selectionMode). */
+const formEventIds = ref<number[]>([]);
 const deleteTarget = ref<EventLogPackageManageItem | null>(null);
-const skipChannelWatch = ref(false);
+const saveError = ref(false);
+/** Swallow one empty v-select emit after dialog open (Vuetify mount glitch). */
+const swallowEmptySelect = ref(false);
+
+const selectionModeOptions = computed(() => [
+  {
+    title: t('siemCenter.settings.catalog.modeSelected'),
+    value: 'selected' as const,
+    subtitle: t('siemCenter.settings.catalog.modeSelectedHint'),
+  },
+  {
+    title: t('siemCenter.settings.catalog.modeAll'),
+    value: 'all' as const,
+    subtitle: t('siemCenter.settings.catalog.modeAllHint'),
+  },
+]);
 
 const dateLocale = computed(() => (locale.value === 'tr' ? 'tr-TR' : 'en-GB'));
 
@@ -69,18 +111,52 @@ const knownIdsForChannel = computed(() => {
 const knownIdOptions = computed(() =>
   knownIdsForChannel.value.map((k) => ({
     title: `${k.id} — ${k.label}`,
-    value: k.id,
+    value: Number(k.id),
   })),
 );
 
-const mergedEventIds = computed(() => {
-  const fromSelect = [...formSelectedIds.value];
-  const extras = formExtraIds.value
-    .split(/[\s,;]+/)
-    .map((s) => Number(s.trim()))
-    .filter((n) => Number.isFinite(n) && n > 0);
-  return [...new Set([...fromSelect, ...extras])].sort((a, b) => a - b);
+const knownIdSet = computed(
+  () => new Set(knownIdsForChannel.value.map((k) => Number(k.id))),
+);
+
+/** Known-ID multi-select mirrors a subset of formEventIds (never the source of truth). */
+const formSelectedIds = computed({
+  get: () => formEventIds.value.filter((id) => knownIdSet.value.has(id)),
+  set: (values: number[]) => {
+    const known = knownIdSet.value;
+    const keptUnknown = formEventIds.value.filter((id) => !known.has(id));
+    formEventIds.value = asPositiveIntIds([...values, ...keptUnknown]);
+  },
 });
+
+const formExtraIds = computed({
+  get: () =>
+    formEventIds.value
+      .filter((id) => !knownIdSet.value.has(id))
+      .join(', '),
+  set: (text: string) => {
+    const known = knownIdSet.value;
+    const selectedKnown = formEventIds.value.filter((id) => known.has(id));
+    const extras = String(text || '')
+      .split(/[\s,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    formEventIds.value = asPositiveIntIds([...selectedKnown, ...extras]);
+  },
+});
+
+function formatIdsCell(item: EventLogPackageManageItem): string {
+  if (item.selectionMode === 'all') {
+    const exclude =
+      item.excludedEventIds.length > 0
+        ? t('siemCenter.settings.catalog.idsSummaryExclude', {
+            ids: item.excludedEventIds.join(', '),
+          })
+        : '';
+    return t('siemCenter.settings.catalog.idsSummaryAll', { exclude });
+  }
+  return item.eventIds.join(', ');
+}
 
 function formatUtc(iso?: string | null): string {
   if (!iso) return '—';
@@ -95,17 +171,10 @@ function formatUtc(iso?: string | null): string {
   }
 }
 
-function applyEventIdsToForm(channel: string, eventIds: number[]) {
-  const known = new Set(
-    (channels.value.find((c) => c.channel === channel)?.knownEventIds ?? []).map((k) => k.id),
-  );
-  formSelectedIds.value = eventIds.filter((id) => known.has(id));
-  formExtraIds.value = eventIds.filter((id) => !known.has(id)).join(', ');
-}
-
 async function load() {
   loading.value = true;
   error.value = null;
+  saveError.value = false;
   try {
     const [list, dict, presetList] = await Promise.all([
       fetchEventLogPackageManageList(),
@@ -118,7 +187,8 @@ async function load() {
     if (!formChannel.value && dict[0]) formChannel.value = dict[0].channel;
   } catch (e: unknown) {
     managed.value = null;
-    error.value = e instanceof Error ? e.message : String(e);
+    saveError.value = false;
+    error.value = formatApiError(e);
   } finally {
     loading.value = false;
   }
@@ -126,64 +196,92 @@ async function load() {
 
 function openCreate() {
   editingName.value = null;
+  editingOriginalIds.value = [];
   formName.value = '';
   formChannel.value = channels.value[0]?.channel || 'System';
+  formSelectionMode.value = 'selected';
   formIsDefault.value = true;
-  formSelectedIds.value = [];
-  formExtraIds.value = '';
+  formEventIds.value = [];
+  swallowEmptySelect.value = true;
   dialogOpen.value = true;
 }
 
 function openEdit(item: EventLogPackageManageItem) {
   editingName.value = item.name;
   formName.value = item.name;
-  skipChannelWatch.value = true;
   formChannel.value = item.channel;
+  formSelectionMode.value = item.selectionMode === 'all' ? 'all' : 'selected';
   formIsDefault.value = item.isDefault;
-  applyEventIdsToForm(item.channel, item.eventIds);
+  const ids = asPositiveIntIds(
+    item.selectionMode === 'all' ? item.excludedEventIds : item.eventIds,
+  );
+  editingOriginalIds.value = ids;
+  formEventIds.value = [...ids];
+  swallowEmptySelect.value = true;
   dialogOpen.value = true;
-  queueMicrotask(() => {
-    skipChannelWatch.value = false;
-  });
 }
 
 function applyPreset(preset: EventLogPackagePreset) {
   if (editingName.value) return;
-  skipChannelWatch.value = true;
   formName.value = preset.suggestedName || preset.id;
   formChannel.value = preset.channel;
+  formSelectionMode.value = 'selected';
   formIsDefault.value = preset.isDefault;
-  applyEventIdsToForm(preset.channel, preset.eventIds);
-  queueMicrotask(() => {
-    skipChannelWatch.value = false;
-  });
+  formEventIds.value = asPositiveIntIds(preset.eventIds);
 }
 
-watch(formChannel, () => {
-  if (skipChannelWatch.value) return;
-  const allowed = new Set(knownIdsForChannel.value.map((k) => k.id));
-  formSelectedIds.value = formSelectedIds.value.filter((id) => allowed.has(id));
+function onSelectedIdsUpdate(v: unknown) {
+  const next = asPositiveIntIds(Array.isArray(v) ? v : []);
+  if (next.length === 0 && swallowEmptySelect.value) {
+    swallowEmptySelect.value = false;
+    return;
+  }
+  swallowEmptySelect.value = false;
+  formSelectedIds.value = next;
+}
+
+// Include list must not become exclude list (and vice versa) when scope changes.
+watch(formSelectionMode, (mode, prev) => {
+  if (!prev || mode === prev) return;
+  formEventIds.value = [];
+  editingOriginalIds.value = [];
 });
 
 function selectAllKnown() {
-  formSelectedIds.value = knownIdsForChannel.value.map((k) => k.id);
+  const known = asPositiveIntIds(knownIdsForChannel.value.map((k) => k.id));
+  const unknown = formEventIds.value.filter((id) => !knownIdSet.value.has(id));
+  formEventIds.value = asPositiveIntIds([...known, ...unknown]);
 }
 
 function clearKnown() {
-  formSelectedIds.value = [];
+  formEventIds.value = formEventIds.value.filter((id) => !knownIdSet.value.has(id));
 }
 
 async function saveForm() {
+  saveError.value = true;
   if (!formName.value.trim()) {
     flash.value = null;
     error.value = t('siemCenter.settings.catalog.nameRequired');
     return;
   }
-  if (!String(formChannel.value || '').trim()) {
+  const channel = normalizeChannelModel(formChannel.value).trim();
+  if (!channel) {
     error.value = t('siemCenter.settings.catalog.channelRequired');
     return;
   }
-  if (mergedEventIds.value.length === 0) {
+  // Force selected when editing existing curated packages unless user explicitly chose all
+  // and has the new collector — still always send numeric eventIds for selected.
+  const mode: EventLogSelectionMode =
+    formSelectionMode.value === 'all' ? 'all' : 'selected';
+
+  let ids = asPositiveIntIds(formEventIds.value);
+  // Only for selected: recover wipe of include IDs. Never inject includes as excludes for "all".
+  if (mode === 'selected' && ids.length === 0 && editingOriginalIds.value.length > 0) {
+    ids = [...editingOriginalIds.value];
+    formEventIds.value = [...ids];
+  }
+
+  if (mode === 'selected' && ids.length === 0) {
     error.value = t('siemCenter.settings.catalog.idsRequired');
     return;
   }
@@ -193,9 +291,12 @@ async function saveForm() {
   flash.value = null;
   const payload = {
     name: formName.value.trim(),
-    channel: String(formChannel.value).trim(),
-    eventIds: mergedEventIds.value,
-    isDefault: formIsDefault.value,
+    channel,
+    selectionMode: mode,
+    // Always include eventIds for selected; old collectors only read this field.
+    eventIds: mode === 'selected' ? ids : [],
+    excludedEventIds: mode === 'all' ? ids : [],
+    isDefault: !!formIsDefault.value,
   };
   try {
     if (editingName.value) {
@@ -206,9 +307,11 @@ async function saveForm() {
       flash.value = t('siemCenter.settings.catalog.created');
     }
     dialogOpen.value = false;
+    editingOriginalIds.value = [];
     await load();
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : String(e);
+    saveError.value = true;
+    error.value = formatApiError(e);
   } finally {
     saving.value = false;
   }
@@ -224,7 +327,8 @@ async function confirmDelete() {
     deleteTarget.value = null;
     await load();
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : String(e);
+    saveError.value = true;
+    error.value = formatApiError(e);
   } finally {
     saving.value = false;
   }
@@ -233,13 +337,14 @@ async function confirmDelete() {
 async function publish() {
   publishing.value = true;
   error.value = null;
+  saveError.value = true;
   flash.value = null;
   try {
     const res = await publishEventLogPackageCatalog();
     flash.value = t('siemCenter.settings.catalog.published', { version: res.version });
     await load();
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : String(e);
+    error.value = formatApiError(e);
   } finally {
     publishing.value = false;
   }
@@ -309,8 +414,8 @@ defineExpose({ refresh: load });
       {{ flash }}
     </v-alert>
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
-      {{ t('siemCenter.settings.catalog.loadError') }}
-      <div class="text-caption mt-1">{{ error }}</div>
+      <template v-if="!saveError">{{ t('siemCenter.settings.catalog.loadError') }}</template>
+      <div :class="saveError ? '' : 'text-caption mt-1'">{{ error }}</div>
     </v-alert>
 
     <v-skeleton-loader v-if="loading && !managed" type="table" />
@@ -321,6 +426,7 @@ defineExpose({ refresh: load });
           <tr>
             <th>{{ t('siemCenter.settings.catalog.colName') }}</th>
             <th>{{ t('siemCenter.settings.catalog.colChannel') }}</th>
+            <th>{{ t('siemCenter.settings.catalog.colMode') }}</th>
             <th>{{ t('siemCenter.settings.catalog.colEventIds') }}</th>
             <th>{{ t('siemCenter.settings.catalog.colDefault') }}</th>
             <th class="text-end" />
@@ -330,7 +436,20 @@ defineExpose({ refresh: load });
           <tr v-for="item in managed.items" :key="item.name">
             <td class="font-mono">{{ item.name }}</td>
             <td class="text-body-2">{{ item.channel }}</td>
-            <td class="font-mono text-caption">{{ item.eventIds.join(', ') }}</td>
+            <td>
+              <v-chip
+                size="x-small"
+                :color="item.selectionMode === 'all' ? 'warning' : 'primary'"
+                variant="tonal"
+              >
+                {{
+                  item.selectionMode === 'all'
+                    ? t('siemCenter.settings.catalog.modeAll')
+                    : t('siemCenter.settings.catalog.modeSelected')
+                }}
+              </v-chip>
+            </td>
+            <td class="font-mono text-caption">{{ formatIdsCell(item) }}</td>
             <td>
               <v-chip
                 size="x-small"
@@ -423,7 +542,27 @@ defineExpose({ refresh: load });
             clearable
             @update:model-value="onFormChannelUpdate"
           />
-          <div class="d-flex flex-wrap ga-2 mb-2">
+          <v-radio-group
+            v-model="formSelectionMode"
+            :label="t('siemCenter.settings.catalog.colMode')"
+            density="compact"
+            class="mb-2"
+          >
+            <v-radio
+              v-for="opt in selectionModeOptions"
+              :key="opt.value"
+              :label="opt.title"
+              :value="opt.value"
+            >
+              <template #label>
+                <div>
+                  <div class="text-body-2">{{ opt.title }}</div>
+                  <div class="text-caption text-medium-emphasis">{{ opt.subtitle }}</div>
+                </div>
+              </template>
+            </v-radio>
+          </v-radio-group>
+          <div v-if="formSelectionMode === 'selected'" class="d-flex flex-wrap ga-2 mb-2">
             <v-btn size="x-small" variant="tonal" :disabled="!knownIdOptions.length" @click="selectAllKnown">
               {{ t('siemCenter.settings.catalog.selectAllIds') }}
             </v-btn>
@@ -431,20 +570,36 @@ defineExpose({ refresh: load });
               {{ t('siemCenter.settings.catalog.clearIds') }}
             </v-btn>
           </div>
+          <div v-else class="d-flex flex-wrap ga-2 mb-2">
+            <v-btn size="x-small" variant="text" @click="clearKnown">
+              {{ t('siemCenter.settings.catalog.clearIds') }}
+            </v-btn>
+          </div>
           <v-select
-            v-model="formSelectedIds"
+            :model-value="formSelectedIds"
             :items="knownIdOptions"
-            :label="t('siemCenter.settings.catalog.knownIds')"
+            item-title="title"
+            item-value="value"
+            :label="
+              formSelectionMode === 'all'
+                ? t('siemCenter.settings.catalog.knownExcludeIds')
+                : t('siemCenter.settings.catalog.knownIds')
+            "
             :disabled="!knownIdOptions.length"
             multiple
             chips
             closable-chips
             density="comfortable"
             class="mb-2"
+            @update:model-value="onSelectedIdsUpdate"
           />
           <v-text-field
             v-model="formExtraIds"
-            :label="t('siemCenter.settings.catalog.extraIds')"
+            :label="
+              formSelectionMode === 'all'
+                ? t('siemCenter.settings.catalog.extraExcludeIds')
+                : t('siemCenter.settings.catalog.extraIds')
+            "
             density="comfortable"
             hint="1000, 1001"
             persistent-hint
@@ -474,7 +629,7 @@ defineExpose({ refresh: load });
       </v-card>
     </v-dialog>
 
-    <v-dialog :model-value="!!deleteTarget" max-width="420" @update:model-value="(v: boolean) => { if (!v) deleteTarget = null; }">
+    <v-dialog :model-value="!!deleteTarget" max-width="420" @update:model-value="(v) => { if (!v) deleteTarget = null; }">
       <v-card v-if="deleteTarget">
         <v-card-title>{{ t('siemCenter.settings.catalog.deleteTitle') }}</v-card-title>
         <v-card-text>

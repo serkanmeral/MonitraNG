@@ -15,6 +15,7 @@ using MngReactor.Persistence.Services.Data;
 using MngReactor.Persistence.Services.Domain;
 using MngReactor.Persistence.Services.Engine;
 using MngReactor.Persistence.Services.Ingest;
+using MngReactor.Application.Services.SecEvents;
 using MngReactor.Persistence.Services.SecEvents;
 using MngReactor.Persistence.Services.SecEvents.Parsers;
 
@@ -47,6 +48,12 @@ namespace MngReactor.Persistence
             services.AddScoped<ISecEventOpenSearchWriter, SecEventOpenSearchWriter>();
             services.AddScoped<ISecEventIngestProcessing, SecEventIngestProcessing>();
             services.AddScoped<ISecEventsRepository, SecEventsRepository>();
+            services.AddScoped<ISecEventParseRuleCatalogStore, MongoSecEventParseRuleCatalogStore>();
+            services.AddScoped<ISecEventParseRuleCatalogCache, SecEventParseRuleCatalogCache>();
+            services.AddScoped<ISecEventParseRuleCatalogService, SecEventParseRuleCatalogService>();
+            services.AddScoped<ISecEventWindowsParseSampleService, SecEventWindowsParseSampleService>();
+            services.AddScoped<ISecEventLinuxParseSampleService, SecEventLinuxParseSampleService>();
+            services.AddScoped<ISecEventCatalogParseEngine, SecEventCatalogParseEngine>();
             services.AddScoped<ISecEventFlowBaselineStore, SecEventFlowBaselineStore>();
             services.AddSingleton<ISecEventMaintenanceWindowEvaluator, SecEventMaintenanceWindowEvaluator>();
             services.AddSingleton<WindowsSecurityExtendedParser>();

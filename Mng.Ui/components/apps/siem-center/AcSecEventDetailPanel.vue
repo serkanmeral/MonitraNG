@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { SecEventListItem } from '@/types/apps/secEvent';
@@ -7,12 +7,15 @@ import {
   actionColor,
   alarmRulesLinkForAction,
   displayEventAction,
-  formatRawForDisplay,
   formatRelativeTime,
   getScenarioIdForAction,
   outcomeColor,
   sourceTypeLabelKey,
 } from '@/composables/useSecEventList';
+import {
+  eventLogDetailFieldsJson,
+  eventLogDetailMessageText,
+} from '@/utils/windowsSecurityLogonParse';
 import { copyTextToClipboard } from '@/utils/clipboard';
 
 const props = defineProps<{
@@ -27,6 +30,7 @@ const emit = defineEmits<{
 const { t, locale } = useAppI18n();
 const { mdAndUp } = useDisplay();
 const copyHint = ref<string | null>(null);
+const bodyTab = ref<'message' | 'fields'>('message');
 
 const scenarioId = computed(() => (props.event ? getScenarioIdForAction(props.event.eventAction) : null));
 
@@ -45,9 +49,31 @@ const actionLabel = computed(() => {
   return translated !== key ? translated : props.event.eventAction;
 });
 
-const displayRaw = computed(() => props.event?.raw ?? props.event?.rawPreview ?? '');
+/** Mesaj = düz metin; Alanlar = fields JSON. */
+const displayMessage = computed(() => {
+  if (!props.event) return '';
+  return eventLogDetailMessageText(
+    props.event.fields,
+    props.event.raw,
+    props.event.rawPreview,
+    null,
+  );
+});
 
-const formattedRaw = computed(() => (displayRaw.value ? formatRawForDisplay(displayRaw.value) : null));
+const displayFieldsJson = computed(() => {
+  if (!props.event) return '';
+  return eventLogDetailFieldsJson(props.event.fields, props.event.raw, props.event.rawPreview);
+});
+
+const activeTabCopyValue = computed(() =>
+  bodyTab.value === 'message' ? displayMessage.value : displayFieldsJson.value,
+);
+
+const activeTabCopyLabel = computed(() =>
+  bodyTab.value === 'message'
+    ? t('siemCenter.events.tabMessage')
+    : t('siemCenter.events.tabFields'),
+);
 
 function formatDate(value?: string | null): string {
   if (!value) return '—';
@@ -73,6 +99,18 @@ async function copyValue(label: string, value?: string | null) {
     copyHint.value = null;
   }, 2000);
 }
+
+async function copyActiveTab() {
+  await copyValue(activeTabCopyLabel.value, activeTabCopyValue.value);
+}
+
+watch(
+  () => props.event?.id,
+  () => {
+    bodyTab.value = 'message';
+    copyHint.value = null;
+  },
+);
 </script>
 
 <template>
@@ -190,18 +228,19 @@ async function copyValue(label: string, value?: string | null) {
         </v-list>
       </div>
 
-      <!-- Raw log -->
+      <!-- Message / Fields / Raw -->
       <div class="ac-detail-section">
-        <div class="d-flex align-center justify-space-between mb-2">
-          <div class="ac-detail-section__title mb-0">
-            {{ event.raw ? t('siemCenter.events.rawFull') : t('siemCenter.events.rawPreview') }}
-          </div>
+        <div class="d-flex align-center flex-wrap ga-2 mb-2">
+          <v-tabs v-model="bodyTab" density="compact" color="primary" class="flex-grow-1">
+            <v-tab value="message">{{ t('siemCenter.events.tabMessage') }}</v-tab>
+            <v-tab value="fields">{{ t('siemCenter.events.tabFields') }}</v-tab>
+          </v-tabs>
           <v-btn
-            v-if="displayRaw"
             size="x-small"
             variant="text"
             prepend-icon="mdi-content-copy"
-            @click="copyValue(t('siemCenter.events.rawFull'), displayRaw)"
+            :disabled="!activeTabCopyValue?.trim()"
+            @click="copyActiveTab"
           >
             {{ t('siemCenter.events.copy') }}
           </v-btn>
@@ -210,8 +249,16 @@ async function copyValue(label: string, value?: string | null) {
         <div v-if="loading" class="d-flex justify-center py-6">
           <v-progress-circular indeterminate color="primary" size="28" />
         </div>
-        <pre v-else-if="formattedRaw" class="ac-raw-block">{{ formattedRaw.text }}</pre>
-        <div v-else class="text-body-2 text-medium-emphasis">{{ t('siemCenter.events.rawUnavailable') }}</div>
+        <v-tabs-window v-else v-model="bodyTab">
+          <v-tabs-window-item value="message">
+            <pre v-if="displayMessage.trim()" class="ac-raw-block">{{ displayMessage }}</pre>
+            <div v-else class="text-body-2 text-medium-emphasis">{{ t('siemCenter.events.noMessage') }}</div>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="fields">
+            <pre v-if="displayFieldsJson.trim()" class="ac-raw-block">{{ displayFieldsJson }}</pre>
+            <div v-else class="text-body-2 text-medium-emphasis">{{ t('siemCenter.events.noFields') }}</div>
+          </v-tabs-window-item>
+        </v-tabs-window>
       </div>
 
       <div class="d-flex flex-wrap gap-2 mt-4">

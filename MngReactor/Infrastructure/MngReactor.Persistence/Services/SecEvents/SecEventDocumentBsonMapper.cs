@@ -56,6 +56,28 @@ internal static class SecEventDocumentBsonMapper
                 bson["network"] = network;
         }
 
+        if (doc.Fields is { Count: > 0 })
+        {
+            var fields = new BsonDocument();
+            foreach (var (key, value) in doc.Fields)
+            {
+                if (string.IsNullOrWhiteSpace(key) || value is null)
+                    continue;
+                fields[key] = value switch
+                {
+                    string s => (BsonValue)s,
+                    int i => i,
+                    long l => l,
+                    double d => d,
+                    bool b => b,
+                    _ => value.ToString() is { Length: > 0 } t ? (BsonValue)t : BsonNull.Value
+                };
+            }
+
+            if (fields.ElementCount > 0)
+                bson["fields"] = fields;
+        }
+
         return bson;
     }
 

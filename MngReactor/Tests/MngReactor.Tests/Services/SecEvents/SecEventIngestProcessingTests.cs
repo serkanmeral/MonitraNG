@@ -55,8 +55,17 @@ public sealed class SecEventIngestProcessingTests
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        var catalogEngine = new Mock<ISecEventCatalogParseEngine>();
+        catalogEngine
+            .Setup(e => e.TryParseAsync(
+                It.IsAny<string>(),
+                It.IsAny<SecEventRawContext>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ParsedSecEvent?)null);
+
         return new SecEventIngestProcessing(
             NullLogger<SecEventIngestProcessing>.Instance,
+            catalogEngine.Object,
             SecEventParserTestFactory.CreateRegistry(),
             new UnknownSecEventFallback(),
             repoMock.Object,

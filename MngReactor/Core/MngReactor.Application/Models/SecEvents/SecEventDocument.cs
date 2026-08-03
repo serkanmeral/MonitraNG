@@ -15,6 +15,8 @@ public sealed class SecEventDocument
     public required string RawPreview { get; init; }
     /// <summary>U7: baseline sonrası ilk kez görülen src→dst çifti.</summary>
     public bool BaselineNewFlowPair { get; init; }
+    /// <summary>Bag values for custom.* and other non-core extract targets.</summary>
+    public IReadOnlyDictionary<string, object?>? Fields { get; init; }
 
     public static SecEventDocument FromParsed(
         ParsedSecEvent parsed,
@@ -57,7 +59,8 @@ public sealed class SecEventDocument
                 },
             Parser = new SecEventParserBlock { Id = parsed.ParserId },
             Raw = persistFullRaw ? parsed.Raw : string.Empty,
-            RawPreview = parsed.RawPreview
+            RawPreview = parsed.RawPreview,
+            Fields = parsed.ExtraFields.Count == 0 ? null : parsed.ExtraFields
         };
 }
 

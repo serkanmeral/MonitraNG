@@ -14,7 +14,7 @@ public static class EventLogPackageCatalogSeed
         [
             Doc("system-lifecycle", "System", true, now,
                 41, 104, 6005, 6006, 7031, 7034, 7036, 7040, 7045),
-            Doc("application-signals", "Application", true, now, 1000, 1001, 1026),
+            Doc("application-signals", "Application", true, now, 1000, 1001, 1026, 65002),
             Doc("powershell-engine", "Windows PowerShell", true, now, 400, 403, 600),
             Doc(
                 "rdp-session",
@@ -23,7 +23,7 @@ public static class EventLogPackageCatalogSeed
                 now,
                 21, 23, 24, 25),
             Doc("security-auth", "Security", false, now,
-                4624, 4625, 4634, 4648, 4672, 4720, 4726, 4740)
+                4624, 4625, 4634, 4648, 4672, 4720, 4722, 4726, 4728, 4732, 4738, 4740, 5136, 5137, 5139)
         ];
     }
 

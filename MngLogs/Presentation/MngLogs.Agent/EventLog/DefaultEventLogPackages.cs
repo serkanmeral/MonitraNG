@@ -9,7 +9,8 @@ public static class DefaultEventLogPackages
     {
         Name = "security-auth",
         Channel = "Security",
-        EventIds = [4624, 4625, 4634, 4648, 4672, 4720, 4726, 4740]
+        IsDefault = false,
+        EventIds = [4624, 4625, 4634, 4648, 4672, 4720, 4722, 4726, 4728, 4732, 4738, 4740, 5136, 5137, 5139]
     };
 
     /// <summary>RDP / local session (usually readable without admin).</summary>
@@ -101,13 +102,68 @@ public static class DefaultEventLogPackages
         return EventLogPackageMerger.Merge(server, policy.AgentOverrides, policy.DisabledServerPackages);
     }
 
-    /// <summary>Builds an XPath query for EventLogQuery (EventID filter + optional RecordId lower bound).</summary>
+    /// <summary>
+    /// Builds an XPath query for EventLogQuery.
+    /// <c>selected</c>: EventID include list; <c>all</c>: whole channel with optional EventID excludes.
+    /// </summary>
     public static string BuildQuery(EventLogPackage package, long? afterRecordIdExclusive)
     {
-        var idFilter = string.Join(" or ", package.EventIds.Distinct().Select(id => $"EventID={id}"));
-        if (afterRecordIdExclusive is > 0)
-            return $"*[System[({idFilter}) and (EventRecordID > {afterRecordIdExclusive.Value})]]";
+        var predicates = new List<string>();
 
-        return $"*[System[({idFilter})]]";
+        if (package.IsAllChannel)
+        {
+            var excludes = (package.ExcludedEventIds ?? [])
+                .Where(id => id > 0)
+                .Distinct()
+                .OrderBy(id => id)
+                .Select(id => $"EventID!={id}")
+                .ToList();
+            if (excludes.Count > 0)
+                predicates.Add(excludes.Count == 1
+                    ? excludes[0]
+                    : $"({string.Join(" and ", excludes)})");
+        }
+        else
+        {
+            var idFilter = string.Join(
+                " or ",
+                (package.EventIds ?? []).Distinct().Select(id => $"EventID={id}"));
+            if (string.IsNullOrWhiteSpace(idFilter))
+                throw new ArgumentException("selected package requires at least one Event ID.", nameof(package));
+            predicates.Add($"({idFilter})");
+        }
+
+        if (afterRecordIdExclusive is > 0)
+            predicates.Add($"(EventRecordID > {afterRecordIdExclusive.Value})");
+
+        if (predicates.Count == 0)
+            return "*";
+
+        return $"*[System[{string.Join(" and ", predicates)}]]";
+    }
+
+    /// <summary>
+    /// Package filter + recent time window (Windows Event Log <c>timediff</c> in ms).
+    /// Used to locate the oldest in-window record when seeding a history cursor.
+    /// </summary>
+    public static string BuildHistoryWindowQuery(EventLogPackage package, int lookbackHours)
+    {
+        var hours = Math.Clamp(lookbackHours, 1, 168);
+        var ms = (long)hours * 3_600_000L;
+        var baseQuery = BuildQuery(package, afterRecordIdExclusive: null);
+        // Inject TimeCreated into System predicates.
+        if (baseQuery == "*")
+            return $"*[System[TimeCreated[timediff(@SystemTime) <= {ms}]]]";
+
+        const string prefix = "*[System[";
+        const string suffix = "]]";
+        if (baseQuery.StartsWith(prefix, StringComparison.Ordinal) &&
+            baseQuery.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            var inner = baseQuery[prefix.Length..^suffix.Length];
+            return $"*[System[{inner} and TimeCreated[timediff(@SystemTime) <= {ms}]]]";
+        }
+
+        return $"*[System[TimeCreated[timediff(@SystemTime) <= {ms}]]]";
     }
 }

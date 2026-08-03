@@ -42,8 +42,20 @@ Hard push yok — ajanlar açılış / `PackageCatalogSyncIntervalSeconds` ile �
 - Fleet defaults host’tan kapatılamaz (`DisabledServerPackages` yok sayılır / kayıtlarda temizlenir).
 - SIEM Discovery host modal → **Event Log** sekmesi: opsiyonel atama tablosu + olay listesi (tablo filtreleri).
 
+## Paket kapsamı (`selectionMode`)
+
+| Alan | Anlam |
+|------|--------|
+| `selectionMode` | `selected` (varsayılan) veya `all` |
+| `eventIds` | `selected`: toplanacak Event ID listesi |
+| `excludedEventIds` | `all`: kanalın tamamından hariç tutulacak ID’ler (opsiyonel) |
+
+- Eski kayıtlar / alan yok → `selected` kabul edilir; mevcut curated paketler değişmez.
+- Agent XPath: `selected` → `EventID=…`; `all` → kanal sorgusu + isteğe bağlı `EventID!=…`.
+- Upsert: `selected` için en az bir `eventIds` zorunlu; `all` için `eventIds` boşaltılır.
+
 ## Notlar
 
-- Paket = tek Windows kanalı + Event ID listesi.
-- Parser kuralları henüz yok (P5).
+- Paket = tek Windows kanalı + seçim kapsamı (`selected` Event ID’ler veya `all` ± exclude).
+- Parse kuralları ayrı katalog (P5): [PARSE_RULES_CATALOG.md](../PARSE_RULES_CATALOG.md) — paket “ne topla”, parse “nasıl çıkar”.
 - Host ataması: yukarıdaki E3 bölümü.

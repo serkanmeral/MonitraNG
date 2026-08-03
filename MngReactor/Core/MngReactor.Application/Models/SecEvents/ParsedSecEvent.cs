@@ -19,6 +19,10 @@ public sealed class ParsedSecEvent
     public required string Raw { get; init; }
     public required string RawPreview { get; init; }
 
+    /// <summary>custom.* (and other bag) extract values persisted under document fields.</summary>
+    public IReadOnlyDictionary<string, object?> ExtraFields { get; init; } =
+        new Dictionary<string, object?>(StringComparer.Ordinal);
+
     public ParsedSecEvent WithEventAction(string eventAction) =>
         new()
         {
@@ -36,6 +40,7 @@ public sealed class ParsedSecEvent
             SourceHost = SourceHost,
             ParserId = ParserId,
             Raw = Raw,
-            RawPreview = RawPreview
+            RawPreview = RawPreview,
+            ExtraFields = ExtraFields
         };
 }

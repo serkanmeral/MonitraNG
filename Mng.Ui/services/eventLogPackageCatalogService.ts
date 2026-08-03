@@ -30,15 +30,22 @@ async function authHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+function normalizeIds(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0);
+}
+
+function normalizeSelectionMode(raw: unknown): 'selected' | 'all' {
+  return String(raw ?? '').trim().toLowerCase() === 'all' ? 'all' : 'selected';
+}
+
 function normalizePackage(raw: Record<string, unknown>) {
-  const idsRaw = (raw.eventIds ?? raw.EventIds ?? []) as unknown[];
-  const eventIds = Array.isArray(idsRaw)
-    ? idsRaw.map((n) => Number(n)).filter((n) => Number.isFinite(n))
-    : [];
   return {
     name: String(raw.name ?? raw.Name ?? ''),
     channel: String(raw.channel ?? raw.Channel ?? ''),
-    eventIds,
+    selectionMode: normalizeSelectionMode(raw.selectionMode ?? raw.SelectionMode),
+    eventIds: normalizeIds(raw.eventIds ?? raw.EventIds),
+    excludedEventIds: normalizeIds(raw.excludedEventIds ?? raw.ExcludedEventIds),
   };
 }
 
