@@ -23,6 +23,8 @@ internal static class SecEventBsonReader
             ActorUser = ReadNestedString(doc, "actor", "user"),
             NetworkSrcIp = ReadNestedString(doc, "network", "srcIp"),
             NetworkDstIp = ReadNestedString(doc, "network", "dstIp"),
+            NetworkDstPort = ReadNestedInt(doc, "network", "dstPort"),
+            NetworkProtocol = ReadNestedString(doc, "network", "protocol"),
             ParserId = ReadNestedString(doc, "parser", "id"),
             RawPreview = rawPreview,
             Raw = includeRaw ? ReadString(doc, "raw") ?? rawPreview : null,
@@ -94,5 +96,24 @@ internal static class SecEventBsonReader
             return false;
 
         return childVal.IsBoolean && childVal.AsBoolean;
+    }
+
+    private static int? ReadNestedInt(BsonDocument doc, string parent, string child)
+    {
+        if (!doc.TryGetValue(parent, out var parentVal) || !parentVal.IsBsonDocument)
+            return null;
+
+        var nested = parentVal.AsBsonDocument;
+        if (!nested.TryGetValue(child, out var childVal) || childVal.IsBsonNull)
+            return null;
+
+        return childVal.BsonType switch
+        {
+            BsonType.Int32 => childVal.AsInt32,
+            BsonType.Int64 => (int)childVal.AsInt64,
+            BsonType.Double => (int)childVal.AsDouble,
+            BsonType.String => int.TryParse(childVal.AsString, out var n) ? n : null,
+            _ => int.TryParse(childVal.ToString(), out var n2) ? n2 : null
+        };
     }
 }

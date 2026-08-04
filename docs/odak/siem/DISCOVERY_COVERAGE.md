@@ -2,7 +2,7 @@
 
 **Durum:** ✅ Faz 1–3 + demo UX Odak’ta kullanılabilir (Collector `:5091` + UI)  
 **Route:** `/apps/siem-center/discovery`  
-**Son güncelleme:** 2 Ağustos 2026  
+**Son güncelleme:** 4 Ağustos 2026 (prod nginx `/api/logcollector/` — Discovery 405 fix)  
 **Canlı durum / park noktası:** [current_status.md](./current_status.md)
 
 Falcon Discover tarzı **ajan kapsamı boşluğu** + runZero-lite **kimlik parmak izi**. NetBox / Cisco L2 topoloji ve Armis/OT bilinçli olarak ertelendi.
@@ -69,7 +69,17 @@ AD taraması **opsiyonel zenginleştirme**; demo’da genelde kapalı. Birincil 
 | GET/PUT | `/discovery/prefixes` | Prefix tablosu |
 | POST | `/discovery/hosts/clear` | Temizle |
 
-Nuxt proxy: `Mng.Ui/server/api/logcollector/[...path].ts`
+### Proxy (kritik — lokal vs prod)
+
+| Ortam | Nasıl | Not |
+|-------|--------|-----|
+| **Lokal Nuxt** (`npm run dev`) | BFF: `Mng.Ui/server/api/logcollector/[...path].ts` | Cookie/token + isteğe bağlı `X-MngLogs-ApiKey` |
+| **Prod SPA** (`mngui` nginx) | `Mng.Ui/nginx.conf` → `location /api/logcollector/` → `http://mnglogcollector:5091` | `rewrite` `/api/logcollector/(.*)` → `/api/$1` |
+
+Prod image `npm run generate` + nginx static’tir; Nitro BFF **çalışmaz**. Proxy yoksa `/api/logcollector/...` SPA `location /`’e düşer: GET → HTML 200, **POST → 405 Method Not Allowed**.  
+4 Ağu 2026’da nginx location eklendi; POST scan doğrulandı (API yanıtı, 405 değil).
+
+Prefix PUT için BFF’de de `PUT` izinli olmalı (lokal); prod nginx tüm metodları proxy eder.
 
 ---
 
@@ -136,5 +146,10 @@ Nuxt proxy: `Mng.Ui/server/api/logcollector/[...path].ts`
 
 ## Deploy notu (Odak)
 
-Collector değişiklikleri için `mnglogcollector` rebuild/deploy; UI için `mngui` (veya local Nuxt → prod API `:5091`).  
+Collector değişiklikleri için `mnglogcollector` rebuild/deploy; UI / nginx proxy için **`mngui` NoCache rebuild** (nginx.conf image’a gömülü).  
 Prefix varsayılanı Odak ofis CIDR ile seed / PUT ile doğrulanır.
+
+```powershell
+.\scripts\odak\sync-odak-prod.ps1 -PathsCsv "Mng.Ui"
+.\scripts\odak\deploy-odak-prod.ps1 -Services mngui -NoCache
+```

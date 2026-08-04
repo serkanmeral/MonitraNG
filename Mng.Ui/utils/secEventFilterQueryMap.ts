@@ -115,7 +115,13 @@ export function mapSecEventSavedFilterToQuery(
         out.dstIp = value;
         break;
       case 'network.dstPort':
-        out.dstPort = value;
+        if (op === 'in') {
+          const ports = parseCsv(value);
+          if (ports.length === 1) out.dstPort = ports[0];
+          else if (ports.length > 1) generic.push({ field, op, value });
+        } else {
+          out.dstPort = value;
+        }
         break;
       case 'search':
         out.search = value;

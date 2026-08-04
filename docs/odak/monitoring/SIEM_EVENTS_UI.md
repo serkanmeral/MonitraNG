@@ -1,6 +1,6 @@
 # SIEM güvenlik olay arama UI
 
-**Durum:** ✅ Filtre kataloğu v2 — dinamik alanlar · canlı kapsam · tree yönetimi (4 Ağu 2026)  
+**Durum:** ✅ Filtre kataloğu v2 + FortiGate/firewall liste-detay-filtre (4 Ağu 2026)  
 **Route:** `/apps/siem-center/events`  
 **Menü:** Side bar → **Güvenlik Merkezi** → Güvenlik olayları
 
@@ -30,6 +30,14 @@
 | Kaynak IP | `network.srcIp` | Olaydaki istemci IP (SSH: `from` adresi) |
 | Hedef | `network.dstIp` | Ağ akışı hedef IP — **auth loglarında genelde boş** (normal) |
 | Kullanıcı | `actor.user` | İlgili hesap |
+| (Firewall 2. satır) | `custom.policy_id` · `custom.service` · `network.dstPort` | Actor/net satırında `policy · service · :port` (`secEventFirewallDisplay.ts`) |
+
+## Firewall / FortiGate
+
+- Parser: `firewall.vendor.v1` → ExtraFields + list `NetworkDstPort` / `NetworkProtocol` ([SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md))  
+- Seed kategori: `cat-firewall` (tümü / denied / allowed / rule_change / kritik portlar 22,445,3389)  
+- Detay drawer: **Firewall akışı** + filtre kısayolları (`AcSecEventDetailPanel.vue`)  
+- Alan filtreleri: `custom.policy_id`, `custom.service` (+ mevcut `network.dstPort`)
 
 ## Filtre modeli (katalog)
 

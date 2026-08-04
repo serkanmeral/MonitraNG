@@ -8497,8 +8497,10 @@
         "typeHint": "Kaynak sınıfı (source.type). Genelde boş bırakın; Product yeterli.",
         "product": "Product",
         "productHint": "Ürün / paket (source.product). Listeden seçin veya yazın.",
-        "host": "Host",
-        "hostHint": "Cihaz adı — listeden seçin veya serbest yazın (çoklu).",
+      "host": "Host",
+      "hostHint": "Hostname · IP — listeden seçin veya yazın. Agent olayları hostname ile eşleşir; IP yazılırsa hostname’e çevrilmeye çalışılır.",
+      "hostSensor": "Sensor / IP",
+      "hostSensorHint": "Firewall / syslog kaynağı — genelde sensor IP veya adı (hostname değil).",
         "advancedScope": "Gelişmiş: Type",
         "all": "Tümü",
         "fieldFilters": "Alan filtreleri",
@@ -8534,13 +8536,18 @@
           "srcIp": "Kaynak IP",
           "dstIp": "Hedef IP",
           "dstPort": "Hedef port",
+          "policyId": "Firewall politika ID",
+          "fwService": "Firewall servis",
           "search": "Serbest arama"
         },
         "products": {
           "rdp_session": "RDP oturumu",
           "mnglogs_agent": "MngLogs agent",
           "windows": "Windows",
-          "fortigate": "FortiGate"
+          "windows_rdp": "Windows RDP",
+          "windows_eventlog": "Windows Event Log",
+          "fortigate": "FortiGate",
+          "linux_journal": "Linux Journal"
         }
       },
       "filterBuilder": {
@@ -8599,6 +8606,8 @@
           "sourceIp": "Kaynak IP",
           "destIp": "Hedef IP",
           "destPort": "Hedef port",
+          "policyId": "Politika ID",
+          "fwService": "Servis",
           "sessionHost": "Oturum hostu (RDP hedefi)",
           "host": "Host",
           "eventCode": "Event ID",
@@ -8611,6 +8620,8 @@
           "anyIp": "Herhangi bir IP",
           "anyHost": "Herhangi bir host",
           "anyPort": "Herhangi bir port",
+          "anyPolicy": "Herhangi bir policyid",
+          "anyService": "Herhangi bir servis",
           "eventCode": "örn. 4625",
           "message": "İçerir…"
         },
@@ -8643,6 +8654,15 @@
       "sourceUnknown": "Bilinmeyen kaynak",
       "empty": "Filtreye uyan olay yok.",
       "emptyHint": "Zaman aralığını genişletin veya filtreleri temizleyin. Uygulanan niyet için parse edilmiş olay yoksa liste boş kalır.",
+      "emptyHintSaved": "«{name}» filtresine uyan olay bulunamadı. Zaman aralığını genişletin veya filtreyi düzenleyin.",
+      "emptyHintScoped": "Seçili ürün/host kapsamına uyan olay yok. Filtreyi gevşetin veya zaman aralığını genişletin.",
+      "emptyEditFilters": "Filtreleri düzenle",
+      "chipOpenFilters": "Filtre kataloğunu aç",
+      "colProduct": "Ürün",
+      "colOutcome": "Sonuç",
+      "rawActionHint": "Ham aksiyon",
+      "filterByField": "Bu alanla filtrele",
+      "filterAppliedHint": "Filtre uygulandı.",
       "statTotal": "{shown} / {total} olay",
       "statShown": "Gösterilen",
       "statMatching": "Eşleşen toplam",
@@ -8651,9 +8671,23 @@
       "detailTitle": "Olay detayı",
       "detailActionKey": "Teknik aksiyon (match key)",
       "sectionOverview": "Özet",
+      "sectionSummary": "Özet",
+      "sectionFirewallFlow": "Firewall akışı",
       "sectionActor": "Aktör ve ağ",
       "sectionSource": "Kaynak",
       "sectionTechnical": "Teknik bilgiler",
+      "sectionAdvanced": "Gelişmiş",
+      "sectionExtracted": "Çıkarılan alanlar",
+      "colFirewallEndpoints": "Kaynak → Hedef",
+      "colFirewallPolicy": "Politika (policyid)",
+      "colFirewallService": "Servis",
+      "colFirewallProtoPort": "Protokol / hedef port",
+      "colFirewallLogKind": "Log türü",
+      "colFirewallCfgPath": "Yapılandırma yolu",
+      "detailNoExtraFields": "Ek çıkarılmış alan yok.",
+      "filterByCode": "Bu kodla filtrele",
+      "filterByAction": "Bu aksiyonla filtrele",
+      "filterByOutcome": "Bu sonuçla filtrele",
       "ingestedAt": "Alınma zamanı",
       "rawPreview": "Ham önizleme",
       "rawFull": "Ham log",
@@ -8889,6 +8923,12 @@
       "parsers": {
         "manageHint": "Ham logdan anlamlı alanlar çıkarır (kullanıcı, IP, oturum sonucu). Katalog paketi ne toplanacağını; bu sekme nasıl yorumlanacağını tanımlar.",
         "manageHintDetail": "Değişiklikten sonra Yayınla’ya basın. Aksi halde kaydedilmiş taslaklar ingest’te hemen etkili olmayabilir.",
+        "tabCatalog": "Katalog kuralları",
+        "tabEngine": "Ürün parserları",
+        "engineSectionTitle": "Ürün parserları (Engine)",
+        "engineSectionHint": "Firewall ve benzeri kaynaklar Reactor’daki yerleşik C# parser ile yorumlanır. Buradan yalnızca eşlemeyi görüntüleyebilirsiniz; düzenleme ürün sürümüyle gelir.",
+        "engineReadonlyChip": "Salt okunur",
+        "engineView": "Görüntüle",
         "refresh": "Yenile",
         "create": "Kural oluştur",
         "wizard": {
@@ -9133,6 +9173,43 @@
       "menuTitle": "Keşif haritası",
       "pageTitle": "Keşif ve kapsam",
       "pageSubtitle": "Ağda keşfedilen cihazlar ile Monitra ajan kapsamını yan yana görün. Kör nokta: keşfedildi ama ajan yok.",
+      "segments": {
+        "endpoints": "Uç noktalar",
+        "logSources": "Ağ / log kaynakları"
+      },
+      "logSources": {
+        "pageSubtitle": "Syslog ile izlenen ağ cihazları (FortiGate). Ajan kapsamından ayrıdır — son olay zamanına göre online/sessiz.",
+        "banner": "Bu dilim firewall / syslog kaynaklarını gösterir. Endpoint ajan boşluğu soldaki «Uç noktalar» sekmesindedir.",
+        "kpiTotal": "Toplam",
+        "kpiOnline": "Syslog online",
+        "kpiSilent": "Sessiz (24s)",
+        "kpiMissing": "Akış yok",
+        "coverage": {
+          "logOnline": "Online",
+          "logSilent": "Sessiz",
+          "configuredMissing": "Akış yok"
+        },
+        "kind": {
+          "firewall": "Firewall"
+        },
+        "sensor": "Sensor / IP",
+        "lastEvent": "Son olay",
+        "events24h": "Olay (24s, örnek)",
+        "fromSeed": "yapılandırıldı, henüz event yok",
+        "openEvents": "Olaylarda aç",
+        "openDetail": "Özet",
+        "refreshedAt": "Yenilendi {time}",
+        "empty": "Filtreye uyan log kaynağı yok.",
+        "detail": {
+          "hint": "Syslog triage özeti — endpoint host analitiği değil. Derin inceleme için Olaylar’a gidin.",
+          "count1h": "Son 1 saat",
+          "count24h": "Son 24 saat",
+          "topActions": "Sık aksiyonlar (örnek)",
+          "noActions": "Örnek pencerede aksiyon yok.",
+          "recent": "Son olaylar",
+          "noRecent": "Son olay örneği yok."
+        }
+      },
       "mockBanner": "Discovery host listesi yüklenemedi (Collector). Coverage yine de host.up ile birleştirilir. Sync / Collector deploy gerekebilir.",
       "liveBanner": "Keşif envanteri (tarama + AD) + ajan kapsamı (host.up). Son 2 dk Online, sonrası Sessiz; yenileme 30 sn. Ajansız keşif = coverage boşluğu.",
       "coverageLoadError": "Discovery veya coverage yüklenirken hata oluştu.",
@@ -9628,6 +9705,13 @@
       "parsersSectionTitle": "Hangi log ne anlama geliyor?",
       "parsersSectionHint": "Sol sütun kaynak logu, orta sütun sistemdeki kısa adıdır. Tanınmayan satırlar ham olarak saklanır; hazır alarm oluşmayabilir.",
       "parserTechnicalId": "Teknik parser adı: {id}",
+      "builtInLockedChip": "Ürün parser (kilitli)",
+      "builtInLockedHint": "Bu kural Event Log katalog ekranından düzenlenmez; C# ürün parserıdır. Aşağıdaki tablolar neyin nasıl eşlendiğini gösterir — değişiklik ürün sürümüyle gelir.",
+      "fieldMapTitle": "Alan eşleme (ham → sistem)",
+      "fieldMapHint": "Firewall syslog anahtarlarının MonitraNG olay alanlarına nasıl yazıldığı. Özel alanlar custom.* altında saklanır.",
+      "colRawField": "Ham alan / koşul",
+      "colTargetField": "Hedef alan",
+      "colFieldNote": "Açıklama",
       "scenariosSectionTitle": "Tehdit senaryoları (U1–U10)",
       "scenariosSectionHint": "U1–U7 için varsayılan alarm kuralları yüklenebilir. U8–U10 olayları toplanır; hazır paket kuralı henüz yoktur.",
       "scenariosFootnote": "Varsayılan alarm paketi: {id} sürüm {version}. Eşikleri Alarm Merkezi'nden değiştirebilirsiniz.",
@@ -9685,7 +9769,14 @@
         },
         "firewallVendor": {
           "title": "Firewall (FortiGate, Palo Alto, Cisco ASA)",
-          "description": "Engellenen/izin verilen trafik, kural değişikliği ve yeni akış tespiti."
+          "description": "Engellenen/izin verilen trafik, kural değişikliği ve yeni akış tespiti. FortiGate için politika, servis ve cihaz adı da ayrıştırılır.",
+          "explain": "FortiGate syslog (key=value) Engine dinleyicisine gelir; firewall.vendor.v1 parserı action/outcome üretir ve operasyonel alanları (policyid, service, type/subtype, srcport, devname) yazar. UTM/VPN alanları henüz kapsam dışıdır. Event Log’daki parse-rule kataloğu bu C# parserı değiştirmez.",
+          "notes": {
+            "deny": "U4 (engellenen bağlantı) senaryoları için temel sinyal.",
+            "allow": "Hacim yüksek olabilir; U5 eşikleri Alarm Merkezi’nden ayarlanır.",
+            "ruleChange": "Yalnızca type=event ve firewall/policy cfgpath (veya edit/add/delete… action).",
+            "devname": "Varsa cihaz adı source.host olur; yoksa Engine’in gördüğü kaynak host kullanılır."
+          }
         },
         "firewallGeneric": {
           "title": "Diğer firewall syslog",

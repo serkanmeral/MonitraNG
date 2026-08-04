@@ -48,11 +48,17 @@ public sealed partial class FirewallVendorParser : ISecEventParser
     private static readonly Regex FortigateSrcIpRegex = FortigateSrcIpPattern();
     private static readonly Regex FortigateDstIpRegex = FortigateDstIpPattern();
     private static readonly Regex FortigateDstPortRegex = FortigateDstPortPattern();
+    private static readonly Regex FortigateSrcPortRegex = FortigateSrcPortPattern();
     private static readonly Regex FortigateProtoRegex = FortigateProtoPattern();
     private static readonly Regex FortigateActionRegex = FortigateActionPattern();
     private static readonly Regex FortigateLogTypeRegex = FortigateLogTypePattern();
+    private static readonly Regex FortigateLogSubtypeRegex = FortigateLogSubtypePattern();
     private static readonly Regex FortigateUserRegex = FortigateUserPattern();
     private static readonly Regex FortigateCfgPathRegex = FortigateCfgPathPattern();
+    private static readonly Regex FortigatePolicyIdRegex = FortigatePolicyIdPattern();
+    private static readonly Regex FortigateServiceRegex = FortigateServicePattern();
+    private static readonly Regex FortigateDevNameRegex = FortigateDevNamePattern();
+    private static readonly Regex FortigateLogIdRegex = FortigateLogIdPattern();
 
     private static readonly Regex CefExtensionRegex = CefExtensionPattern();
     private static readonly Regex PanOsTrafficHeaderRegex = PanOsTrafficHeaderPattern();
@@ -94,12 +100,38 @@ public sealed partial class FirewallVendorParser : ISecEventParser
     {
         var (action, outcome) = ClassifyFortigateAction(rawText);
         var actorUser = MatchGroup(FortigateUserRegex, rawText);
+        var devName = MatchGroup(FortigateDevNameRegex, rawText);
 
         return BuildParsed(raw, rawText, action, outcome, actorUser, FortigateProductValue,
             MatchGroup(FortigateSrcIpRegex, rawText),
             MatchGroup(FortigateDstIpRegex, rawText),
             ParsePort(MatchGroup(FortigateDstPortRegex, rawText)),
-            NormalizeProtocol(MatchGroup(FortigateProtoRegex, rawText)));
+            NormalizeProtocol(MatchGroup(FortigateProtoRegex, rawText)),
+            eventCode: MatchGroup(FortigateLogIdRegex, rawText),
+            sourceHostOverride: devName,
+            extraFields: BuildFortigateExtraFields(rawText));
+    }
+
+    private static IReadOnlyDictionary<string, object?> BuildFortigateExtraFields(string rawText)
+    {
+        var fields = new Dictionary<string, object?>(StringComparer.Ordinal);
+        AddExtra(fields, "custom.policy_id", MatchGroup(FortigatePolicyIdRegex, rawText));
+        AddExtra(fields, "custom.service", MatchGroup(FortigateServiceRegex, rawText));
+        AddExtra(fields, "custom.log_type", MatchGroup(FortigateLogTypeRegex, rawText));
+        AddExtra(fields, "custom.log_subtype", MatchGroup(FortigateLogSubtypeRegex, rawText));
+        AddExtra(fields, "custom.cfg_path", MatchGroup(FortigateCfgPathRegex, rawText));
+
+        var srcPort = ParsePort(MatchGroup(FortigateSrcPortRegex, rawText));
+        if (srcPort.HasValue)
+            fields["custom.src_port"] = srcPort.Value;
+
+        return fields;
+    }
+
+    private static void AddExtra(IDictionary<string, object?> fields, string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            fields[key] = value;
     }
 
     private static ParsedSecEvent ParseAsa(SecEventRawContext raw, string rawText, string productHint)
@@ -173,12 +205,16 @@ public sealed partial class FirewallVendorParser : ISecEventParser
         string? srcIp,
         string? dstIp,
         int? dstPort,
-        string? protocol) =>
+        string? protocol,
+        string? eventCode = null,
+        string? sourceHostOverride = null,
+        IReadOnlyDictionary<string, object?>? extraFields = null) =>
         new()
         {
             Timestamp = raw.ReceivedAt,
             EventAction = action,
             EventOutcome = outcome,
+            EventCode = eventCode,
             ActorUser = actorUser,
             NetworkSrcIp = srcIp,
             NetworkDstIp = dstIp,
@@ -186,10 +222,13 @@ public sealed partial class FirewallVendorParser : ISecEventParser
             NetworkProtocol = protocol,
             SourceType = SecEventParseHelpers.ResolveSourceType(raw.Source, "firewall"),
             SourceProduct = SecEventParseHelpers.ResolveSourceProduct(raw.Source, sourceProduct),
-            SourceHost = raw.Source.Host,
+            SourceHost = !string.IsNullOrWhiteSpace(sourceHostOverride)
+                ? sourceHostOverride
+                : raw.Source.Host,
             ParserId = ParserIdValue,
             Raw = SecEventParseHelpers.ToStoredRaw(rawText),
-            RawPreview = SecEventParseHelpers.ToRawPreview(rawText)
+            RawPreview = SecEventParseHelpers.ToRawPreview(rawText),
+            ExtraFields = extraFields ?? new Dictionary<string, object?>(StringComparer.Ordinal)
         };
 
     private static bool IsPanOsFormat(string rawText) =>
@@ -410,6 +449,9 @@ public sealed partial class FirewallVendorParser : ISecEventParser
     [GeneratedRegex(@"\bdstport=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex FortigateDstPortPattern();
 
+    [GeneratedRegex(@"\bsrcport=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FortigateSrcPortPattern();
+
     [GeneratedRegex(@"\bproto=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex FortigateProtoPattern();
 
@@ -419,11 +461,26 @@ public sealed partial class FirewallVendorParser : ISecEventParser
     [GeneratedRegex(@"\btype=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex FortigateLogTypePattern();
 
+    [GeneratedRegex(@"\bsubtype=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FortigateLogSubtypePattern();
+
     [GeneratedRegex(@"\buser=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex FortigateUserPattern();
 
     [GeneratedRegex(@"\bcfgpath=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex FortigateCfgPathPattern();
+
+    [GeneratedRegex(@"\bpolicyid=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FortigatePolicyIdPattern();
+
+    [GeneratedRegex(@"\bservice=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FortigateServicePattern();
+
+    [GeneratedRegex(@"\bdevname=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FortigateDevNamePattern();
+
+    [GeneratedRegex(@"\blogid=(?:""([^""]+)""|(\S+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FortigateLogIdPattern();
 
     [GeneratedRegex(@"\b([a-zA-Z][\w-]*)=([^\s]+)", RegexOptions.CultureInvariant)]
     private static partial Regex CefExtensionPattern();

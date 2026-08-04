@@ -4,12 +4,19 @@ import { getCookie } from 'h3';
 /**
  * Dev/prod BFF → MngLogCollector (direct :5091).
  * Requires UI session cookie; forwards optional ingest API key for agent-gated routes.
- * GET/HEAD always; POST discovery/sync|scan*|hosts/clear; POST/PUT/DELETE policy/eventlog-packages*.
+ * GET/HEAD always; discovery writes: sync|scan*|hosts/clear (POST), prefixes (PUT);
+ * POST/PUT/DELETE policy/eventlog-packages*.
  */
+function normalizeCatchAllPath(raw: string | string[] | undefined | null): string {
+  if (raw == null) return '';
+  if (Array.isArray(raw)) return raw.map(String).join('/');
+  return String(raw);
+}
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const method = getMethod(event);
-  const path = getRouterParam(event, 'path') || '';
+  const path = normalizeCatchAllPath(getRouterParam(event, 'path'));
   const pathLower = path.toLowerCase();
 
   const token = getCookie(event, 'access_token');
@@ -31,6 +38,9 @@ export default defineEventHandler(async (event) => {
   const isDiscoveryClear =
     method === 'POST'
     && (pathLower.includes('discovery/hosts/clear') || pathLower.endsWith('discovery/hosts/clear'));
+  const isDiscoveryPrefixesWrite =
+    method === 'PUT'
+    && (pathLower.includes('discovery/prefixes') || pathLower.endsWith('discovery/prefixes'));
 
   const allowed =
     method === 'GET'
@@ -38,6 +48,7 @@ export default defineEventHandler(async (event) => {
     || isDiscoverySync
     || isDiscoveryScanWrite
     || isDiscoveryClear
+    || isDiscoveryPrefixesWrite
     || isEventLogPolicyWrite;
 
   if (!allowed) {

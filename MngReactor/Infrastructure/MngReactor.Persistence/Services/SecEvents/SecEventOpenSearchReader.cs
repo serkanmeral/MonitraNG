@@ -975,6 +975,22 @@ internal sealed class SecEventOpenSearchReader
             return c.ValueKind == JsonValueKind.String ? c.GetString() : c.ToString();
         }
 
+        int? GetNestedInt(string parent, string child)
+        {
+            if (src.ValueKind != JsonValueKind.Object
+                || !src.TryGetProperty(parent, out var p)
+                || p.ValueKind != JsonValueKind.Object
+                || !p.TryGetProperty(child, out var c)
+                || c.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+                return null;
+            if (c.ValueKind == JsonValueKind.Number && c.TryGetInt32(out var n))
+                return n;
+            if (c.ValueKind == JsonValueKind.String
+                && int.TryParse(c.GetString(), out var fromStr))
+                return fromStr;
+            return null;
+        }
+
         DateTime GetDate(string field)
         {
             if (src.ValueKind != JsonValueKind.Object
@@ -1027,6 +1043,8 @@ internal sealed class SecEventOpenSearchReader
             ActorUser = GetNested("actor", "user"),
             NetworkSrcIp = GetNested("network", "srcIp"),
             NetworkDstIp = GetNested("network", "dstIp"),
+            NetworkDstPort = GetNestedInt("network", "dstPort"),
+            NetworkProtocol = GetNested("network", "protocol"),
             ParserId = GetNested("parser", "id"),
             RawPreview = rawPreview,
             Raw = raw,

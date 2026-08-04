@@ -11,6 +11,8 @@ export interface SecEventListItem {
   actorUser?: string | null;
   networkSrcIp?: string | null;
   networkDstIp?: string | null;
+  networkDstPort?: number | null;
+  networkProtocol?: string | null;
   parserId?: string | null;
   rawPreview?: string | null;
   /** Tam ham mesaj — yalnızca GET /sec-events/{id} yanıtında */

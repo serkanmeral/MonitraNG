@@ -86,10 +86,52 @@ export function secEventActionI18nKey(action: string): string {
   return `siemCenter.events.actions.${action.replace(/\./g, '_')}`;
 }
 
+/** True when a dedicated i18n label exists (not falling back to raw action). */
+export function hasKnownActionLabel(
+  action: string,
+  translate: (key: string) => string,
+): boolean {
+  const key = secEventActionI18nKey(action);
+  return translate(key) !== key;
+}
+
+export function resolveActionLabel(
+  action: string,
+  translate: (key: string) => string,
+): string {
+  const key = secEventActionI18nKey(action);
+  const translated = translate(key);
+  return translated !== key ? translated : action;
+}
+
 export function actionColor(action: string): string {
-  if (action.includes('fail') || action.includes('denied') || action === 'unknown') return 'error';
-  if (action.includes('success') || action === 'host.up' || action.startsWith('rdp.')) return 'success';
-  if (action.includes('new_flow') || action.includes('privileged') || action.includes('rule_change') || action === 'watch.inventory') return 'warning';
+  const a = (action ?? '').toLowerCase();
+  if (
+    a.includes('fail')
+    || a.includes('denied')
+    || a.includes('lock')
+    || a === 'unknown'
+  ) {
+    return 'error';
+  }
+  if (a.includes('disconnect') || a.includes('logoff') || a === 'logoff') return 'info';
+  if (
+    a.includes('success')
+    || a === 'host.up'
+    || a === 'rdp.logon'
+    || a === 'rdp.reconnect'
+  ) {
+    return 'success';
+  }
+  if (a.startsWith('rdp.')) return 'info';
+  if (
+    a.includes('new_flow')
+    || a.includes('privileged')
+    || a.includes('rule_change')
+    || a === 'watch.inventory'
+  ) {
+    return 'warning';
+  }
   return 'info';
 }
 
@@ -99,6 +141,48 @@ export function outcomeColor(outcome?: string | null): string {
   if (o === 'failure' || o === 'deny' || o === 'denied') return 'error';
   if (o === 'success') return 'success';
   return 'info';
+}
+
+export function outcomeI18nKey(outcome?: string | null): string | null {
+  if (!outcome?.trim()) return null;
+  const o = outcome.trim().toLowerCase();
+  if (o === 'success') return 'siemCenter.events.filterBuilder.outcomes.success';
+  if (o === 'failure' || o === 'deny' || o === 'denied') {
+    return 'siemCenter.events.filterBuilder.outcomes.failure';
+  }
+  if (o === 'unknown') return 'siemCenter.events.filterBuilder.outcomes.unknown';
+  return null;
+}
+
+export function resolveOutcomeLabel(
+  outcome: string | null | undefined,
+  translate: (key: string) => string,
+): string {
+  if (!outcome?.trim()) return '';
+  const key = outcomeI18nKey(outcome);
+  if (!key) return outcome;
+  const translated = translate(key);
+  return translated !== key ? translated : outcome;
+}
+
+/** Soft accent for product column / row hint. */
+export function productAccentColor(product?: string | null): string {
+  const p = (product ?? '').toLowerCase();
+  if (p.includes('rdp') || p.includes('windows')) return 'primary';
+  if (p.includes('forti')) return 'warning';
+  if (p.includes('linux') || p.includes('mnglogs') || p.includes('journal')) return 'info';
+  return 'secondary';
+}
+
+export function resolveProductLabel(
+  product: string | null | undefined,
+  translate: (key: string) => string,
+): string {
+  if (!product?.trim()) return '';
+  const slug = product.trim().replace(/[.\-\s]+/g, '_').toLowerCase();
+  const key = `siemCenter.events.filterCatalog.products.${slug}`;
+  const translated = translate(key);
+  return translated !== key ? translated : product.trim();
 }
 
 export function sourceTypeLabelKey(sourceType?: string | null): string {

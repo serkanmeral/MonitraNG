@@ -1,8 +1,8 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 4 Ağustos 2026 (dinamik filtre alanları · kapsam scope-options · katalog tree yönetimi)  
+**Son güncelleme:** 4 Ağustos 2026 (FortiGate Events UX · Parse Rules ürün parserları · Discovery nginx 405 fix)  
 **Ortam:** Günlük çalışma = **Odak production** (`192.168.20.8`). Lokal Nuxt ve MngLogs agent collector varsayılanı prod.  
-**Detay cutover:** [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md) · Events UI: [../monitoring/SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md)
+**Detay cutover:** [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md) · Events UI: [../monitoring/SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md) · Discovery: [DISCOVERY_COVERAGE.md](./DISCOVERY_COVERAGE.md)
 
 ## Çalışma kuralı
 
@@ -10,47 +10,56 @@ Kapsam → kazanım → onay → kod.
 **Park:**  
 - Host Analytics L3 / genel Analytics dönüşü  
 - Ajansız host aksiyonları (Discovery)  
-- Firewall parse kurallarının katalog seed’e taşınması (hâlâ C# parser)  
+- Firewall parse kurallarının katalog seed’e taşınması (hâlâ C# `firewall.vendor.v1`)  
+- UTM/VPN parse (FortiGate C) · `new_flow` baseline · allowed-flow volume policy  
 - Periyodik discovery scan · Hard publish · Host paket ataması (E3)  
 - UI’den parametreli agent indir  
 - G4 kalan: alarm/Mongo köprü (gözlem)  
 - P3d .deb  
 - Sunucu tarafı kayıtlı filtre katalog API (şimdilik `localStorage`)  
+- Parser dictionary redesign / kaldırma (ayrı dilim)  
 **Freeze:** Eski SIEM security paneli · NXLog / Linux rsyslog host ingest · intent-only filter dialog (yerini katalog modal aldı)
 
 ---
 
 ## Son çalışılan konu
 
-**Güvenlik Olayları filtre UX v2:** Event Log alan kataloğundan dinamik “Alan ekle” · Reactor `fieldFilters` · canlı `scope-options` (Type/Product/Host) · Product+Host birincil / Type gelişmiş · kullanıcı kategori/filtre tree yönetimi (rename / sil / taşı).
+**FortiGate / firewall Events + Discovery prod proxy:** `firewall.vendor.v1` ExtraFields zenginleştirme · Events list/detay/filtre (policy · service · dstPort) · Parse Rules’ta **Ürün parserları** sekmesi · prod `mngui` nginx’e `/api/logcollector/` eklendi (**405 Method Not Allowed** giderildi).
 
 ---
 
 ## Tamamlananlar (bu dilim — 4 Ağu)
 
-### Dinamik alan filtreleri ✓
+### FortiGate parser enrichment ✓
 
-- “Alan ekle” → `GET …/parse-rules/target-fields` (core + `custom.*`)  
-- Product seçilince parse extract hedeflerine göre menü daralır (core alanlar her zaman)  
-- Reactor: `fieldFilters` JSON (Mongo `$getField` + OpenSearch); dedicated param’lar korundu  
-- Kataloga `event.code` eklendi; OpenSearch dual-write `fields` bag yazar
+- `FirewallVendorParser`: `custom.policy_id`, `custom.service`, `custom.log_type`, `custom.log_subtype`, `custom.src_port`, `custom.cfg_path`  
+- `event.code` ← `logid`; `source.host` ← `devname`  
+- Liste DTO: `NetworkDstPort`, `NetworkProtocol` (BSON + OpenSearch okuyucular)  
+- Unit testler güncellendi; **`mngreactor` prod deploy ✓**
 
-### Kapsam combobox ✓
+### Events UI (firewall) ✓
 
-- `GET /sec-events/scope-options` — canlı distinct type/product/host  
-- Product listesine Event Log paket kataloğu merge  
-- Host: serbest yazım + discovery/canlı öneriler (`v-combobox`)  
-- Layout: Product + Host ana satır; Type → “Gelişmiş”
+- Filtre seed: `cat-firewall` + FortiGate preset’leri (all / denied / allowed / rule_change / kritik portlar)  
+- Tablo ikinci satır: policy · service · `:port` (`secEventFirewallDisplay.ts`)  
+- Detay: **Firewall akışı** bölümü + filtre kısayolları  
+- Şema/intent: `custom.policy_id`, `custom.service`  
+- **`mngui` prod deploy ✓**
 
-### Katalog tree yönetimi ✓
+### Parse Rules UI ✓
 
-- Kullanıcı kategori: yeniden adlandır / sil (filtreler “Benim”e taşınır)  
-- Kullanıcı filtre: yeniden adlandır / kategori değiştir / sil  
-- Sistem seed kilitli; Farklı kaydet’te hedef kategori seçilebilir
+- Sekmeler: **Katalog kuralları** | **Ürün parserları** (engine `SIEM_PARSERS`, `builtInLocked`, salt okunur)  
+- `firewall.vendor.v1` alan haritası yalnızca görünüm dialog’unda
+
+### Discovery 405 fix ✓
+
+- Kök neden: prod `mngui` = nginx static SPA (`npm run generate`); Nuxt BFF `server/api/logcollector` **prod’da çalışmaz**  
+- `Mng.Ui/nginx.conf` → `location /api/logcollector/` → `mnglogcollector:5091` (`/api/...` rewrite)  
+- Doğrulama: POST scan artık API’ye ulaşıyor (boş body → `400 cidr is required`, artık **405 değil**)  
+- Lokal Nuxt: BFF; prod SPA: nginx — ikisi ayrı tutulmalı
 
 ### Önceki dilimler ✓
 
-Filtre kataloğu modal · Reactor `sourceProduct`/`eventCodes` · RDP normalize · host agent cutover — [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md)
+Filtre UX v2 (dinamik alanlar · scope-options · tree CRUD) · RDP/host cutover — önceki `current_status` dilimleri
 
 ---
 
@@ -58,22 +67,22 @@ Filtre kataloğu modal · Reactor `sourceProduct`/`eventCodes` · RDP normalize 
 
 | Bileşen | Durum |
 |---------|--------|
-| `mnglogcollector` | ✅ prod (önceki dilim) |
-| `mngreactor` | ⏳ **yeniden deploy gerekli** (`fieldFilters` + `scope-options`) |
-| `mngui` | ⏳ deploy edilmedi — lokal Nuxt |
+| `mnglogcollector` | ✅ prod (önceki dilimler) |
+| `mngreactor` | ✅ FortiGate ExtraFields + list DTO deploy |
+| `mngui` | ✅ nginx logcollector proxy + Events/Parse Rules UI deploy |
 
 ---
 
 ## Sıradaki adım
 
-1. Prod **`mngreactor`** (+ isteğe bağlı **`mngui`**) deploy  
-2. Lokal/prod ile RDP + kullanıcı logon + `custom.*` alan filtresi smoke  
-3. Yeni RDP ingest: `event.action=rdp.*` + actor/network promote  
-4. Park maddeleri
+1. UI’dan Discovery taramasını doğrula (CIDR ile gerçek scan)  
+2. Park: UTM/VPN parse · `new_flow` baseline · allowed-flow volume  
+3. Park: ajansız host aksiyonları · periyodik scan  
+4. İsteğe bağlı: firewall kurallarını katalog seed’e taşıma
 
 ---
 
 ## Nerede kalmıştık
 
-Filtre UX v2 kodu hazır (dinamik alanlar · scope-options · tree CRUD).  
-**Kaldığımız nokta:** prod `mngreactor` / `mngui` deploy; ardından canlı doğrulama.
+FortiGate Events UX + Parse Rules ürün parserları + Discovery **405** nginx fix prod’da.  
+**Kaldığımız nokta:** Discovery UI’dan canlı scan smoke; ardından park maddeleri (UTM/VPN, ajansız host CTA, volume policy).

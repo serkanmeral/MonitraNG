@@ -151,6 +151,15 @@ function parserPanelTitle(parser: (typeof SIEM_PARSERS)[number]): string {
             <v-chip size="x-small" :color="parserStatusColor(parser.status)" variant="flat">
               {{ t(parserStatusLabelKey(parser.status)) }}
             </v-chip>
+            <v-chip
+              v-if="parser.builtInLocked"
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-lock-outline"
+            >
+              {{ t('siemCenter.reference.builtInLockedChip') }}
+            </v-chip>
           </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
@@ -159,6 +168,18 @@ function parserPanelTitle(parser: (typeof SIEM_PARSERS)[number]): string {
           </p>
           <p class="text-body-2 mb-3">
             {{ t(parser.descriptionKey) }}
+          </p>
+          <v-alert
+            v-if="parser.builtInLocked"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ t('siemCenter.reference.builtInLockedHint') }}
+          </v-alert>
+          <p v-if="parser.explainKey" class="text-body-2 text-medium-emphasis mb-3">
+            {{ t(parser.explainKey) }}
           </p>
           <p class="text-body-2 text-medium-emphasis mb-3">
             {{ t('siemCenter.reference.collectionMethod') }}:
@@ -217,6 +238,36 @@ function parserPanelTitle(parser: (typeof SIEM_PARSERS)[number]): string {
               </tr>
             </tbody>
           </v-table>
+
+          <template v-if="parser.fieldMappings?.length">
+            <h3 class="text-subtitle-2 font-weight-bold mt-5 mb-2">
+              {{ t('siemCenter.reference.fieldMapTitle') }}
+            </h3>
+            <p class="text-caption text-medium-emphasis mb-2">
+              {{ t('siemCenter.reference.fieldMapHint') }}
+            </p>
+            <v-table density="compact" class="parser-field-map-table">
+              <thead>
+                <tr>
+                  <th>{{ t('siemCenter.reference.colRawField') }}</th>
+                  <th>{{ t('siemCenter.reference.colTargetField') }}</th>
+                  <th>{{ t('siemCenter.reference.colFieldNote') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(fm, fidx) in parser.fieldMappings"
+                  :key="`${parser.id}-fm-${fidx}`"
+                >
+                  <td><code>{{ fm.raw }}</code></td>
+                  <td><code>{{ fm.target }}</code></td>
+                  <td class="text-body-2 text-medium-emphasis">
+                    {{ fm.noteKey ? t(fm.noteKey) : '—' }}
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </template>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>

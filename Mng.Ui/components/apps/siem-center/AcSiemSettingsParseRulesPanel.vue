@@ -18,9 +18,30 @@ import type {
 } from '@/types/apps/secEventParseRules';
 import AcSiemWindowsParseWizardDialog from '@/components/apps/siem-center/AcSiemWindowsParseWizardDialog.vue';
 import AcSiemLinuxParseWizardDialog from '@/components/apps/siem-center/AcSiemLinuxParseWizardDialog.vue';
+import {
+  parserStatusColor,
+  parserStatusLabelKey,
+  siemLockedEngineParsers,
+  type SiemParserDef,
+} from '@/composables/useSiemParserCatalog';
 
 const { t, locale } = useAppI18n();
 
+const engineParsers = computed(() => siemLockedEngineParsers());
+const engineDetail = ref<SiemParserDef | null>(null);
+const engineDetailOpen = computed({
+  get: () => engineDetail.value != null,
+  set: (open: boolean) => {
+    if (!open) engineDetail.value = null;
+  },
+});
+
+type ParsersSubTab = 'engine' | 'catalog';
+const parsersSubTab = ref<ParsersSubTab>('catalog');
+
+function openEngineDetail(parser: SiemParserDef) {
+  engineDetail.value = parser;
+}
 type Platform = 'windows' | 'linux';
 
 interface RuleTemplate {
@@ -947,211 +968,304 @@ defineExpose({ refresh: load });
 
 <template>
   <div class="siem-settings-parsers">
-    <v-alert type="info" variant="tonal" density="comfortable" class="mb-3">
-      <div class="text-body-2">{{ t('siemCenter.settings.parsers.manageHint') }}</div>
-      <div class="text-caption text-medium-emphasis mt-1">
-        {{ t('siemCenter.settings.parsers.manageHintDetail') }}
-      </div>
-    </v-alert>
+    <v-tabs v-model="parsersSubTab" density="comfortable" class="mb-3" color="primary">
+      <v-tab value="catalog">
+        {{ t('siemCenter.settings.parsers.tabCatalog') }}
+      </v-tab>
+      <v-tab value="engine">
+        <v-icon icon="mdi-lock-outline" size="small" start />
+        {{ t('siemCenter.settings.parsers.tabEngine') }}
+      </v-tab>
+    </v-tabs>
 
-    <div class="d-flex flex-wrap align-center ga-2 mb-4">
-      <v-btn
-        size="small"
-        variant="tonal"
-        color="primary"
-        prepend-icon="mdi-refresh"
-        :loading="loading"
-        @click="load"
-      >
-        {{ t('siemCenter.settings.parsers.refresh') }}
-      </v-btn>
-      <v-btn
-        size="small"
-        color="primary"
-        variant="flat"
-        prepend-icon="mdi-auto-fix"
-        @click="openWindowsWizard"
-      >
-        {{ t('siemCenter.settings.parsers.wizard.open') }}
-      </v-btn>
-      <v-btn
-        size="small"
-        color="primary"
-        variant="flat"
-        prepend-icon="mdi-linux"
-        @click="openLinuxWizard"
-      >
-        {{ t('siemCenter.settings.parsers.linuxWizard.open') }}
-      </v-btn>
-      <v-btn
-        size="small"
-        color="secondary"
-        variant="flat"
-        prepend-icon="mdi-publish"
-        :loading="publishing"
-        :disabled="!managed"
-        @click="publish"
-      >
-        {{ t('siemCenter.settings.parsers.publish') }}
-      </v-btn>
-      <template v-if="managed">
-        <v-chip size="small" variant="tonal">
-          {{ t('siemCenter.settings.parsers.version') }}: {{ managed.version || '—' }}
-        </v-chip>
-        <v-chip
-          v-if="managed.hasUnpublishedChanges"
-          size="small"
-          color="warning"
+    <v-tabs-window v-model="parsersSubTab">
+      <v-tabs-window-item value="catalog">
+        <v-alert type="info" variant="tonal" density="comfortable" class="mb-3">
+          <div class="text-body-2">{{ t('siemCenter.settings.parsers.manageHint') }}</div>
+          <div class="text-caption text-medium-emphasis mt-1">
+            {{ t('siemCenter.settings.parsers.manageHintDetail') }}
+          </div>
+        </v-alert>
+
+        <div class="d-flex flex-wrap align-center ga-2 mb-4">
+          <v-btn
+            size="small"
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-refresh"
+            :loading="loading"
+            @click="load"
+          >
+            {{ t('siemCenter.settings.parsers.refresh') }}
+          </v-btn>
+          <v-btn
+            size="small"
+            color="primary"
+            variant="flat"
+            prepend-icon="mdi-auto-fix"
+            @click="openWindowsWizard"
+          >
+            {{ t('siemCenter.settings.parsers.wizard.open') }}
+          </v-btn>
+          <v-btn
+            size="small"
+            color="primary"
+            variant="flat"
+            prepend-icon="mdi-linux"
+            @click="openLinuxWizard"
+          >
+            {{ t('siemCenter.settings.parsers.linuxWizard.open') }}
+          </v-btn>
+          <v-btn
+            size="small"
+            color="secondary"
+            variant="flat"
+            prepend-icon="mdi-publish"
+            :loading="publishing"
+            :disabled="!managed"
+            @click="publish"
+          >
+            {{ t('siemCenter.settings.parsers.publish') }}
+          </v-btn>
+          <template v-if="managed">
+            <v-chip size="small" variant="tonal">
+              {{ t('siemCenter.settings.parsers.version') }}: {{ managed.version || '—' }}
+            </v-chip>
+            <v-chip
+              v-if="managed.hasUnpublishedChanges"
+              size="small"
+              color="warning"
+              variant="tonal"
+            >
+              {{ t('siemCenter.settings.parsers.unpublished') }}
+            </v-chip>
+            <span class="text-caption text-medium-emphasis">
+              {{ t('siemCenter.settings.parsers.publishedAt') }}:
+              {{ formatUtc(managed.publishedUtc) }} UTC
+            </span>
+          </template>
+        </div>
+
+        <v-alert v-if="flash" type="success" variant="tonal" density="compact" class="mb-3" closable>
+          {{ flash }}
+        </v-alert>
+        <v-alert
+          v-if="error && !dialogOpen && !previewOpen"
+          type="error"
           variant="tonal"
+          class="mb-4"
         >
-          {{ t('siemCenter.settings.parsers.unpublished') }}
-        </v-chip>
-        <span class="text-caption text-medium-emphasis">
-          {{ t('siemCenter.settings.parsers.publishedAt') }}:
-          {{ formatUtc(managed.publishedUtc) }} UTC
-        </span>
-      </template>
-    </div>
+          {{ t('siemCenter.settings.parsers.loadError') }}
+          <div class="text-caption mt-1">{{ error }}</div>
+        </v-alert>
 
-    <v-alert v-if="flash" type="success" variant="tonal" density="compact" class="mb-3" closable>
-      {{ flash }}
-    </v-alert>
-    <v-alert v-if="error && !dialogOpen && !previewOpen" type="error" variant="tonal" class="mb-4">
-      {{ t('siemCenter.settings.parsers.loadError') }}
-      <div class="text-caption mt-1">{{ error }}</div>
-    </v-alert>
+        <v-skeleton-loader v-if="loading && !managed" type="table" />
 
-    <v-skeleton-loader v-if="loading && !managed" type="table" />
-
-    <template v-else-if="managed">
-      <div class="d-flex flex-wrap align-center ga-2 mb-3">
-        <v-text-field
-          v-model="listSearch"
-          density="compact"
-          hide-details
-          clearable
-          prepend-inner-icon="mdi-magnify"
-          :label="t('siemCenter.settings.parsers.filterSearch')"
-          style="min-width: 14rem; max-width: 22rem"
-          @update:model-value="listPage = 1"
-        />
-        <v-select
-          v-model="filterPlatform"
-          :items="platformFilterItems"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          :label="t('siemCenter.settings.parsers.colPlatform')"
-          style="max-width: 10rem"
-          @update:model-value="listPage = 1"
-        />
-        <v-select
-          v-model="filterEnabled"
-          :items="enabledFilterItems"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          :label="t('siemCenter.settings.parsers.colEnabled')"
-          style="max-width: 9rem"
-          @update:model-value="listPage = 1"
-        />
-        <v-select
-          v-model="filterBuiltin"
-          :items="builtinFilterItems"
-          item-title="title"
-          item-value="value"
-          density="compact"
-          hide-details
-          :label="t('siemCenter.settings.parsers.colBuiltin')"
-          style="max-width: 10rem"
-          @update:model-value="listPage = 1"
-        />
-        <v-spacer />
-        <span class="text-caption text-medium-emphasis">
-          {{
-            t('siemCenter.settings.parsers.filterCount', {
-              shown: filteredRules.length,
-              total: managed.items.length,
-            })
-          }}
-        </span>
-      </div>
-
-      <v-data-table
-        v-model:page="listPage"
-        v-model:items-per-page="listItemsPerPage"
-        :headers="listHeaders"
-        :items="filteredRules"
-        item-value="ruleId"
-        density="compact"
-        class="mb-2 parse-rules-table"
-        :items-per-page-options="LIST_PAGE_SIZE_OPTIONS"
-        :no-data-text="t('siemCenter.settings.parsers.empty')"
-        :loading="loading"
-      >
-        <template #item._nameSort="{ item }">
-          <div class="text-body-2">{{ item.name }}</div>
-          <div class="text-caption text-medium-emphasis font-mono">{{ item.ruleId }}</div>
-        </template>
-        <template #item._platform="{ item }">
-          <span class="text-body-2">{{ item._platform }}</span>
-        </template>
-        <template #item._action="{ item }">
-          <code class="text-caption">{{ item._action }}</code>
-          <div v-if="item._matchHint" class="text-caption text-medium-emphasis">
-            {{ item._matchHint }}
-          </div>
-        </template>
-        <template #item._priority="{ item }">
-          <span class="font-mono text-caption">{{ item._priority }}</span>
-        </template>
-        <template #item.enabled="{ item }">
-          <v-chip
-            size="x-small"
-            :color="item.enabled ? 'success' : 'default'"
-            variant="tonal"
-          >
-            {{
-              item.enabled
-                ? t('siemCenter.settings.parsers.enabledYes')
-                : t('siemCenter.settings.parsers.enabledNo')
-            }}
-          </v-chip>
-        </template>
-        <template #item.builtin="{ item }">
-          <v-chip
-            v-if="item.builtin"
-            size="x-small"
-            variant="tonal"
-          >
-            {{ t('siemCenter.settings.parsers.builtin') }}
-          </v-chip>
-          <span v-else class="text-caption text-medium-emphasis">—</span>
-        </template>
-        <template #item.actions="{ item }">
-          <div class="text-no-wrap d-flex justify-end">
-            <v-btn
-              icon="mdi-flask-outline"
-              size="small"
-              variant="text"
-              :title="t('siemCenter.settings.parsers.preview')"
-              @click="openPreview(item)"
+        <template v-else-if="managed">
+          <div class="d-flex flex-wrap align-center ga-2 mb-3">
+            <v-text-field
+              v-model="listSearch"
+              density="compact"
+              hide-details
+              clearable
+              prepend-inner-icon="mdi-magnify"
+              :label="t('siemCenter.settings.parsers.filterSearch')"
+              style="min-width: 14rem; max-width: 22rem"
+              @update:model-value="listPage = 1"
             />
-            <v-btn icon="mdi-pencil" size="small" variant="text" @click="openEdit(item)" />
-            <v-btn
-              icon="mdi-delete"
-              size="small"
-              variant="text"
-              color="error"
-              :disabled="item.builtin"
-              @click="deleteTarget = item"
+            <v-select
+              v-model="filterPlatform"
+              :items="platformFilterItems"
+              item-title="title"
+              item-value="value"
+              density="compact"
+              hide-details
+              :label="t('siemCenter.settings.parsers.colPlatform')"
+              style="max-width: 10rem"
+              @update:model-value="listPage = 1"
             />
+            <v-select
+              v-model="filterEnabled"
+              :items="enabledFilterItems"
+              item-title="title"
+              item-value="value"
+              density="compact"
+              hide-details
+              :label="t('siemCenter.settings.parsers.colEnabled')"
+              style="max-width: 9rem"
+              @update:model-value="listPage = 1"
+            />
+            <v-select
+              v-model="filterBuiltin"
+              :items="builtinFilterItems"
+              item-title="title"
+              item-value="value"
+              density="compact"
+              hide-details
+              :label="t('siemCenter.settings.parsers.colBuiltin')"
+              style="max-width: 10rem"
+              @update:model-value="listPage = 1"
+            />
+            <v-spacer />
+            <span class="text-caption text-medium-emphasis">
+              {{
+                t('siemCenter.settings.parsers.filterCount', {
+                  shown: filteredRules.length,
+                  total: managed.items.length,
+                })
+              }}
+            </span>
           </div>
+
+          <v-data-table
+            v-model:page="listPage"
+            v-model:items-per-page="listItemsPerPage"
+            :headers="listHeaders"
+            :items="filteredRules"
+            item-value="ruleId"
+            density="compact"
+            class="mb-2 parse-rules-table"
+            :items-per-page-options="LIST_PAGE_SIZE_OPTIONS"
+            :no-data-text="t('siemCenter.settings.parsers.empty')"
+            :loading="loading"
+          >
+            <template #item._nameSort="{ item }">
+              <div class="text-body-2">{{ item.name }}</div>
+              <div class="text-caption text-medium-emphasis font-mono">{{ item.ruleId }}</div>
+            </template>
+            <template #item._platform="{ item }">
+              <span class="text-body-2">{{ item._platform }}</span>
+            </template>
+            <template #item._action="{ item }">
+              <code class="text-caption">{{ item._action }}</code>
+              <div v-if="item._matchHint" class="text-caption text-medium-emphasis">
+                {{ item._matchHint }}
+              </div>
+            </template>
+            <template #item._priority="{ item }">
+              <span class="font-mono text-caption">{{ item._priority }}</span>
+            </template>
+            <template #item.enabled="{ item }">
+              <v-chip
+                size="x-small"
+                :color="item.enabled ? 'success' : 'default'"
+                variant="tonal"
+              >
+                {{
+                  item.enabled
+                    ? t('siemCenter.settings.parsers.enabledYes')
+                    : t('siemCenter.settings.parsers.enabledNo')
+                }}
+              </v-chip>
+            </template>
+            <template #item.builtin="{ item }">
+              <v-chip
+                v-if="item.builtin"
+                size="x-small"
+                variant="tonal"
+              >
+                {{ t('siemCenter.settings.parsers.builtin') }}
+              </v-chip>
+              <span v-else class="text-caption text-medium-emphasis">—</span>
+            </template>
+            <template #item.actions="{ item }">
+              <div class="text-no-wrap d-flex justify-end">
+                <v-btn
+                  icon="mdi-flask-outline"
+                  size="small"
+                  variant="text"
+                  :title="t('siemCenter.settings.parsers.preview')"
+                  @click="openPreview(item)"
+                />
+                <v-btn icon="mdi-pencil" size="small" variant="text" @click="openEdit(item)" />
+                <v-btn
+                  icon="mdi-delete"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  :disabled="item.builtin"
+                  @click="deleteTarget = item"
+                />
+              </div>
+            </template>
+          </v-data-table>
         </template>
-      </v-data-table>
-    </template>
+      </v-tabs-window-item>
+
+      <v-tabs-window-item value="engine">
+        <v-alert type="info" variant="tonal" density="comfortable" class="mb-3">
+          <div class="text-body-2">{{ t('siemCenter.settings.parsers.engineSectionHint') }}</div>
+        </v-alert>
+
+        <v-table density="compact" class="engine-parsers-table">
+          <thead>
+            <tr>
+              <th>{{ t('siemCenter.settings.parsers.colName') }}</th>
+              <th>{{ t('siemCenter.settings.parsers.colPlatform') }}</th>
+              <th>{{ t('siemCenter.settings.parsers.colMeaning') }}</th>
+              <th>{{ t('siemCenter.reference.colDefaultAlarm') }}</th>
+              <th class="text-end" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="parser in engineParsers" :key="parser.id">
+              <td>
+                <div class="text-body-2">{{ t(parser.titleKey) }}</div>
+                <div class="text-caption text-medium-emphasis font-mono">{{ parser.id }}</div>
+              </td>
+              <td>
+                <span class="text-body-2">{{ parser.sourceProduct }}</span>
+                <div class="text-caption text-medium-emphasis">{{ parser.sourceType }}</div>
+              </td>
+              <td>
+                <v-chip
+                  size="x-small"
+                  :color="parserStatusColor(parser.status)"
+                  variant="tonal"
+                  class="me-1 mb-1"
+                >
+                  {{ t(parserStatusLabelKey(parser.status)) }}
+                </v-chip>
+                <div class="d-flex flex-wrap ga-1 mt-1">
+                  <code
+                    v-for="(m, mi) in parser.mappings.slice(0, 3)"
+                    :key="`${parser.id}-m-${mi}`"
+                    class="text-caption me-1"
+                  >
+                    {{ m.eventAction }}
+                  </code>
+                  <span
+                    v-if="parser.mappings.length > 3"
+                    class="text-caption text-medium-emphasis"
+                  >
+                    +{{ parser.mappings.length - 3 }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <v-icon
+                  v-if="parser.mappings.some((m) => m.inAlarmPack)"
+                  icon="mdi-check-circle"
+                  color="success"
+                  size="small"
+                />
+                <span v-else class="text-medium-emphasis">—</span>
+              </td>
+              <td class="text-end text-no-wrap">
+                <v-btn
+                  size="small"
+                  variant="text"
+                  prepend-icon="mdi-eye-outline"
+                  @click="openEngineDetail(parser)"
+                >
+                  {{ t('siemCenter.settings.parsers.engineView') }}
+                </v-btn>
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-tabs-window-item>
+    </v-tabs-window>
 
     <!-- Create / edit -->
     <v-dialog v-model="dialogOpen" max-width="780" scrollable>
@@ -1600,6 +1714,100 @@ defineExpose({ refresh: load });
           </v-btn>
           <v-btn color="error" :loading="saving" @click="confirmDelete">
             {{ t('siemCenter.settings.parsers.delete') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="engineDetailOpen" max-width="820" scrollable>
+      <v-card v-if="engineDetail">
+        <v-card-title class="d-flex flex-wrap align-center ga-2">
+          <span>{{ t(engineDetail.titleKey) }}</span>
+          <v-chip size="x-small" color="secondary" variant="tonal" prepend-icon="mdi-lock-outline">
+            {{ t('siemCenter.reference.builtInLockedChip') }}
+          </v-chip>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pt-4">
+          <p class="text-caption text-medium-emphasis mb-2 font-mono">{{ engineDetail.id }}</p>
+          <p class="text-body-2 mb-3">{{ t(engineDetail.descriptionKey) }}</p>
+          <v-alert type="info" variant="tonal" density="compact" class="mb-3">
+            {{ t('siemCenter.reference.builtInLockedHint') }}
+          </v-alert>
+          <p v-if="engineDetail.explainKey" class="text-body-2 text-medium-emphasis mb-4">
+            {{ t(engineDetail.explainKey) }}
+          </p>
+
+          <h3 class="text-subtitle-2 font-weight-bold mb-2">
+            {{ t('siemCenter.settings.parsers.meaningTitle') }}
+          </h3>
+          <v-table density="compact" class="mb-4">
+            <thead>
+              <tr>
+                <th>{{ t('siemCenter.reference.colLogSignal') }}</th>
+                <th>{{ t('siemCenter.reference.colMeaning') }}</th>
+                <th>{{ t('siemCenter.reference.colScenarios') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(row, idx) in engineDetail.mappings"
+                :key="`${engineDetail.id}-map-${idx}`"
+              >
+                <td><code>{{ row.input }}</code></td>
+                <td><code>{{ row.eventAction }}</code></td>
+                <td>
+                  <template v-if="row.scenarioIds.length">
+                    <v-chip
+                      v-for="sid in row.scenarioIds"
+                      :key="sid"
+                      size="x-small"
+                      class="me-1"
+                      variant="outlined"
+                    >
+                      {{ sid }}
+                    </v-chip>
+                  </template>
+                  <span v-else class="text-medium-emphasis">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+
+          <template v-if="engineDetail.fieldMappings?.length">
+            <h3 class="text-subtitle-2 font-weight-bold mb-2">
+              {{ t('siemCenter.reference.fieldMapTitle') }}
+            </h3>
+            <p class="text-caption text-medium-emphasis mb-2">
+              {{ t('siemCenter.reference.fieldMapHint') }}
+            </p>
+            <v-table density="compact">
+              <thead>
+                <tr>
+                  <th>{{ t('siemCenter.reference.colRawField') }}</th>
+                  <th>{{ t('siemCenter.reference.colTargetField') }}</th>
+                  <th>{{ t('siemCenter.reference.colFieldNote') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(fm, fidx) in engineDetail.fieldMappings"
+                  :key="`${engineDetail.id}-fm-${fidx}`"
+                >
+                  <td><code>{{ fm.raw }}</code></td>
+                  <td><code>{{ fm.target }}</code></td>
+                  <td class="text-body-2 text-medium-emphasis">
+                    {{ fm.noteKey ? t(fm.noteKey) : '—' }}
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </template>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="engineDetailOpen = false">
+            {{ t('siemCenter.settings.parsers.cancel') }}
           </v-btn>
         </v-card-actions>
       </v-card>

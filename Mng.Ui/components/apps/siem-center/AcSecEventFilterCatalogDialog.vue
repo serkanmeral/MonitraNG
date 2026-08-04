@@ -27,12 +27,14 @@ import {
 } from '@/utils/secEventFilterQueryMap';
 import AcSecEventFilterCatalogTree from '@/components/apps/siem-center/AcSecEventFilterCatalogTree.vue';
 import AcSecEventFilterEditor from '@/components/apps/siem-center/AcSecEventFilterEditor.vue';
+import type { DiscoveryHostDto } from '@/services/siemDiscoveryService';
 
 const props = defineProps<{
   modelValue: boolean;
   initialFilter?: SecEventSavedFilter | null;
   initialFilterId?: string | null;
   hostOptions: string[];
+  discoveryHosts?: DiscoveryHostDto[];
 }>();
 
 const emit = defineEmits<{
@@ -353,6 +355,7 @@ function onCancel() {
             <AcSecEventFilterEditor
               v-model="draft"
               :host-options="hostOptions"
+              :discovery-hosts="discoveryHosts"
               :dirty="dirty"
               :selected-filter-id="selectedFilterId"
               @apply="onApply"

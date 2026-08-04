@@ -1,7 +1,8 @@
 # SIEM — Parse Rules kataloğu (P5 spec)
 
 **Durum:** Dilím 0–5 ✅ (spec + API + Settings UI + sihirbazlar + ingest motor + builtin seed + docs)  
-**Son güncelleme:** 3 Ağustos 2026  
+**Son güncelleme:** 4 Ağustos 2026 (UI: Katalog kuralları | Ürün parserları sekmeleri)  
+
 
 **İlgili:** [SIEM_PARSER_PLAN.md](../monitoring/SIEM_PARSER_PLAN.md) · [POLICY_EVENTLOG_PACKAGES.md](./mnglogs/POLICY_EVENTLOG_PACKAGES.md) · [SIEM_PLANNING.md](../monitoring/SIEM_PLANNING.md) §4 (`sec_events`) · [current_status.md](./current_status.md)
 
@@ -35,7 +36,7 @@ Ham güvenlik olaylarından (Windows Event Log, Linux journal/syslog, firewall s
 |------|--------|
 | Kural modeli | **B** — ayrı Parse Rules kataloğu; Event Log paketinden bağımsız |
 | Bağlantı | `match.sourceProduct` (+ channel / eventId / pattern / when); paket “ne topla”, kural “nasıl çıkar” |
-| UI | SIEM Settings → **Event Log** alt sekme `parsers`; sihirbaz: Windows + Linux (manuel «Kural oluştur» kaldırıldı) |
+| UI | SIEM Settings → **Event Log** alt sekme `parsers`; sekmeler: **Katalog kuralları** (CRUD) + **Ürün parserları** (engine built-in, salt okunur); sihirbaz: Windows + Linux |
 | Alan kataloğu | Core + `custom.<slug>`; kural kaydında auto-register |
 | Motor konumu | `MngReactor` normalizer hattı |
 | Çakışma | `priority` desc; `onConflict: first_wins` (v1) |

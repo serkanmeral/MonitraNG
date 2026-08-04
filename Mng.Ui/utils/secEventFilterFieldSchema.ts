@@ -80,7 +80,23 @@ export function createFallbackSecEventFilterFieldSchemas(): SecEventFilterFieldS
       label: 'Destination port',
       labelKey: 'siemCenter.events.filterCatalog.fields.dstPort',
       input: 'text',
-      ops: ['eq'],
+      ops: ['eq', 'in'],
+    },
+    {
+      field: 'custom.policy_id',
+      label: 'Firewall policy id',
+      labelKey: 'siemCenter.events.filterCatalog.fields.policyId',
+      input: 'text',
+      ops: ['eq', 'in'],
+      isCustom: true,
+    },
+    {
+      field: 'custom.service',
+      label: 'Firewall service',
+      labelKey: 'siemCenter.events.filterCatalog.fields.fwService',
+      input: 'text',
+      ops: ['eq', 'contains'],
+      isCustom: true,
     },
     {
       field: 'event.actionPrefix',
@@ -122,6 +138,8 @@ export function buildSecEventFilterFieldSchemasFromCatalog(
     'network.srcIp',
     'network.dstIp',
     'network.dstPort',
+    'custom.policy_id',
+    'custom.service',
     'event.actionPrefix',
     'search',
   ]);
@@ -166,6 +184,27 @@ export function buildSecEventFilterFieldSchemasFromCatalog(
       labelKey: 'siemCenter.events.filterCatalog.fields.search',
       input: 'text',
       ops: ['contains'],
+    });
+  }
+
+  if (!schemas.some((s) => s.field === 'custom.policy_id')) {
+    schemas.push({
+      field: 'custom.policy_id',
+      label: 'Firewall policy id',
+      labelKey: 'siemCenter.events.filterCatalog.fields.policyId',
+      input: 'text',
+      ops: ['eq', 'in'],
+      isCustom: true,
+    });
+  }
+  if (!schemas.some((s) => s.field === 'custom.service')) {
+    schemas.push({
+      field: 'custom.service',
+      label: 'Firewall service',
+      labelKey: 'siemCenter.events.filterCatalog.fields.fwService',
+      input: 'text',
+      ops: ['eq', 'contains'],
+      isCustom: true,
     });
   }
 

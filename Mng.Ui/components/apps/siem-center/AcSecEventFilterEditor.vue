@@ -25,11 +25,21 @@ import {
 } from '@/services/secEventParseRuleCatalogService';
 import { fetchEventLogPackageCatalog } from '@/services/eventLogPackageCatalogService';
 import { secEventScopeOptions } from '@/services/secEventService';
+import type { DiscoveryHostDto } from '@/services/siemDiscoveryService';
 import { sourceTypeLabelKey } from '@/composables/useSecEventList';
+import {
+  buildSecEventHostComboItems,
+  buildSecEventHostDirectory,
+  formatSecEventHostLabel,
+  isFirewallSourceProduct,
+  resolveSecEventHostFilterValue,
+} from '@/utils/secEventHostLabels';
 
 const props = defineProps<{
   modelValue: SecEventSavedFilter;
   hostOptions: string[];
+  /** Discovery rows for hostname · IP labels and IP→host resolve. */
+  discoveryHosts?: DiscoveryHostDto[];
   dirty: boolean;
   selectedFilterId: string | null;
 }>();
@@ -101,11 +111,27 @@ const productItems = computed(() => {
   return values.map((v) => ({ title: productTitle(v), value: v }));
 });
 
+const hostDirectory = computed(() => buildSecEventHostDirectory(props.discoveryHosts ?? []));
+
 const hostItems = computed(() =>
-  mergeUnique(props.hostOptions, liveHosts.value, draft.value.scope?.hosts ?? []).map((h) => ({
-    title: h,
-    value: h,
-  })),
+  buildSecEventHostComboItems(
+    hostDirectory.value,
+    mergeUnique(props.hostOptions, liveHosts.value, draft.value.scope?.hosts ?? []),
+  ),
+);
+
+const isFirewallHostScope = computed(() => isFirewallSourceProduct(draft.value.scope?.product));
+
+const hostFieldLabel = computed(() =>
+  isFirewallHostScope.value
+    ? t('siemCenter.events.filterCatalog.hostSensor')
+    : t('siemCenter.events.filterCatalog.host'),
+);
+
+const hostFieldHint = computed(() =>
+  isFirewallHostScope.value
+    ? t('siemCenter.events.filterCatalog.hostSensorHint')
+    : t('siemCenter.events.filterCatalog.hostHint'),
 );
 
 const allowedFieldsForProduct = computed(() =>
@@ -230,8 +256,22 @@ function onHostsUpdate(value: unknown) {
   const raw = Array.isArray(value) ? value : [];
   const hosts = raw
     .map((x) => coerceComboValue(x))
-    .filter((x): x is string => !!x);
-  patchScope({ hosts });
+    .filter((x): x is string => !!x)
+    .map((x) => resolveSecEventHostFilterValue(x, hostDirectory.value));
+  // Dedupe after IP→hostname resolve
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const h of hosts) {
+    const key = h.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(h);
+  }
+  patchScope({ hosts: unique });
+}
+
+function hostChipTitle(host: string): string {
+  return formatSecEventHostLabel(host, hostDirectory.value);
 }
 
 function onOpUpdate(index: number, value: unknown) {
@@ -370,8 +410,8 @@ watch(hasTypeSelected, (v) => {
           :items="hostItems"
           item-title="title"
           item-value="value"
-          :label="t('siemCenter.events.filterCatalog.host')"
-          :hint="t('siemCenter.events.filterCatalog.hostHint')"
+          :label="hostFieldLabel"
+          :hint="hostFieldHint"
           persistent-hint
           density="compact"
           variant="outlined"
@@ -381,7 +421,13 @@ watch(hasTypeSelected, (v) => {
           closable-chips
           :loading="catalogLoading"
           @update:model-value="onHostsUpdate"
-        />
+        >
+          <template #chip="{ props: chipProps, item }">
+            <v-chip v-bind="chipProps" size="small">
+              {{ hostChipTitle(String(item?.value ?? item?.title ?? item ?? '')) }}
+            </v-chip>
+          </template>
+        </v-combobox>
       </v-col>
     </v-row>
 

@@ -8404,7 +8404,9 @@
         "product": "Product",
         "productHint": "Product / package (source.product). Pick from list or type freely.",
         "host": "Host",
-        "hostHint": "Host name — pick from suggestions or type freely (multi).",
+        "hostHint": "Hostname · IP — pick from the list or type. Agent events match on hostname; typed IPs are resolved when possible.",
+        "hostSensor": "Sensor / IP",
+        "hostSensorHint": "Firewall / syslog source — usually a sensor IP or name (not a host computer name).",
         "advancedScope": "Advanced: Type",
         "all": "All",
         "fieldFilters": "Field filters",
@@ -8440,13 +8442,18 @@
           "srcIp": "Source IP",
           "dstIp": "Destination IP",
           "dstPort": "Destination port",
+          "policyId": "Firewall policy ID",
+          "fwService": "Firewall service",
           "search": "Free text"
         },
         "products": {
           "rdp_session": "RDP session",
           "mnglogs_agent": "MngLogs agent",
           "windows": "Windows",
-          "fortigate": "FortiGate"
+          "windows_rdp": "Windows RDP",
+          "windows_eventlog": "Windows Event Log",
+          "fortigate": "FortiGate",
+          "linux_journal": "Linux Journal"
         }
       },
       "filterBuilder": {
@@ -8505,6 +8512,8 @@
           "sourceIp": "Source IP",
           "destIp": "Destination IP",
           "destPort": "Destination port",
+          "policyId": "Policy ID",
+          "fwService": "Service",
           "sessionHost": "Session host (RDP target)",
           "host": "Host",
           "eventCode": "Event ID",
@@ -8517,6 +8526,8 @@
           "anyIp": "Any IP",
           "anyHost": "Any host",
           "anyPort": "Any port",
+          "anyPolicy": "Any policyid",
+          "anyService": "Any service",
           "eventCode": "e.g. 4625",
           "message": "Contains…"
         },
@@ -8549,6 +8560,15 @@
       "sourceUnknown": "Unknown source",
       "empty": "No events match the filter.",
       "emptyHint": "Widen the time range or clear filters. An applied intent with no matching parsed events shows an empty list.",
+      "emptyHintSaved": "No events match «{name}». Widen the time range or edit the filter.",
+      "emptyHintScoped": "No events in the selected product/host scope. Relax the filter or widen the time range.",
+      "emptyEditFilters": "Edit filters",
+      "chipOpenFilters": "Open filter catalog",
+      "colProduct": "Product",
+      "colOutcome": "Outcome",
+      "rawActionHint": "Raw action",
+      "filterByField": "Filter by this field",
+      "filterAppliedHint": "Filter applied.",
       "statTotal": "{shown} / {total} events",
       "statShown": "Shown",
       "statMatching": "Matching total",
@@ -8557,9 +8577,23 @@
       "detailTitle": "Event detail",
       "detailActionKey": "Technical action (match key)",
       "sectionOverview": "Overview",
+      "sectionSummary": "Summary",
+      "sectionFirewallFlow": "Firewall flow",
       "sectionActor": "Actor & network",
       "sectionSource": "Source",
       "sectionTechnical": "Technical",
+      "sectionAdvanced": "Advanced",
+      "sectionExtracted": "Extracted fields",
+      "colFirewallEndpoints": "Source → Destination",
+      "colFirewallPolicy": "Policy (policyid)",
+      "colFirewallService": "Service",
+      "colFirewallProtoPort": "Protocol / dest port",
+      "colFirewallLogKind": "Log type",
+      "colFirewallCfgPath": "Config path",
+      "detailNoExtraFields": "No additional extracted fields.",
+      "filterByCode": "Filter by this code",
+      "filterByAction": "Filter by this action",
+      "filterByOutcome": "Filter by this outcome",
       "ingestedAt": "Ingested at",
       "rawPreview": "Raw preview",
       "rawFull": "Raw log",
@@ -8795,6 +8829,12 @@
       "parsers": {
         "manageHint": "Turns raw logs into meaningful fields (user, IP, outcome). Catalog packages define what to collect; this tab defines how to interpret it.",
         "manageHintDetail": "After changes, click Publish. Otherwise drafts may not apply to ingest yet.",
+        "tabCatalog": "Catalog rules",
+        "tabEngine": "Product parsers",
+        "engineSectionTitle": "Product parsers (Engine)",
+        "engineSectionHint": "Firewall and similar sources are interpreted by built-in C# parsers in Reactor. You can view the mapping here; changes ship with product releases.",
+        "engineReadonlyChip": "Read-only",
+        "engineView": "View",
         "refresh": "Refresh",
         "create": "Create rule",
         "wizard": {
@@ -9039,6 +9079,43 @@
       "menuTitle": "Discovery map",
       "pageTitle": "Discovery and coverage",
       "pageSubtitle": "See discovered devices next to Monitra agent coverage. Gap: discovered but no agent.",
+      "segments": {
+        "endpoints": "Endpoints",
+        "logSources": "Network / log sources"
+      },
+      "logSources": {
+        "pageSubtitle": "Network appliances monitored via syslog (FortiGate). Separate from agent coverage — online/silent from last event time.",
+        "banner": "This segment shows firewall / syslog sources. Endpoint agent gaps live under the Endpoints tab.",
+        "kpiTotal": "Total",
+        "kpiOnline": "Syslog online",
+        "kpiSilent": "Silent (24h)",
+        "kpiMissing": "No flow",
+        "coverage": {
+          "logOnline": "Online",
+          "logSilent": "Silent",
+          "configuredMissing": "No flow"
+        },
+        "kind": {
+          "firewall": "Firewall"
+        },
+        "sensor": "Sensor / IP",
+        "lastEvent": "Last event",
+        "events24h": "Events (24h, sample)",
+        "fromSeed": "configured, no events yet",
+        "openEvents": "Open in Events",
+        "openDetail": "Summary",
+        "refreshedAt": "Refreshed {time}",
+        "empty": "No log sources match the filter.",
+        "detail": {
+          "hint": "Syslog triage summary — not endpoint host analytics. Use Events for deep investigation.",
+          "count1h": "Last 1 hour",
+          "count24h": "Last 24 hours",
+          "topActions": "Top actions (sample)",
+          "noActions": "No actions in the sample window.",
+          "recent": "Recent events",
+          "noRecent": "No recent event sample."
+        }
+      },
       "mockBanner": "Discovery host list could not be loaded (Collector). Coverage still merges host.up. Sync / Collector deploy may be required.",
       "liveBanner": "Discovery inventory (scan + AD) + agent coverage (host.up). Online within 2m, else quiet; refresh 30s. Discovered without agent = coverage gap.",
       "coverageLoadError": "Error loading discovery or coverage.",
@@ -9534,6 +9611,13 @@
       "parsersSectionTitle": "What does each log mean?",
       "parsersSectionHint": "Left column is the source signal; middle column is the short name in the system. Unknown lines are kept raw; default alarms may not fire.",
       "parserTechnicalId": "Technical parser id: {id}",
+      "builtInLockedChip": "Product parser (locked)",
+      "builtInLockedHint": "This rule cannot be edited from the Event Log catalog UI; it is a built-in C# product parser. The tables below explain the mapping — changes ship with product releases.",
+      "fieldMapTitle": "Field mapping (raw → system)",
+      "fieldMapHint": "How firewall syslog keys are written into MonitraNG event fields. Extensions live under custom.*.",
+      "colRawField": "Raw field / condition",
+      "colTargetField": "Target field",
+      "colFieldNote": "Note",
       "scenariosSectionTitle": "Threat scenarios (U1–U10)",
       "scenariosSectionHint": "Default alarm rules can be loaded for U1–U7. U8–U10 events are collected; default package rules are not available yet.",
       "scenariosFootnote": "Default alarm package: {id} version {version}. You can change thresholds in Alarm Center.",
@@ -9591,7 +9675,14 @@
         },
         "firewallVendor": {
           "title": "Firewall (FortiGate, Palo Alto, Cisco ASA)",
-          "description": "Denied/allowed traffic, rule changes, and new flow detection."
+          "description": "Denied/allowed traffic, rule changes, and new flow detection. FortiGate also extracts policy, service, and device name.",
+          "explain": "FortiGate syslog (key=value) arrives on the Engine listener; firewall.vendor.v1 sets action/outcome and writes operational fields (policyid, service, type/subtype, srcport, devname). UTM/VPN fields are out of scope for now. The Event Log parse-rule catalog does not edit this C# parser.",
+          "notes": {
+            "deny": "Primary signal for U4 (denied connection) scenarios.",
+            "allow": "Volume can be high; tune U5 thresholds in Alarm Center.",
+            "ruleChange": "Only when type=event and cfgpath looks like firewall/policy (or edit/add/delete… action).",
+            "devname": "When present, device name becomes source.host; otherwise the Engine ingress host is used."
+          }
         },
         "firewallGeneric": {
           "title": "Other firewall syslog",

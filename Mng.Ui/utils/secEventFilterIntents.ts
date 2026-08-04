@@ -13,7 +13,9 @@ export type SecEventFilterFieldMapTo =
   | 'eventOutcome'
   | 'eventAction'
   | 'sourceType'
-  | 'search';
+  | 'search'
+  | 'policyId'
+  | 'fwService';
 
 export interface SecEventFilterIntentField {
   /** Catalog field name when applicable (e.g. actor.user). */
@@ -64,6 +66,9 @@ export interface SecEventFilterBuilderResult {
   eventCode?: string | null;
   sourceType?: string | null;
   search?: string | null;
+  /** custom.* / catalog extras → fieldFilters when applied. */
+  policyId?: string | null;
+  fwService?: string | null;
 }
 
 export const SEC_EVENT_OUTCOME_OPTIONS = ['success', 'failure', 'unknown'] as const;
@@ -230,6 +235,22 @@ export const SEC_EVENT_FILTER_INTENTS: SecEventFilterIntent[] = [
         anyAllowed: true,
         input: 'text',
         placeholderKey: 'siemCenter.events.filterBuilder.placeholders.anyPort',
+      },
+      {
+        catalogField: 'custom.policy_id',
+        mapTo: 'policyId',
+        labelKey: 'siemCenter.events.filterBuilder.fields.policyId',
+        anyAllowed: true,
+        input: 'text',
+        placeholderKey: 'siemCenter.events.filterBuilder.placeholders.anyPolicy',
+      },
+      {
+        catalogField: 'custom.service',
+        mapTo: 'fwService',
+        labelKey: 'siemCenter.events.filterBuilder.fields.fwService',
+        anyAllowed: true,
+        input: 'text',
+        placeholderKey: 'siemCenter.events.filterBuilder.placeholders.anyService',
       },
       {
         catalogField: 'actor.user',
@@ -494,6 +515,8 @@ export function buildSecEventFilterBuilderResult(
     eventCode: pick('eventCode'),
     sourceType: pick('sourceType') ?? intent.defaultSourceType ?? null,
     search: pick('search'),
+    policyId: pick('policyId'),
+    fwService: pick('fwService'),
   };
 
   // custom intent: no default sourceType unless chosen

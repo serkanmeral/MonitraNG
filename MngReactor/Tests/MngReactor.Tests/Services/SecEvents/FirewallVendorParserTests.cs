@@ -37,6 +37,13 @@ public sealed class FirewallVendorParserTests
         Assert.Equal("tcp", parsed.NetworkProtocol);
         Assert.Equal("firewall", parsed.SourceType);
         Assert.Equal(FirewallVendorParser.FortigateProductValue, parsed.SourceProduct);
+        Assert.Equal("FGT-ODAK", parsed.SourceHost);
+        Assert.Equal("0000000013", parsed.EventCode);
+        Assert.Equal("1", parsed.ExtraFields["custom.policy_id"]);
+        Assert.Equal("SMB", parsed.ExtraFields["custom.service"]);
+        Assert.Equal("traffic", parsed.ExtraFields["custom.log_type"]);
+        Assert.Equal("forward", parsed.ExtraFields["custom.log_subtype"]);
+        Assert.Equal(54321, parsed.ExtraFields["custom.src_port"]);
     }
 
     [Fact]
@@ -56,6 +63,8 @@ public sealed class FirewallVendorParserTests
         Assert.Equal("success", parsed.EventOutcome);
         Assert.Equal("10.0.0.10", parsed.NetworkDstIp);
         Assert.Equal(443, parsed.NetworkDstPort);
+        Assert.Equal("2", parsed.ExtraFields["custom.policy_id"]);
+        Assert.Equal("HTTPS", parsed.ExtraFields["custom.service"]);
     }
 
     [Fact]
@@ -74,6 +83,9 @@ public sealed class FirewallVendorParserTests
         Assert.Equal("rule_change", parsed.EventAction);
         Assert.Equal("netadmin", parsed.ActorUser);
         Assert.Contains("firewall.policy", parsed.Raw, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("firewall.policy", parsed.ExtraFields["custom.cfg_path"]);
+        Assert.Equal("event", parsed.ExtraFields["custom.log_type"]);
+        Assert.Equal("system", parsed.ExtraFields["custom.log_subtype"]);
     }
 
     [Fact]

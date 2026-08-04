@@ -59,6 +59,8 @@ public sealed class SecEventListItem
     public string? ActorUser { get; init; }
     public string? NetworkSrcIp { get; init; }
     public string? NetworkDstIp { get; init; }
+    public int? NetworkDstPort { get; init; }
+    public string? NetworkProtocol { get; init; }
     public string? ParserId { get; init; }
     public string? RawPreview { get; init; }
     /// <summary>Tam ham mesaj — yalnızca GET by id yanıtında dolu.</summary>

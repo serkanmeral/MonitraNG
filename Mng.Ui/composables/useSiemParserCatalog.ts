@@ -1,7 +1,7 @@
 import { SIEM_SCENARIO_CATALOG } from '@/composables/useSiemScenarioCatalog';
 
 /** SIEM parser / kapsam sözlüğü — UI salt okunur referans (SIEM_PARSER_PLAN ile hizalı). */
-export const SIEM_REFERENCE_VERSION = '1.0.0';
+export const SIEM_REFERENCE_VERSION = '1.1.0';
 export const SIEM_ALARM_PACKAGE_ID = 'siem-mvp-v1';
 export const SIEM_ALARM_PACKAGE_VERSION = '1.0.0';
 
@@ -24,6 +24,13 @@ export interface SiemParserMappingDef {
   inAlarmPack: boolean;
 }
 
+/** Raw syslog / vendor field → normalized SIEM field (read-only documentation). */
+export interface SiemParserFieldMappingDef {
+  raw: string;
+  target: string;
+  noteKey?: string;
+}
+
 export interface SiemParserDef {
   id: string;
   status: SiemParserCatalogStatus;
@@ -33,6 +40,15 @@ export interface SiemParserDef {
   titleKey: string;
   descriptionKey: string;
   mappings: SiemParserMappingDef[];
+  /**
+   * Built-in product parser (C# / Engine) — shown and explained here, not editable
+   * in Event Log catalog UI.
+   */
+  builtInLocked?: boolean;
+  /** Extra prose under the action table (i18n key). */
+  explainKey?: string;
+  /** Field-level extract map for operator education. */
+  fieldMappings?: SiemParserFieldMappingDef[];
 }
 
 export interface SiemScenarioReferenceDef {
@@ -145,11 +161,31 @@ export const SIEM_PARSERS: SiemParserDef[] = [
     collectionMethodId: 'syslog-network',
     titleKey: 'siemCenter.reference.parsers.firewallVendor.title',
     descriptionKey: 'siemCenter.reference.parsers.firewallVendor.description',
+    builtInLocked: true,
+    explainKey: 'siemCenter.reference.parsers.firewallVendor.explain',
     mappings: [
       { input: 'traffic deny', eventAction: 'denied_flow', scenarioIds: ['U4'], inAlarmPack: true },
       { input: 'traffic allow (yoğun)', eventAction: 'allowed_flow', scenarioIds: ['U5'], inAlarmPack: true },
       { input: 'policy / config change', eventAction: 'rule_change', scenarioIds: ['U6'], inAlarmPack: true },
       { input: 'baseline sonrası yeni src→dst', eventAction: 'new_flow', scenarioIds: ['U7'], inAlarmPack: true },
+    ],
+    fieldMappings: [
+      { raw: 'action=deny|block|drop|reject', target: 'event.action = denied_flow', noteKey: 'siemCenter.reference.parsers.firewallVendor.notes.deny' },
+      { raw: 'action=accept|allow|pass|permit', target: 'event.action = allowed_flow', noteKey: 'siemCenter.reference.parsers.firewallVendor.notes.allow' },
+      { raw: 'type=event + cfgpath (firewall/policy)', target: 'event.action = rule_change', noteKey: 'siemCenter.reference.parsers.firewallVendor.notes.ruleChange' },
+      { raw: 'srcip', target: 'network.srcIp' },
+      { raw: 'dstip', target: 'network.dstIp' },
+      { raw: 'dstport', target: 'network.dstPort' },
+      { raw: 'proto', target: 'network.protocol' },
+      { raw: 'srcport', target: 'custom.src_port' },
+      { raw: 'policyid', target: 'custom.policy_id' },
+      { raw: 'service', target: 'custom.service' },
+      { raw: 'type', target: 'custom.log_type' },
+      { raw: 'subtype', target: 'custom.log_subtype' },
+      { raw: 'cfgpath', target: 'custom.cfg_path' },
+      { raw: 'logid', target: 'event.code' },
+      { raw: 'devname', target: 'source.host', noteKey: 'siemCenter.reference.parsers.firewallVendor.notes.devname' },
+      { raw: 'user', target: 'actor.user' },
     ],
   },
   {
@@ -160,6 +196,7 @@ export const SIEM_PARSERS: SiemParserDef[] = [
     collectionMethodId: 'syslog-network',
     titleKey: 'siemCenter.reference.parsers.firewallGeneric.title',
     descriptionKey: 'siemCenter.reference.parsers.firewallGeneric.description',
+    builtInLocked: true,
     mappings: [
       { input: 'CEF / key=value deny', eventAction: 'denied_flow', scenarioIds: ['U4'], inAlarmPack: true },
       { input: 'CEF / key=value allow', eventAction: 'allowed_flow', scenarioIds: ['U5'], inAlarmPack: true },
@@ -173,6 +210,7 @@ export const SIEM_PARSERS: SiemParserDef[] = [
     collectionMethodId: 'syslog-network',
     titleKey: 'siemCenter.reference.parsers.bastion.title',
     descriptionKey: 'siemCenter.reference.parsers.bastion.description',
+    builtInLocked: true,
     mappings: [
       { input: 'sshd auth (syslog)', eventAction: 'login_failed | login_success', scenarioIds: ['U1', 'U2'], inAlarmPack: true },
     ],
@@ -185,12 +223,12 @@ export const SIEM_PARSERS: SiemParserDef[] = [
     collectionMethodId: 'syslog-network',
     titleKey: 'siemCenter.reference.parsers.generic.title',
     descriptionKey: 'siemCenter.reference.parsers.generic.description',
+    builtInLocked: true,
     mappings: [
       { input: 'Tanınmayan syslog satırı', eventAction: 'unknown', scenarioIds: [], inAlarmPack: false },
     ],
   },
 ];
-
 export const SIEM_SCENARIO_REFERENCES: SiemScenarioReferenceDef[] = SIEM_SCENARIO_CATALOG.map((s) => {
   const inAlarmPack = ['U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7'].includes(s.id);
   return {
@@ -239,4 +277,9 @@ export function parserStatusColor(status: SiemParserCatalogStatus): string {
 
 export function parserStatusLabelKey(status: SiemParserCatalogStatus): string {
   return `siemCenter.reference.parserStatus.${status}`;
+}
+
+/** C# / Engine parsers shown read-only on Parse rules (not Mongo catalog rules). */
+export function siemLockedEngineParsers(): SiemParserDef[] {
+  return SIEM_PARSERS.filter((p) => p.builtInLocked);
 }

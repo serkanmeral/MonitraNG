@@ -9,6 +9,7 @@ import AcSiemDiscoveryHostDetailDialog from '@/components/apps/siem-center/AcSie
 import AcSiemDiscoveryHostNode from '@/components/apps/siem-center/AcSiemDiscoveryHostNode.vue';
 import AcSiemDiscoveryScanDialog from '@/components/apps/siem-center/AcSiemDiscoveryScanDialog.vue';
 import AcSiemDiscoveryPrefixesPanel from '@/components/apps/siem-center/AcSiemDiscoveryPrefixesPanel.vue';
+import AcSiemDiscoveryLogSourcesPanel from '@/components/apps/siem-center/AcSiemDiscoveryLogSourcesPanel.vue';
 import { clearDiscoveryHosts } from '@/services/siemDiscoveryService';
 import type {
   SiemCoverageStatus,
@@ -18,10 +19,23 @@ import type {
 } from '@/types/apps/siemDiscovery';
 
 type LayoutMode = 'tree' | 'split' | 'tiers' | 'graph';
+type DiscoverySegment = 'endpoints' | 'logSources';
 
 const LAYOUTS: LayoutMode[] = ['tree', 'split', 'tiers', 'graph'];
 const LAYOUT_STORAGE_KEY = 'siem.discovery.layout';
 const KPI_OPEN_STORAGE_KEY = 'siem.discovery.kpiOpen';
+const SEGMENT_STORAGE_KEY = 'siem.discovery.segment';
+
+function loadSegmentPreference(): DiscoverySegment {
+  if (!import.meta.client) return 'endpoints';
+  try {
+    const raw = localStorage.getItem(SEGMENT_STORAGE_KEY);
+    if (raw === 'logSources' || raw === 'endpoints') return raw;
+  } catch {
+    // ignore
+  }
+  return 'endpoints';
+}
 
 function loadLayoutPreference(): LayoutMode {
   if (!import.meta.client) return 'tree';
@@ -51,6 +65,8 @@ const { t, locale } = useAppI18n();
 const facet = ref<SiemDiscoveryFacet>('subnet');
 const layout = ref<LayoutMode>(loadLayoutPreference());
 const kpiOpen = ref(loadKpiOpenPreference());
+const segment = ref<DiscoverySegment>(loadSegmentPreference());
+const logSourcesPanel = ref<{ refresh: () => Promise<void> } | null>(null);
 
 const {
   loading,
@@ -184,6 +200,42 @@ watch(kpiOpen, (value) => {
     // ignore
   }
 });
+
+watch(segment, (value) => {
+  if (!import.meta.client) return;
+  try {
+    localStorage.setItem(SEGMENT_STORAGE_KEY, value);
+  } catch {
+    // ignore
+  }
+});
+
+const segmentItems = computed(() => [
+  {
+    id: 'endpoints' as const,
+    title: t('siemCenter.discovery.segments.endpoints'),
+    icon: 'mdi-desktop-classic',
+  },
+  {
+    id: 'logSources' as const,
+    title: t('siemCenter.discovery.segments.logSources'),
+    icon: 'mdi-firewall',
+  },
+]);
+
+const pageSubtitle = computed(() =>
+  segment.value === 'logSources'
+    ? t('siemCenter.discovery.logSources.pageSubtitle')
+    : t('siemCenter.discovery.pageSubtitle'),
+);
+
+async function refreshActiveSegment() {
+  if (segment.value === 'logSources') {
+    await logSourcesPanel.value?.refresh();
+    return;
+  }
+  await refresh();
+}
 
 function toggleKpiOpen() {
   kpiOpen.value = !kpiOpen.value;
@@ -350,14 +402,38 @@ const graphLayout = computed(() => {
             {{ t('siemCenter.discovery.pageTitle') }}
           </h1>
           <p class="text-body-2 text-medium-emphasis mb-0">
-            {{ t('siemCenter.discovery.pageSubtitle') }}
-            <span v-if="facetItems.length === 1" class="text-medium-emphasis">
+            {{ pageSubtitle }}
+            <span
+              v-if="segment === 'endpoints' && facetItems.length === 1"
+              class="text-medium-emphasis"
+            >
               · {{ t('siemCenter.discovery.toolbar.groupFixed', { name: facetItems[0]?.title }) }}
             </span>
           </p>
         </div>
 
         <div class="d-flex flex-wrap align-center ga-2 flex-shrink-0">
+          <v-btn-toggle
+            v-model="segment"
+            mandatory
+            density="compact"
+            variant="outlined"
+            divided
+            color="primary"
+            class="discovery-segment-toggle"
+          >
+            <v-btn
+              v-for="item in segmentItems"
+              :key="item.id"
+              :value="item.id"
+              size="small"
+              class="text-none"
+            >
+              <v-icon :icon="item.icon" start size="18" />
+              {{ item.title }}
+            </v-btn>
+          </v-btn-toggle>
+          <template v-if="segment === 'endpoints'">
           <v-select
             v-model="layout"
             :items="layoutItems"
@@ -432,7 +508,7 @@ const graphLayout = computed(() => {
                 prepend-icon="mdi-refresh"
                 :title="t('siemCenter.discovery.toolbar.refreshShort')"
                 :disabled="loading || coverageRefreshing"
-                @click="refresh"
+                @click="refreshActiveSegment"
               >
                 <template v-if="lastRefreshedLabel" #append>
                   <v-tooltip location="left">
@@ -477,15 +553,23 @@ const graphLayout = computed(() => {
               />
             </v-list>
           </v-menu>
+          </template>
         </div>
       </div>
     </div>
 
-    <v-alert v-if="error" type="warning" variant="tonal" density="comfortable" class="mb-3">
+    <v-alert v-if="segment === 'endpoints' && error" type="warning" variant="tonal" density="comfortable" class="mb-3">
       {{ t('siemCenter.discovery.coverageLoadError') }}
       <div class="text-caption mt-1">{{ error }}</div>
     </v-alert>
 
+    <AcSiemDiscoveryLogSourcesPanel
+      v-if="segment === 'logSources'"
+      ref="logSourcesPanel"
+      class="mb-3"
+    />
+
+    <template v-if="segment === 'endpoints'">
     <AcSiemDiscoveryScanDialog v-model:open="scanOpen" @completed="refresh" />
 
     <v-dialog v-model="prefixesOpen" max-width="920" scrollable>
@@ -937,6 +1021,7 @@ const graphLayout = computed(() => {
       :host="selectedHost"
       :stale-ms="staleMs"
     />
+    </template>
   </div>
 </template>
 
@@ -948,6 +1033,9 @@ const graphLayout = computed(() => {
     rgba(var(--v-theme-primary), 0.08) 0%,
     rgba(var(--v-theme-surface), 1) 55%
   );
+}
+.discovery-segment-toggle {
+  flex-shrink: 0;
 }
 .toolbar-layout-select {
   min-width: 132px;

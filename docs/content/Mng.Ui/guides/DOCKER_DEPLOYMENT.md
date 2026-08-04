@@ -302,7 +302,20 @@ docker-compose logs -f mngui
 
 ---
 
-**Son Güncelleme:** 30 Aralık 2024
+**Son Güncelleme:** 4 Ağustos 2026
+
+## Prod SPA vs lokal Nuxt (SIEM Discovery)
+
+Prod `mngui` image **nginx static SPA**’dır (`npm run generate`). Nitro `server/api/**` BFF prod’da **yoktur**.  
+Yeni backend için mutlaka `Mng.Ui/nginx.conf` içine `location /api/...` ekleyin; aksi halde POST istekleri SPA’ya düşüp **405** verebilir.
+
+| Client path | Upstream (örnek) |
+|-------------|------------------|
+| `/api/logcollector/` | `mnglogcollector:5091` → rewrite `/api/$1` |
+| `/api/reactor/` | `mngreactor:5003` |
+| `/api/alarm/` | `mngalarm:5087` |
+
+Detay: [docs/odak/siem/DISCOVERY_COVERAGE.md](../../../odak/siem/DISCOVERY_COVERAGE.md) · [docs/odak/siem/current_status.md](../../../odak/siem/current_status.md)
 
 ## 🔄 Son Değişiklikler (30 Aralık 2024)
 

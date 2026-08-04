@@ -6,7 +6,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import type { SecEventListItem, SecEventRangeMode, SecEventTimeRange } from '@/types/apps/secEvent';
 import type { SecEventSavedFilter } from '@/types/apps/secEventFilterCatalog';
 import { secEventQuery, secEventGet } from '@/services/secEventService';
-import { fetchDiscoveryHosts } from '@/services/siemDiscoveryService';
+import { fetchDiscoveryHosts, type DiscoveryHostDto } from '@/services/siemDiscoveryService';
 import {
   findFilterById,
   loadSecEventFilterCatalog,
@@ -21,16 +21,27 @@ import {
   isValidCustomRange,
   SEC_EVENT_DEFAULT_PAGE_SIZE,
   SEC_EVENT_PAGE_SIZE_OPTIONS,
-  secEventActionI18nKey,
+  hasKnownActionLabel,
+  outcomeColor,
+  productAccentColor,
+  resolveActionLabel,
+  resolveOutcomeLabel,
+  resolveProductLabel,
   sourceTypeLabelKey,
   toDatetimeLocalInput,
   actionColor,
 } from '@/composables/useSecEventList';
 import {
+  buildSecEventHostDirectory,
+  formatSecEventHostLabel,
+  looksLikeIpv4,
+} from '@/utils/secEventHostLabels';
+import {
   createEmptyActiveFilter,
   mapSecEventSavedFilterToQuery,
 } from '@/utils/secEventFilterQueryMap';
 import { rowMatchesActionConstraint } from '@/utils/secEventFilterIntents';
+import { firewallTableMetaLine } from '@/utils/secEventFirewallDisplay';
 import AcSecEventDetailPanel from '@/components/apps/siem-center/AcSecEventDetailPanel.vue';
 import AcSecEventFilterCatalogDialog from '@/components/apps/siem-center/AcSecEventFilterCatalogDialog.vue';
 
@@ -58,6 +69,8 @@ const activeFilter = ref<SecEventSavedFilter>(createEmptyActiveFilter());
 const selectedFilterId = ref<string | null>(null);
 const filterDialogOpen = ref(false);
 const hostOptions = ref<string[]>([]);
+const discoveryHosts = ref<DiscoveryHostDto[]>([]);
+const hostDirectory = computed(() => buildSecEventHostDirectory(discoveryHosts.value));
 
 const rangeMode = ref<SecEventRangeMode>('preset');
 const timeRange = ref<SecEventTimeRange>('24h');
@@ -89,10 +102,11 @@ const timeRangeItems = computed(() => [
 ]);
 
 const headers = computed(() => [
-  { title: t('siemCenter.events.colTime'), key: 'timestamp', sortable: false },
-  { title: t('siemCenter.events.colEvent'), key: 'event', sortable: false },
+  { title: t('siemCenter.events.colTime'), key: 'timestamp', sortable: false, width: '9.5rem' },
+  { title: t('siemCenter.events.colEvent'), key: 'event', sortable: false, width: '14rem', maxWidth: '16rem' },
   { title: t('siemCenter.events.colActorNet'), key: 'actorNet', sortable: false },
-  { title: t('siemCenter.events.colSource'), key: 'source', sortable: false },
+  { title: t('siemCenter.events.colHost'), key: 'host', sortable: false, width: '11rem' },
+  { title: t('siemCenter.events.colProduct'), key: 'product', sortable: false, width: '8.5rem' },
 ]);
 
 type FilterChip = {
@@ -101,6 +115,20 @@ type FilterChip = {
   color?: string;
   remove: () => void;
 };
+
+const emptyStateHint = computed(() => {
+  if (selectedFilterId.value) {
+    const catalog = loadSecEventFilterCatalog();
+    const saved = findFilterById(catalog, selectedFilterId.value);
+    const name = saved?.name || activeFilter.value.name || t('siemCenter.events.filterCatalog.activeFilter');
+    return t('siemCenter.events.emptyHintSaved', { name });
+  }
+  const f = activeFilter.value;
+  if (f.scope?.product || (f.scope?.hosts?.length ?? 0) > 0 || f.scope?.type) {
+    return t('siemCenter.events.emptyHintScoped');
+  }
+  return t('siemCenter.events.emptyHint');
+});
 
 const activeFilterChips = computed((): FilterChip[] => {
   const chips: FilterChip[] = [];
@@ -138,7 +166,7 @@ const activeFilterChips = computed((): FilterChip[] => {
   if (mapped.sourceProduct) {
     chips.push({
       key: 'sourceProduct',
-      label: `${t('siemCenter.events.filterCatalog.product')}: ${mapped.sourceProduct}`,
+      label: `${t('siemCenter.events.filterCatalog.product')}: ${resolveProductLabel(mapped.sourceProduct, t)}`,
       remove: () => {
         activeFilter.value = {
           ...activeFilter.value,
@@ -152,9 +180,10 @@ const activeFilterChips = computed((): FilterChip[] => {
   }
   const hosts = f.scope?.hosts ?? [];
   if (hosts.length) {
+    const hostLabels = hosts.map((h) => formatSecEventHostLabel(h, hostDirectory.value));
     chips.push({
       key: 'hosts',
-      label: `${t('siemCenter.events.filterCatalog.host')}: ${hosts.join(', ')}`,
+      label: `${t('siemCenter.events.filterCatalog.host')}: ${hostLabels.join(', ')}`,
       remove: () => {
         activeFilter.value = {
           ...activeFilter.value,
@@ -244,9 +273,57 @@ function relativeTime(value?: string | null): string {
 }
 
 function actionLabel(action: string): string {
-  const key = secEventActionI18nKey(action);
-  const translated = t(key);
-  return translated !== key ? translated : action;
+  return resolveActionLabel(action, t);
+}
+
+function outcomeLabel(outcome?: string | null): string {
+  return resolveOutcomeLabel(outcome, t);
+}
+
+function productLabel(product?: string | null): string {
+  return resolveProductLabel(product, t);
+}
+
+function openFilterDialog() {
+  filterDialogOpen.value = true;
+}
+
+function onChipClick() {
+  openFilterDialog();
+}
+
+/** Apply a field/scope filter from the detail panel shortcut. */
+function onDetailFilterBy(payload: {
+  scope?: { type?: string | null; product?: string | null; host?: string | null };
+  field?: string;
+  value?: string;
+}) {
+  const next = {
+    ...activeFilter.value,
+    scope: {
+      type: activeFilter.value.scope?.type ?? null,
+      product: activeFilter.value.scope?.product ?? null,
+      hosts: [...(activeFilter.value.scope?.hosts ?? [])],
+    },
+    fields: activeFilter.value.fields.map((x) => ({ ...x })),
+  };
+
+  if (payload.scope?.type !== undefined) next.scope.type = payload.scope.type;
+  if (payload.scope?.product !== undefined) next.scope.product = payload.scope.product;
+  if (payload.scope?.host) {
+    const host = payload.scope.host.trim();
+    if (host && !next.scope.hosts.includes(host)) next.scope.hosts = [host];
+  }
+  if (payload.field && payload.value?.trim()) {
+    const field = payload.field;
+    const value = payload.value.trim();
+    next.fields = next.fields.filter((x) => x.field !== field);
+    next.fields.push({ field, op: 'eq', value });
+  }
+
+  applyFilterDefinition(next, null);
+  page.value = 1;
+  void loadRows({ syncUrl: true, resetSelection: true });
 }
 
 function initCustomRangeFromPreset() {
@@ -570,9 +647,14 @@ function onTableRowClick(_event: Event, ctx: { item: SecEventListItem }) {
 }
 
 function tableRowProps(data: { item: SecEventListItem }) {
-  return {
-    class: data.item.id === selectedId.value ? 'ac-events-table__row--selected' : '',
-  };
+  const product = (data.item.sourceProduct ?? '').toLowerCase();
+  const classes = [
+    data.item.id === selectedId.value ? 'ac-events-table__row--selected' : '',
+  ];
+  if (product.includes('rdp')) classes.push('ac-events-table__row--accent-primary');
+  else if (product.includes('forti')) classes.push('ac-events-table__row--accent-warning');
+  else if (product) classes.push('ac-events-table__row--accent-info');
+  return { class: classes.filter(Boolean).join(' ') };
 }
 
 function actorNetSummary(item: SecEventListItem): string {
@@ -585,18 +667,42 @@ function actorNetSummary(item: SecEventListItem): string {
   return user || src || dst || '—';
 }
 
+function actorNetMeta(item: SecEventListItem): string | null {
+  return firewallTableMetaLine(item);
+}
+
 async function loadHostOptions() {
   try {
     const res = await fetchDiscoveryHosts({ limit: 1000 });
-    const names = res.items
+    discoveryHosts.value = res.items ?? [];
+    const names = discoveryHosts.value
       .map((h) => (h.hostname || h.samAccountName || h.ip || '').trim())
       .filter(Boolean);
     hostOptions.value = Array.from(new Set(names)).sort((a, b) =>
       String(a).localeCompare(String(b)),
     ) as string[];
   } catch {
+    discoveryHosts.value = [];
     hostOptions.value = [];
   }
+}
+
+function hostPrimaryLabel(host?: string | null): string {
+  const raw = (host ?? '').trim();
+  if (!raw) return '—';
+  const entry = hostDirectory.value.get(raw.toLowerCase());
+  if (entry?.hostname && !looksLikeIpv4(entry.hostname)) return entry.hostname;
+  if (entry?.filterValue && !looksLikeIpv4(entry.filterValue)) return entry.filterValue;
+  return raw;
+}
+
+function hostSecondaryLabel(host?: string | null): string | null {
+  const raw = (host ?? '').trim();
+  if (!raw) return null;
+  const entry = hostDirectory.value.get(raw.toLowerCase());
+  if (entry?.ip && entry.ip !== raw && entry.ip !== hostPrimaryLabel(raw)) return entry.ip;
+  if (looksLikeIpv4(raw)) return null;
+  return null;
 }
 
 watch(lgAndUp, (wide) => {
@@ -675,7 +781,7 @@ onMounted(() => {
           <v-btn color="primary" prepend-icon="mdi-magnify" :loading="loading" @click="applySearch">
             {{ t('siemCenter.events.search') }}
           </v-btn>
-          <v-btn variant="tonal" prepend-icon="mdi-filter-plus" @click="filterDialogOpen = true">
+          <v-btn variant="tonal" prepend-icon="mdi-filter-plus" @click="openFilterDialog">
             {{ t('siemCenter.events.filterBuilder.open') }}
           </v-btn>
           <v-btn variant="text" prepend-icon="mdi-refresh" :loading="loading" @click="refreshList">
@@ -696,6 +802,9 @@ onMounted(() => {
               variant="tonal"
               :color="chip.color"
               closable
+              class="ac-filter-chip"
+              :title="t('siemCenter.events.chipOpenFilters')"
+              @click="onChipClick"
               @click:close="chip.remove()"
             >
               {{ chip.label }}
@@ -715,7 +824,15 @@ onMounted(() => {
     <v-card v-if="!loading && rows.length === 0" variant="outlined" class="rounded-lg pa-8 text-center">
       <v-icon icon="mdi-shield-off-outline" size="48" color="primary" class="mb-3 opacity-60" />
       <div class="text-h6 font-weight-bold mb-2">{{ t('siemCenter.events.empty') }}</div>
-      <p class="text-body-2 text-medium-emphasis mb-0">{{ t('siemCenter.events.emptyHint') }}</p>
+      <p class="text-body-2 text-medium-emphasis mb-4">{{ emptyStateHint }}</p>
+      <div class="d-flex flex-wrap justify-center ga-2">
+        <v-btn variant="tonal" color="primary" prepend-icon="mdi-filter-plus" @click="openFilterDialog">
+          {{ t('siemCenter.events.emptyEditFilters') }}
+        </v-btn>
+        <v-btn v-if="hasActiveFilters()" variant="text" prepend-icon="mdi-filter-off" @click="clearFilters">
+          {{ t('siemCenter.events.clearFilters') }}
+        </v-btn>
+      </div>
     </v-card>
 
     <v-row v-else>
@@ -742,34 +859,83 @@ onMounted(() => {
             </div>
           </template>
           <template #item.event="{ item }">
-            <div class="d-flex flex-wrap align-center ga-1">
-              <v-chip size="small" :color="actionColor(item.eventAction)" variant="tonal">
+            <div class="ac-event-cell">
+              <v-chip
+                size="small"
+                :color="actionColor(item.eventAction)"
+                variant="tonal"
+                class="ac-event-cell__action"
+                :title="actionLabel(item.eventAction)"
+              >
                 {{ actionLabel(item.eventAction) }}
+              </v-chip>
+              <v-chip
+                v-if="item.eventOutcome"
+                size="x-small"
+                :color="outcomeColor(item.eventOutcome)"
+                variant="flat"
+              >
+                {{ outcomeLabel(item.eventOutcome) }}
               </v-chip>
               <v-chip v-if="item.eventCode" size="x-small" variant="outlined">
                 {{ item.eventCode }}
               </v-chip>
+              <v-tooltip v-if="!hasKnownActionLabel(item.eventAction, t)" location="top">
+                <template #activator="{ props: tip }">
+                  <v-chip v-bind="tip" size="x-small" variant="text" color="warning">
+                    {{ t('siemCenter.events.rawActionHint') }}
+                  </v-chip>
+                </template>
+                <span>{{ item.eventAction }}</span>
+              </v-tooltip>
             </div>
           </template>
           <template #item.actorNet="{ item }">
-            <span class="text-body-2">{{ actorNetSummary(item) }}</span>
-          </template>
-          <template #item.source="{ item }">
             <div>
-              <div class="text-body-2">{{ item.sourceType ? t(sourceTypeLabelKey(item.sourceType)) : '—' }}</div>
-              <div v-if="item.sourceHost" class="text-caption text-medium-emphasis text-truncate" style="max-width: 12rem">
-                {{ item.sourceHost }}
-              </div>
-              <div v-if="item.sourceProduct" class="text-caption text-medium-emphasis">
-                {{ item.sourceProduct }}
+              <div class="text-body-2">{{ actorNetSummary(item) }}</div>
+              <div
+                v-if="actorNetMeta(item)"
+                class="text-caption text-medium-emphasis text-truncate"
+                style="max-width: 18rem"
+                :title="actorNetMeta(item) || undefined"
+              >
+                {{ actorNetMeta(item) }}
               </div>
             </div>
+          </template>
+          <template #item.host="{ item }">
+            <div>
+              <div
+                class="text-body-2 font-weight-medium text-truncate"
+                style="max-width: 14rem"
+                :title="formatSecEventHostLabel(item.sourceHost || '', hostDirectory)"
+              >
+                {{ hostPrimaryLabel(item.sourceHost) }}
+              </div>
+              <div v-if="hostSecondaryLabel(item.sourceHost)" class="text-caption text-medium-emphasis font-mono">
+                {{ hostSecondaryLabel(item.sourceHost) }}
+              </div>
+              <div v-else-if="item.sourceType" class="text-caption text-medium-emphasis">
+                {{ t(sourceTypeLabelKey(item.sourceType)) }}
+              </div>
+            </div>
+          </template>
+          <template #item.product="{ item }">
+            <v-chip
+              v-if="item.sourceProduct"
+              size="small"
+              :color="productAccentColor(item.sourceProduct)"
+              variant="tonal"
+            >
+              {{ productLabel(item.sourceProduct) }}
+            </v-chip>
+            <span v-else class="text-medium-emphasis">—</span>
           </template>
         </v-data-table-server>
       </v-col>
 
       <v-col v-if="selected && lgAndUp" cols="12" lg="4">
-        <AcSecEventDetailPanel :event="selected" :loading="detailLoading" />
+        <AcSecEventDetailPanel :event="selected" :loading="detailLoading" @filter-by="onDetailFilterBy" />
       </v-col>
     </v-row>
 
@@ -779,6 +945,7 @@ onMounted(() => {
         :event="selected"
         :loading="detailLoading"
         @close="drawerOpen = false"
+        @filter-by="onDetailFilterBy"
       />
     </v-navigation-drawer>
 
@@ -787,6 +954,7 @@ onMounted(() => {
       :initial-filter="activeFilter"
       :initial-filter-id="selectedFilterId"
       :host-options="hostOptions"
+      :discovery-hosts="discoveryHosts"
       @apply="onFilterDialogApply"
     />
   </div>
@@ -795,6 +963,58 @@ onMounted(() => {
 <style scoped>
 .ac-events-table :deep(.ac-events-table__row--selected) {
   background: rgba(var(--v-theme-primary), 0.06);
+}
+
+.ac-events-table :deep(.ac-events-table__row--accent-primary > td:first-child) {
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
+}
+
+.ac-events-table :deep(.ac-events-table__row--accent-warning > td:first-child) {
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-warning));
+}
+
+.ac-events-table :deep(.ac-events-table__row--accent-info > td:first-child) {
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-info));
+}
+
+.ac-events-table :deep(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ac-events-table :deep(th),
+.ac-events-table :deep(td) {
+  vertical-align: top;
+}
+
+.ac-events-table :deep(th:nth-child(2)),
+.ac-events-table :deep(td:nth-child(2)) {
+  width: 14rem;
+  max-width: 16rem;
+}
+
+.ac-event-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 16rem;
+}
+
+.ac-event-cell__action {
+  max-width: 100%;
+}
+
+.ac-event-cell__action :deep(.v-chip__content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  max-width: 12rem;
+}
+
+.ac-filter-chip {
+  cursor: pointer;
 }
 
 .ac-events-drawer :deep(.v-navigation-drawer__content) {

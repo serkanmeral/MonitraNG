@@ -1,8 +1,8 @@
 # SIEM — Parser / Normalizer Planı (Odak)
 
-**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + PAN-OS + **Cisco ASA**) ✅ · `windows.security.extended.v1` ✅
-**Son güncelleme:** 4 Haziran 2026
-**Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md) §13 (parser özeti), §4 (`sec_events`)
+**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + PAN-OS + **Cisco ASA**) ✅ · `windows.security.extended.v1` ✅  
+**Son güncelleme:** 4 Ağustos 2026 (FortiGate ExtraFields enrichment)  
+**Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md) §13 (parser özeti), §4 (`sec_events`) · Canlı durum: [../siem/current_status.md](../siem/current_status.md)
 
 ---
 
@@ -104,6 +104,9 @@ ISecEventParser
 | `actor.user` | Admin / policy change loglarında (varsa) |
 
 **Üretici-spesifik:** **FortiGate** (`source.product=fortigate`) — traffic `action=deny|accept`, event `cfgpath=firewall.policy` → `rule_change`. **Palo Alto PAN-OS** (`pan-os`, `paloalto`) — CEF `|TRAFFIC|` / `|CONFIG|` + CSV `,TRAFFIC,` fallback.
+
+**FortiGate ExtraFields (4 Ağu 2026):** `custom.policy_id`, `custom.service`, `custom.log_type`, `custom.log_subtype`, `custom.src_port`, `custom.cfg_path`; `event.code` ← `logid`; `source.host` ← `devname`. Liste API: `network.dstPort` / `network.protocol`.  
+**Park:** UTM/VPN parse · `new_flow` baseline · katalog seed’e taşıma (UI’de ürün parserı salt okunur: Settings → Parse kuralları → **Ürün parserları**).
 
 ---
 
