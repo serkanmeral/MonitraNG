@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type {
   SecEventFilterFieldClause,
@@ -11,7 +11,20 @@ import {
   SEC_EVENT_SOURCE_PRODUCT_OPTIONS,
   SEC_EVENT_SOURCE_TYPE_OPTIONS,
 } from '@/types/apps/secEventFilterCatalog';
-import { listSecEventFilterFieldSchemas } from '@/utils/secEventFilterFieldSchema';
+import type { SecEventTargetFieldDefinition } from '@/types/apps/secEventParseRules';
+import type { SecEventParseRuleManageItem } from '@/types/apps/secEventParseRules';
+import {
+  buildSecEventFilterFieldSchemasFromCatalog,
+  collectParseExtractFieldsForProduct,
+  createFallbackSecEventFilterFieldSchemas,
+  type SecEventFilterFieldSchema,
+} from '@/utils/secEventFilterFieldSchema';
+import {
+  fetchSecEventParseRulePublished,
+  fetchSecEventTargetFields,
+} from '@/services/secEventParseRuleCatalogService';
+import { fetchEventLogPackageCatalog } from '@/services/eventLogPackageCatalogService';
+import { secEventScopeOptions } from '@/services/secEventService';
 import { sourceTypeLabelKey } from '@/composables/useSecEventList';
 
 const props = defineProps<{
@@ -36,37 +49,99 @@ const draft = computed({
   set: (v) => emit('update:modelValue', v),
 });
 
-const typeItems = computed(() => [
-  { title: t('siemCenter.events.filterCatalog.all'), value: null },
-  ...SEC_EVENT_SOURCE_TYPE_OPTIONS.map((v) => ({
-    title: t(sourceTypeLabelKey(v)),
-    value: v,
-  })),
-]);
+const targetFields = ref<SecEventTargetFieldDefinition[] | null>(null);
+const publishedRules = ref<SecEventParseRuleManageItem[]>([]);
+const liveTypes = ref<string[]>([]);
+const liveProducts = ref<string[]>([]);
+const liveHosts = ref<string[]>([]);
+const packageProducts = ref<string[]>([]);
+const catalogLoading = ref(false);
+const showAdvancedType = ref(false);
 
-const productItems = computed(() => [
-  { title: t('siemCenter.events.filterCatalog.all'), value: null },
-  ...SEC_EVENT_SOURCE_PRODUCT_OPTIONS.map((v) => ({
-    title: t(`siemCenter.events.filterCatalog.products.${v.replace(/-/g, '_')}`),
-    value: v,
-  })),
-]);
+const STATIC_TYPES = [...SEC_EVENT_SOURCE_TYPE_OPTIONS];
+const STATIC_PRODUCTS = [...SEC_EVENT_SOURCE_PRODUCT_OPTIONS];
+
+function mergeUnique(...lists: string[][]): string[] {
+  const set = new Set<string>();
+  for (const list of lists) {
+    for (const raw of list) {
+      const v = String(raw ?? '').trim();
+      if (v) set.add(v);
+    }
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+function typeTitle(value: string | null): string {
+  if (!value) return t('siemCenter.events.filterCatalog.all');
+  const key = sourceTypeLabelKey(value);
+  const translated = t(key);
+  return translated !== key ? translated : value;
+}
+
+function productTitle(value: string | null): string {
+  if (!value) return t('siemCenter.events.filterCatalog.all');
+  const i18nKey = `siemCenter.events.filterCatalog.products.${value.replace(/-/g, '_')}`;
+  const translated = t(i18nKey);
+  return translated !== i18nKey ? translated : value;
+}
+
+const typeItems = computed(() => {
+  const values = mergeUnique(liveTypes.value, STATIC_TYPES, draft.value.scope?.type ? [draft.value.scope.type] : []);
+  return values.map((v) => ({ title: typeTitle(v), value: v }));
+});
+
+const productItems = computed(() => {
+  const values = mergeUnique(
+    liveProducts.value,
+    packageProducts.value,
+    STATIC_PRODUCTS,
+    draft.value.scope?.product ? [draft.value.scope.product] : [],
+  );
+  return values.map((v) => ({ title: productTitle(v), value: v }));
+});
 
 const hostItems = computed(() =>
-  props.hostOptions.map((h) => ({ title: h, value: h })),
+  mergeUnique(props.hostOptions, liveHosts.value, draft.value.scope?.hosts ?? []).map((h) => ({
+    title: h,
+    value: h,
+  })),
 );
 
-const fieldSchemas = computed(() =>
-  listSecEventFilterFieldSchemas({
-    type: draft.value.scope?.type,
-    product: draft.value.scope?.product,
-  }),
+const allowedFieldsForProduct = computed(() =>
+  collectParseExtractFieldsForProduct(publishedRules.value, draft.value.scope?.product),
 );
+
+const resolvedSchemas = computed((): SecEventFilterFieldSchema[] => {
+  const fields = targetFields.value?.length
+    ? targetFields.value
+    : createFallbackSecEventFilterFieldSchemas()
+        .filter((s) => s.field !== 'event.actionPrefix' && s.field !== 'search')
+        .map((s) => ({
+          name: s.field,
+          label: s.label,
+          group: s.group ?? '',
+          valueType: 'keyword',
+          extractTypes: [] as string[],
+          queryOperators: s.ops as string[],
+          queryable: true,
+          wizardSelectable: true,
+          isCustom: !!s.isCustom,
+        }));
+
+  return buildSecEventFilterFieldSchemasFromCatalog(fields, {
+    product: draft.value.scope?.product,
+    allowedFields: allowedFieldsForProduct.value,
+  });
+});
 
 const addFieldItems = computed(() =>
-  fieldSchemas.value
+  resolvedSchemas.value
     .filter((s) => !draft.value.fields.some((f) => f.field === s.field))
-    .map((s) => ({ title: t(s.labelKey), value: s.field })),
+    .map((s) => ({
+      title: fieldLabel(s),
+      value: s.field,
+    })),
 );
 
 const badgeLabel = computed(() => {
@@ -78,6 +153,17 @@ const badgeLabel = computed(() => {
   if (props.dirty) return t('siemCenter.events.filterCatalog.unsavedChanges');
   return draft.value.name || t('siemCenter.events.filterCatalog.activeFilter');
 });
+
+const hasTypeSelected = computed(() => !!draft.value.scope?.type?.trim());
+
+function fieldLabel(schema: SecEventFilterFieldSchema | undefined, fallback?: string): string {
+  if (!schema) return fallback ?? '';
+  if (schema.labelKey) {
+    const translated = t(schema.labelKey);
+    if (translated !== schema.labelKey) return translated;
+  }
+  return schema.label || schema.field;
+}
 
 function patchScope(partial: Partial<SecEventSavedFilter['scope']>) {
   draft.value = {
@@ -99,7 +185,7 @@ function removeField(index: number) {
 }
 
 function addField(field: SecEventFilterFieldKey) {
-  const schema = fieldSchemas.value.find((s) => s.field === field);
+  const schema = resolvedSchemas.value.find((s) => s.field === field);
   if (!schema) return;
   const op: SecEventFilterFieldOp = schema.ops[0] ?? 'eq';
   draft.value = {
@@ -109,7 +195,7 @@ function addField(field: SecEventFilterFieldKey) {
 }
 
 function schemaFor(field: SecEventFilterFieldKey) {
-  return fieldSchemas.value.find((s) => s.field === field);
+  return resolvedSchemas.value.find((s) => s.field === field);
 }
 
 function opItems(field: SecEventFilterFieldKey) {
@@ -121,16 +207,31 @@ function opItems(field: SecEventFilterFieldKey) {
   }));
 }
 
+function coerceComboValue(value: unknown): string | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'string') return value.trim() || null;
+  if (typeof value === 'object' && value !== null && 'value' in (value as object)) {
+    const inner = (value as { value: unknown }).value;
+    if (inner == null || inner === '') return null;
+    return String(inner).trim() || null;
+  }
+  return String(value).trim() || null;
+}
+
 function onTypeUpdate(value: unknown) {
-  patchScope({ type: typeof value === 'string' ? value : null });
+  patchScope({ type: coerceComboValue(value) });
 }
 
 function onProductUpdate(value: unknown) {
-  patchScope({ product: typeof value === 'string' ? value : null });
+  patchScope({ product: coerceComboValue(value) });
 }
 
 function onHostsUpdate(value: unknown) {
-  patchScope({ hosts: Array.isArray(value) ? (value as string[]) : [] });
+  const raw = Array.isArray(value) ? value : [];
+  const hosts = raw
+    .map((x) => coerceComboValue(x))
+    .filter((x): x is string => !!x);
+  patchScope({ hosts });
 }
 
 function onOpUpdate(index: number, value: unknown) {
@@ -164,6 +265,63 @@ function isSelectField(field: SecEventFilterFieldKey): boolean {
   const schema = schemaFor(field);
   return schema?.input === 'select' && !!schema.options?.length;
 }
+
+async function loadScopeAndCatalog() {
+  catalogLoading.value = true;
+  try {
+    const [targets, scope, packages, published] = await Promise.all([
+      fetchSecEventTargetFields().catch(() => null),
+      secEventScopeOptions({ rangeHours: 168 }).catch(() => null),
+      fetchEventLogPackageCatalog().catch(() => null),
+      fetchSecEventParseRulePublished().catch(() => null),
+    ]);
+
+    if (targets?.fields?.length) {
+      targetFields.value = targets.fields;
+    } else {
+      targetFields.value = createFallbackSecEventFilterFieldSchemas()
+        .filter((s) => s.field !== 'event.actionPrefix' && s.field !== 'search')
+        .map((s) => ({
+          name: s.field,
+          label: s.label,
+          group: s.group ?? '',
+          valueType: 'keyword',
+          extractTypes: [],
+          queryOperators: s.ops,
+          queryable: true,
+          wizardSelectable: true,
+          isCustom: !!s.isCustom,
+        }));
+    }
+
+    if (scope) {
+      liveTypes.value = scope.types;
+      liveProducts.value = scope.products;
+      liveHosts.value = scope.hosts;
+    }
+
+    if (packages) {
+      const names = [
+        ...(packages.packages ?? []).map((p) => p.name),
+        ...(packages.optionalPackages ?? []).map((p) => p.name),
+      ];
+      packageProducts.value = names.filter(Boolean);
+    }
+
+    publishedRules.value = published?.rules ?? [];
+  } finally {
+    catalogLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  if (hasTypeSelected.value) showAdvancedType.value = true;
+  void loadScopeAndCatalog();
+});
+
+watch(hasTypeSelected, (v) => {
+  if (v) showAdvancedType.value = true;
+});
 </script>
 
 <template>
@@ -187,58 +345,82 @@ function isSelectField(field: SecEventFilterFieldKey): boolean {
 
     <div class="text-caption text-medium-emphasis mb-1">
       {{ t('siemCenter.events.filterCatalog.scope') }}
+      <span class="ms-1">{{ t('siemCenter.events.filterCatalog.scopeHint') }}</span>
     </div>
-    <v-row dense class="mb-3">
-      <v-col cols="12" md="4">
-        <v-select
-          :model-value="draft.scope.type ?? null"
-          :items="typeItems"
-          item-title="title"
-          item-value="value"
-          :label="t('siemCenter.events.filterCatalog.type')"
-          density="compact"
-          variant="outlined"
-          hide-details
-          clearable
-          @update:model-value="onTypeUpdate"
-        />
-      </v-col>
-      <v-col cols="12" md="4">
-        <v-select
+    <v-row dense class="mb-2">
+      <v-col cols="12" md="6">
+        <v-combobox
           :model-value="draft.scope.product ?? null"
           :items="productItems"
           item-title="title"
           item-value="value"
           :label="t('siemCenter.events.filterCatalog.product')"
+          :hint="t('siemCenter.events.filterCatalog.productHint')"
+          persistent-hint
           density="compact"
           variant="outlined"
-          hide-details
           clearable
+          :loading="catalogLoading"
           @update:model-value="onProductUpdate"
         />
       </v-col>
-      <v-col cols="12" md="4">
-        <v-autocomplete
+      <v-col cols="12" md="6">
+        <v-combobox
           :model-value="draft.scope.hosts ?? []"
           :items="hostItems"
           item-title="title"
           item-value="value"
           :label="t('siemCenter.events.filterCatalog.host')"
+          :hint="t('siemCenter.events.filterCatalog.hostHint')"
+          persistent-hint
           density="compact"
           variant="outlined"
-          hide-details
           clearable
           multiple
           chips
           closable-chips
+          :loading="catalogLoading"
           @update:model-value="onHostsUpdate"
         />
       </v-col>
     </v-row>
 
+    <div class="d-flex align-center flex-wrap ga-2 mb-2">
+      <v-btn
+        size="x-small"
+        variant="text"
+        class="text-none px-1"
+        :prepend-icon="showAdvancedType ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+        @click="showAdvancedType = !showAdvancedType"
+      >
+        {{ t('siemCenter.events.filterCatalog.advancedScope') }}
+      </v-btn>
+      <v-chip v-if="hasTypeSelected" size="x-small" variant="tonal" closable @click:close="onTypeUpdate(null)">
+        {{ typeTitle(draft.scope.type ?? null) }}
+      </v-chip>
+    </div>
+    <v-expand-transition>
+      <div v-show="showAdvancedType" class="mb-3">
+        <v-combobox
+          :model-value="draft.scope.type ?? null"
+          :items="typeItems"
+          item-title="title"
+          item-value="value"
+          :label="t('siemCenter.events.filterCatalog.type')"
+          :hint="t('siemCenter.events.filterCatalog.typeHint')"
+          persistent-hint
+          density="compact"
+          variant="outlined"
+          clearable
+          @update:model-value="onTypeUpdate"
+        />
+      </div>
+    </v-expand-transition>
+
     <div class="d-flex align-center mb-1">
       <span class="text-caption text-medium-emphasis">
         {{ t('siemCenter.events.filterCatalog.fieldFilters') }}
+        <span v-if="catalogLoading" class="ms-1">(…)</span>
       </span>
       <v-spacer />
       <v-menu v-if="addFieldItems.length">
@@ -253,11 +435,12 @@ function isSelectField(field: SecEventFilterFieldKey): boolean {
             {{ t('siemCenter.events.filterCatalog.addField') }}
           </v-btn>
         </template>
-        <v-list density="compact">
+        <v-list density="compact" max-height="320">
           <v-list-item
             v-for="item in addFieldItems"
             :key="item.value"
             :title="item.title"
+            :subtitle="item.value"
             @click="addField(item.value)"
           />
         </v-list>
@@ -273,7 +456,9 @@ function isSelectField(field: SecEventFilterFieldKey): boolean {
       :key="`${clause.field}-${index}`"
       class="d-flex flex-wrap align-center ga-2 mb-2"
     >
-      <v-chip size="small" variant="outlined">{{ t(schemaFor(clause.field)?.labelKey ?? clause.field) }}</v-chip>
+      <v-chip size="small" variant="outlined" :title="clause.field">
+        {{ fieldLabel(schemaFor(clause.field), clause.field) }}
+      </v-chip>
       <v-select
         :model-value="clause.op"
         :items="opItems(clause.field)"

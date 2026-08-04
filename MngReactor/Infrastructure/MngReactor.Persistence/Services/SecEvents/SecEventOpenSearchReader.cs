@@ -66,6 +66,133 @@ internal sealed class SecEventOpenSearchReader
         return new SecEventQueryResult { Items = items, Total = total };
     }
 
+    public async Task<SecEventScopeOptions> GetScopeOptionsAsync(
+        string domain,
+        int rangeHours,
+        CancellationToken cancellationToken)
+    {
+        var hours = Math.Clamp(rangeHours, 1, 720);
+        var from = DateTime.UtcNow.AddHours(-hours);
+
+        // Prefer .keyword (dynamic text mapping); fall back to plain fields.
+        var primary = await SearchScopeTermsAsync(
+            domain,
+            from,
+            hours,
+            typeField: "source.type.keyword",
+            productField: "source.product.keyword",
+            hostField: "source.host.keyword",
+            cancellationToken);
+
+        if (primary is not null
+            && (primary.Types.Count > 0 || primary.Products.Count > 0 || primary.Hosts.Count > 0))
+            return primary;
+
+        var fallback = await SearchScopeTermsAsync(
+            domain,
+            from,
+            hours,
+            typeField: "source.type",
+            productField: "source.product",
+            hostField: "source.host",
+            cancellationToken);
+
+        return fallback ?? new SecEventScopeOptions
+        {
+            Types = [],
+            Products = [],
+            Hosts = [],
+            RangeHours = hours,
+            Source = "opensearch-empty"
+        };
+    }
+
+    private async Task<SecEventScopeOptions?> SearchScopeTermsAsync(
+        string domain,
+        DateTime from,
+        int hours,
+        string typeField,
+        string productField,
+        string hostField,
+        CancellationToken cancellationToken)
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["size"] = 0,
+            ["track_total_hits"] = false,
+            ["query"] = new Dictionary<string, object>
+            {
+                ["range"] = new Dictionary<string, object>
+                {
+                    ["ingestedAt"] = new Dictionary<string, object>
+                    {
+                        ["gte"] = from.ToUniversalTime().ToString("o")
+                    }
+                }
+            },
+            ["aggs"] = new Dictionary<string, object>
+            {
+                ["types"] = TermsAgg(typeField),
+                ["products"] = TermsAgg(productField),
+                ["hosts"] = TermsAgg(hostField),
+            }
+        };
+
+        using var doc = await PostSearchAsync(domain, body, cancellationToken);
+        if (doc is null)
+            return null;
+
+        return new SecEventScopeOptions
+        {
+            Types = ReadTermsKeys(doc, "types"),
+            Products = ReadTermsKeys(doc, "products"),
+            Hosts = ReadTermsKeys(doc, "hosts"),
+            RangeHours = hours,
+            Source = "opensearch"
+        };
+    }
+
+    private static Dictionary<string, object> TermsAgg(string field) =>
+        new()
+        {
+            ["terms"] = new Dictionary<string, object>
+            {
+                ["field"] = field,
+                ["size"] = 200,
+                ["order"] = new Dictionary<string, string> { ["_key"] = "asc" }
+            }
+        };
+
+    private static IReadOnlyList<string> ReadTermsKeys(JsonDocument doc, string aggName)
+    {
+        if (!doc.RootElement.TryGetProperty("aggregations", out var aggs)
+            || !aggs.TryGetProperty(aggName, out var agg)
+            || !agg.TryGetProperty("buckets", out var buckets)
+            || buckets.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var list = new List<string>();
+        foreach (var b in buckets.EnumerateArray())
+        {
+            if (!b.TryGetProperty("key", out var keyEl))
+                continue;
+            var key = keyEl.ValueKind switch
+            {
+                JsonValueKind.String => keyEl.GetString(),
+                JsonValueKind.Number => keyEl.ToString(),
+                _ => null
+            };
+            if (!string.IsNullOrWhiteSpace(key))
+                list.Add(key.Trim());
+        }
+
+        return list
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+            .Take(200)
+            .ToList();
+    }
+
     public async Task<SecEventListItem?> GetByIdAsync(
         string domain,
         string id,
@@ -636,6 +763,16 @@ internal sealed class SecEventOpenSearchReader
             });
         }
 
+        if (filter.FieldFilters is { Count: > 0 })
+        {
+            foreach (var clause in filter.FieldFilters.Take(SecEventFieldQueryHelper.MaxClauses))
+            {
+                var osClause = BuildOpenSearchFieldClause(clause);
+                if (osClause is not null)
+                    filters.Add(osClause);
+            }
+        }
+
         if (filter.ExcludeUnknown)
         {
             mustNot.Add(new Dictionary<string, object>
@@ -660,6 +797,100 @@ internal sealed class SecEventOpenSearchReader
 
         return new Dictionary<string, object> { ["bool"] = boolQuery };
     }
+
+    private static Dictionary<string, object>? BuildOpenSearchFieldClause(SecEventFieldFilterClause clause)
+    {
+        if (!SecEventFieldQueryHelper.IsAllowedField(clause.Field))
+            return null;
+
+        var op = SecEventFieldQueryHelper.NormalizeOp(clause.Op);
+        var value = (clause.Value ?? string.Empty).Trim();
+        if (value.Length == 0)
+            return null;
+
+        var fieldName = clause.Field.Trim();
+        string path;
+        if (SecEventFieldQueryHelper.IsBagField(fieldName))
+            path = $"fields.{fieldName}";
+        else
+            path = SecEventFieldQueryHelper.TopLevelPath(fieldName) ?? fieldName;
+
+        return op switch
+        {
+            "neq" => new Dictionary<string, object>
+            {
+                ["bool"] = new Dictionary<string, object>
+                {
+                    ["must_not"] = new object[] { TermOrKeyword(path, value) }
+                }
+            },
+            "in" => BuildOpenSearchIn(path, value),
+            "contains" => new Dictionary<string, object>
+            {
+                ["wildcard"] = new Dictionary<string, object>
+                {
+                    [path] = new Dictionary<string, object>
+                    {
+                        ["value"] = $"*{EscapeWildcard(value)}*",
+                        ["case_insensitive"] = true
+                    }
+                }
+            },
+            "prefix" => new Dictionary<string, object>
+            {
+                ["prefix"] = new Dictionary<string, object> { [path] = value }
+            },
+            _ => TermOrKeyword(path, value)
+        };
+    }
+
+    private static Dictionary<string, object> BuildOpenSearchIn(string path, string csv)
+    {
+        var values = SecEventQueryFilterBuilder.ParseCsv(csv);
+        if (values.Count == 0)
+            return new Dictionary<string, object> { ["match_none"] = new Dictionary<string, object>() };
+        if (values.Count == 1)
+            return TermOrKeyword(path, values[0]);
+
+        return new Dictionary<string, object>
+        {
+            ["bool"] = new Dictionary<string, object>
+            {
+                ["should"] = new object[]
+                {
+                    new Dictionary<string, object>
+                    {
+                        ["terms"] = new Dictionary<string, object> { [path] = values }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["terms"] = new Dictionary<string, object> { [$"{path}.keyword"] = values }
+                    }
+                },
+                ["minimum_should_match"] = 1
+            }
+        };
+    }
+
+    private static Dictionary<string, object> TermOrKeyword(string path, string value) =>
+        new()
+        {
+            ["bool"] = new Dictionary<string, object>
+            {
+                ["should"] = new object[]
+                {
+                    new Dictionary<string, object>
+                    {
+                        ["term"] = new Dictionary<string, object> { [path] = value }
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["term"] = new Dictionary<string, object> { [$"{path}.keyword"] = value }
+                    }
+                },
+                ["minimum_should_match"] = 1
+            }
+        };
 
     private static string EscapeWildcard(string value) =>
         value

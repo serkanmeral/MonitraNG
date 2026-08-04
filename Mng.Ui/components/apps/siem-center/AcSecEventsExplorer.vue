@@ -345,6 +345,7 @@ function syncQueryToUrl() {
   if (mapped.dstIp) query.dstIp = mapped.dstIp;
   if (mapped.dstPort) query.dstPort = mapped.dstPort;
   if (mapped.search) query.search = mapped.search;
+  if (mapped.fieldFilters) query.fieldFilters = mapped.fieldFilters;
   if (!showUnknown.value) query.hideUnknown = '1';
 
   if (rangeMode.value === 'custom') {
@@ -388,6 +389,26 @@ function applyFromRoute() {
     if (typeof q.search === 'string') {
       fields.push({ field: 'search', op: 'contains', value: q.search });
       searchDraft.value = q.search;
+    }
+    if (typeof q.fieldFilters === 'string' && q.fieldFilters.trim()) {
+      try {
+        const parsed = JSON.parse(q.fieldFilters) as Array<{
+          field?: string;
+          op?: string;
+          value?: string;
+        }>;
+        if (Array.isArray(parsed)) {
+          for (const row of parsed) {
+            const field = (row.field ?? '').trim();
+            const value = (row.value ?? '').trim();
+            if (!field || !value) continue;
+            const op = (row.op ?? 'eq') as SecEventSavedFilter['fields'][number]['op'];
+            fields.push({ field, op, value });
+          }
+        }
+      } catch {
+        // ignore malformed fieldFilters in URL
+      }
     }
     draft.fields = fields;
     applyFilterDefinition(draft, null);

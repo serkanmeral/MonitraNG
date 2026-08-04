@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Models.SecEvents;
+using MngReactor.Application.Services.SecEvents;
 
 namespace MngReactor.Api.Controllers.SecEvents;
 
@@ -42,6 +43,7 @@ public sealed class SecEventsController : ControllerBase
         [FromQuery] string? eventCode,
         [FromQuery] string? eventCodes,
         [FromQuery] string? search,
+        [FromQuery] string? fieldFilters,
         [FromQuery] bool excludeUnknown = true,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 50,
@@ -76,6 +78,7 @@ public sealed class SecEventsController : ControllerBase
                 EventCode = eventCode,
                 EventCodes = eventCodes,
                 Search = search,
+                FieldFilters = SecEventFieldQueryHelper.ParseFieldFiltersJson(fieldFilters),
                 ExcludeUnknown = excludeUnknown,
                 Skip = skip,
                 Limit = limit
@@ -108,6 +111,22 @@ public sealed class SecEventsController : ControllerBase
             cancellationToken);
 
         return Ok(summary);
+    }
+
+    /// <summary>Distinct source.type / product / host for filter scope comboboxes (live index).</summary>
+    [HttpGet("scope-options")]
+    [ProducesResponseType(typeof(SecEventScopeOptions), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SecEventScopeOptions>> ScopeOptions(
+        [FromQuery] int rangeHours = 168,
+        CancellationToken cancellationToken = default)
+    {
+        var domain = await GetDomainAsync();
+        if (string.IsNullOrEmpty(domain))
+            return Unauthorized();
+
+        var options = await _repository.GetScopeOptionsAsync(domain, rangeHours, cancellationToken);
+        return Ok(options);
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ import type {
   SecEventQuery,
   SecEventQueryResponse,
   SecEventDashboardSummary,
+  SecEventScopeOptions,
 } from '@/types/apps/secEvent';
 import { getAccessToken } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
@@ -90,6 +91,7 @@ export async function secEventQuery(query: SecEventQuery = {}): Promise<SecEvent
     eventCode: query.eventCode,
     eventCodes: query.eventCodes,
     search: query.search,
+    fieldFilters: query.fieldFilters,
     excludeUnknown: query.excludeUnknown,
     skip: query.skip ?? 0,
     limit: query.limit ?? 50,
@@ -99,6 +101,35 @@ export async function secEventQuery(query: SecEventQuery = {}): Promise<SecEvent
     headers: await authHeaders(),
   });
   return normalizeQueryResponse(raw);
+}
+
+export async function secEventScopeOptions(options?: {
+  rangeHours?: number;
+}): Promise<SecEventScopeOptions> {
+  const qs = buildQuery({
+    rangeHours: options?.rangeHours ?? 168,
+  });
+  const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/scope-options${qs}`, {
+    method: 'GET',
+    headers: await authHeaders(),
+  });
+  const types = asStringList(raw.types ?? raw.Types);
+  const products = asStringList(raw.products ?? raw.Products);
+  const hosts = asStringList(raw.hosts ?? raw.Hosts);
+  return {
+    types,
+    products,
+    hosts,
+    rangeHours: Number(raw.rangeHours ?? raw.RangeHours ?? 168) || 168,
+    source: String(raw.source ?? raw.Source ?? ''),
+  };
+}
+
+function asStringList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((x) => String(x ?? '').trim())
+    .filter(Boolean);
 }
 
 export async function secEventGet(id: string): Promise<SecEventListItem> {

@@ -10,9 +10,15 @@ import {
   buildSecEventFilterTree,
   createUserCategory,
   defaultUserCategoryId,
+  deleteUserCategory,
   deleteUserFilter,
+  findCategoryById,
   findFilterById,
+  listUserCategories,
   loadSecEventFilterCatalog,
+  moveUserFilter,
+  renameUserCategory,
+  renameUserFilter,
   upsertUserFilter,
 } from '@/services/secEventFilterCatalogService';
 import {
@@ -24,7 +30,6 @@ import AcSecEventFilterEditor from '@/components/apps/siem-center/AcSecEventFilt
 
 const props = defineProps<{
   modelValue: boolean;
-  /** Currently applied filter (for prefill). */
   initialFilter?: SecEventSavedFilter | null;
   initialFilterId?: string | null;
   hostOptions: string[];
@@ -51,14 +56,31 @@ const baseline = ref('');
 
 const saveAsOpen = ref(false);
 const saveAsName = ref('');
+const saveAsCategoryId = ref('');
 const newCategoryOpen = ref(false);
 const newCategoryName = ref('');
 
+const renameOpen = ref(false);
+const renameKind = ref<'category' | 'filter'>('filter');
+const renameTargetId = ref('');
+const renameValue = ref('');
+
+const moveOpen = ref(false);
+const moveFilterId = ref('');
+const moveTargetCategoryId = ref('');
+
+const deleteCategoryOpen = ref(false);
+const deleteCategoryId = ref('');
+const deleteCategoryName = ref('');
+
 const treeNodes = computed(() => buildSecEventFilterTree(catalog.value));
 const dirty = computed(() => serialize(draft.value) !== baseline.value);
+const userCategoryItems = computed(() =>
+  listUserCategories(catalog.value).map((c) => ({ title: c.name, value: c.id })),
+);
 
 function serialize(f: SecEventSavedFilter): string {
-  return JSON.stringify({ scope: f.scope, fields: f.fields });
+  return JSON.stringify({ scope: f.scope, fields: f.fields, name: f.name });
 }
 
 function cloneDraft(filter: SecEventSavedFilter, filterId: string | null) {
@@ -105,6 +127,88 @@ function onTreeSelect(node: SecEventFilterTreeNode) {
   }
 }
 
+function categoryIdFromTreeNode(node: SecEventFilterTreeNode): string | null {
+  if (node.kind !== 'category') return null;
+  return node.id.startsWith('category:') ? node.id.slice('category:'.length) : node.id;
+}
+
+function onTreeAction(payload: { action: string; node: SecEventFilterTreeNode }) {
+  const { action, node } = payload;
+  if (node.isSystem) return;
+
+  if (action === 'rename-category') {
+    const id = categoryIdFromTreeNode(node);
+    if (!id) return;
+    renameKind.value = 'category';
+    renameTargetId.value = id;
+    renameValue.value = node.name;
+    renameOpen.value = true;
+    return;
+  }
+
+  if (action === 'delete-category') {
+    const id = categoryIdFromTreeNode(node);
+    if (!id) return;
+    deleteCategoryId.value = id;
+    deleteCategoryName.value = node.name;
+    deleteCategoryOpen.value = true;
+    return;
+  }
+
+  if (action === 'rename-filter' && node.filterId) {
+    renameKind.value = 'filter';
+    renameTargetId.value = node.filterId;
+    renameValue.value = node.name;
+    renameOpen.value = true;
+    return;
+  }
+
+  if (action === 'move-filter' && node.filterId) {
+    const filter = findFilterById(catalog.value, node.filterId);
+    if (!filter || filter.isSystem) return;
+    moveFilterId.value = node.filterId;
+    moveTargetCategoryId.value =
+      filter.categoryId && !findCategoryById(catalog.value, filter.categoryId)?.isSystem
+        ? filter.categoryId
+        : defaultUserCategoryId(catalog.value);
+    moveOpen.value = true;
+    return;
+  }
+
+  if (action === 'delete-filter' && node.filterId) {
+    catalog.value = deleteUserFilter(catalog.value, node.filterId);
+    if (selectedFilterId.value === node.filterId) onClear();
+  }
+}
+
+function confirmRename() {
+  const name = renameValue.value.trim();
+  if (!name) return;
+  if (renameKind.value === 'category') {
+    catalog.value = renameUserCategory(catalog.value, renameTargetId.value, name);
+  } else {
+    catalog.value = renameUserFilter(catalog.value, renameTargetId.value, name);
+    if (selectedFilterId.value === renameTargetId.value) {
+      draft.value = { ...draft.value, name };
+      baseline.value = serialize(draft.value);
+    }
+  }
+  renameOpen.value = false;
+}
+
+function confirmMoveFilter() {
+  if (!moveFilterId.value || !moveTargetCategoryId.value) return;
+  catalog.value = moveUserFilter(catalog.value, moveFilterId.value, moveTargetCategoryId.value);
+  moveOpen.value = false;
+}
+
+function confirmDeleteCategory() {
+  if (!deleteCategoryId.value) return;
+  catalog.value = deleteUserCategory(catalog.value, deleteCategoryId.value);
+  deleteCategoryOpen.value = false;
+  // If selected filter was rehomed, keep selection; tree refresh is reactive
+}
+
 function onApply() {
   baseline.value = serialize(draft.value);
   emit('apply', {
@@ -136,6 +240,7 @@ function onSave() {
   }
   const updated: SecEventSavedFilter = {
     ...current,
+    name: draft.value.name?.trim() || current.name,
     scope: draft.value.scope,
     fields: draft.value.fields,
   };
@@ -155,15 +260,18 @@ function openSaveAs() {
   } else {
     saveAsName.value = base;
   }
+  saveAsCategoryId.value = defaultUserCategoryId(catalog.value);
   saveAsOpen.value = true;
 }
 
 function confirmSaveAs() {
   const name = saveAsName.value.trim() || t('siemCenter.events.filterCatalog.newFilterName');
-  const categoryId = defaultUserCategoryId(catalog.value);
+  const categoryId = saveAsCategoryId.value || defaultUserCategoryId(catalog.value);
+  const target = findCategoryById(catalog.value, categoryId);
+  const safeCategoryId = target && !target.isSystem ? categoryId : defaultUserCategoryId(catalog.value);
   const copy = cloneFilterAsUserCopy(
     { ...draft.value, name, isSystem: false },
-    categoryId,
+    safeCategoryId,
     name,
   );
   catalog.value = upsertUserFilter(catalog.value, copy);
@@ -236,6 +344,7 @@ function onCancel() {
                 :nodes="treeNodes"
                 :selected-id="selectedTreeId"
                 @select="onTreeSelect"
+                @action="onTreeAction"
               />
             </div>
           </div>
@@ -276,9 +385,20 @@ function onCancel() {
             variant="outlined"
             density="compact"
             autofocus
+            class="mb-3"
             @keyup.enter="confirmSaveAs"
           />
-          <p class="text-caption text-medium-emphasis mb-0">
+          <v-select
+            v-model="saveAsCategoryId"
+            :items="userCategoryItems"
+            item-title="title"
+            item-value="value"
+            :label="t('siemCenter.events.filterCatalog.targetCategory')"
+            variant="outlined"
+            density="compact"
+            hide-details
+          />
+          <p class="text-caption text-medium-emphasis mb-0 mt-2">
             {{ t('siemCenter.events.filterCatalog.saveAsHint') }}
           </p>
         </v-card-text>
@@ -314,6 +434,88 @@ function onCancel() {
           </v-btn>
           <v-btn color="primary" class="text-none" @click="confirmNewCategory">
             {{ t('siemCenter.events.filterCatalog.save') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="renameOpen" max-width="420" persistent>
+      <v-card>
+        <v-card-title>
+          {{
+            renameKind === 'category'
+              ? t('siemCenter.events.filterCatalog.renameCategory')
+              : t('siemCenter.events.filterCatalog.renameFilter')
+          }}
+        </v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="renameValue"
+            :label="
+              renameKind === 'category'
+                ? t('siemCenter.events.filterCatalog.categoryName')
+                : t('siemCenter.events.filterCatalog.filterName')
+            "
+            variant="outlined"
+            density="compact"
+            autofocus
+            @keyup.enter="confirmRename"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="renameOpen = false">
+            {{ t('siemCenter.events.filterCatalog.cancel') }}
+          </v-btn>
+          <v-btn color="primary" class="text-none" @click="confirmRename">
+            {{ t('siemCenter.events.filterCatalog.save') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="moveOpen" max-width="420" persistent>
+      <v-card>
+        <v-card-title>{{ t('siemCenter.events.filterCatalog.moveFilter') }}</v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="moveTargetCategoryId"
+            :items="userCategoryItems"
+            item-title="title"
+            item-value="value"
+            :label="t('siemCenter.events.filterCatalog.targetCategory')"
+            variant="outlined"
+            density="compact"
+            hide-details
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="moveOpen = false">
+            {{ t('siemCenter.events.filterCatalog.cancel') }}
+          </v-btn>
+          <v-btn color="primary" class="text-none" @click="confirmMoveFilter">
+            {{ t('siemCenter.events.filterCatalog.move') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteCategoryOpen" max-width="460" persistent>
+      <v-card>
+        <v-card-title>{{ t('siemCenter.events.filterCatalog.deleteCategory') }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-0">
+            {{ t('siemCenter.events.filterCatalog.deleteCategoryHint', { name: deleteCategoryName }) }}
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="deleteCategoryOpen = false">
+            {{ t('siemCenter.events.filterCatalog.cancel') }}
+          </v-btn>
+          <v-btn color="error" class="text-none" @click="confirmDeleteCategory">
+            {{ t('siemCenter.events.filterCatalog.deleteCategory') }}
           </v-btn>
         </v-card-actions>
       </v-card>

@@ -1,6 +1,6 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 3 Ağustos 2026 (filtre kataloğu UX + Reactor query + prod deploy)  
+**Son güncelleme:** 4 Ağustos 2026 (dinamik filtre alanları · kapsam scope-options · katalog tree yönetimi)  
 **Ortam:** Günlük çalışma = **Odak production** (`192.168.20.8`). Lokal Nuxt ve MngLogs agent collector varsayılanı prod.  
 **Detay cutover:** [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md) · Events UI: [../monitoring/SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md)
 
@@ -15,52 +15,65 @@ Kapsam → kazanım → onay → kod.
 - UI’den parametreli agent indir  
 - G4 kalan: alarm/Mongo köprü (gözlem)  
 - P3d .deb  
+- Sunucu tarafı kayıtlı filtre katalog API (şimdilik `localStorage`)  
 **Freeze:** Eski SIEM security paneli · NXLog / Linux rsyslog host ingest · intent-only filter dialog (yerini katalog modal aldı)
 
 ---
 
 ## Son çalışılan konu
 
-**Güvenlik Olayları filtre kataloğu** (modal: kategori tree + Type/Product/Host + dinamik alanlar; zaman panelde) · Reactor `sourceProduct` / `eventCodes` / `sourceHosts` · OS lab temizliği + RDP doğrulama · prod `mngreactor` + `mnglogcollector` deploy (UI deploy bekliyor).
+**Güvenlik Olayları filtre UX v2:** Event Log alan kataloğundan dinamik “Alan ekle” · Reactor `fieldFilters` · canlı `scope-options` (Type/Product/Host) · Product+Host birincil / Type gelişmiş · kullanıcı kategori/filtre tree yönetimi (rename / sil / taşı).
 
 ---
 
-## Tamamlananlar (bu dilim)
+## Tamamlananlar (bu dilim — 4 Ağu)
 
-### Filtre kataloğu UX ✓
+### Dinamik alan filtreleri ✓
 
-- Ana ekran: eski toolbar (arama · zaman · Filtre ekle · chip’ler · tablo)  
-- Modal: sol kategori/filtre tree · sağ kapsam + alan editörü · kaydet / farklı kaydet (sistem → kopya)  
-- Seed: RDP (oturumlar / disconnect-reconnect / logon) · Host · Kimlik · Benim  
-- Katalog: `localStorage` + sistem seed (`secEventFilterCatalog*`)  
-- Zaman kayıtlı filtrede **yok**
+- “Alan ekle” → `GET …/parse-rules/target-fields` (core + `custom.*`)  
+- Product seçilince parse extract hedeflerine göre menü daralır (core alanlar her zaman)  
+- Reactor: `fieldFilters` JSON (Mongo `$getField` + OpenSearch); dedicated param’lar korundu  
+- Kataloga `event.code` eklendi; OpenSearch dual-write `fields` bag yazar
 
-### Reactor query ✓
+### Kapsam combobox ✓
 
-- `sourceProduct`, `eventCodes`, `sourceHosts` (Mongo + OpenSearch)  
-- Prod deploy sonrası RDP API: `sourceProduct=rdp-session` → **total=2** (TERMINAL 24/25)
+- `GET /sec-events/scope-options` — canlı distinct type/product/host  
+- Product listesine Event Log paket kataloğu merge  
+- Host: serbest yazım + discovery/canlı öneriler (`v-combobox`)  
+- Layout: Product + Host ana satır; Type → “Gelişmiş”
 
-### Ortam / doğrulama ✓
+### Katalog tree yönetimi ✓
 
-- OS sec-events indeksleri sıfırlandı (geliştirme verisi); agent yeniden yazıyor  
-- RDP agent yolu OS’te doğrulandı (`rdp-session`, code 24/25)  
-- Prod: `mngreactor` + `mnglogcollector` güncel; **`mngui` henüz deploy edilmedi** (lokal Nuxt)
+- Kullanıcı kategori: yeniden adlandır / sil (filtreler “Benim”e taşınır)  
+- Kullanıcı filtre: yeniden adlandır / kategori değiştir / sil  
+- Sistem seed kilitli; Farklı kaydet’te hedef kategori seçilebilir
 
 ### Önceki dilimler ✓
 
-Host agent cutover · RDP normalize · prod sabitleme · Parse Rules P5 — [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md)
+Filtre kataloğu modal · Reactor `sourceProduct`/`eventCodes` · RDP normalize · host agent cutover — [HOST_TELEMETRY_CUTOVER.md](./HOST_TELEMETRY_CUTOVER.md)
+
+---
+
+## Deploy durumu
+
+| Bileşen | Durum |
+|---------|--------|
+| `mnglogcollector` | ✅ prod (önceki dilim) |
+| `mngreactor` | ⏳ **yeniden deploy gerekli** (`fieldFilters` + `scope-options`) |
+| `mngui` | ⏳ deploy edilmedi — lokal Nuxt |
 
 ---
 
 ## Sıradaki adım
 
-1. İsteğe bağlı: prod **`mngui`** deploy (filtre modal canlı UI)  
-2. Collector normalizer sonrası yeni RDP olaylarında `event.action=rdp.*` + actor/network promote kontrolü  
-3. Park: Analytics L3 · Discovery · firewall katalog · G4 · P3d  
+1. Prod **`mngreactor`** (+ isteğe bağlı **`mngui`**) deploy  
+2. Lokal/prod ile RDP + kullanıcı logon + `custom.*` alan filtresi smoke  
+3. Yeni RDP ingest: `event.action=rdp.*` + actor/network promote  
+4. Park maddeleri
 
 ---
 
 ## Nerede kalmıştık
 
-Filtre kataloğu kodu + Reactor query + prod backend deploy hazır.  
-**Kaldığımız nokta:** lokal Nuxt ile filtre modal doğrulama; kullanıcı isterse `mngui` deploy; park maddeleri.
+Filtre UX v2 kodu hazır (dinamik alanlar · scope-options · tree CRUD).  
+**Kaldığımız nokta:** prod `mngreactor` / `mngui` deploy; ardından canlı doğrulama.

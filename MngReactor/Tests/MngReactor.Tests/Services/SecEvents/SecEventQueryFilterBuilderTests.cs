@@ -53,4 +53,21 @@ public sealed class SecEventQueryFilterBuilderTests
 
         Assert.NotNull(filter);
     }
+
+    [Fact]
+    public void Build_WithFieldFilters_CustomAndCore_DoesNotThrow()
+    {
+        var filter = SecEventQueryFilterBuilder.Build(new SecEventQueryFilter
+        {
+            FieldFilters =
+            [
+                new SecEventFieldFilterClause { Field = "custom.session_id", Op = "eq", Value = "abc" },
+                new SecEventFieldFilterClause { Field = "message", Op = "contains", Value = "failed" },
+                new SecEventFieldFilterClause { Field = "network.protocol", Op = "eq", Value = "tcp" },
+            ],
+            ExcludeUnknown = false
+        });
+
+        Assert.NotNull(filter);
+    }
 }

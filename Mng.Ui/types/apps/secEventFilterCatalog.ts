@@ -1,17 +1,9 @@
 /** Saved SIEM event filter catalog (categories + filters). Time range lives on the panel, not here. */
 
-export type SecEventFilterFieldOp = 'eq' | 'in' | 'contains';
+export type SecEventFilterFieldOp = 'eq' | 'neq' | 'in' | 'contains' | 'prefix';
 
-export type SecEventFilterFieldKey =
-  | 'event.code'
-  | 'event.outcome'
-  | 'event.action'
-  | 'event.actionPrefix'
-  | 'actor.user'
-  | 'network.srcIp'
-  | 'network.dstIp'
-  | 'network.dstPort'
-  | 'search';
+/** Catalog field name (e.g. event.code, actor.user, custom.session_id) or UI helpers. */
+export type SecEventFilterFieldKey = string;
 
 export interface SecEventFilterFieldClause {
   field: SecEventFilterFieldKey;

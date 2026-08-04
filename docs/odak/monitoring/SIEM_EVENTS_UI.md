@@ -1,6 +1,6 @@
 # SIEM güvenlik olay arama UI
 
-**Durum:** ✅ Filtre kataloğu modal (3 Ağu 2026)  
+**Durum:** ✅ Filtre kataloğu v2 — dinamik alanlar · canlı kapsam · tree yönetimi (4 Ağu 2026)  
 **Route:** `/apps/siem-center/events`  
 **Menü:** Side bar → **Güvenlik Merkezi** → Güvenlik olayları
 
@@ -11,13 +11,15 @@
 | Katman | Dosya / endpoint |
 |--------|------------------|
 | API | `GET /reactor/api/v1/sec-events` — filtre + sayfalama |
+| API | `GET /reactor/api/v1/sec-events/scope-options` — canlı Type/Product/Host |
+| API | `GET /reactor/api/v1/sec-events/parse-rules/target-fields` — alan kataloğu |
 | API | `GET /reactor/api/v1/sec-events/{id}` · `by-id?id=` |
 | UI proxy | `Mng.Ui/server/api/reactor/[...path].ts` |
-| UI service | `services/secEventService.ts` |
+| UI service | `services/secEventService.ts` · `secEventParseRuleCatalogService.ts` |
 | UI sayfa | `pages/apps/siem-center/events/index.vue` |
 | UI explorer | `components/apps/siem-center/AcSecEventsExplorer.vue` |
 | Filtre modal | `AcSecEventFilterCatalogDialog.vue` (+ Tree / Editor) |
-| Katalog | `types/apps/secEventFilterCatalog.ts` · `secEventFilterCatalogSeed.ts` · `secEventFilterCatalogService.ts` (localStorage + sistem seed) |
+| Katalog | `secEventFilterCatalog*` (localStorage + sistem seed) · `secEventFilterFieldSchema.ts` · `secEventFilterQueryMap.ts` |
 
 ## Sütun sözlüğü
 
@@ -35,17 +37,19 @@ Ana ekran: tam metin arama · **zaman** (1s/24s/7g/özel) · Filtre ekle · akti
 
 **Modal (Filtre ekle):**
 
-- Sol: kategori tree (Sistem/RDP/Host/Kimlik + Benim); filtre yaprakları  
-- Sağ: kapsam **Type / Product / Host** (Tümü veya dropdown; Host çoklu) + dinamik alan satırları  
-- Kaydet / Farklı kaydet (sistem filtre düzenlenemez → kopya) · Uygula  
+- Sol: kategori tree (Sistem/RDP/Host/Kimlik + Benim); kullanıcı satırlarında ⋮ (rename / sil / kategori değiştir)  
+- Sağ kapsam: **Product + Host** birincil; **Type** gelişmiş bölümde  
+  - Seçenekler: canlı `scope-options` ∪ paket kataloğu ∪ statik fallback; Host serbest yazım  
+- Alan filtreleri: Event Log **target-fields** (dinamik); Product’a göre parse extract daraltması  
+- Kaydet / Farklı kaydet (sistem → kopya + hedef kategori) · Uygula  
 - **Zaman kayıtlı filtrede yok** — yalnızca panel toolbar
 
 Seed örnekleri: RDP oturum hareketleri (`product=rdp-session`, code in 21–25); Disconnect/Reconnect (24,25); Logon (21).
 
-Query map → Reactor: `sourceType`, `sourceProduct`, `sourceHost`/`sourceHosts`, `eventCode`/`eventCodes`, `eventActionPrefix`, …  
-RDP için ham `event.action` döneminde `product` + `event.code` (+ prefix genişlemesi) güvenilir.
+Query map → Reactor: dedicated param’lar + `fieldFilters` JSON (`custom.*`, `message`, …).  
+RDP için `product` + `event.code` (+ `eventActionPrefix=rdp.`) güvenilir.
 
-URL: `?filterId=…&timeRange=24h&sourceProduct=rdp-session&…`
+URL: `?filterId=…&timeRange=24h&sourceProduct=rdp-session&fieldFilters=[…]&…`
 
 ## API query (Reactor)
 
@@ -57,8 +61,12 @@ URL: `?filterId=…&timeRange=24h&sourceProduct=rdp-session&…`
 | `sourceHost` / `sourceHosts` | Contains / CSV OR |
 | `eventCode` / `eventCodes` | Exact / CSV OR |
 | `eventAction` / `eventActions` / `eventActionPrefix` | Exact / CSV OR / prefix (`rdp.` → code+product OR) |
+| `actorUser` / `srcIp` / `dstIp` / `dstPort` | Dedicated hot-path |
+| `fieldFilters` | JSON dizi: `[{"field","op","value"}]` — katalog alanları (`custom.*`, `message`, …) |
 | `search` | multi_match / regex |
 | `excludeUnknown` | UI varsayılan: bilinmeyenleri göster (`false`) |
+
+**Kapsam seçenekleri:** `GET …/sec-events/scope-options?rangeHours=168`
 
 ## Saklama (backend — `SecEventsSettings`)
 
@@ -80,11 +88,13 @@ Odak docker-compose: `MngReactorSettings__SecEvents__*`
 ## Doğrulama
 
 Lokal Nuxt → prod Gateway: `/apps/siem-center/events` · Filtre ekle → RDP → Disconnect/Reconnect → Uygula  
-Prod API (token ile):
+`fieldFilters` / `scope-options` için **güncel `mngreactor`** gerekir.
 
 ```powershell
 pwsh scripts/tests/MngDataGateway/auth/get-token.ps1 -KeeperBaseUrl http://192.168.20.8:5040 -DomainName odak -Username odak_admin -Password 'Admin123!'
 $token = (Get-Content $env:TEMP\serkan_token.txt -Raw).Trim()
 Invoke-RestMethod -Uri "http://192.168.20.8:5040/reactor/api/v1/sec-events?limit=5&sourceProduct=rdp-session" `
+  -Headers @{ Authorization = "Bearer $token"; "X-Domain-Name" = "odak" }
+Invoke-RestMethod -Uri "http://192.168.20.8:5040/reactor/api/v1/sec-events/scope-options?rangeHours=168" `
   -Headers @{ Authorization = "Bearer $token"; "X-Domain-Name" = "odak" }
 ```

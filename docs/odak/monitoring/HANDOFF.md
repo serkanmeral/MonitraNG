@@ -1,6 +1,6 @@
 # SIEM / Monitoring — Oturum Handoff
 
-**Son güncelleme:** 3 Ağustos 2026 (filtre kataloğu · Reactor query · prod backend deploy)  
+**Son güncelleme:** 4 Ağustos 2026 (filtre UX v2 · fieldFilters · scope-options · tree CRUD)  
 **Canlı SIEM durum:** [../siem/current_status.md](../siem/current_status.md) · [../siem/HOST_TELEMETRY_CUTOVER.md](../siem/HOST_TELEMETRY_CUTOVER.md)  
 **Ana DEVAM (eski özet):** [DEVAM.md](./DEVAM.md)  
 **Platform UI (ayrı chat):** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-**Host = agent → Collector → OpenSearch** · Filtre kataloğu modal (Type/Product/Host + seed RDP) · Reactor `sourceProduct`/`eventCodes` prod’da ✓ · **`mngui` deploy bekliyor** · Park: Analytics L3 / Discovery / G4
+**Host = agent → Collector → OpenSearch** · Filtre UX v2 (dinamik alan kataloğu · canlı kapsam · tree yönetimi) · kod hazır · **`mngreactor` + `mngui` deploy bekliyor** · Park: Analytics L3 / Discovery / G4
 
 ---
 
@@ -17,13 +17,13 @@
 
 | Konu | Durum |
 |------|--------|
-| MngReactor Odak | ✅ prod deploy (OS read + `sourceProduct`/`eventCodes`/`sourceHosts`) |
+| MngReactor Odak | ⏳ **redeploy** — `fieldFilters` + `scope-options` + target-fields `event.code` (önceki: OS read + sourceProduct/eventCodes) |
 | MngLogCollector | ✅ prod deploy (RDP normalizer) |
 | MngEngine syslog | ✅ FortiGate `:541/:542` · NXLog/Linux host UDP **kapalı** |
 | Host yolu | ✅ Agent → Collector `:5091` → OpenSearch |
 | RDP LocalSessionManager | ✅ OS’te doğrulandı; normalizer prod Collector’da |
 | Lokal Mng.Ui / agent | ✅ varsayılan **prod** (test ayrı script) |
-| SIEM Events filtre | ✅ katalog modal (lokal Nuxt); canlı `mngui` ⏳ |
+| SIEM Events filtre | ✅ v2 katalog (lokal Nuxt); canlı `mngui` ⏳ |
 | SIEM `sec_events` (legacy NXLog Mongo) | ⚠️ tarihsel; canlı host OS |
 | sec_events → observation → alarm | ✅ (firewall / kurallar; host agent zinciri doğrulanacak) |
 | LogAlarm / 5651 (Faz 5) | ⬜ ertelendi |

@@ -243,6 +243,78 @@ public sealed class SecEventsRepository : ISecEventsRepository
         return summary;
     }
 
+    public async Task<SecEventScopeOptions> GetScopeOptionsAsync(
+        string domain,
+        int rangeHours = 168,
+        CancellationToken cancellationToken = default)
+    {
+        var hours = Math.Clamp(rangeHours, 1, 720);
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return new SecEventScopeOptions
+            {
+                Types = [],
+                Products = [],
+                Hosts = [],
+                RangeHours = hours,
+                Source = "empty"
+            };
+        }
+
+        if (_secEventsSettings.OpenSearchReadEnabled)
+        {
+            var reader = new SecEventOpenSearchReader(_httpClientFactory, _logger, _secEventsSettings);
+            return await reader.GetScopeOptionsAsync(domain, hours, cancellationToken);
+        }
+
+        return await GetScopeOptionsFromMongoAsync(domain, hours, cancellationToken);
+    }
+
+    private async Task<SecEventScopeOptions> GetScopeOptionsFromMongoAsync(
+        string domain,
+        int rangeHours,
+        CancellationToken cancellationToken)
+    {
+        var databaseName = $"mng_{domain.Trim().ToLowerInvariant()}";
+        var database = _mongoClient.GetDatabase(databaseName);
+        await EnsureIndexesOnceAsync(database, databaseName, cancellationToken);
+        var collection = database.GetCollection<BsonDocument>(CollectionName);
+
+        var from = DateTime.UtcNow.AddHours(-rangeHours);
+        var match = Builders<BsonDocument>.Filter.Gte(
+            SecEventDashboardAggregator.DashboardTimeField,
+            new BsonDateTime(from));
+
+        var types = await DistinctNonEmptyAsync(collection, "source.type", match, cancellationToken);
+        var products = await DistinctNonEmptyAsync(collection, "source.product", match, cancellationToken);
+        var hosts = await DistinctNonEmptyAsync(collection, "source.host", match, cancellationToken);
+
+        return new SecEventScopeOptions
+        {
+            Types = types,
+            Products = products,
+            Hosts = hosts,
+            RangeHours = rangeHours,
+            Source = "mongo"
+        };
+    }
+
+    private static async Task<IReadOnlyList<string>> DistinctNonEmptyAsync(
+        IMongoCollection<BsonDocument> collection,
+        string field,
+        FilterDefinition<BsonDocument> match,
+        CancellationToken cancellationToken)
+    {
+        var values = await collection.Distinct<string>(field, match).ToListAsync(cancellationToken);
+        return values
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+            .Take(200)
+            .ToList();
+    }
+
     private static string BuildDashboardSummaryCacheKey(string domain, int rangeHours, bool excludeUnknown)
     {
         var normalizedDomain = domain.Trim().ToLowerInvariant();

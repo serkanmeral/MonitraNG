@@ -175,16 +175,87 @@ export function deleteUserFilter(
   return saveSecEventFilterCatalog(next);
 }
 
+export function renameUserFilter(
+  state: SecEventFilterCatalogState,
+  filterId: string,
+  name: string,
+): SecEventFilterCatalogState {
+  const existing = findFilterById(state, filterId);
+  if (!existing || existing.isSystem) return state;
+  const trimmed = name.trim();
+  if (!trimmed) return state;
+  const next = cloneState(state);
+  const filter = next.filters.find((f) => f.id === filterId);
+  if (filter) filter.name = trimmed;
+  return saveSecEventFilterCatalog(next);
+}
+
+/** Move a user filter into another user category (system target rejected). */
+export function moveUserFilter(
+  state: SecEventFilterCatalogState,
+  filterId: string,
+  targetCategoryId: string,
+): SecEventFilterCatalogState {
+  const existing = findFilterById(state, filterId);
+  if (!existing || existing.isSystem) return state;
+  const target = findCategoryById(state, targetCategoryId);
+  if (!target || target.isSystem) return state;
+  if (existing.categoryId === targetCategoryId) return state;
+  const next = cloneState(state);
+  const filter = next.filters.find((f) => f.id === filterId);
+  if (filter) filter.categoryId = targetCategoryId;
+  return saveSecEventFilterCatalog(next);
+}
+
+/**
+ * Delete a user category. Nested user filters and child user categories are
+ * re-homed under `rehomeCategoryId` (default: Benim / first user root).
+ */
 export function deleteUserCategory(
   state: SecEventFilterCatalogState,
   categoryId: string,
+  rehomeCategoryId?: string | null,
 ): SecEventFilterCatalogState {
   const existing = findCategoryById(state, categoryId);
   if (!existing || existing.isSystem) return state;
-  if (state.filters.some((f) => f.categoryId === categoryId)) return state;
-  if (state.categories.some((c) => c.parentId === categoryId)) return state;
+
+  const fallback =
+    (rehomeCategoryId && findCategoryById(state, rehomeCategoryId) && !findCategoryById(state, rehomeCategoryId)!.isSystem
+      ? rehomeCategoryId
+      : null)
+    ?? defaultUserCategoryId(state);
+
+  // Never rehome into the category being deleted
+  const rehome = fallback === categoryId
+    ? state.categories.find((c) => !c.isSystem && c.id !== categoryId)?.id
+    : fallback;
+  if (!rehome || rehome === categoryId) return state;
+
   const next = cloneState(state);
-  next.categories = next.categories.filter((c) => c.id !== categoryId);
+
+  // Collect this category and all descendant user categories
+  const toRemove = new Set<string>();
+  function collect(id: string) {
+    toRemove.add(id);
+    for (const c of next.categories) {
+      if (!c.isSystem && c.parentId === id) collect(c.id);
+    }
+  }
+  collect(categoryId);
+
+  for (const f of next.filters) {
+    if (!f.isSystem && toRemove.has(f.categoryId)) {
+      f.categoryId = rehome;
+    }
+  }
+
+  for (const c of next.categories) {
+    if (!c.isSystem && c.parentId && toRemove.has(c.parentId) && !toRemove.has(c.id)) {
+      c.parentId = rehome;
+    }
+  }
+
+  next.categories = next.categories.filter((c) => !toRemove.has(c.id));
   return saveSecEventFilterCatalog(next);
 }
 
@@ -195,10 +266,19 @@ export function renameUserCategory(
 ): SecEventFilterCatalogState {
   const existing = findCategoryById(state, categoryId);
   if (!existing || existing.isSystem) return state;
+  const trimmed = name.trim();
+  if (!trimmed) return state;
   const next = cloneState(state);
   const cat = next.categories.find((c) => c.id === categoryId);
-  if (cat) cat.name = name.trim() || cat.name;
+  if (cat) cat.name = trimmed;
   return saveSecEventFilterCatalog(next);
+}
+
+/** User categories only — for move / save-as target pickers. */
+export function listUserCategories(state: SecEventFilterCatalogState): SecEventFilterCategory[] {
+  return state.categories
+    .filter((c) => !c.isSystem)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
 }
 
 export { SEC_EVENT_FILTER_CATALOG_ROOT_ID };

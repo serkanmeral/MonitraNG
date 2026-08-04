@@ -299,6 +299,20 @@ export async function publishSecEventParseRuleCatalog(): Promise<SecEventParseRu
   };
 }
 
+export async function fetchSecEventParseRulePublished(): Promise<SecEventParseRulePublishedResponse> {
+  const raw = await $fetch<Record<string, unknown>>(`${BASE}/published`, {
+    headers: await authHeaders(),
+  });
+  const rulesRaw = (raw.rules ?? raw.Rules ?? []) as Record<string, unknown>[];
+  return {
+    version: String(raw.version ?? raw.Version ?? ''),
+    publishedUtc: (raw.publishedUtc ?? raw.PublishedUtc)
+      ? String(raw.publishedUtc ?? raw.PublishedUtc)
+      : null,
+    rules: Array.isArray(rulesRaw) ? rulesRaw.map(normalizeItem) : [],
+  };
+}
+
 export async function previewSecEventParseRule(
   request: SecEventParseRulePreviewRequest,
 ): Promise<SecEventParseRulePreviewResponse> {

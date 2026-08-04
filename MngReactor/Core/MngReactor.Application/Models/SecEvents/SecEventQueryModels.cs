@@ -28,6 +28,11 @@ public sealed class SecEventQueryFilter
     /// <summary>Comma-separated event.code values (OR). Ignored when <see cref="EventCode"/> is set.</summary>
     public string? EventCodes { get; init; }
     public string? Search { get; init; }
+    /// <summary>
+    /// Generic catalog field filters (custom.*, message, tags, …) AND'd with dedicated params.
+    /// Prefer dedicated params for hot paths (actorUser, srcIp, eventCode, …).
+    /// </summary>
+    public IReadOnlyList<SecEventFieldFilterClause>? FieldFilters { get; init; }
     /// <summary>Varsayılan true — bilinmeyen (event.action=unknown) olayları listeden çıkar.</summary>
     public bool ExcludeUnknown { get; init; } = true;
     public int Skip { get; init; }

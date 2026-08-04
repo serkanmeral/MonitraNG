@@ -26,6 +26,14 @@ export interface SecEventQueryResponse {
   total: number;
 }
 
+export interface SecEventScopeOptions {
+  types: string[];
+  products: string[];
+  hosts: string[];
+  rangeHours: number;
+  source: string;
+}
+
 export interface SecEventQuery {
   from?: string;
   to?: string;
@@ -49,6 +57,11 @@ export interface SecEventQuery {
   /** Comma-separated event.code OR list (ignored when eventCode is set). */
   eventCodes?: string;
   search?: string;
+  /**
+   * JSON array of generic catalog field filters:
+   * [{"field":"custom.x","op":"eq","value":"1"},...]
+   */
+  fieldFilters?: string;
   excludeUnknown?: boolean;
   skip?: number;
   limit?: number;

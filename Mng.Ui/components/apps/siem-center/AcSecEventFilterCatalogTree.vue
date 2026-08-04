@@ -13,6 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [node: SecEventFilterTreeNode];
   'update:search': [value: string];
+  action: [payload: { action: string; node: SecEventFilterTreeNode }];
 }>();
 
 const { t } = useAppI18n();
@@ -117,6 +118,7 @@ function onToggle(id: string) {
         :expanded-ids="expandedIds"
         @select="onSelect"
         @toggle="onToggle"
+        @action="emit('action', $event)"
       />
     </ul>
   </div>
@@ -136,18 +138,7 @@ function onToggle(id: string) {
 }
 
 .sec-filter-tree :deep(.sec-filter-tree__row) {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  padding: 6px 8px;
   border-radius: 6px;
-  color: inherit;
-  font: inherit;
 }
 
 .sec-filter-tree :deep(.sec-filter-tree__row:hover) {

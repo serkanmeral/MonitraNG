@@ -49,4 +49,17 @@ public sealed class MockSecEventsRepository : ISecEventsRepository
             Hourly = hourStarts.Select(h => new SecEventHourlyBucket { HourStart = h, Count = 0 }).ToList(),
         });
     }
+
+    public Task<SecEventScopeOptions> GetScopeOptionsAsync(
+        string domain,
+        int rangeHours = 168,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new SecEventScopeOptions
+        {
+            Types = [],
+            Products = [],
+            Hosts = [],
+            RangeHours = Math.Clamp(rangeHours, 1, 720),
+            Source = "mock"
+        });
 }

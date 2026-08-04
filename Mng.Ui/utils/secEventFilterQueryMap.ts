@@ -1,5 +1,8 @@
 import type { SecEventQuery } from '@/types/apps/secEvent';
-import type { SecEventSavedFilter } from '@/types/apps/secEventFilterCatalog';
+import type {
+  SecEventFilterFieldOp,
+  SecEventSavedFilter,
+} from '@/types/apps/secEventFilterCatalog';
 
 function parseCsv(raw: string | undefined | null): string[] {
   if (!raw?.trim()) return [];
@@ -9,9 +12,23 @@ function parseCsv(raw: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
+/** Fields with dedicated Reactor query params (hot path). */
+const DEDICATED_FIELDS = new Set([
+  'event.code',
+  'event.outcome',
+  'event.action',
+  'event.actionPrefix',
+  'actor.user',
+  'network.srcIp',
+  'network.dstIp',
+  'network.dstPort',
+  'search',
+]);
+
 /**
  * Maps a saved/active filter (scope + fields) to Reactor sec-events query params.
  * Panel time range is applied by the caller.
+ * Catalog / custom.* fields go into fieldFilters JSON.
  */
 export function mapSecEventSavedFilterToQuery(
   filter: Pick<SecEventSavedFilter, 'scope' | 'fields'>,
@@ -32,9 +49,11 @@ export function mapSecEventSavedFilterToQuery(
   | 'dstIp'
   | 'dstPort'
   | 'search'
+  | 'fieldFilters'
 > {
   const out: ReturnType<typeof mapSecEventSavedFilterToQuery> = {};
   const scope = filter.scope ?? {};
+  const generic: Array<{ field: string; op: string; value: string }> = [];
 
   if (scope.type?.trim()) out.sourceType = scope.type.trim();
   if (scope.product?.trim()) out.sourceProduct = scope.product.trim();
@@ -46,10 +65,18 @@ export function mapSecEventSavedFilterToQuery(
   for (const clause of filter.fields ?? []) {
     const value = (clause.value ?? '').trim();
     if (!value) continue;
+    const field = (clause.field ?? '').trim();
+    if (!field) continue;
+    const op = (clause.op ?? 'eq') as SecEventFilterFieldOp;
 
-    switch (clause.field) {
+    if (!DEDICATED_FIELDS.has(field)) {
+      generic.push({ field, op, value });
+      continue;
+    }
+
+    switch (field) {
       case 'event.code': {
-        if (clause.op === 'in') {
+        if (op === 'in') {
           const codes = parseCsv(value);
           if (codes.length === 1) out.eventCode = codes[0];
           else if (codes.length > 1) out.eventCodes = codes.join(',');
@@ -62,10 +89,15 @@ export function mapSecEventSavedFilterToQuery(
         out.eventOutcome = value;
         break;
       case 'event.action':
-        if (clause.op === 'contains') {
-          // Prefix-style contains → actionPrefix when value looks like a family
+        if (op === 'contains') {
           out.eventActionPrefix = value.endsWith('.') ? value : undefined;
           if (!out.eventActionPrefix) out.search = value;
+        } else if (op === 'prefix') {
+          out.eventActionPrefix = value;
+        } else if (op === 'in') {
+          const actions = parseCsv(value);
+          if (actions.length === 1) out.eventAction = actions[0];
+          else if (actions.length > 1) out.eventActions = actions.join(',');
         } else {
           out.eventAction = value;
         }
@@ -89,8 +121,13 @@ export function mapSecEventSavedFilterToQuery(
         out.search = value;
         break;
       default:
+        generic.push({ field, op, value });
         break;
     }
+  }
+
+  if (generic.length) {
+    out.fieldFilters = JSON.stringify(generic);
   }
 
   // When product is rdp-session and codes cover the RDP family, also send action prefix

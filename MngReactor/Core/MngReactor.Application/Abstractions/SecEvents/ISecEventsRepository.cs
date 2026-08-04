@@ -23,4 +23,10 @@ public interface ISecEventsRepository
         string domain,
         SecEventDashboardSummaryRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Distinct source.type / source.product / source.host for filter scope comboboxes.</summary>
+    Task<SecEventScopeOptions> GetScopeOptionsAsync(
+        string domain,
+        int rangeHours = 168,
+        CancellationToken cancellationToken = default);
 }

@@ -180,6 +180,20 @@ public sealed class SecEventOpenSearchWriter : ISecEventOpenSearchWriter
                 payload["network"] = network;
         }
 
+        if (doc.Fields is { Count: > 0 })
+        {
+            var fields = new Dictionary<string, object?>();
+            foreach (var (key, value) in doc.Fields)
+            {
+                if (string.IsNullOrWhiteSpace(key) || value is null)
+                    continue;
+                fields[key] = value;
+            }
+
+            if (fields.Count > 0)
+                payload["fields"] = fields;
+        }
+
         return payload;
     }
 

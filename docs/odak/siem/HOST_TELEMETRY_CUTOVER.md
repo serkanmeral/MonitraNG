@@ -1,6 +1,6 @@
 # Host telemetry — MngLogs agent yolu (NXLog cutover)
 
-**Son güncelleme:** 3 Ağustos 2026  
+**Son güncelleme:** 4 Ağustos 2026  
 **İlgili:** [current_status.md](./current_status.md) · [ENVIRONMENTS.md](../proddeploy/ENVIRONMENTS.md) · [MngLogs current_status](../../content/MngLogs/current_status.md)
 
 ## Karar
@@ -36,9 +36,9 @@ Mongo `sec_events` host NXLog dönemi geçmiş veri içerebilir; canlı host ola
 | 25 | `rdp.reconnect` |
 
 - LogCollector: `AgentSecEventActionNormalizer` (+ EventData actor/network). Prod Collector 3 Ağu deploy.
-- Reactor/UI sorgu: `sourceProduct=rdp-session`, `eventCodes`, `eventActionPrefix=rdp.` (code/product OR). Prod Reactor 3 Ağu deploy.
+- Reactor/UI sorgu: `sourceProduct=rdp-session`, `eventCodes`, `eventActionPrefix=rdp.` (code/product OR); ayrıca `fieldFilters` + `scope-options` (4 Ağu — **Reactor redeploy**).
 - Paket: katalog `rdp-session` (LocalSessionManager/Operational).
-- SIEM Events UI: filtre kataloğu modal — [SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md).
+- SIEM Events UI: filtre kataloğu v2 — [SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md).
 
 ## Ortam (PROD varsayılan)
 
