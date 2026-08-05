@@ -24,6 +24,117 @@ public static class ScenarioOrigins
     public const string Product = "product";
 }
 
+public static class ScenarioNodeTypes
+{
+    public const string Source = "source";
+    public const string Condition = "condition";
+    public const string Filter = "filter";
+    public const string Aggregation = "aggregation";
+    public const string Threshold = "threshold";
+    public const string Sequence = "sequence";
+    public const string Decision = "decision";
+    public const string AlarmOutput = "alarm-output";
+    public const string StopOutput = "stop-output";
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioGraph
+{
+    [BsonElement("nodes")]
+    public List<ScenarioNode> Nodes { get; set; } = [];
+
+    [BsonElement("edges")]
+    public List<ScenarioEdge> Edges { get; set; } = [];
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioNode
+{
+    [BsonElement("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [BsonElement("type")]
+    public string Type { get; set; } = string.Empty;
+
+    [BsonElement("config")]
+    public ScenarioNodeConfig Config { get; set; } = new();
+
+    [BsonElement("layout")]
+    [BsonIgnoreIfNull]
+    public ScenarioNodeLayout? Layout { get; set; }
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioNodeConfig
+{
+    [BsonElement("source")]
+    [BsonIgnoreIfNull]
+    public ScenarioSource? Source { get; set; }
+
+    [BsonElement("condition")]
+    [BsonIgnoreIfNull]
+    public ScenarioCondition? Condition { get; set; }
+
+    [BsonElement("aggregation")]
+    [BsonIgnoreIfNull]
+    public ScenarioAggregation? Aggregation { get; set; }
+
+    [BsonElement("window")]
+    [BsonIgnoreIfNull]
+    public ScenarioWindow? Window { get; set; }
+
+    [BsonElement("sequence")]
+    [BsonIgnoreIfNull]
+    public ScenarioSequence? Sequence { get; set; }
+
+    [BsonElement("groupBy")]
+    public List<string> GroupBy { get; set; } = [];
+
+    [BsonElement("dedup")]
+    [BsonIgnoreIfNull]
+    public ScenarioDedup? Dedup { get; set; }
+
+    [BsonElement("severity")]
+    [BsonIgnoreIfNull]
+    public int? Severity { get; set; }
+
+    [BsonElement("settleAfterSeconds")]
+    public int SettleAfterSeconds { get; set; }
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioNodeLayout
+{
+    [BsonElement("x")]
+    public double X { get; set; }
+
+    [BsonElement("y")]
+    public double Y { get; set; }
+
+    [BsonElement("label")]
+    [BsonIgnoreIfNull]
+    public string? Label { get; set; }
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioEdge
+{
+    [BsonElement("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [BsonElement("from")]
+    public string From { get; set; } = string.Empty;
+
+    [BsonElement("to")]
+    public string To { get; set; } = string.Empty;
+
+    [BsonElement("fromPort")]
+    public string FromPort { get; set; } = "next";
+
+    [BsonElement("toPort")]
+    public string ToPort { get; set; } = "in";
+}
+
 [BsonIgnoreExtraElements]
 public sealed class ScenarioDefinition
 {
@@ -56,6 +167,10 @@ public sealed class ScenarioDefinition
 
     [BsonElement("metadata")]
     public Dictionary<string, string> Metadata { get; set; } = new(StringComparer.Ordinal);
+
+    [BsonElement("graph")]
+    [BsonIgnoreIfNull]
+    public ScenarioGraph? Graph { get; set; }
 }
 
 [BsonIgnoreExtraElements]
@@ -69,6 +184,13 @@ public sealed class ScenarioSource
 
     [BsonElement("matchKey")]
     public string MatchKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional additional observation keys. When non-empty, source matches if
+    /// observation.Key equals MatchKey or any MatchKeys entry.
+    /// </summary>
+    [BsonElement("matchKeys")]
+    public List<string> MatchKeys { get; set; } = [];
 
     /// <summary>Legacy free-form query field. New definitions must leave this empty.</summary>
     [BsonElement("query")]

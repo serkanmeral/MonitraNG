@@ -63,6 +63,47 @@ public sealed class AlarmRuleRepository(IAlarmMongoContext context) : IAlarmRule
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<AlarmRuleDocument>> ListEnabledV3CandidatesAsync(
+        string domainName,
+        string matchKey,
+        CancellationToken cancellationToken = default)
+    {
+        FilterDefinition<AlarmRuleDocument> filter = new BsonDocument
+        {
+            { "enabled", true },
+            { "definition.schemaVersion", 3 },
+            {
+                "$or",
+                new BsonArray
+                {
+                    new BsonDocument
+                    {
+                        {
+                            "definition.graph.nodes",
+                            new BsonDocument("$elemMatch", new BsonDocument
+                            {
+                                { "type", ScenarioNodeTypes.Source },
+                                { "config.source.matchKey", matchKey }
+                            })
+                        }
+                    },
+                    new BsonDocument
+                    {
+                        {
+                            "definition.graph.nodes",
+                            new BsonDocument("$elemMatch", new BsonDocument
+                            {
+                                { "type", ScenarioNodeTypes.Source },
+                                { "config.source.matchKeys", matchKey }
+                            })
+                        }
+                    }
+                }
+            }
+        };
+        return await Collection(domainName).Find(filter).ToListAsync(cancellationToken);
+    }
+
     private IMongoCollection<AlarmRuleDocument> Collection(string domainName) =>
         context.GetDatabase(domainName).GetCollection<AlarmRuleDocument>(AlarmCollectionNames.Rules);
 }

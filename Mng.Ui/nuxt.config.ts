@@ -51,6 +51,11 @@ const logCollectorUrl = resolveBackendServiceUrl(
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
+  experimental: {
+    // No routeRules are defined; disabling the unused app manifest avoids Nuxt's
+    // duplicate internal manifest-route-rule registration during dev/HMR.
+    appManifest: false,
+  },
   devtools:{enabled:true},
   css: ["@/assets/css/task-manager.css", "@/assets/css/operation-core.css"],
   //css: ["@/assets/main.scss"], // vuetify ships precompiled css, no need to import sass

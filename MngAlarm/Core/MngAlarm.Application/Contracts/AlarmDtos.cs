@@ -101,6 +101,19 @@ public sealed class ScenarioPreviewResponse
     public IReadOnlyList<ScenarioPreviewMatch> Matches { get; init; } = [];
     public IReadOnlyDictionary<string, int> GroupCounts { get; init; } = new Dictionary<string, int>();
     public IReadOnlyList<string> DedupKeys { get; init; } = [];
+    public IReadOnlyList<ScenarioPreviewNodeTrace> NodeTrace { get; init; } = [];
+    public IReadOnlyList<string> ExecutionOrder { get; init; } = [];
+    public DateTime? NextEvaluationAt { get; init; }
+}
+
+public sealed class ScenarioPreviewNodeTrace
+{
+    public int SampleIndex { get; init; }
+    public string NodeId { get; init; } = string.Empty;
+    public string NodeType { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public bool? Outcome { get; init; }
+    public DateTime? NextEvaluationAt { get; init; }
 }
 
 public sealed class ScenarioPreviewMatch

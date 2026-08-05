@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import {
   Handle,
   MarkerType,
@@ -7,435 +7,1197 @@ import {
   VueFlow,
   useVueFlow,
   type Connection,
+  type Edge,
   type Node,
 } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
 import { useAppI18n } from '@/composables/useAppI18n';
-
-type FlowNodeKind = 'source' | 'filter' | 'logic' | 'aggregate' | 'sequence' | 'output';
-type FlowVisualStyle = 'node-red' | 'cards' | 'minimal';
-
-interface FlowNodeData {
-  label: string;
-  subtitle: string;
-  icon: string;
-  color: string;
-  kind: FlowNodeKind;
-  expression?: string;
-}
-
-interface PaletteItem extends FlowNodeData {
-  description: string;
-}
+import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
+import { useScenarioStudioApi } from '@/composables/useScenarioStudioApi';
+import {
+  createEmptyScenarioDefinitionV3,
+  type ScenarioAuditEntry,
+  type ScenarioCatalogItem,
+  type ScenarioPreviewResponse,
+  type ScenarioSampleObservation,
+  type ScenarioNodeType,
+  type ScenarioVersion,
+} from '@/types/apps/scenario';
+import {
+  cloneScenarioValue,
+  ensureScenarioV3,
+  isWizardCompatible,
+  scenarioToVueFlow,
+  traceGraph,
+  vueFlowToScenario,
+} from '@/utils/alarm/scenarioFlowMapper';
+import AcScenarioCatalogTree from '@/components/apps/alarm-center/AcScenarioCatalogTree.vue';
+import AcScenarioSourceInspector from '@/components/apps/alarm-center/AcScenarioSourceInspector.vue';
+import {
+  coerceSimpleSourceState,
+  defaultSimpleSourceState,
+  eventCodeFilterCondition,
+  hostFilterCondition,
+  inferSimpleSourceState,
+  managedEventCodeFilterId,
+  managedHostFilterId,
+  managedMetricConditionId,
+  managedOsFilterId,
+  metricConditionSpec,
+  normalizeSimpleHosts,
+  simpleSourceSubtitle,
+  sourceTypeForPlatform,
+  type SimpleMetricComparison,
+  type SimpleSourceState,
+} from '@/utils/alarm/scenarioSimpleSource';
 
 const { t } = useAppI18n();
-const { addEdges, addNodes, fitView, screenToFlowCoordinate } = useVueFlow();
-
-const visualStyle = ref<FlowVisualStyle>('node-red');
-const search = ref('');
-const selectedNodeId = ref<string | null>(null);
-const nodeCounter = ref(10);
-
-const palette = computed<PaletteItem[]>(() => [
-  {
-    kind: 'source',
-    label: t('alarmCenter.flowLab.nodes.eventSource'),
-    subtitle: t('alarmCenter.flowLab.nodes.eventSourceSubtitle'),
-    description: t('alarmCenter.flowLab.nodes.eventSourceDescription'),
-    icon: 'mdi-database-arrow-right-outline',
-    color: '#2f80ed',
-  },
-  {
-    kind: 'filter',
-    label: t('alarmCenter.flowLab.nodes.filter'),
-    subtitle: t('alarmCenter.flowLab.nodes.filterSubtitle'),
-    description: t('alarmCenter.flowLab.nodes.filterDescription'),
-    icon: 'mdi-filter-outline',
-    color: '#8e44ad',
-  },
-  {
-    kind: 'logic',
-    label: t('alarmCenter.flowLab.nodes.logic'),
-    subtitle: t('alarmCenter.flowLab.nodes.logicSubtitle'),
-    description: t('alarmCenter.flowLab.nodes.logicDescription'),
-    icon: 'mdi-source-branch',
-    color: '#f2994a',
-  },
-  {
-    kind: 'aggregate',
-    label: t('alarmCenter.flowLab.nodes.aggregate'),
-    subtitle: t('alarmCenter.flowLab.nodes.aggregateSubtitle'),
-    description: t('alarmCenter.flowLab.nodes.aggregateDescription'),
-    icon: 'mdi-chart-timeline-variant',
-    color: '#00a896',
-  },
-  {
-    kind: 'sequence',
-    label: t('alarmCenter.flowLab.nodes.sequence'),
-    subtitle: t('alarmCenter.flowLab.nodes.sequenceSubtitle'),
-    description: t('alarmCenter.flowLab.nodes.sequenceDescription'),
-    icon: 'mdi-format-list-numbered',
-    color: '#5b5f97',
-  },
-  {
-    kind: 'output',
-    label: t('alarmCenter.flowLab.nodes.alarm'),
-    subtitle: t('alarmCenter.flowLab.nodes.alarmSubtitle'),
-    description: t('alarmCenter.flowLab.nodes.alarmDescription'),
-    icon: 'mdi-bell-ring-outline',
-    color: '#d64545',
-  },
-]);
-
-const filteredPalette = computed(() => {
-  const query = search.value.trim().toLocaleLowerCase();
-  if (!query) return palette.value;
-  return palette.value.filter(item =>
-    `${item.label} ${item.subtitle} ${item.description}`.toLocaleLowerCase().includes(query),
-  );
+const api = useScenarioStudioApi();
+const { addEdges, fitView, removeNodes, screenToFlowCoordinate } = useVueFlow();
+const {
+  treeWidth: libraryWidth,
+  treeCollapsed: libraryCollapsed,
+  toggleTreeCollapse: toggleLibraryCollapse,
+} = useResizableTreePanel('siem-scenario-studio-library-v3', {
+  minWidth: 260,
+  maxWidth: 400,
+  defaultWidth: 300,
+});
+const {
+  treeCollapsed: paletteCollapsed,
+  toggleTreeCollapse: togglePaletteCollapse,
+} = useResizableTreePanel('siem-scenario-studio-palette-v3', {
+  minWidth: 200,
+  maxWidth: 280,
+  defaultWidth: 220,
 });
 
-const nodes = ref<any[]>([
-  {
-    id: 'source-1',
-    type: 'source',
-    position: { x: 60, y: 190 },
-    data: {
-      kind: 'source',
-      label: 'FortiGate Events',
-      subtitle: 'event · denied_flow',
-      expression: 'matchKey = denied_flow',
-      icon: 'mdi-shield-search-outline',
-      color: '#2f80ed',
-    },
-  },
-  {
-    id: 'filter-2',
-    type: 'filter',
-    position: { x: 330, y: 190 },
-    data: {
-      kind: 'filter',
-      label: t('alarmCenter.flowLab.sample.filterLabel'),
-      subtitle: 'dstIp exists',
-      expression: 'dimensions.dstIp exists',
-      icon: 'mdi-filter-outline',
-      color: '#8e44ad',
-    },
-  },
-  {
-    id: 'aggregate-3',
-    type: 'aggregate',
-    position: { x: 600, y: 190 },
-    data: {
-      kind: 'aggregate',
-      label: t('alarmCenter.flowLab.sample.aggregateLabel'),
-      subtitle: 'count ≥ 50 · 5 min',
-      expression: 'count >= 50 / 5m / groupBy(dstIp)',
-      icon: 'mdi-chart-timeline-variant',
-      color: '#00a896',
-    },
-  },
-  {
-    id: 'output-4',
-    type: 'output',
-    position: { x: 870, y: 190 },
-    data: {
-      kind: 'output',
-      label: t('alarmCenter.flowLab.sample.outputLabel'),
-      subtitle: t('alarmCenter.flowLab.sample.outputSubtitle'),
-      expression: 'severity = 7',
-      icon: 'mdi-bell-ring-outline',
-      color: '#d64545',
-    },
-  },
-]);
-
-const edges = ref<any[]>([
-  {
-    id: 'e-source-filter',
-    source: 'source-1',
-    target: 'filter-2',
-    type: 'smoothstep',
-    animated: true,
-    markerEnd: MarkerType.ArrowClosed,
-  },
-  {
-    id: 'e-filter-aggregate',
-    source: 'filter-2',
-    target: 'aggregate-3',
-    type: 'smoothstep',
-    animated: true,
-    markerEnd: MarkerType.ArrowClosed,
-  },
-  {
-    id: 'e-aggregate-output',
-    source: 'aggregate-3',
-    target: 'output-4',
-    type: 'smoothstep',
-    animated: true,
-    markerEnd: MarkerType.ArrowClosed,
-  },
-]);
+const catalog = ref<ScenarioCatalogItem[]>([]);
+const current = ref<ScenarioVersion | null>(null);
+const nodes = ref<Node[]>([]);
+const edges = ref<Edge[]>([]);
+const selectedNodeId = ref<string | null>(null);
+const search = ref('');
+const message = ref('');
+const localError = ref('');
+const catalogLoaded = ref(false);
+const showWizard = ref(false);
+const showAudit = ref(false);
+const showSimulation = ref(false);
+const auditEntries = ref<ScenarioAuditEntry[]>([]);
+const simulationResult = ref<ScenarioPreviewResponse | null>(null);
+const simulationJson = ref(JSON.stringify([{
+  kind: 'event',
+  key: 'login_failed',
+  dimensions: { userId: 'admin', srcIp: '192.168.1.50' },
+  timestamp: new Date().toISOString(),
+}], null, 2));
+const traceNodeIds = ref<string[]>([]);
+const traceEdgeIds = ref<string[]>([]);
 
 const selectedNode = computed<any>(() =>
   nodes.value.find(node => node.id === selectedNodeId.value) ?? null,
 );
+const canEdit = computed(() =>
+  !current.value || (current.value.status === 'draft' && !current.value.isReadOnly),
+);
+const canPublish = computed(() =>
+  current.value?.status === 'validated'
+  && current.value.validation?.isValid === true
+  && !current.value.isReadOnly,
+);
+const canStartEdit = computed(() =>
+  !!current.value
+  && !current.value.isReadOnly
+  && current.value.status !== 'draft',
+);
+const productTemplates = computed(() => filterCatalog('product'));
+const userScenarios = computed(() => filterCatalog('user'));
+const currentDefinition = computed(() =>
+  vueFlowToScenario(nodes.value, edges.value, current.value
+    ? ensureScenarioV3(current.value.definition, current.value.severity)
+    : undefined),
+);
+const wizardCompatible = computed(() => isWizardCompatible(currentDefinition.value));
+const sourceNode = computed<any>(() => nodes.value.find(node => node.data.nodeType === 'source'));
+const aggregationNode = computed<any>(() =>
+  nodes.value.find(node => ['aggregation', 'threshold'].includes(node.data.nodeType)),
+);
+const alarmNode = computed<any>(() => nodes.value.find(node => node.data.nodeType === 'alarm-output'));
 
-function onConnect(connection: Connection) {
-  addEdges([{
-    ...connection,
-    id: `edge-${Date.now()}`,
-    type: 'smoothstep',
-    animated: true,
-    markerEnd: MarkerType.ArrowClosed,
-  }]);
+const palette = computed(() => [
+  nodeTemplate('source', t('alarmCenter.flowLab.nodes.eventSource'), 'mdi-database-arrow-right-outline', '#2f80ed'),
+  // Advanced building blocks stay available; simple source covers the common path.
+  nodeTemplate('condition', t('alarmCenter.scenarioStudio.steps.condition'), 'mdi-code-braces', '#f2994a'),
+  nodeTemplate('filter', t('alarmCenter.flowLab.nodes.filter'), 'mdi-filter-outline', '#9c6ade'),
+  nodeTemplate('aggregation', t('alarmCenter.flowLab.nodes.aggregate'), 'mdi-chart-timeline-variant', '#00a896'),
+  nodeTemplate('threshold', t('alarmCenter.flowLab.nodes.threshold'), 'mdi-gauge', '#00a896'),
+  nodeTemplate('sequence', t('alarmCenter.flowLab.nodes.sequence'), 'mdi-format-list-numbered', '#5b5f97'),
+  nodeTemplate('decision', t('alarmCenter.flowLab.nodes.decision'), 'mdi-source-branch', '#f2994a'),
+  nodeTemplate('alarm-output', t('alarmCenter.flowLab.nodes.alarm'), 'mdi-bell-ring-outline', '#d64545'),
+  nodeTemplate('stop-output', t('alarmCenter.flowLab.nodes.stop'), 'mdi-stop-circle-outline', '#687386'),
+]);
+
+function nodeTemplate(nodeType: ScenarioNodeType, label: string, icon: string, color: string) {
+  const condition = { children: [], field: 'value', operator: 'gte', value: 1, sustainedForSeconds: 0 };
+  const configs = {
+    source: { source: {
+        kind: 'observation',
+        observationKind: 'event',
+        matchKey: 'rdp.logon',
+        dependsOnScenarioIds: [],
+        maxChainDepth: 5,
+      }, groupBy: [], settleAfterSeconds: 0 },
+    condition: { condition: cloneScenarioValue(condition), groupBy: [], settleAfterSeconds: 0 },
+    filter: { condition: cloneScenarioValue(condition), groupBy: [], settleAfterSeconds: 0 },
+    aggregation: {
+      aggregation: { function: 'count', operator: 'gte', threshold: 5 },
+      window: { durationSeconds: 300, stalenessSeconds: 0 },
+      groupBy: [],
+      settleAfterSeconds: 0,
+    },
+    threshold: {
+      aggregation: { function: 'count', operator: 'gte', threshold: 5 },
+      window: { durationSeconds: 300, stalenessSeconds: 0 },
+      groupBy: [],
+      settleAfterSeconds: 0,
+    },
+    sequence: {
+      sequence: {
+        steps: [
+          { matchKey: 'event_start', minCount: 1, withinSeconds: 300 },
+          { matchKey: 'event_finish', minCount: 1, withinSeconds: 300 },
+        ],
+      },
+      groupBy: [],
+      settleAfterSeconds: 0,
+    },
+    decision: { condition: cloneScenarioValue(condition), groupBy: [], settleAfterSeconds: 0 },
+    'alarm-output': {
+      severity: 5,
+      dedup: { keyTemplate: '{ruleId}:{key}', cooldownSeconds: 300 },
+      groupBy: [],
+      settleAfterSeconds: 0,
+    },
+    'stop-output': { groupBy: [], settleAfterSeconds: 0 },
+  };
+  return { nodeType, label, icon, color, config: configs[nodeType] };
 }
 
-function createNode(item: PaletteItem, position: { x: number; y: number }): Node {
-  nodeCounter.value += 1;
+function filterCatalog(origin: 'user' | 'product') {
+  const query = search.value.trim().toLocaleLowerCase();
+  return catalog.value.filter(item =>
+    item.origin === origin
+    && (!query || `${item.name} ${item.scenarioId} ${item.templateId ?? ''}`.toLocaleLowerCase().includes(query)),
+  );
+}
+
+function displayError(cause: any) {
+  localError.value = api.error.value || cause?.message || t('alarmCenter.scenarioStudio.errors.request');
+}
+
+async function refreshCatalog() {
+  localError.value = '';
+  try {
+    catalog.value = await api.listScenarios(true);
+  } catch (cause) {
+    displayError(cause);
+  } finally {
+    catalogLoaded.value = true;
+  }
+}
+
+async function openCatalogItem(item: ScenarioCatalogItem) {
+  const version = item.origin === 'product'
+    ? item.latestVersion
+    : item.draftVersion ?? item.publishedVersion ?? item.latestVersion;
+  try {
+    loadVersion(await api.getScenario(item.scenarioId, version));
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function cloneTemplate(item = current.value) {
+  if (!item) return;
+  try {
+    const scenarioId = 'scenarioId' in item ? item.scenarioId : item.scenarioId;
+    const version = 'latestVersion' in item ? item.latestVersion : item.version;
+    loadVersion(await api.cloneTemplateToDraft(scenarioId, version));
+    await refreshCatalog();
+    message.value = t('alarmCenter.scenarioStudio.messages.cloned');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+function loadVersion(version: ScenarioVersion) {
+  current.value = version;
+  const mapped = scenarioToVueFlow(version.definition, version.severity);
+  nodes.value = mapped.nodes;
+  edges.value = mapped.edges;
+  hydrateSimpleSourceNodes();
+  selectedNodeId.value = null;
+  clearTrace();
+  void nextTick(() => fitView({ padding: 0.18, duration: 250 }));
+}
+
+function newScenario() {
+  current.value = null;
+  const mapped = scenarioToVueFlow(createEmptyScenarioDefinitionV3(), 5);
+  nodes.value = mapped.nodes;
+  edges.value = mapped.edges;
+  hydrateSimpleSourceNodes();
+  selectedNodeId.value = null;
+  clearTrace();
+  message.value = '';
+  localError.value = '';
+  void nextTick(() => fitView({ padding: 0.2, duration: 0 }));
+}
+
+function requestBody() {
+  const alarm = alarmNode.value;
   return {
-    id: `${item.kind}-${nodeCounter.value}`,
-    type: item.kind,
+    name: current.value?.name || t('alarmCenter.scenarioStudio.catalog.newScenario'),
+    severity: Number(alarm?.data.config.severity ?? current.value?.severity ?? 5),
+    enabled: Boolean(current.value?.enabled ?? false),
+    definition: currentDefinition.value,
+  };
+}
+
+async function saveDraft() {
+  if (!canEdit.value) return;
+  try {
+    const saved = current.value
+      ? await api.updateDraft(current.value.scenarioId, current.value.version, requestBody())
+      : await api.createDraft(requestBody());
+    loadVersion(saved);
+    await refreshCatalog();
+    message.value = t('alarmCenter.scenarioStudio.messages.saved');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function validateDraft() {
+  if (!current.value || current.value.isReadOnly) return;
+  try {
+    const validation = await api.validate(current.value.scenarioId, current.value.version);
+    current.value = { ...current.value, status: validation.isValid ? 'validated' : 'draft', validation };
+    message.value = t('alarmCenter.scenarioStudio.messages.validated');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function startEditVersion() {
+  if (!current.value || current.value.isReadOnly) return;
+  if (current.value.status === 'draft') return;
+  try {
+    loadVersion(await api.createNextDraft(current.value.scenarioId, requestBody()));
+    await refreshCatalog();
+    message.value = t('alarmCenter.scenarioStudio.messages.nextDraft');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function publishDraft() {
+  if (!current.value) return;
+  try {
+    loadVersion(await api.publish(current.value.scenarioId, current.value.version));
+    await refreshCatalog();
+    message.value = t('alarmCenter.scenarioStudio.messages.published');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function rollbackVersion() {
+  if (!current.value) return;
+  try {
+    loadVersion(await api.rollback(current.value.scenarioId, current.value.version));
+    await refreshCatalog();
+    message.value = t('alarmCenter.scenarioStudio.messages.rolledBack');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function loadAudit() {
+  if (!current.value) return;
+  try {
+    auditEntries.value = await api.audit(current.value.scenarioId);
+    showAudit.value = true;
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function simulate() {
+  try {
+    const samples = JSON.parse(simulationJson.value) as ScenarioSampleObservation[];
+    if (!Array.isArray(samples)) throw new Error(t('alarmCenter.scenarioStudio.errors.samplesArray'));
+    simulationResult.value = await api.simulate(
+      { definition: currentDefinition.value, samples },
+      current.value?.scenarioId,
+      current.value?.version,
+    );
+    const trace = traceGraph(
+      currentDefinition.value,
+      simulationResult.value.nodeTrace ?? [],
+      simulationResult.value.executionOrder ?? [],
+    );
+    traceNodeIds.value = trace.nodeIds;
+    traceEdgeIds.value = trace.edgeIds;
+    for (const edge of edges.value) {
+      if (!traceEdgeIds.value.includes(edge.id)) continue;
+      edge.animated = true;
+      edge.style = { stroke: '#f2c94c', strokeWidth: 4 };
+    }
+    message.value = t('alarmCenter.scenarioStudio.messages.simulated');
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+function clearTrace() {
+  traceNodeIds.value = [];
+  traceEdgeIds.value = [];
+  for (const edge of edges.value) {
+    edge.style = undefined;
+    edge.animated = !edge.sourceHandle;
+  }
+  simulationResult.value = null;
+}
+
+async function toggleLibrary() {
+  toggleLibraryCollapse();
+  await nextTick();
+  void fitView({ padding: 0.18, duration: 200 });
+}
+
+async function togglePalette() {
+  togglePaletteCollapse();
+  await nextTick();
+  void fitView({ padding: 0.18, duration: 200 });
+}
+
+function createNode(item: ReturnType<typeof nodeTemplate>, position: { x: number; y: number }): Node {
+  const id = `${item.nodeType}-${crypto.randomUUID()}`;
+  const simple = item.nodeType === 'source' ? defaultSimpleSourceState() : undefined;
+  return {
+    id,
+    type: item.nodeType,
     position,
     data: {
-      kind: item.kind,
+      nodeType: item.nodeType,
       label: item.label,
-      subtitle: item.subtitle,
-      expression: item.subtitle,
+      subtitle: item.nodeType === 'source'
+        ? simpleSourceSubtitle(simple!, item.config.source.matchKey, t)
+        : '',
       icon: item.icon,
       color: item.color,
+      config: cloneScenarioValue(item.config),
+      ...(simple ? { simple } : {}),
     },
   };
 }
 
-function addPaletteNode(item: PaletteItem) {
-  const offset = nodes.value.length * 24;
-  const node = createNode(item, { x: 160 + offset, y: 110 + offset });
-  addNodes([node]);
+function addPaletteNode(item: ReturnType<typeof nodeTemplate>) {
+  if (!canEdit.value) return;
+  const node = createNode(item, { x: 120 + nodes.value.length * 25, y: 120 + nodes.value.length * 12 });
+  nodes.value = [...nodes.value, node];
   selectedNodeId.value = node.id;
+  if (item.nodeType === 'source' && node.data.simple) {
+    syncSimpleSourceScope(
+      node.id,
+      node.data.simple as SimpleSourceState,
+      sourceTypeForPlatform(node.data.simple.platform, node.data.simple.channel),
+    );
+  }
 }
 
-function startDrag(event: DragEvent, item: PaletteItem) {
-  if (!event.dataTransfer) return;
-  event.dataTransfer.setData('application/monitra-flow-node', JSON.stringify(item));
-  event.dataTransfer.effectAllowed = 'move';
-}
-
-function allowDrop(event: DragEvent) {
-  event.preventDefault();
-  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+function startDrag(event: DragEvent, item: ReturnType<typeof nodeTemplate>) {
+  event.dataTransfer?.setData('application/monitra-flow-node', JSON.stringify(item));
 }
 
 function dropNode(event: DragEvent) {
   event.preventDefault();
+  if (!canEdit.value) return;
   const raw = event.dataTransfer?.getData('application/monitra-flow-node');
   if (!raw) return;
-
-  const item = JSON.parse(raw) as PaletteItem;
-  const position = screenToFlowCoordinate({ x: event.clientX, y: event.clientY });
-  const node = createNode(item, position);
-  addNodes([node]);
+  const item = JSON.parse(raw);
+  const node = createNode(item, screenToFlowCoordinate({ x: event.clientX, y: event.clientY }));
+  nodes.value = [...nodes.value, node];
   selectedNodeId.value = node.id;
+  if (item.nodeType === 'source' && node.data.simple) {
+    syncSimpleSourceScope(
+      node.id,
+      node.data.simple as SimpleSourceState,
+      sourceTypeForPlatform(node.data.simple.platform, node.data.simple.channel),
+    );
+  }
 }
 
-function selectNode(payload: { node: Node }) {
-  selectedNodeId.value = payload.node.id;
-}
-
-function clearSelection() {
-  selectedNodeId.value = null;
+function onConnect(connection: Connection) {
+  if (!canEdit.value) return;
+  const isTrue = connection.sourceHandle === 'true';
+  const isFalse = connection.sourceHandle === 'false';
+  addEdges([{
+    ...connection,
+    id: `edge-${crypto.randomUUID()}`,
+    label: isTrue ? 'True' : isFalse ? 'False' : undefined,
+    type: 'smoothstep',
+    markerEnd: MarkerType.ArrowClosed,
+    data: {
+      fromPort: connection.sourceHandle ?? 'next',
+      toPort: connection.targetHandle ?? 'in',
+    },
+  }]);
 }
 
 function removeSelectedNode() {
-  if (!selectedNodeId.value) return;
+  if (!selectedNodeId.value || !canEdit.value) return;
   const id = selectedNodeId.value;
-  nodes.value = nodes.value.filter(node => node.id !== id);
-  edges.value = edges.value.filter(edge => edge.source !== id && edge.target !== id);
+  const managed = [
+    managedOsFilterId(id),
+    managedHostFilterId(id),
+    managedEventCodeFilterId(id),
+    managedMetricConditionId(id),
+  ];
+  removeNodes([id, ...managed]);
   selectedNodeId.value = null;
 }
 
-function resetExample() {
-  window.location.reload();
+function addSequenceStep() {
+  selectedNode.value?.data.config.sequence.steps.push({ matchKey: '', minCount: 1, withinSeconds: 300 });
 }
 
-async function centerFlow() {
-  await nextTick();
-  void fitView({ padding: 0.18, duration: 300 });
+function setGroupBy(value: unknown) {
+  if (!selectedNode.value) return;
+  selectedNode.value.data.config.groupBy = String(value ?? '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
 }
+
+function isScopeFilterNode(node: Node | undefined): boolean {
+  if (!node) return false;
+  if (node.data?.managedScope) return true;
+  const field = String(node.data?.config?.condition?.field ?? '');
+  return field === 'dimensions.sourceHost'
+    || field === 'dimensions.sourceType'
+    || field === 'dimensions.eventCode'
+    || field === 'sourceHost'
+    || field === 'sourceType'
+    || field === 'eventCode';
+}
+
+function createManagedCompareNode(
+  id: string,
+  nodeType: 'filter' | 'condition',
+  label: string,
+  icon: string,
+  color: string,
+  field: string,
+  operator: string,
+  value: unknown,
+  subtitle: string,
+  position: { x: number; y: number },
+): Node {
+  return {
+    id,
+    type: nodeType,
+    position,
+    data: {
+      nodeType,
+      label,
+      subtitle,
+      icon,
+      color,
+      managedScope: true,
+      config: {
+        condition: {
+          children: [],
+          field,
+          operator,
+          value,
+          sustainedForSeconds: 0,
+        },
+        groupBy: [],
+        settleAfterSeconds: 0,
+      },
+    },
+  };
+}
+
+function createManagedFilterNode(
+  id: string,
+  label: string,
+  field: string,
+  operator: string,
+  value: unknown,
+  subtitle: string,
+  position: { x: number; y: number },
+): Node {
+  return createManagedCompareNode(
+    id,
+    'filter',
+    label,
+    'mdi-filter-outline',
+    '#9c6ade',
+    field,
+    operator,
+    value,
+    subtitle,
+    position,
+  );
+}
+
+function parseHostFilterValue(value: unknown): string[] {
+  if (Array.isArray(value)) return normalizeSimpleHosts(value);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.includes(',')) {
+      return normalizeSimpleHosts(trimmed.split(','));
+    }
+    return [trimmed];
+  }
+  if (value == null) return [];
+  return normalizeSimpleHosts([String(value)]);
+}
+
+function formatManagedFilterValue(value: unknown): string {
+  if (Array.isArray(value)) return value.map(String).join(', ');
+  if (value == null) return '';
+  return String(value);
+}
+
+/** Collect host/os/metric from the scope filter chain right after a source node. */
+function readScopeFromSource(sourceNodeId: string): {
+  hosts: string[];
+  sourceType: string | null;
+  metric: SimpleMetricComparison | null;
+} {
+  let hosts: string[] = [];
+  let sourceType: string | null = null;
+  let metric: SimpleMetricComparison | null = null;
+  let cursor = sourceNodeId;
+  const seen = new Set<string>();
+
+  while (!seen.has(cursor)) {
+    seen.add(cursor);
+    const nextEdge = edges.value.find(edge =>
+      edge.source === cursor
+      && (edge.sourceHandle == null || edge.sourceHandle === 'true' || edge.sourceHandle === 'next'));
+    if (!nextEdge) break;
+    const nextNode = nodes.value.find(node => node.id === nextEdge.target);
+    if (!isScopeFilterNode(nextNode)) break;
+    const field = String(nextNode?.data?.config?.condition?.field ?? '');
+    const operator = String(nextNode?.data?.config?.condition?.operator ?? 'gte');
+    const value = nextNode?.data?.config?.condition?.value;
+    if (field.endsWith('sourceHost')) {
+      hosts = parseHostFilterValue(value);
+    }
+    if (field.endsWith('sourceType')) {
+      const text = String(value ?? '').trim();
+      if (text) sourceType = text;
+    }
+    if (field === 'value' && nextNode?.data?.managedScope) {
+      const threshold = Number(value);
+      metric = {
+        key: '',
+        operator: (['gt', 'gte', 'lt', 'lte', 'eq', 'neq'].includes(operator)
+          ? operator
+          : 'gte') as SimpleMetricComparison['operator'],
+        threshold: Number.isFinite(threshold) ? threshold : 90,
+      };
+    }
+    cursor = nextEdge.target;
+  }
+
+  return { hosts, sourceType, metric };
+}
+
+function collectScopeChainIds(sourceNodeId: string): string[] {
+  const ids: string[] = [];
+  let cursor = sourceNodeId;
+  const seen = new Set<string>();
+
+  while (!seen.has(cursor)) {
+    seen.add(cursor);
+    const nextEdges = edges.value.filter(edge =>
+      edge.source === cursor
+      && (edge.sourceHandle == null || edge.sourceHandle === 'true' || edge.sourceHandle === 'next'));
+    const scopeEdges = nextEdges.filter(edge =>
+      isScopeFilterNode(nodes.value.find(node => node.id === edge.target)));
+    if (!scopeEdges.length) break;
+    for (const edge of scopeEdges) {
+      ids.push(edge.target);
+      cursor = edge.target;
+    }
+  }
+
+  return ids;
+}
+
+function syncSimpleSourceScope(
+  sourceNodeId: string,
+  simple: SimpleSourceState,
+  sourceType: string | null,
+) {
+  const sourceNode = nodes.value.find(node => node.id === sourceNodeId);
+  if (!sourceNode) return;
+
+  const osId = managedOsFilterId(sourceNodeId);
+  const hostId = managedHostFilterId(sourceNodeId);
+  const eventCodeId = managedEventCodeFilterId(sourceNodeId);
+  const metricId = managedMetricConditionId(sourceNodeId);
+  const hostCondition = hostFilterCondition(simple.hosts);
+  const eventCondition = eventCodeFilterCondition(simple.events ?? []);
+  const metricSpec = simple.channel === 'metric' ? metricConditionSpec(simple.metric) : null;
+  const legacyScopeIds = collectScopeChainIds(sourceNodeId);
+  const removeIds = new Set<string>([osId, hostId, eventCodeId, metricId, ...legacyScopeIds]);
+
+  // Exit targets: from source or any scope node → non-scope node
+  const exitTargets = edges.value
+    .filter((edge) => {
+      const fromSource = edge.source === sourceNodeId;
+      const fromScope = removeIds.has(edge.source);
+      if (!fromSource && !fromScope) return false;
+      return !removeIds.has(edge.target);
+    })
+    .map(edge => ({
+      target: edge.target,
+      targetHandle: edge.targetHandle,
+      data: edge.data,
+    }));
+
+  nodes.value = nodes.value.filter(node => !removeIds.has(node.id));
+  edges.value = edges.value.filter(edge =>
+    !removeIds.has(edge.source)
+    && !removeIds.has(edge.target)
+    && edge.source !== sourceNodeId);
+
+  const chain: string[] = [sourceNodeId];
+  const baseX = sourceNode.position.x + 260;
+  const baseY = sourceNode.position.y;
+
+  if (sourceType) {
+    nodes.value = [
+      ...nodes.value,
+      createManagedFilterNode(
+        osId,
+        t('alarmCenter.scenarioStudio.simpleSource.osFilterLabel'),
+        'dimensions.sourceType',
+        'eq',
+        sourceType,
+        `sourceType = ${sourceType}`,
+        { x: baseX, y: baseY - 40 },
+      ),
+    ];
+    chain.push(osId);
+  }
+
+  if (eventCondition) {
+    nodes.value = [
+      ...nodes.value,
+      createManagedFilterNode(
+        eventCodeId,
+        t('alarmCenter.scenarioStudio.eventSelector.eventCodeFilterLabel'),
+        eventCondition.field,
+        eventCondition.operator,
+        eventCondition.value,
+        eventCondition.subtitle,
+        { x: baseX + (chain.length - 1) * 240, y: baseY },
+      ),
+    ];
+    chain.push(eventCodeId);
+  }
+
+  if (hostCondition) {
+    nodes.value = [
+      ...nodes.value,
+      createManagedFilterNode(
+        hostId,
+        t('alarmCenter.scenarioStudio.simpleSource.hostFilterLabel'),
+        hostCondition.field,
+        hostCondition.operator,
+        hostCondition.value,
+        hostCondition.subtitle,
+        { x: baseX + (chain.length - 1) * 240, y: baseY + 40 },
+      ),
+    ];
+    chain.push(hostId);
+  }
+
+  if (metricSpec) {
+    nodes.value = [
+      ...nodes.value,
+      createManagedCompareNode(
+        metricId,
+        'condition',
+        t('alarmCenter.scenarioStudio.simpleSource.metricConditionLabel'),
+        'mdi-gauge',
+        '#00a896',
+        metricSpec.field,
+        metricSpec.operator,
+        metricSpec.value,
+        metricSpec.subtitle,
+        { x: baseX + (chain.length - 1) * 240, y: baseY + 80 },
+      ),
+    ];
+    chain.push(metricId);
+  }
+
+  const newEdges: Edge[] = [];
+  for (let i = 0; i < chain.length - 1; i += 1) {
+    newEdges.push({
+      id: `e-${chain[i]}-${chain[i + 1]}`,
+      source: chain[i],
+      target: chain[i + 1],
+      sourceHandle: i === 0 ? undefined : 'true',
+      type: 'smoothstep',
+      markerEnd: MarkerType.ArrowClosed,
+      animated: i === 0,
+      data: { fromPort: i === 0 ? 'next' : 'true', toPort: 'in', managedScope: true },
+    });
+  }
+
+  const tail = chain[chain.length - 1];
+  const uniqueTargets = [...new Map(exitTargets.map(item => [item.target, item])).values()];
+  for (const target of uniqueTargets) {
+    newEdges.push({
+      id: `e-${tail}-${target.target}`,
+      source: tail,
+      target: target.target,
+      sourceHandle: tail === sourceNodeId ? undefined : 'true',
+      targetHandle: target.targetHandle,
+      type: 'smoothstep',
+      markerEnd: MarkerType.ArrowClosed,
+      animated: tail === sourceNodeId,
+      data: {
+        ...(target.data ?? {}),
+        fromPort: tail === sourceNodeId ? 'next' : 'true',
+        toPort: 'in',
+      },
+    });
+  }
+
+  edges.value = [...edges.value, ...newEdges];
+}
+
+function onSimpleSourceChange(payload: {
+  source: any;
+  simple: SimpleSourceState;
+  subtitle: string;
+  sourceType: string | null;
+}) {
+  if (!selectedNode.value || selectedNode.value.data.nodeType !== 'source') return;
+  selectedNode.value.data.config.source = payload.source;
+  selectedNode.value.data.simple = coerceSimpleSourceState(payload.simple);
+  selectedNode.value.data.subtitle = payload.subtitle;
+  selectedNode.value.data.label = selectedNode.value.data.label || t('alarmCenter.flowLab.nodes.eventSource');
+  syncSimpleSourceScope(selectedNode.value.id, selectedNode.value.data.simple, payload.sourceType);
+}
+
+function hydrateSimpleSourceNodes() {
+  nodes.value = nodes.value.map((node) => {
+    if (node.data?.nodeType !== 'source') return node;
+    const scope = readScopeFromSource(node.id);
+    const hosts = scope.hosts.length
+      ? scope.hosts
+      : normalizeSimpleHosts(node.data.simple?.hosts ?? node.data.simple?.host ?? []);
+    const inferred = node.data.simple ?? inferSimpleSourceState(node.data.config?.source, hosts);
+    const matchKey = String(node.data.config?.source?.matchKey ?? '');
+    let metric = inferred.metric ?? null;
+    if (inferred.channel === 'metric') {
+      metric = {
+        key: matchKey || metric?.key || 'cpu_usage',
+        operator: scope.metric?.operator || metric?.operator || 'gte',
+        threshold: scope.metric?.threshold ?? metric?.threshold ?? 90,
+      };
+    }
+    const simple = coerceSimpleSourceState({
+      ...inferred,
+      hosts,
+      metric,
+    });
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        simple,
+        subtitle: simpleSourceSubtitle(simple, matchKey, t),
+      },
+    };
+  });
+}
+
+onMounted(() => {
+  libraryCollapsed.value = false;
+  paletteCollapsed.value = false;
+  newScenario();
+  void refreshCatalog();
+  void nextTick(() => fitView({ padding: 0.2, duration: 0 }));
+});
 </script>
 
 <template>
-  <div class="flow-lab" :class="`flow-lab--${visualStyle}`">
-    <div class="flow-lab__toolbar">
-      <div>
-        <div class="text-subtitle-1 font-weight-bold">{{ t('alarmCenter.flowLab.prototypeTitle') }}</div>
-        <div class="text-caption text-medium-emphasis">{{ t('alarmCenter.flowLab.prototypeSubtitle') }}</div>
-      </div>
+  <div class="flow-lab-root">
+    <v-alert v-if="localError" type="error" variant="tonal" closable class="mb-3" @click:close="localError = ''">
+      {{ localError }}
+    </v-alert>
+    <v-alert v-if="message" type="success" variant="tonal" closable class="mb-3" @click:close="message = ''">
+      {{ message }}
+    </v-alert>
 
-      <v-btn-toggle v-model="visualStyle" mandatory density="compact" color="primary" variant="outlined">
-        <v-btn value="node-red" size="small">{{ t('alarmCenter.flowLab.styles.nodeRed') }}</v-btn>
-        <v-btn value="cards" size="small">{{ t('alarmCenter.flowLab.styles.cards') }}</v-btn>
-        <v-btn value="minimal" size="small">{{ t('alarmCenter.flowLab.styles.minimal') }}</v-btn>
-      </v-btn-toggle>
+    <div class="flow-lab">
+      <aside
+        v-if="!libraryCollapsed"
+        class="flow-library"
+        :style="{ width: `${libraryWidth}px`, flex: `0 0 ${libraryWidth}px` }"
+      >
+        <div class="panel-header">
+          <strong>{{ t('alarmCenter.scenarioStudio.catalog.title') }}</strong>
+          <div class="panel-header__actions">
+            <v-btn icon="mdi-refresh" size="x-small" variant="text" :loading="api.pending.value" @click="refreshCatalog" />
+            <v-btn
+              icon="mdi-chevron-left"
+              size="x-small"
+              variant="text"
+              :title="t('alarmCenter.flowLab.collapseLibrary')"
+              @click="toggleLibrary"
+            />
+          </div>
+        </div>
+        <div class="panel-search">
+          <v-text-field
+            v-model="search"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            prepend-inner-icon="mdi-magnify"
+            :placeholder="t('alarmCenter.scenarioStudio.catalog.search')"
+          />
+        </div>
+        <div class="panel-body">
+          <div v-if="api.pending.value && !catalogLoaded" class="panel-loading">
+            <v-progress-circular indeterminate size="28" />
+          </div>
+          <div v-else class="catalog-scroll">
+            <AcScenarioCatalogTree
+              :product-items="productTemplates"
+              :user-items="userScenarios"
+              :active-scenario-id="current?.scenarioId ?? null"
+              :catalog-loaded="catalogLoaded"
+              @open="openCatalogItem"
+              @clone="cloneTemplate"
+              @create-scenario="newScenario"
+            />
+          </div>
+        </div>
+      </aside>
 
-      <v-spacer />
-
-      <v-btn size="small" variant="text" prepend-icon="mdi-fit-to-screen-outline" @click="centerFlow">
-        {{ t('alarmCenter.flowLab.fit') }}
-      </v-btn>
-      <v-btn size="small" variant="text" prepend-icon="mdi-restore" @click="resetExample">
-        {{ t('alarmCenter.flowLab.reset') }}
-      </v-btn>
-    </div>
-
-    <div class="flow-lab__workspace">
-      <aside class="flow-lab__palette">
-        <div class="flow-lab__panel-title">{{ t('alarmCenter.flowLab.paletteTitle') }}</div>
-        <v-text-field
-          v-model="search"
-          density="compact"
-          variant="outlined"
-          hide-details
-          clearable
-          prepend-inner-icon="mdi-magnify"
-          :placeholder="t('alarmCenter.flowLab.searchPlaceholder')"
-          class="mb-3"
-        />
-
-        <div class="flow-lab__palette-list">
+      <aside v-if="!paletteCollapsed" class="node-library">
+        <div class="panel-header">
+          <strong>{{ t('alarmCenter.flowLab.paletteTitle') }}</strong>
+          <v-btn
+            icon="mdi-chevron-left"
+            size="x-small"
+            variant="text"
+            :title="t('alarmCenter.flowLab.collapseNodeList')"
+            @click="togglePalette"
+          />
+        </div>
+        <div class="node-library-scroll">
           <button
-            v-for="item in filteredPalette"
-            :key="item.kind"
+            v-for="item in palette"
+            :key="item.nodeType"
             type="button"
-            class="flow-palette-node"
+            class="palette-card"
             draggable="true"
+            :disabled="!canEdit"
             @dragstart="startDrag($event, item)"
             @dblclick="addPaletteNode(item)"
           >
-            <span class="flow-palette-node__icon" :style="{ backgroundColor: item.color }">
-              <v-icon :icon="item.icon" size="18" />
-            </span>
-            <span class="flow-palette-node__content">
-              <strong>{{ item.label }}</strong>
-              <small>{{ item.description }}</small>
-            </span>
-            <v-icon icon="mdi-drag" size="17" class="text-medium-emphasis" />
+            <span :style="{ backgroundColor: item.color }"><v-icon :icon="item.icon" size="18" /></span>
+            <strong>{{ item.label }}</strong>
           </button>
         </div>
-
-        <div class="flow-lab__hint">
-          <v-icon icon="mdi-cursor-move" size="17" />
-          <span>{{ t('alarmCenter.flowLab.dragHint') }}</span>
-        </div>
       </aside>
 
-      <main class="flow-lab__canvas" @dragover="allowDrop" @drop="dropNode">
-        <VueFlow
-          :nodes="nodes"
-          :edges="edges"
-          :min-zoom="0.25"
-          :max-zoom="2"
-          :default-viewport="{ zoom: 0.9, x: 20, y: 60 }"
-          fit-view-on-init
-          snap-to-grid
-          :snap-grid="[16, 16]"
-          @connect="onConnect"
-          @node-click="selectNode"
-          @pane-click="clearSelection"
-        >
-          <Background pattern-color="rgba(120, 130, 150, 0.24)" :gap="20" />
-          <Controls position="bottom-left" />
-          <MiniMap position="bottom-right" pannable zoomable />
-
-          <template
-            v-for="kind in ['source', 'filter', 'logic', 'aggregate', 'sequence', 'output']"
-            #[`node-${kind}`]="{ data, selected }"
-          >
-            <div
-              :key="kind"
-              class="flow-node"
-              :class="{ 'flow-node--selected': selected }"
-              :style="{ '--node-color': data.color }"
-            >
-              <Handle
-                v-if="kind !== 'source'"
-                type="target"
-                :position="Position.Left"
-                class="flow-node__handle"
-              />
-              <div class="flow-node__accent" />
-              <div class="flow-node__icon">
-                <v-icon :icon="data.icon" size="20" />
-              </div>
-              <div class="flow-node__body">
-                <strong>{{ data.label }}</strong>
-                <small>{{ data.subtitle }}</small>
-              </div>
-              <Handle
-                v-if="kind !== 'output'"
-                type="source"
-                :position="Position.Right"
-                class="flow-node__handle"
-              />
-            </div>
-          </template>
-        </VueFlow>
-      </main>
-
-      <aside class="flow-lab__properties">
-        <div class="flow-lab__panel-title">{{ t('alarmCenter.flowLab.propertiesTitle') }}</div>
-
-        <template v-if="selectedNode">
-          <div class="flow-lab__selected-type">
-            <span :style="{ backgroundColor: selectedNode.data.color }">
-              <v-icon :icon="selectedNode.data.icon" size="20" />
-            </span>
-            <div>
-              <strong>{{ selectedNode.data.label }}</strong>
-              <small>{{ selectedNode.id }}</small>
-            </div>
+      <section class="flow-context">
+        <header class="flow-toolbar">
+          <v-btn v-if="libraryCollapsed" icon="mdi-folder-multiple-outline" size="small" variant="text"
+            :title="t('alarmCenter.flowLab.expandLibrary')" @click="toggleLibrary" />
+          <v-btn v-if="paletteCollapsed" icon="mdi-shape-outline" size="small" variant="text"
+            :title="t('alarmCenter.flowLab.expandNodeList')" @click="togglePalette" />
+          <div class="flow-name">
+            <strong>{{ current?.name || t('alarmCenter.scenarioStudio.catalog.newScenario') }}</strong>
+            <small v-if="current">v{{ current.version }} · {{ current.status }}</small>
           </div>
-
-          <v-text-field
-            v-model="selectedNode.data.label"
-            :label="t('alarmCenter.flowLab.fields.label')"
-            density="compact"
-            variant="outlined"
-          />
-          <v-text-field
-            v-model="selectedNode.data.subtitle"
-            :label="t('alarmCenter.flowLab.fields.subtitle')"
-            density="compact"
-            variant="outlined"
-          />
-          <v-textarea
-            v-model="selectedNode.data.expression"
-            :label="t('alarmCenter.flowLab.fields.expression')"
-            rows="4"
-            density="compact"
-            variant="outlined"
-            auto-grow
-          />
-
+          <v-chip v-if="current?.isReadOnly" size="small" prepend-icon="mdi-lock">
+            {{ t('alarmCenter.scenarioStudio.catalog.readOnly') }}
+          </v-chip>
+          <v-spacer />
           <v-btn
-            block
-            color="error"
+            v-if="canStartEdit"
+            size="small"
+            color="primary"
             variant="tonal"
-            prepend-icon="mdi-delete-outline"
-            @click="removeSelectedNode"
+            prepend-icon="mdi-pencil"
+            @click="startEditVersion"
           >
-            {{ t('alarmCenter.flowLab.deleteNode') }}
+            {{ t('alarmCenter.scenarioStudio.editDraft') }}
           </v-btn>
-        </template>
+          <v-btn v-if="current?.isReadOnly" size="small" color="primary" variant="tonal"
+            prepend-icon="mdi-content-copy" @click="cloneTemplate()">
+            {{ t('alarmCenter.scenarioStudio.catalog.clone') }}
+          </v-btn>
+          <v-btn size="small" variant="text" prepend-icon="mdi-form-select" @click="showWizard = true">
+            {{ t('alarmCenter.scenarioStudio.modeWizard') }}
+          </v-btn>
+          <v-btn size="small" variant="text" prepend-icon="mdi-fit-to-screen-outline"
+            @click="fitView({ padding: 0.18, duration: 250 })">
+            {{ t('alarmCenter.flowLab.fit') }}
+          </v-btn>
+          <v-btn size="small" variant="text" prepend-icon="mdi-flask-outline"
+            @click="showSimulation = !showSimulation">
+            {{ t('alarmCenter.scenarioStudio.simulationTitle') }}
+          </v-btn>
+          <v-menu>
+            <template #activator="{ props }">
+              <v-btn v-bind="props" size="small" variant="tonal" prepend-icon="mdi-dots-horizontal">
+                {{ t('alarmCenter.scenarioStudio.actions') }}
+              </v-btn>
+            </template>
+            <v-list density="compact">
+              <v-list-item
+                v-if="canStartEdit"
+                prepend-icon="mdi-pencil"
+                :title="t('alarmCenter.scenarioStudio.editDraft')"
+                @click="startEditVersion"
+              />
+              <v-list-item prepend-icon="mdi-content-save" :disabled="!canEdit" :title="t('alarmCenter.scenarioStudio.saveDraft')" @click="saveDraft" />
+              <v-list-item prepend-icon="mdi-check-decagram" :disabled="!current || current.isReadOnly" :title="t('alarmCenter.scenarioStudio.validate')" @click="validateDraft" />
+              <v-list-item prepend-icon="mdi-rocket-launch" :disabled="!canPublish" :title="t('alarmCenter.scenarioStudio.publish')" @click="publishDraft" />
+              <v-list-item prepend-icon="mdi-restore" :disabled="current?.status !== 'published'" :title="t('alarmCenter.scenarioStudio.rollback')" @click="rollbackVersion" />
+              <v-list-item prepend-icon="mdi-history" :disabled="!current" :title="t('alarmCenter.scenarioStudio.audit')" @click="loadAudit" />
+            </v-list>
+          </v-menu>
+        </header>
 
-        <div v-else class="flow-lab__empty-properties">
-          <v-icon icon="mdi-cursor-default-click-outline" size="34" />
-          <span>{{ t('alarmCenter.flowLab.selectHint') }}</span>
-        </div>
-      </aside>
+        <main class="flow-canvas" @dragover.prevent @drop="dropNode">
+          <VueFlow
+            class="flow-vue"
+            :nodes="nodes"
+            :edges="edges"
+            :nodes-draggable="canEdit"
+            :nodes-connectable="canEdit"
+            fit-view-on-init
+            snap-to-grid
+            :snap-grid="[16, 16]"
+            @update:nodes="nodes = $event"
+            @update:edges="edges = $event"
+            @connect="onConnect"
+            @node-click="selectedNodeId = $event.node.id"
+            @pane-click="selectedNodeId = null"
+          >
+            <Background pattern-color="rgba(120,130,150,.22)" :gap="20" />
+            <Controls position="bottom-left" />
+            <MiniMap
+              position="bottom-right"
+              pannable
+              zoomable
+              mask-color="rgba(10, 14, 22, 0.72)"
+              node-color="#4b5568"
+              node-stroke-color="#94a3b8"
+            />
+            <template v-for="nodeType in ['source','condition','filter','aggregation','threshold','sequence','decision','alarm-output','stop-output']"
+              #[`node-${nodeType}`]="{ data, selected, id }">
+              <div :key="nodeType" class="flow-node"
+                :class="{
+                  selected,
+                  traced: traceNodeIds.includes(id),
+                  decision: !['source','alarm-output','stop-output'].includes(nodeType),
+                  managed: Boolean(data.managedScope),
+                }"
+                :style="{ '--node-color': data.color }">
+                <Handle v-if="nodeType !== 'source'" type="target" :position="Position.Left" />
+                <span class="accent" />
+                <v-icon :icon="data.icon" />
+                <span><strong>{{ data.label }}</strong><small>{{ data.subtitle }}</small></span>
+                <template v-if="!['source','alarm-output','stop-output'].includes(nodeType)">
+                  <Handle id="true" type="source" :position="Position.Right" :style="{ top: '32%', background: '#24a148' }" />
+                  <Handle id="false" type="source" :position="Position.Right" :style="{ top: '72%', background: '#d64545' }" />
+                </template>
+                <Handle v-else-if="nodeType === 'source'" type="source" :position="Position.Right" />
+              </div>
+            </template>
+          </VueFlow>
+
+          <aside v-if="selectedNode" class="node-inspector">
+            <div class="d-flex align-center mb-3">
+              <strong>{{ t('alarmCenter.flowLab.propertiesTitle') }}</strong><v-spacer />
+              <v-btn icon="mdi-close" size="x-small" variant="text" @click="selectedNodeId = null" />
+            </div>
+            <v-text-field v-model="selectedNode.data.label" :disabled="!canEdit"
+              :label="t('alarmCenter.flowLab.fields.label')" density="compact" />
+            <template v-if="selectedNode.data.nodeType === 'source'">
+              <AcScenarioSourceInspector
+                :source="selectedNode.data.config.source"
+                :simple="selectedNode.data.simple ?? null"
+                :disabled="!canEdit"
+                @change="onSimpleSourceChange"
+              />
+            </template>
+            <template v-else-if="selectedNode.data.managedScope">
+              <v-alert type="info" variant="tonal" density="compact" class="mb-3">
+                {{ t('alarmCenter.scenarioStudio.simpleSource.managedFilterHint') }}
+              </v-alert>
+              <v-text-field
+                :model-value="selectedNode.data.config.condition.field"
+                :label="t('alarmCenter.scenarioStudio.field')"
+                density="compact"
+                disabled
+              />
+              <v-text-field
+                :model-value="formatManagedFilterValue(selectedNode.data.config.condition.value)"
+                :label="t('alarmCenter.scenarioStudio.value')"
+                density="compact"
+                disabled
+              />
+              <v-text-field
+                :model-value="selectedNode.data.config.condition.operator"
+                :label="t('alarmCenter.scenarioStudio.operator')"
+                density="compact"
+                disabled
+                class="mt-2"
+              />
+            </template>
+            <template v-else-if="['condition','filter','decision'].includes(selectedNode.data.nodeType)">
+              <v-text-field v-model="selectedNode.data.config.condition.field" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.field')" density="compact" />
+              <v-select v-model="selectedNode.data.config.condition.operator" :disabled="!canEdit"
+                :items="['eq','neq','gt','gte','lt','lte','contains','exists']"
+                :label="t('alarmCenter.scenarioStudio.operator')" density="compact" />
+              <v-text-field v-model="selectedNode.data.config.condition.value" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.value')" density="compact" />
+              <v-text-field v-model.number="selectedNode.data.config.condition.sustainedForSeconds" type="number"
+                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.sustainedSeconds')" density="compact" />
+            </template>
+            <template v-if="['aggregation','threshold'].includes(selectedNode.data.nodeType)">
+              <v-select v-model="selectedNode.data.config.aggregation.function" :disabled="!canEdit"
+                :items="['count','sum','avg','min','max']" :label="t('alarmCenter.scenarioStudio.aggregation')" density="compact" />
+              <v-text-field v-model="selectedNode.data.config.aggregation.field" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.field')" density="compact" />
+              <v-select v-model="selectedNode.data.config.aggregation.operator" :disabled="!canEdit"
+                :items="['eq','neq','gt','gte','lt','lte']" :label="t('alarmCenter.scenarioStudio.operator')" density="compact" />
+              <v-text-field v-model.number="selectedNode.data.config.aggregation.threshold" type="number" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.count')" density="compact" />
+              <v-text-field :model-value="selectedNode.data.config.window.durationSeconds / 60" type="number" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.windowMinutes')" density="compact"
+                @update:model-value="selectedNode.data.config.window.durationSeconds = Number($event) * 60" />
+              <v-text-field :model-value="selectedNode.data.config.groupBy.join(', ')" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.groupBy')" density="compact" @update:model-value="setGroupBy" />
+              <v-text-field v-model.number="selectedNode.data.config.settleAfterSeconds" type="number" min="0"
+                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.settleAfterSeconds')" density="compact" />
+            </template>
+            <template v-if="selectedNode.data.nodeType === 'sequence'">
+              <div v-for="(step, index) in selectedNode.data.config.sequence.steps" :key="index" class="sequence-step">
+                <v-text-field v-model="step.matchKey" :disabled="!canEdit" :label="`${t('alarmCenter.scenarioStudio.sequenceStep')} ${index + 1}`" density="compact" />
+                <v-text-field v-model.number="step.minCount" type="number" min="1" :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.count')" density="compact" />
+                <v-text-field :model-value="step.withinSeconds / 60" type="number" :disabled="!canEdit"
+                  :label="t('alarmCenter.scenarioStudio.windowMinutes')" density="compact"
+                  @update:model-value="step.withinSeconds = Number($event) * 60" />
+              </div>
+              <v-btn size="small" block variant="tonal" :disabled="!canEdit" @click="addSequenceStep">
+                {{ t('alarmCenter.scenarioStudio.addStep') }}
+              </v-btn>
+              <v-text-field :model-value="selectedNode.data.config.groupBy.join(', ')" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.groupBy')" density="compact" @update:model-value="setGroupBy" />
+              <v-text-field v-model.number="selectedNode.data.config.settleAfterSeconds" type="number" min="0"
+                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.settleAfterSeconds')" density="compact" />
+            </template>
+            <template v-if="selectedNode.data.nodeType === 'alarm-output'">
+              <v-text-field v-model.number="selectedNode.data.config.severity" type="number" min="1" max="10"
+                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.severity')" density="compact" />
+              <v-text-field v-model="selectedNode.data.config.dedup.keyTemplate" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.dedupTemplate')" density="compact" />
+              <v-text-field :model-value="selectedNode.data.config.dedup.cooldownSeconds / 60" type="number"
+                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.cooldownMinutes')" density="compact"
+                @update:model-value="selectedNode.data.config.dedup.cooldownSeconds = Number($event) * 60" />
+              <v-text-field :model-value="selectedNode.data.config.groupBy.join(', ')" :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.groupBy')" density="compact" @update:model-value="setGroupBy" />
+            </template>
+            <v-btn block color="error" variant="tonal" prepend-icon="mdi-delete" :disabled="!canEdit" @click="removeSelectedNode">
+              {{ t('alarmCenter.flowLab.deleteNode') }}
+            </v-btn>
+          </aside>
+
+          <aside v-if="showSimulation" class="simulation-panel">
+            <div class="d-flex align-center">
+              <strong>{{ t('alarmCenter.scenarioStudio.simulationTitle') }}</strong><v-spacer />
+              <v-btn icon="mdi-close" size="x-small" variant="text"
+                @click="showSimulation = false; clearTrace()" />
+            </div>
+            <v-textarea v-model="simulationJson" rows="3" density="compact" hide-details class="mt-2" />
+            <v-btn block color="primary" size="small" class="mt-2" prepend-icon="mdi-play" @click="simulate">
+              {{ t('alarmCenter.scenarioStudio.simulate') }}
+            </v-btn>
+            <small v-if="simulationResult">
+              {{ simulationResult.matches.filter(item => item.matched).length }} / {{ simulationResult.matches.length }}
+              {{ t('alarmCenter.scenarioStudio.matched') }}
+            </small>
+          </aside>
+        </main>
+      </section>
     </div>
+
+    <v-navigation-drawer v-model="showWizard" location="right" temporary width="420">
+      <v-toolbar :title="t('alarmCenter.scenarioStudio.modeWizard')" density="compact" />
+      <div class="pa-4">
+        <v-alert v-if="!wizardCompatible" type="warning" variant="tonal">
+          {{ t('alarmCenter.scenarioStudio.errors.notSimple') }}
+        </v-alert>
+        <template v-else>
+          <v-text-field v-if="sourceNode" v-model="sourceNode.data.config.source.matchKey" :disabled="!canEdit"
+            :label="t('alarmCenter.scenarioStudio.matchKey')" />
+          <template v-if="aggregationNode">
+            <v-text-field v-model.number="aggregationNode.data.config.aggregation.threshold" type="number"
+              :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.count')" />
+            <v-text-field :model-value="aggregationNode.data.config.window.durationSeconds / 60" type="number"
+              :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.windowMinutes')"
+              @update:model-value="aggregationNode.data.config.window.durationSeconds = Number($event) * 60" />
+          </template>
+          <template v-if="alarmNode">
+            <v-slider v-model="alarmNode.data.config.severity" min="1" max="10" step="1"
+              :disabled="!canEdit" thumb-label />
+            <v-text-field :model-value="alarmNode.data.config.dedup.cooldownSeconds / 60" type="number"
+              :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.cooldownMinutes')"
+              @update:model-value="alarmNode.data.config.dedup.cooldownSeconds = Number($event) * 60" />
+          </template>
+        </template>
+      </div>
+    </v-navigation-drawer>
+
+    <v-dialog v-model="showAudit" max-width="680">
+      <v-card>
+        <v-card-title>{{ t('alarmCenter.scenarioStudio.auditTitle') }}</v-card-title>
+        <v-list>
+          <v-list-item v-for="entry in auditEntries" :key="entry.id"
+            :title="`${entry.action} · v${entry.version}`"
+            :subtitle="new Date(entry.timestamp).toLocaleString()" />
+          <v-list-item v-if="!auditEntries.length" :title="t('alarmCenter.scenarioStudio.auditEmpty')" />
+        </v-list>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -447,267 +1209,319 @@ async function centerFlow() {
 </style>
 
 <style scoped>
+.flow-lab-root {
+  width: 100%;
+  min-width: 0;
+}
+
 .flow-lab {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 220px);
+  min-height: 580px;
   overflow: hidden;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 12px;
   background: rgb(var(--v-theme-surface));
 }
 
-.flow-lab__toolbar {
-  min-height: 66px;
+.flow-library,
+.node-library {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  background: rgb(var(--v-theme-surface));
+}
+
+.node-library {
+  flex: 0 0 220px;
+  width: 220px;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.panel-header,
+.panel-search {
+  min-width: 0;
+}
+
+.panel-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 14px;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 10px;
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-.flow-lab__workspace {
+.panel-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.panel-search {
+  padding: 8px 10px 4px;
+}
+
+.panel-search :deep(.v-input),
+.panel-search :deep(.v-field) {
+  flex: none;
+}
+
+.panel-body {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-loading {
+  flex: 1;
   display: grid;
-  grid-template-columns: 250px minmax(420px, 1fr) 270px;
-  height: calc(100vh - 245px);
-  min-height: 570px;
+  place-items: center;
 }
 
-.flow-lab__palette,
-.flow-lab__properties {
-  padding: 14px;
-  overflow: auto;
-  background: rgb(var(--v-theme-surface));
+.catalog-scroll,
+.node-library-scroll {
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 6px 8px;
 }
 
-.flow-lab__palette {
-  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-.flow-lab__properties {
-  border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-.flow-lab__panel-title {
-  margin-bottom: 12px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.66);
-}
-
-.flow-lab__palette-list {
-  display: grid;
-  gap: 9px;
-}
-
-.flow-palette-node {
+.palette-card {
   width: 100%;
   display: grid;
-  grid-template-columns: 34px 1fr 18px;
+  grid-template-columns: 34px 1fr;
   align-items: center;
-  gap: 9px;
-  padding: 9px;
+  gap: 8px;
+  margin-bottom: 7px;
+  padding: 8px;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
-  background: rgb(var(--v-theme-surface));
-  color: rgb(var(--v-theme-on-surface));
+  background: transparent;
+  color: inherit;
   text-align: left;
   cursor: grab;
-  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
 }
 
-.flow-palette-node:hover {
-  border-color: rgb(var(--v-theme-primary));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(20, 30, 55, 0.1);
+.palette-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.flow-palette-node:active {
-  cursor: grabbing;
-}
-
-.flow-palette-node__icon {
+.palette-card span {
   width: 32px;
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 7px;
   color: white;
 }
 
-.flow-palette-node__content {
-  min-width: 0;
-  display: grid;
+.palette-card strong {
+  font-size: 0.75rem;
 }
 
-.flow-palette-node__content strong {
-  font-size: 0.8rem;
-}
-
-.flow-palette-node__content small {
-  overflow: hidden;
-  color: rgba(var(--v-theme-on-surface), 0.58);
-  font-size: 0.68rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.flow-lab__hint {
+.flow-context {
   display: flex;
-  gap: 7px;
-  margin-top: 16px;
-  padding: 9px;
-  border-radius: 7px;
-  background: rgba(var(--v-theme-primary), 0.07);
-  color: rgba(var(--v-theme-on-surface), 0.64);
-  font-size: 0.72rem;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.flow-lab__canvas {
+.flow-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.flow-name {
+  display: grid;
+  min-width: 140px;
+}
+
+.flow-name small {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.flow-canvas {
   position: relative;
+  flex: 1 1 auto;
   min-width: 0;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(var(--v-theme-primary), 0.04), transparent 32%),
-    rgb(var(--v-theme-background));
+  min-height: 0;
+  overflow: hidden;
+  background: rgb(var(--v-theme-background));
+}
+
+.flow-vue,
+.flow-canvas :deep(.vue-flow) {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.flow-canvas :deep(.vue-flow__minimap) {
+  background: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .flow-node {
   --node-color: #2f80ed;
-  width: 210px;
-  min-height: 58px;
+  width: 220px;
+  min-height: 74px;
   display: grid;
-  grid-template-columns: 5px 38px 1fr;
+  grid-template-columns: 7px 42px 1fr;
   align-items: center;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--node-color) 60%, #d5dbe5);
-  border-radius: 5px;
+  overflow: visible;
+  border-radius: 11px;
   background: rgb(var(--v-theme-surface));
-  box-shadow: 0 3px 10px rgba(18, 28, 45, 0.13);
+  box-shadow: 0 8px 24px rgba(18, 28, 45, 0.17);
 }
 
-.flow-node--selected {
-  outline: 3px solid color-mix(in srgb, var(--node-color) 22%, transparent);
-  border-color: var(--node-color);
-}
-
-.flow-node__accent {
+.flow-node .accent {
   height: 100%;
+  border-radius: 11px 0 0 11px;
   background: var(--node-color);
 }
 
-.flow-node__icon {
-  display: grid;
-  place-items: center;
+.flow-node > i {
   color: var(--node-color);
 }
 
-.flow-node__body {
+.flow-node > span:last-of-type {
   min-width: 0;
   display: grid;
-  padding: 9px 10px 9px 0;
+  padding-right: 12px;
 }
 
-.flow-node__body strong {
+.flow-node strong,
+.flow-node small {
   overflow: hidden;
-  font-size: 0.79rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.flow-node__body small {
-  overflow: hidden;
-  color: rgba(var(--v-theme-on-surface), 0.58);
-  font-size: 0.67rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.flow-node small {
+  font-size: 0.65rem;
+  opacity: 0.6;
 }
 
-.flow-node__handle {
-  width: 11px;
-  height: 11px;
-  border: 2px solid rgb(var(--v-theme-surface));
-  background: var(--node-color);
+.flow-node.selected {
+  outline: 3px solid color-mix(in srgb, var(--node-color) 30%, transparent);
 }
 
-.flow-lab--cards .flow-node {
-  min-height: 76px;
-  grid-template-columns: 8px 48px 1fr;
-  border: 0;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(18, 28, 45, 0.18);
+.flow-node.traced {
+  outline: 4px solid #f2c94c;
+  box-shadow: 0 0 22px rgba(242, 201, 76, 0.8);
 }
 
-.flow-lab--cards .flow-node__icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--node-color) 14%, transparent);
+.flow-node.managed {
+  opacity: 0.88;
+  border-style: dashed;
 }
 
-.flow-lab--minimal .flow-node {
-  min-height: 44px;
-  grid-template-columns: 3px 30px 1fr;
-  border-radius: 3px;
-  box-shadow: none;
+.node-inspector,
+.simulation-panel {
+  position: absolute;
+  z-index: 10;
+  right: 12px;
+  width: min(290px, calc(100% - 24px));
+  padding: 12px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 10px;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: 0 10px 30px rgba(20, 30, 55, 0.2);
 }
 
-.flow-lab--minimal .flow-node__body small {
-  display: none;
+.node-inspector {
+  top: 12px;
+  bottom: 12px;
+  overflow: auto;
 }
 
-.flow-lab__selected-type {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
+.simulation-panel {
+  left: 12px;
+  right: auto;
+  bottom: 12px;
+  width: min(360px, calc(100% - 24px));
 }
 
-.flow-lab__selected-type > span {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
+.simulation-panel small {
+  display: block;
+  margin-top: 6px;
+}
+
+.sequence-step {
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
-  color: white;
-}
-
-.flow-lab__selected-type > div {
-  min-width: 0;
-  display: grid;
-}
-
-.flow-lab__selected-type small {
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.flow-lab__empty-properties {
-  min-height: 220px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 12px;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  text-align: center;
-  font-size: 0.8rem;
 }
 
 :deep(.vue-flow__edge-path) {
-  stroke: rgba(var(--v-theme-on-surface), 0.52);
   stroke-width: 2;
 }
 
-:deep(.vue-flow__minimap) {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 7px;
-  background: rgb(var(--v-theme-surface));
+:deep(.vue-flow__edge.selected .vue-flow__edge-path) {
+  stroke: #f2c94c;
+  stroke-width: 4;
 }
 
 @media (max-width: 1100px) {
-  .flow-lab__workspace {
-    grid-template-columns: 220px minmax(420px, 1fr);
+  .flow-toolbar {
+    gap: 4px;
+    padding: 6px 8px;
   }
 
-  .flow-lab__properties {
+  .flow-toolbar .v-btn {
+    min-width: 36px;
+  }
+
+  .flow-toolbar .v-btn :deep(.v-btn__content) {
+    font-size: 0;
+  }
+
+  .flow-node {
+    width: 200px;
+  }
+}
+
+@media (max-width: 760px) {
+  .flow-lab {
+    min-height: 520px;
+  }
+
+  .node-library {
     display: none;
+  }
+
+  .flow-name {
+    max-width: 180px;
+  }
+
+  .node-inspector {
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
   }
 }
 </style>

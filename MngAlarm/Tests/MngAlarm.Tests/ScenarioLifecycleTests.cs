@@ -8,6 +8,29 @@ namespace MngAlarm.Tests.Evaluation;
 public sealed class ScenarioLifecycleTests
 {
     [Fact]
+    public async Task V3_draft_validate_publish_creates_graph_projection()
+    {
+        var versions = new MemoryScenarioRepository();
+        var rules = new MemoryRuleRepository();
+        var service = new ScenarioService(new FakeDomain(), versions, rules);
+        var draft = await service.CreateDraftAsync(new CreateScenarioDraftRequest
+        {
+            Name = "V3",
+            Enabled = true,
+            Definition = V3Definition()
+        });
+
+        var validation = await service.ValidateAsync(draft.ScenarioId, draft.Version);
+        var published = await service.PublishAsync(draft.ScenarioId, draft.Version);
+
+        Assert.True(validation!.IsValid);
+        Assert.Equal(ScenarioLifecycleStatuses.Published, published!.Status);
+        Assert.Equal(3, rules.Items.Single().Definition!.SchemaVersion);
+        Assert.Equal("login.v3", rules.Items.Single().MatchKey);
+        Assert.Equal(9, rules.Items.Single().Severity);
+    }
+
+    [Fact]
     public async Task Draft_validate_publish_is_immutable_and_creates_legacy_projection()
     {
         var versions = new MemoryScenarioRepository();
@@ -124,6 +147,71 @@ public sealed class ScenarioLifecycleTests
         Assert.False(clone.IsReadOnly);
         Assert.Equal("U1", clone.TemplateId);
         Assert.NotEqual(templateId, clone.ScenarioId);
+    }
+
+    [Fact]
+    public async Task Product_import_normalizes_graph_condition_json_values_before_persistence()
+    {
+        var versions = new MemoryScenarioRepository();
+        var service = new ScenarioService(new FakeDomain(), versions, new MemoryRuleRepository());
+        var jsonValue = System.Text.Json.JsonDocument.Parse("5").RootElement.Clone();
+        var definition = new ScenarioDefinition
+        {
+            SchemaVersion = 3,
+            Graph = new ScenarioGraph
+            {
+                Nodes =
+                [
+                    new()
+                    {
+                        Id = "source",
+                        Type = ScenarioNodeTypes.Source,
+                        Config = new() { Source = new() { MatchKey = "login_failed" } }
+                    },
+                    new()
+                    {
+                        Id = "decision",
+                        Type = ScenarioNodeTypes.Decision,
+                        Config = new()
+                        {
+                            Condition = new()
+                            {
+                                Field = "value",
+                                Operator = "gte",
+                                Value = jsonValue
+                            }
+                        }
+                    },
+                    new()
+                    {
+                        Id = "alarm",
+                        Type = ScenarioNodeTypes.AlarmOutput,
+                        Config = new()
+                        {
+                            Severity = 7,
+                            Dedup = new() { KeyTemplate = "{scenarioId}:{outputNodeId}" }
+                        }
+                    }
+                ],
+                Edges =
+                [
+                    new() { Id = "e1", From = "source", To = "decision", FromPort = "next" },
+                    new() { Id = "e2", From = "decision", To = "alarm", FromPort = "true" }
+                ]
+            }
+        };
+
+        await service.ImportProductPackageAsync(new ImportScenarioPackageRequest
+        {
+            PackageId = "siem-v3",
+            PackageVersion = "3.0.0",
+            Templates = [new() { TemplateId = "U1", Name = "U1", Definition = definition }]
+        });
+
+        var value = versions.Items.Single().Definition.Graph!.Nodes
+            .Single(x => x.Id == "decision").Config.Condition!.Value;
+        Assert.IsNotType<System.Text.Json.JsonElement>(value);
+        Assert.Equal(5d, Convert.ToDouble(value));
     }
 
     [Fact]
@@ -253,6 +341,20 @@ public sealed class ScenarioLifecycleTests
         Condition = new ScenarioCondition { Field = "value", Operator = "gte", Value = 1 },
         Window = new ScenarioWindow { DurationSeconds = 300 },
         Dedup = new ScenarioDedup { KeyTemplate = "{ruleId}:{key}", CooldownSeconds = 60 }
+    };
+
+    private static ScenarioDefinition V3Definition() => new()
+    {
+        SchemaVersion = 3,
+        Graph = new ScenarioGraph
+        {
+            Nodes =
+            [
+                new() { Id = "source", Type = ScenarioNodeTypes.Source, Config = new() { Source = new() { MatchKey = "login.v3" } } },
+                new() { Id = "output", Type = ScenarioNodeTypes.AlarmOutput, Config = new() { Severity = 9, Dedup = new() { KeyTemplate = "{scenarioId}:{outputNodeId}", CooldownSeconds = 60 } } }
+            ],
+            Edges = [new() { Id = "edge", From = "source", To = "output", FromPort = "next" }]
+        }
     };
 
     private sealed class FakeDomain : IAlarmDomainAccessor

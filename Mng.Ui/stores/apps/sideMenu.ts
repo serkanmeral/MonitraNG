@@ -79,24 +79,24 @@ interface SideMenuState {
   lastUpdated: number | null;
 }
 
-const flowLabRoute = '/apps/alarm-center/flow-lab';
+const scenarioStudioRoute = '/apps/alarm-center/scenario-studio';
 
-function ensureFlowLabMenuItem(items: SideMenuItem[]): SideMenuItem[] {
-  if (items.some(item => item.to === flowLabRoute)) return items;
+function ensureScenarioStudioMenuItem(items: SideMenuItem[]): SideMenuItem[] {
+  if (items.some(item => item.to === scenarioStudioRoute)) return items;
 
   const alarmCenterItem = items.find(item => item.to === '/apps/alarm-center/alarms');
   return [
     ...items,
     {
-      __dataId: 'ui-alarm-center-flow-lab',
+      __dataId: 'ui-alarm-center-scenario-studio',
       order: (alarmCenterItem?.order ?? 400) + 1,
       itemType: 'item',
       pageType: 'manager',
-      title: 'Akış Laboratuvarı',
-      pageCode: 'alarmCenter.flowLab.menuTitle',
+      title: 'Alarm Senaryo Tasarımı',
+      pageCode: 'alarmCenter.scenarioStudio.menuTitle',
       icon: 'GitBranchIcon',
       iconType: 'tabler',
-      to: flowLabRoute,
+      to: scenarioStudioRoute,
       type: 'internal',
       parentId: alarmCenterItem?.parentId ?? null,
       level: alarmCenterItem?.level ?? 0,
@@ -168,7 +168,9 @@ export const useSideMenuStore = defineStore('sideMenu', {
               
               // TTL kontrolü (10 dakika)
               if (now - timestamp < (ttl || 600000)) {
-                const items = ensureFlowLabMenuItem(JSON.parse(cachedData) as SideMenuItem[]);
+                const items = ensureScenarioStudioMenuItem(
+                  JSON.parse(cachedData) as SideMenuItem[],
+                );
                 this.menuItems = items;
                 this.menuItemsTree = this.buildMenuTree(items);
                 this.lastUpdated = timestamp;
@@ -214,7 +216,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
         }
 
         // Map items to SideMenuItem format (handle different field name cases)
-        this.menuItems = ensureFlowLabMenuItem(items.map((item: any) => ({
+        this.menuItems = ensureScenarioStudioMenuItem(items.map((item: any) => ({
           __dataId: item.__dataId ?? item.DataId ?? item.dataId,
           dataId: item.__dataId ?? item.DataId ?? item.dataId,
           itemType: item.itemType ?? item.ItemType ?? 'item',

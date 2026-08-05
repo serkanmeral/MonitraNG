@@ -403,10 +403,10 @@ const sidebarItem: menu[] = [
     to: "/apps/alarm-center/alarms",
   },
   {
-    title: "Akış Laboratuvarı",
-    pageCode: "alarmCenter.flowLab.menuTitle",
+    title: "Alarm Senaryo Tasarımı",
+    pageCode: "alarmCenter.scenarioStudio.menuTitle",
     icon: GitBranchIcon,
-    to: "/apps/alarm-center/flow-lab",
+    to: "/apps/alarm-center/scenario-studio",
   },
   {
     title: "SIEM Güvenlik Paneli",

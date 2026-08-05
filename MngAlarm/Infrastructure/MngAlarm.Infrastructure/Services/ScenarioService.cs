@@ -5,6 +5,7 @@ using MngAlarm.Application.Observations;
 using MngAlarm.Application.Services;
 using MngAlarm.Domain.Entities;
 using MngAlarm.Infrastructure.Evaluation;
+using System.Text.Json;
 
 namespace MngAlarm.Infrastructure.Services;
 
@@ -65,7 +66,7 @@ public sealed class ScenarioService(
             Name = request.Name.Trim(),
             Severity = request.Severity,
             Enabled = request.Enabled,
-            Definition = request.Definition,
+            Definition = NormalizeDefinition(request.Definition),
             Status = ScenarioLifecycleStatuses.Draft
         };
         await scenarios.InsertVersionAsync(draft, cancellationToken);
@@ -93,7 +94,7 @@ public sealed class ScenarioService(
             Name = request == null || string.IsNullOrWhiteSpace(request.Name) ? latest.Name : request.Name.Trim(),
             Severity = request?.Severity ?? latest.Severity,
             Enabled = request?.Enabled ?? latest.Enabled,
-            Definition = request == null ? Clone(latest.Definition) : request.Definition
+            Definition = request == null ? Clone(latest.Definition) : NormalizeDefinition(request.Definition)
         };
         await scenarios.InsertVersionAsync(draft, cancellationToken);
         await AuditAsync(draft, "draft.created", cancellationToken);
@@ -155,7 +156,8 @@ public sealed class ScenarioService(
                 continue;
             }
 
-            var validation = ScenarioCompiler.Validate(template.Definition, false);
+            var normalizedDefinition = NormalizeDefinition(template.Definition);
+            var validation = ScenarioCompiler.Validate(normalizedDefinition, false);
             if (!validation.IsValid)
                 throw new ArgumentException($"Template '{template.TemplateId}' is invalid: {validation.Diagnostics[0].Code}");
 
@@ -180,7 +182,7 @@ public sealed class ScenarioService(
                 TemplateId = template.TemplateId.Trim(),
                 PackageId = request.PackageId.Trim(),
                 PackageVersion = request.PackageVersion.Trim(),
-                Definition = Clone(template.Definition),
+                Definition = normalizedDefinition,
                 Validation = validation,
                 PublishedAt = DateTime.UtcNow
             };
@@ -221,7 +223,7 @@ public sealed class ScenarioService(
         if (!string.IsNullOrWhiteSpace(request.Name)) draft.Name = request.Name.Trim();
         if (request.Severity.HasValue) draft.Severity = request.Severity.Value;
         if (request.Enabled.HasValue) draft.Enabled = request.Enabled.Value;
-        if (request.Definition != null) draft.Definition = request.Definition;
+        if (request.Definition != null) draft.Definition = NormalizeDefinition(request.Definition);
         draft.Validation = null;
         draft.UpdatedAt = DateTime.UtcNow;
         await scenarios.UpdateVersionAsync(draft, cancellationToken);
@@ -415,6 +417,9 @@ public sealed class ScenarioService(
             return new ScenarioPreviewResponse { Supported = false, Diagnostics = diagnostics };
         }
 
+        if (definition.SchemaVersion == 3)
+            return PreviewGraph(definition, scenarioId, request);
+
         if (definition.Source.Kind == ScenarioSourceKinds.ScheduledStaleness)
             return PreviewStaleness(definition, scenarioId, request);
 
@@ -524,10 +529,14 @@ public sealed class ScenarioService(
         if (definition == null && !string.IsNullOrWhiteSpace(scenarioId))
             definition = (await GetAsync(scenarioId, version, cancellationToken))?.Definition;
         var validation = ScenarioCompiler.Validate(definition, false);
+        IReadOnlyList<string> order = [];
+        if (validation.IsValid && definition?.SchemaVersion == 3)
+            order = ScenarioCompiler.CompileGraph(definition).TopologicalOrder;
         return new ScenarioPreviewResponse
         {
             Supported = validation.IsValid,
-            Diagnostics = validation.Diagnostics
+            Diagnostics = validation.Diagnostics,
+            ExecutionOrder = order
         };
     }
 
@@ -620,8 +629,39 @@ public sealed class ScenarioService(
         ScenarioCompiler.ApplyToLegacyFields(rule, Clone(version.Definition));
     }
 
+    private static ScenarioDefinition NormalizeDefinition(ScenarioDefinition definition)
+    {
+        var normalized = Clone(definition);
+        NormalizeCondition(normalized.Condition);
+        NormalizeSequence(normalized.Sequence);
+        if (normalized.Graph != null)
+        {
+            foreach (var node in normalized.Graph.Nodes)
+            {
+                NormalizeCondition(node.Config.Condition);
+                NormalizeSequence(node.Config.Sequence);
+            }
+        }
+        return normalized;
+    }
+
+    private static void NormalizeCondition(ScenarioCondition? condition)
+    {
+        if (condition == null) return;
+        condition.Value = ObservationValueNormalizer.Normalize(condition.Value);
+        foreach (var child in condition.Children)
+            NormalizeCondition(child);
+    }
+
+    private static void NormalizeSequence(ScenarioSequence? sequence)
+    {
+        if (sequence == null) return;
+        foreach (var step in sequence.Steps)
+            NormalizeCondition(step.Condition);
+    }
+
     private static ScenarioDefinition Clone(ScenarioDefinition definition) =>
-        BsonSerializer.Deserialize<ScenarioDefinition>(definition.ToBson());
+        JsonSerializer.Deserialize<ScenarioDefinition>(JsonSerializer.Serialize(definition))!;
 
     private static string BuildGroupKey(IEnumerable<string> fields, IReadOnlyDictionary<string, object?> dimensions)
     {
@@ -694,4 +734,68 @@ public sealed class ScenarioService(
             "neq" => Math.Abs(count - threshold) >= double.Epsilon,
             _ => false
         };
+
+    private static ScenarioPreviewResponse PreviewGraph(
+        ScenarioDefinition definition,
+        string? scenarioId,
+        ScenarioPreviewRequest request)
+    {
+        var executor = new ScenarioGraphExecutor(
+            new MngAlarm.Infrastructure.State.InMemoryCorrelationWindowStore(),
+            new MngAlarm.Infrastructure.State.InMemorySequenceStateStore());
+        var rule = new AlarmRuleDocument
+        {
+            Id = scenarioId ?? "preview",
+            ScenarioId = scenarioId ?? "preview",
+            Definition = definition
+        };
+        var matches = new List<ScenarioPreviewMatch>();
+        var traces = new List<ScenarioPreviewNodeTrace>();
+        var dedup = new HashSet<string>(StringComparer.Ordinal);
+        DateTime? nextEvaluationAt = null;
+        for (var i = 0; i < request.Samples!.Count; i++)
+        {
+            var sample = request.Samples[i];
+            var observation = new ObservationEnvelope
+            {
+                DomainId = "preview",
+                DomainName = "preview",
+                Kind = sample.Kind,
+                Key = sample.Key,
+                Value = sample.Value,
+                Dimensions = ObservationValueNormalizer.NormalizeDimensions(sample.Dimensions),
+                Timestamp = sample.Timestamp
+            };
+            var execution = executor.Execute(rule, observation);
+            foreach (var output in execution.Outputs) dedup.Add(output.DedupKey);
+            nextEvaluationAt = execution.NextEvaluationAt ?? nextEvaluationAt;
+            matches.Add(new ScenarioPreviewMatch
+            {
+                SampleIndex = i,
+                Matched = execution.Outputs.Count > 0,
+                Explanation = execution.Outputs.Count > 0
+                    ? $"Matched outputs: {string.Join(", ", execution.Outputs.Select(x => x.OutputNodeId))}."
+                    : "No alarm output reached.",
+                DedupKey = execution.Outputs.FirstOrDefault()?.DedupKey ?? string.Empty,
+                GroupKey = execution.Outputs.FirstOrDefault()?.GroupKey ?? "_all"
+            });
+            traces.AddRange(execution.Traces.Select(x => new ScenarioPreviewNodeTrace
+            {
+                SampleIndex = i,
+                NodeId = x.NodeId,
+                NodeType = x.NodeType,
+                Status = x.Status,
+                Outcome = x.Outcome,
+                NextEvaluationAt = x.NextEvaluationAt
+            }));
+        }
+        return new ScenarioPreviewResponse
+        {
+            Matches = matches,
+            DedupKeys = dedup.ToList(),
+            NodeTrace = traces,
+            ExecutionOrder = ScenarioCompiler.CompileGraph(definition).TopologicalOrder,
+            NextEvaluationAt = nextEvaluationAt
+        };
+    }
 }

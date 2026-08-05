@@ -181,6 +181,138 @@ public sealed class SequenceProcessorTests
         Assert.Equal(1, result.AlarmsRaised);
     }
 
+    [Fact]
+    public async Task Due_false_branch_uses_normal_alarm_and_event_pipeline()
+    {
+        var rules = new FakeRuleRepository();
+        var alarms = new FakeAlarmRepository();
+        var publisher = new FakePublisher();
+        var rule = new AlarmRuleDocument
+        {
+            Id = "v3-due",
+            DomainId = "d1",
+            DomainName = "odak",
+            Enabled = true,
+            ScenarioId = "scenario",
+            ScenarioVersion = 1,
+            Definition = new ScenarioDefinition
+            {
+                SchemaVersion = 3,
+                Graph = new ScenarioGraph
+                {
+                    Nodes =
+                    [
+                        new() { Id = "source", Type = ScenarioNodeTypes.Source, Config = new() { Source = new() { MatchKey = "start" } } },
+                        new() { Id = "sequence", Type = ScenarioNodeTypes.Sequence, Config = new() { Sequence = new() { Steps = [new() { MatchKey = "start", WithinSeconds = 10 }, new() { MatchKey = "finish", WithinSeconds = 10 }] } } },
+                        new() { Id = "timeout", Type = ScenarioNodeTypes.AlarmOutput, Config = new() { Severity = 9, Dedup = new() { KeyTemplate = "{scenarioId}:{outputNodeId}", CooldownSeconds = 60 } } }
+                    ],
+                    Edges =
+                    [
+                        new() { Id = "e1", From = "source", To = "sequence", FromPort = "next" },
+                        new() { Id = "e2", From = "sequence", To = "timeout", FromPort = "false" }
+                    ]
+                }
+            }
+        };
+        rules.SequenceRules.Add(rule);
+        var processor = new ObservationProcessor(
+            rules,
+            alarms,
+            publisher,
+            new NoOpNotificationDispatch(),
+            new InMemoryCorrelationWindowStore(),
+            new InMemorySequenceStateStore(),
+            new InMemoryObservationActivityStore(),
+            Options.Create(new MngAlarmSettings()),
+            NullLogger<ObservationProcessor>.Instance,
+            dueStates: new InMemoryScenarioDueStateStore());
+
+        var result = await processor.ProcessDueAsync(new ScenarioDueStateDocument
+        {
+            Id = ScenarioDueStateKeys.Create("odak", rule.Id, "sequence", "_all"),
+            DomainId = "d1",
+            DomainName = "odak",
+            RuleId = rule.Id,
+            ScenarioVersion = 1,
+            NodeId = "sequence",
+            NodeType = ScenarioNodeTypes.Sequence,
+            GroupKey = "_all",
+            NextEvaluationAt = DateTime.UtcNow,
+            Observation = new ScenarioDueObservation { Key = "start", Kind = "event", Timestamp = DateTime.UtcNow.AddSeconds(-10) }
+        });
+
+        Assert.Equal(1, result.AlarmsRaised);
+        Assert.Single(alarms.Inserted);
+        Assert.Equal("timeout", alarms.Inserted[0].Context["outputNodeId"]);
+        Assert.Single(publisher.Messages);
+    }
+
+    [Fact]
+    public async Task V3_observation_persists_due_execution_context()
+    {
+        var rules = new FakeRuleRepository();
+        var dueStates = new InMemoryScenarioDueStateStore();
+        var rule = new AlarmRuleDocument
+        {
+            Id = "v3-threshold",
+            DomainId = "d1",
+            DomainName = "odak",
+            Enabled = true,
+            ScenarioVersion = 1,
+            Definition = new ScenarioDefinition
+            {
+                SchemaVersion = 3,
+                Graph = new ScenarioGraph
+                {
+                    Nodes =
+                    [
+                        new() { Id = "source", Type = ScenarioNodeTypes.Source, Config = new() { Source = new() { MatchKey = "burst" } } },
+                        new() { Id = "threshold", Type = ScenarioNodeTypes.Threshold, Config = new() { Aggregation = new() { Function = "count", Operator = "gte", Threshold = 2 }, Window = new() { DurationSeconds = 60 }, SettleAfterSeconds = 10 } },
+                        new() { Id = "timeout", Type = ScenarioNodeTypes.AlarmOutput, Config = new() { Severity = 7, Dedup = new() { KeyTemplate = "{ruleId}:{outputNodeId}" } } }
+                    ],
+                    Edges =
+                    [
+                        new() { Id = "e1", From = "source", To = "threshold", FromPort = "next" },
+                        new() { Id = "e2", From = "threshold", To = "timeout", FromPort = "false" }
+                    ]
+                }
+            }
+        };
+        rules.SequenceRules.Add(rule);
+        var processor = new ObservationProcessor(
+            rules,
+            new FakeAlarmRepository(),
+            new FakePublisher(),
+            new NoOpNotificationDispatch(),
+            new InMemoryCorrelationWindowStore(),
+            new InMemorySequenceStateStore(),
+            new InMemoryObservationActivityStore(),
+            Options.Create(new MngAlarmSettings()),
+            NullLogger<ObservationProcessor>.Instance,
+            dueStates: dueStates);
+        var observedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        await processor.ProcessAsync(new ObservationEnvelope
+        {
+            DomainId = "d1",
+            DomainName = "odak",
+            Kind = "event",
+            Key = "burst",
+            Value = 1,
+            Timestamp = observedAt,
+            Dimensions = new() { ["host"] = "server-1" }
+        });
+        var due = (await dueStates.ClaimDueAsync(
+            observedAt.AddSeconds(10),
+            TimeSpan.FromSeconds(30),
+            1)).Single();
+
+        Assert.Equal(rule.Id, due.RuleId);
+        Assert.Equal("threshold", due.NodeId);
+        Assert.Equal("server-1", due.Observation.Dimensions["host"]);
+        Assert.Equal(observedAt.AddSeconds(10), due.NextEvaluationAt);
+    }
+
     private static ObservationProcessor CreateProcessor(
         IAlarmRuleRepository rules,
         IAlarmRepository alarms,
@@ -204,7 +336,7 @@ public sealed class SequenceProcessorTests
             Task.CompletedTask;
 
         public Task<AlarmRuleDocument?> GetByIdAsync(string domainName, string ruleId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<AlarmRuleDocument?>(null);
+            Task.FromResult(SequenceRules.FirstOrDefault(x => x.DomainName == domainName && x.Id == ruleId));
 
         public Task UpdateAsync(AlarmRuleDocument rule, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

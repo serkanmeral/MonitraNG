@@ -20,6 +20,7 @@ public sealed class MongoSequenceStateStore(IAlarmMongoContext context) : ISeque
                 AnchorTime = doc.AnchorTime,
                 LastStepTime = doc.LastStepTime,
                 ConditionSince = doc.ConditionSince,
+                NextEvaluationAt = doc.NextEvaluationAt,
                 Armed = doc.NextStepIndex > 0
             };
     }
@@ -38,7 +39,8 @@ public sealed class MongoSequenceStateStore(IAlarmMongoContext context) : ISeque
                 CurrentStepCount = state.CurrentStepCount,
                 AnchorTime = state.AnchorTime,
                 LastStepTime = state.LastStepTime,
-                ConditionSince = state.ConditionSince
+                ConditionSince = state.ConditionSince,
+                NextEvaluationAt = state.NextEvaluationAt
             },
             new ReplaceOptions { IsUpsert = true });
     }

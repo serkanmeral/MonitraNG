@@ -79,6 +79,16 @@ public class EngineSettings
 
     public bool ConsumeObservations { get; set; } = true;
     public ReactorBridgeSettings ReactorBridge { get; set; } = new();
+    public ScenarioDueEvaluationSettings ScenarioDueEvaluation { get; set; } = new();
+}
+
+public class ScenarioDueEvaluationSettings
+{
+    public bool Enabled { get; set; } = true;
+    public int ScanIntervalSeconds { get; set; } = 5;
+    public int ClaimLeaseSeconds { get; set; } = 30;
+    public int BatchSize { get; set; } = 100;
+    public int RetryDelaySeconds { get; set; } = 10;
 }
 
 public class ReactorBridgeSettings

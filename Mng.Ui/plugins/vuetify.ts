@@ -101,6 +101,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   const i18n = createI18n({
     locale: "en",
+    fallbackLocale: "en",
     messages: messages,
     silentTranslationWarn: true,
     silentFallbackWarn: true,

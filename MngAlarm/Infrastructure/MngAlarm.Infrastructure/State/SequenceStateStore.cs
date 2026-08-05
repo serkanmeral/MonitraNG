@@ -10,6 +10,7 @@ public sealed class SequenceRuntimeState
     public int CurrentStepCount { get; set; }
     public DateTime? LastStepTime { get; set; }
     public DateTime? ConditionSince { get; set; }
+    public DateTime? NextEvaluationAt { get; set; }
 }
 
 public interface ISequenceStateStore

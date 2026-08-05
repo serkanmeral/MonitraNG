@@ -9,6 +9,7 @@ using MngAlarm.Infrastructure.Persistence;
 using MngAlarm.Infrastructure.Persistence.Repositories;
 using MngAlarm.Infrastructure.Services;
 using MngAlarm.Infrastructure.State;
+using MngAlarm.Infrastructure.Evaluation;
 
 namespace MngAlarm.Infrastructure;
 
@@ -30,6 +31,9 @@ public static class AlarmServiceCollectionExtensions
         services.AddSingleton<ICorrelationWindowStore, MongoCorrelationWindowStore>();
         services.AddSingleton<IObservationActivityStore, MongoObservationActivityStore>();
         services.AddSingleton<ISequenceStateStore, MongoSequenceStateStore>();
+        services.AddSingleton<IScenarioDueStateStore, MongoScenarioDueStateStore>();
+        services.AddSingleton<ScenarioGraphExecutor>();
+        services.AddSingleton(TimeProvider.System);
 
         services.AddScoped<IAlarmRuleRepository, AlarmRuleRepository>();
         services.AddScoped<IScenarioRepository, ScenarioRepository>();
@@ -65,6 +69,7 @@ public static class AlarmServiceCollectionExtensions
         services.AddAlarmCore(configuration);
         services.AddHostedService<ObservationConsumer>();
         services.AddHostedService<MetricObservationBridgeConsumer>();
+        services.AddHostedService<ScenarioDueEvaluationService>();
         return services;
     }
 }

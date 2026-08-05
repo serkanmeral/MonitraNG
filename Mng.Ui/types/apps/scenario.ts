@@ -13,6 +13,8 @@ export interface ScenarioSource {
   kind: ScenarioSourceKind;
   observationKind?: string;
   matchKey: string;
+  /** Optional multi-key match; when present, observation.key may match any entry. */
+  matchKeys?: string[];
   query?: string;
   schedule?: string;
   scheduleDefinition?: ScenarioSchedule;
@@ -83,6 +85,70 @@ export interface ScenarioDefinitionV2 {
   metadata: Record<string, string>;
 }
 
+export type ScenarioNodeType =
+  | 'source'
+  | 'condition'
+  | 'filter'
+  | 'aggregation'
+  | 'threshold'
+  | 'sequence'
+  | 'decision'
+  | 'alarm-output'
+  | 'stop-output';
+
+export interface ScenarioNodeConfig {
+  source?: ScenarioSource;
+  condition?: ScenarioCondition;
+  aggregation?: ScenarioAggregation;
+  window?: ScenarioWindow;
+  sequence?: ScenarioSequence;
+  groupBy: string[];
+  dedup?: ScenarioDedup;
+  severity?: number;
+  settleAfterSeconds: number;
+}
+
+export interface ScenarioNodeLayout {
+  x: number;
+  y: number;
+  label?: string;
+}
+
+export interface ScenarioGraphNode {
+  id: string;
+  type: ScenarioNodeType;
+  config: ScenarioNodeConfig;
+  layout?: ScenarioNodeLayout;
+}
+
+export interface ScenarioGraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  fromPort: string;
+  toPort: string;
+}
+
+export interface ScenarioDefinitionV3 {
+  schemaVersion: 3;
+  graph: {
+    nodes: ScenarioGraphNode[];
+    edges: ScenarioGraphEdge[];
+  };
+  /** V2 legacy fields remain at root for lossless migration and mixed-version readers. */
+  source?: ScenarioSource;
+  condition?: ScenarioCondition;
+  aggregation?: ScenarioAggregation;
+  groupBy?: string[];
+  window?: ScenarioWindow;
+  sequence?: ScenarioSequence;
+  dedup?: ScenarioDedup;
+  hysteresis?: ScenarioHysteresis;
+  metadata?: Record<string, string>;
+}
+
+export type ScenarioDefinition = ScenarioDefinitionV2 | ScenarioDefinitionV3;
+
 export interface ScenarioDiagnostic {
   code: string;
   message: string;
@@ -106,7 +172,7 @@ export interface ScenarioVersion {
   name: string;
   enabled: boolean;
   severity: number;
-  definition: ScenarioDefinitionV2;
+  definition: ScenarioDefinition;
   origin: ScenarioOrigin;
   isReadOnly: boolean;
   templateId?: string;
@@ -148,7 +214,7 @@ export interface CreateScenarioDraftRequest {
   name: string;
   severity: number;
   enabled: boolean;
-  definition: ScenarioDefinitionV2;
+  definition: ScenarioDefinition;
 }
 
 export type UpdateScenarioDraftRequest = Partial<CreateScenarioDraftRequest>;
@@ -162,7 +228,7 @@ export interface ScenarioSampleObservation {
 }
 
 export interface ScenarioPreviewRequest {
-  definition?: ScenarioDefinitionV2;
+  definition?: ScenarioDefinition;
   samples?: ScenarioSampleObservation[];
   from?: string;
   to?: string;
@@ -182,6 +248,18 @@ export interface ScenarioPreviewResponse {
   matches: ScenarioPreviewMatch[];
   groupCounts: Record<string, number>;
   dedupKeys: string[];
+  nodeTrace: ScenarioPreviewNodeTrace[];
+  executionOrder: string[];
+  nextEvaluationAt?: string | null;
+}
+
+export interface ScenarioPreviewNodeTrace {
+  sampleIndex: number;
+  nodeId: string;
+  nodeType: ScenarioNodeType | string;
+  status: string;
+  outcome?: boolean | null;
+  nextEvaluationAt?: string | null;
 }
 
 export type ScenarioEditorMode = 'wizard' | 'advanced';
@@ -237,4 +315,14 @@ export function createScenarioDefinition(behavior: ScenarioBehavior = 'correlati
     metadata: {},
   };
   return definition;
+}
+
+/** Blank V3 canvas for the flow editor (nodes are added from the palette). */
+export function createEmptyScenarioDefinitionV3(): ScenarioDefinitionV3 {
+  return {
+    schemaVersion: 3,
+    graph: { nodes: [], edges: [] },
+    groupBy: [],
+    metadata: {},
+  };
 }

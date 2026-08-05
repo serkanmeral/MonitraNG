@@ -24,6 +24,9 @@ public sealed class ObservationProcessor : IObservationProcessor
     private readonly IObservationActivityStore _activity;
     private readonly EngineSettings _engine;
     private readonly ILogger<ObservationProcessor> _logger;
+    private readonly ScenarioGraphExecutor _graphExecutor;
+    private readonly IScenarioDueStateStore _dueStates;
+    private readonly TimeProvider _timeProvider;
 
     public ObservationProcessor(
         IAlarmRuleRepository rules,
@@ -34,7 +37,10 @@ public sealed class ObservationProcessor : IObservationProcessor
         ISequenceStateStore sequences,
         IObservationActivityStore activity,
         IOptions<MngAlarmSettings> settings,
-        ILogger<ObservationProcessor> logger)
+        ILogger<ObservationProcessor> logger,
+        ScenarioGraphExecutor? graphExecutor = null,
+        IScenarioDueStateStore? dueStates = null,
+        TimeProvider? timeProvider = null)
     {
         _rules = rules;
         _alarms = alarms;
@@ -45,11 +51,20 @@ public sealed class ObservationProcessor : IObservationProcessor
         _activity = activity;
         _engine = settings.Value.Engine;
         _logger = logger;
+        _graphExecutor = graphExecutor ?? new ScenarioGraphExecutor(windows, sequences);
+        _dueStates = dueStates ?? new InMemoryScenarioDueStateStore();
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<AlarmProcessResult> ProcessAsync(ObservationEnvelope observation, CancellationToken cancellationToken = default)
     {
-        var rules = await _rules.ListEnabledByKeyAsync(observation.DomainName, observation.Key, cancellationToken);
+        var rules = (await _rules.ListEnabledByKeyAsync(observation.DomainName, observation.Key, cancellationToken))
+            .Where(x => x.Definition?.SchemaVersion != 3)
+            .ToList();
+        var graphRules = await _rules.ListEnabledV3CandidatesAsync(
+            observation.DomainName,
+            observation.Key,
+            cancellationToken);
         var sequenceRules = await _rules.ListEnabledByTypeAsync(
             observation.DomainName,
             AlarmRuleTypes.Sequence,
@@ -58,7 +73,16 @@ public sealed class ObservationProcessor : IObservationProcessor
         var updated = 0;
         var resolved = 0;
         var alarmIds = new List<string>();
-        var rulesEvaluated = rules.Count;
+        var rulesEvaluated = rules.Count + graphRules.Count;
+
+        foreach (var rule in graphRules)
+        {
+            var outcome = await ProcessGraphAsync(rule, observation, cancellationToken);
+            raised += outcome.Raised;
+            updated += outcome.Updated;
+            resolved += outcome.Resolved;
+            alarmIds.AddRange(outcome.AlarmIds);
+        }
 
         foreach (var rule in rules)
         {
@@ -115,6 +139,173 @@ public sealed class ObservationProcessor : IObservationProcessor
             AlarmIds = alarmIds
         };
     }
+
+    private async Task<RuleOutcome> ProcessGraphAsync(
+        AlarmRuleDocument rule,
+        ObservationEnvelope observation,
+        CancellationToken cancellationToken)
+    {
+        var execution = _graphExecutor.Execute(rule, observation);
+        await PersistDueStatesAsync(rule, observation, execution, null, cancellationToken);
+        return await ProcessGraphOutputsAsync(rule, observation, execution, cancellationToken);
+    }
+
+    public async Task<AlarmProcessResult> ProcessDueAsync(
+        ScenarioDueStateDocument state,
+        CancellationToken cancellationToken = default)
+    {
+        var rule = await _rules.GetByIdAsync(state.DomainName, state.RuleId, cancellationToken);
+        if (rule is not { Enabled: true }
+            || rule.Definition?.SchemaVersion != 3
+            || rule.ScenarioVersion != state.ScenarioVersion)
+            return new AlarmProcessResult();
+
+        var observation = new ObservationEnvelope
+        {
+            DomainId = state.DomainId,
+            DomainName = state.DomainName,
+            Kind = state.Observation.Kind,
+            Key = state.Observation.Key,
+            Value = state.Observation.Value,
+            Timestamp = state.NextEvaluationAt,
+            Dimensions = ObservationValueNormalizer.NormalizeDimensions(state.Observation.Dimensions)
+        };
+        var execution = _graphExecutor.ExecuteDue(rule, observation, state.NodeId);
+        await PersistDueStatesAsync(rule, observation, execution, state.Id, cancellationToken);
+        var outcome = await ProcessGraphOutputsAsync(rule, observation, execution, cancellationToken);
+        return new AlarmProcessResult
+        {
+            RulesEvaluated = 1,
+            AlarmsRaised = outcome.Raised,
+            AlarmsUpdated = outcome.Updated,
+            AlarmsResolved = outcome.Resolved,
+            AlarmIds = outcome.AlarmIds
+        };
+    }
+
+    private async Task<RuleOutcome> ProcessGraphOutputsAsync(
+        AlarmRuleDocument rule,
+        ObservationEnvelope observation,
+        ScenarioGraphExecutionResult execution,
+        CancellationToken cancellationToken)
+    {
+        var total = RuleOutcome.Empty;
+        foreach (var output in execution.Outputs)
+        {
+            var existing = await _alarms.GetActiveByDedupKeyAsync(
+                observation.DomainName,
+                output.DedupKey,
+                cancellationToken);
+            var outputRule = CopyForOutput(rule, output);
+            var context = BuildThresholdContext(observation);
+            context["scenarioId"] = rule.ScenarioId;
+            context["scenarioVersion"] = rule.ScenarioVersion;
+            context["outputNodeId"] = output.OutputNodeId;
+            context["groupKey"] = output.GroupKey;
+            context["nextEvaluationAt"] = execution.NextEvaluationAt;
+            context["nodeTrace"] = execution.Traces.Select(x => new Dictionary<string, object?>
+            {
+                ["nodeId"] = x.NodeId,
+                ["nodeType"] = x.NodeType,
+                ["status"] = x.Status,
+                ["outcome"] = x.Outcome,
+                ["nextEvaluationAt"] = x.NextEvaluationAt
+            }).ToList();
+
+            RuleOutcome result;
+            if (existing == null)
+                result = await RaiseAsync(outputRule, observation, output.DedupKey, context, output.OutputNodeId, cancellationToken);
+            else if (output.CooldownSeconds > 0
+                && existing.LastPublishedAt.HasValue
+                && DateTime.UtcNow - existing.LastPublishedAt.Value < TimeSpan.FromSeconds(output.CooldownSeconds))
+                result = RuleOutcome.Empty;
+            else
+                result = await UpdateAsync(existing, context, outputRule, output.OutputNodeId, cancellationToken);
+            total = new RuleOutcome(
+                total.Raised + result.Raised,
+                total.Updated + result.Updated,
+                total.Resolved + result.Resolved,
+                [.. total.AlarmIds, .. result.AlarmIds]);
+        }
+        return total;
+    }
+
+    private async Task PersistDueStatesAsync(
+        AlarmRuleDocument rule,
+        ObservationEnvelope observation,
+        ScenarioGraphExecutionResult execution,
+        string? claimedStateId,
+        CancellationToken cancellationToken)
+    {
+        foreach (var pending in execution.PendingEvaluations)
+        {
+            var id = ScenarioDueStateKeys.Create(
+                observation.DomainName,
+                rule.Id,
+                pending.NodeId,
+                pending.GroupKey);
+            await _dueStates.UpsertAsync(new ScenarioDueStateDocument
+            {
+                Id = id,
+                DomainId = observation.DomainId,
+                DomainName = observation.DomainName,
+                RuleId = rule.Id,
+                ScenarioVersion = rule.ScenarioVersion,
+                NodeId = pending.NodeId,
+                NodeType = pending.NodeType,
+                GroupKey = pending.GroupKey,
+                NextEvaluationAt = pending.NextEvaluationAt,
+                UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime,
+                Observation = new ScenarioDueObservation
+                {
+                    Kind = observation.Kind,
+                    Key = observation.Key,
+                    Value = observation.Value,
+                    Timestamp = observation.Timestamp,
+                    Dimensions = ObservationValueNormalizer.NormalizeDimensions(observation.Dimensions)
+                }
+            }, cancellationToken);
+        }
+
+        foreach (var trace in execution.Traces.Where(x =>
+                     x.NodeType is ScenarioNodeTypes.Threshold or ScenarioNodeTypes.Aggregation or ScenarioNodeTypes.Sequence
+                     && x.Status is "true" or "false"))
+        {
+            var node = rule.Definition!.Graph!.Nodes.First(x => x.Id == trace.NodeId);
+            var groupKey = BuildGraphGroupKey(node.Config.GroupBy, observation.Dimensions);
+            var id = ScenarioDueStateKeys.Create(observation.DomainName, rule.Id, trace.NodeId, groupKey);
+            if (id == claimedStateId) continue;
+            await _dueStates.CancelAsync(
+                observation.DomainName,
+                rule.Id,
+                trace.NodeId,
+                groupKey,
+                cancellationToken);
+        }
+    }
+
+    private static string BuildGraphGroupKey(
+        IReadOnlyList<string> fields,
+        IReadOnlyDictionary<string, object?> dimensions) =>
+        fields.Count == 0
+            ? "_all"
+            : string.Join("|", fields.Select(field =>
+                dimensions.TryGetValue(field, out var value) ? value?.ToString() ?? "_null" : "_missing"));
+
+    private static AlarmRuleDocument CopyForOutput(AlarmRuleDocument rule, ScenarioOutputMatch output) => new()
+    {
+        Id = rule.Id,
+        DomainId = rule.DomainId,
+        DomainName = rule.DomainName,
+        Name = rule.Name,
+        Type = rule.Type,
+        Severity = output.Severity,
+        MatchKey = rule.MatchKey,
+        ScenarioId = rule.ScenarioId,
+        ScenarioVersion = rule.ScenarioVersion,
+        Metadata = rule.Metadata,
+        CooldownMinutes = Math.Max(0, (int)Math.Ceiling(output.CooldownSeconds / 60d))
+    };
 
     private void RecordScheduledActivity(AlarmRuleDocument rule, ObservationEnvelope observation)
     {

@@ -19,6 +19,19 @@ public interface IAlarmRuleRepository
     Task<IReadOnlyList<AlarmRuleDocument>> ListEnabledByKeyAsync(string domainName, string matchKey, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AlarmRuleDocument>> ListEnabledByTypeAsync(string domainName, string type, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AlarmRuleDocument>> ListAllAsync(string domainName, CancellationToken cancellationToken = default);
+    async Task<IReadOnlyList<AlarmRuleDocument>> ListEnabledV3CandidatesAsync(
+        string domainName,
+        string matchKey,
+        CancellationToken cancellationToken = default) =>
+        (await ListAllAsync(domainName, cancellationToken))
+            .Where(x => x.Enabled
+                && x.Definition?.SchemaVersion == 3
+                && x.Definition.Graph?.Nodes.Any(n =>
+                    n.Type == ScenarioNodeTypes.Source
+                    && n.Config.Source != null
+                    && (n.Config.Source.MatchKey == matchKey
+                        || (n.Config.Source.MatchKeys?.Contains(matchKey) == true))) == true)
+            .ToList();
 }
 
 public interface IScenarioRepository
@@ -202,6 +215,10 @@ public interface IAlarmQueryService
 public interface IObservationProcessor
 {
     Task<AlarmProcessResult> ProcessAsync(ObservationEnvelope observation, CancellationToken cancellationToken = default);
+    Task<AlarmProcessResult> ProcessDueAsync(
+        ScenarioDueStateDocument state,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new AlarmProcessResult());
 }
 
 public interface IAlarmValidationService
