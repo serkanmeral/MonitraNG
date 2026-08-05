@@ -5,6 +5,60 @@ using MngAlarm.Infrastructure.Persistence;
 
 namespace MngAlarm.Infrastructure.State;
 
+public sealed class MongoSequenceStateStore(IAlarmMongoContext context) : ISequenceStateStore
+{
+    public SequenceRuntimeState GetOrCreate(string storeKey)
+    {
+        var domainName = ParseStoreKey(storeKey).DomainName;
+        var doc = Collection(domainName).Find(x => x.Id == storeKey).FirstOrDefault();
+        return doc == null
+            ? new SequenceRuntimeState()
+            : new SequenceRuntimeState
+            {
+                NextStepIndex = doc.NextStepIndex,
+                CurrentStepCount = doc.CurrentStepCount,
+                AnchorTime = doc.AnchorTime,
+                LastStepTime = doc.LastStepTime,
+                ConditionSince = doc.ConditionSince,
+                Armed = doc.NextStepIndex > 0
+            };
+    }
+
+    public void Save(string storeKey, SequenceRuntimeState state)
+    {
+        var (domainName, ruleId) = ParseStoreKey(storeKey);
+        Collection(domainName).ReplaceOne(
+            x => x.Id == storeKey,
+            new SequenceStateDocument
+            {
+                Id = storeKey,
+                DomainName = domainName,
+                RuleId = ruleId,
+                NextStepIndex = state.NextStepIndex,
+                CurrentStepCount = state.CurrentStepCount,
+                AnchorTime = state.AnchorTime,
+                LastStepTime = state.LastStepTime,
+                ConditionSince = state.ConditionSince
+            },
+            new ReplaceOptions { IsUpsert = true });
+    }
+
+    public void Reset(string storeKey)
+    {
+        var domainName = ParseStoreKey(storeKey).DomainName;
+        Collection(domainName).DeleteOne(x => x.Id == storeKey);
+    }
+
+    private static (string DomainName, string RuleId) ParseStoreKey(string storeKey)
+    {
+        var parts = storeKey.Split(':', 3);
+        return parts.Length >= 2 ? (parts[0], parts[1]) : (storeKey, string.Empty);
+    }
+
+    private IMongoCollection<SequenceStateDocument> Collection(string domainName) =>
+        context.GetDatabase(domainName).GetCollection<SequenceStateDocument>(AlarmCollectionNames.SequenceState);
+}
+
 public sealed class MongoCorrelationWindowStore(IAlarmMongoContext context) : ICorrelationWindowStore
 {
     public int RecordAndCount(string storeKey, DateTime eventTime, TimeSpan window)

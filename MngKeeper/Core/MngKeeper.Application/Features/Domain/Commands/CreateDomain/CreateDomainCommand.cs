@@ -7,6 +7,7 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
     {
         public string DomainName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
+        public string? DiscoveryRootLabel { get; set; }
         public string AdminEmail { get; set; } = string.Empty;
         public string AdminPassword { get; set; } = string.Empty;
         public DomainSettingsDto Settings { get; set; } = new();

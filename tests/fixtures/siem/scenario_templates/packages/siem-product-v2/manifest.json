@@ -1,0 +1,151 @@
+{
+  "packageId": "siem-product-v2",
+  "packageVersion": "2.0.0",
+  "templates": [
+    {
+      "templateId": "U1",
+      "name": "U1 — Brute force (başarısız login)",
+      "severity": 7,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "login_failed" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 10 },
+        "groupBy": ["userId", "srcIp"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 900 },
+        "metadata": { "scenarioCode": "U1", "techniqueId": "T1110.001" }
+      }
+    },
+    {
+      "templateId": "U2",
+      "name": "U2 — Fail→success login",
+      "severity": 8,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "login_success_after_failures" },
+        "groupBy": ["userId", "srcIp"],
+        "window": { "durationSeconds": 900 },
+        "sequence": {
+          "steps": [
+            { "matchKey": "login_failed", "minCount": 5, "withinSeconds": 600 },
+            { "matchKey": "login_success", "minCount": 1, "withinSeconds": 900 }
+          ]
+        },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 3600 },
+        "metadata": { "scenarioCode": "U2", "techniqueId": "T1078" }
+      }
+    },
+    {
+      "templateId": "U3",
+      "name": "U3 — Bakım penceresi dışı ayrıcalıklı oturum",
+      "severity": 8,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "privileged_login_outside_window" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 1 },
+        "groupBy": ["userId", "srcIp"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U3", "techniqueId": "T1078.002" }
+      }
+    },
+    {
+      "templateId": "U4",
+      "name": "U4 — Firewall deny artışı",
+      "severity": 6,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "denied_flow" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 50 },
+        "groupBy": ["dstIp"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U4", "techniqueId": "T1046" }
+      }
+    },
+    {
+      "templateId": "U5",
+      "name": "U5 — Firewall trafik sıçraması",
+      "severity": 7,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "allowed_flow" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 100 },
+        "groupBy": ["dstIp", "dstPort"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 900 },
+        "metadata": { "scenarioCode": "U5", "techniqueId": "T1048" }
+      }
+    },
+    {
+      "templateId": "U6",
+      "name": "U6 — Firewall kural/config değişikliği",
+      "severity": 8,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "rule_change" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 1 },
+        "groupBy": ["userId", "sourceHost"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U6", "techniqueId": "T1562.004" }
+      }
+    },
+    {
+      "templateId": "U7",
+      "name": "U7 — Baseline sonrası yeni src→dst akışı",
+      "severity": 7,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "new_flow" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 1 },
+        "groupBy": ["srcIp", "dstIp"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U7", "techniqueId": "T1021" }
+      }
+    },
+    {
+      "templateId": "U8",
+      "name": "U8 — AD grubuna üye ekleme",
+      "severity": 9,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "group_member_added" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 1 },
+        "groupBy": ["userId", "sourceHost"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U8", "techniqueId": "T1098" }
+      }
+    },
+    {
+      "templateId": "U9",
+      "name": "U9 — AD kullanıcı hesabı oluşturma",
+      "severity": 8,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "account_created" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 1 },
+        "groupBy": ["userId", "sourceHost"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U9", "techniqueId": "T1136.002" }
+      }
+    },
+    {
+      "templateId": "U10",
+      "name": "U10 — AD dizin nesnesi değişikliği",
+      "severity": 8,
+      "definition": {
+        "schemaVersion": 2,
+        "source": { "kind": "observation", "observationKind": "event", "matchKey": "directory_object_modified" },
+        "aggregation": { "function": "count", "operator": "gte", "threshold": 1 },
+        "groupBy": ["userId", "sourceHost"],
+        "window": { "durationSeconds": 300 },
+        "dedup": { "keyTemplate": "{ruleId}:{groupKey}", "cooldownSeconds": 1800 },
+        "metadata": { "scenarioCode": "U10", "techniqueId": "T1484.001" }
+      }
+    }
+  ]
+}

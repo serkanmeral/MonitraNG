@@ -26,6 +26,7 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
             {
                 DomainName = request.DomainName,
                 DisplayName = request.DisplayName,
+                DiscoveryRootLabel = request.DiscoveryRootLabel,
                 AdminEmail = request.AdminEmail,
                 AdminPassword = request.AdminPassword,
                 Settings = request.Settings,

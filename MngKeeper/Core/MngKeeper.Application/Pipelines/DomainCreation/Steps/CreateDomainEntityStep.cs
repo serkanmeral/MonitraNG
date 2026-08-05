@@ -35,6 +35,9 @@ public class CreateDomainEntityStep : IPipelineStep<DomainCreationContext>
             {
                 Name = context.DomainName,
                 DisplayName = context.DisplayName,
+                DiscoveryRootLabel = string.IsNullOrWhiteSpace(context.DiscoveryRootLabel)
+                    ? null
+                    : context.DiscoveryRootLabel.Trim(),
                 DatabaseName = context.DatabaseName,
                 RealmName = context.RealmName,
                 StorageBucket = context.BucketName,

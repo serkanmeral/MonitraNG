@@ -63,6 +63,19 @@ public class AlarmRuleDocument
     [BsonElement("metadata")]
     public AlarmRuleMetadata? Metadata { get; set; }
 
+    /// <summary>Canonical Scenario Definition v2. Null means this is an unmigrated legacy rule.</summary>
+    [BsonElement("definition")]
+    [BsonIgnoreIfNull]
+    public ScenarioDefinition? Definition { get; set; }
+
+    [BsonElement("scenarioId")]
+    [BsonIgnoreIfNull]
+    public string? ScenarioId { get; set; }
+
+    [BsonElement("scenarioVersion")]
+    [BsonIgnoreIfDefault]
+    public int ScenarioVersion { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

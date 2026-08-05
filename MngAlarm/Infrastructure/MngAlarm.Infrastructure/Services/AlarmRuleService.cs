@@ -2,6 +2,7 @@ using MngAlarm.Application.Contracts;
 using MngAlarm.Application.Services;
 using MngAlarm.Domain.Constants;
 using MngAlarm.Domain.Entities;
+using MngAlarm.Infrastructure.Evaluation;
 
 namespace MngAlarm.Infrastructure.Services;
 
@@ -31,9 +32,13 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
                 : request.DedupKeyTemplate.Trim(),
             SequenceSteps = MapSequenceSteps(request.SequenceSteps),
             Metadata = MapMetadata(request.Metadata),
+            Definition = request.Definition,
             CreatedAt = now,
             UpdatedAt = now
         };
+
+        if (request.Definition != null)
+            ScenarioCompiler.ApplyToLegacyFields(rule, request.Definition);
 
         await rules.InsertAsync(rule, cancellationToken);
         return rule;
@@ -115,6 +120,10 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
             existing.Name = request.Name.Trim();
         if (request.Enabled.HasValue)
             existing.Enabled = request.Enabled.Value;
+        if (!string.IsNullOrWhiteSpace(request.Type))
+            existing.Type = request.Type.Trim();
+        if (!string.IsNullOrWhiteSpace(request.MatchKey))
+            existing.MatchKey = request.MatchKey.Trim();
         if (request.Severity.HasValue)
             existing.Severity = request.Severity.Value;
         if (!string.IsNullOrWhiteSpace(request.Operator))
@@ -131,6 +140,12 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
             existing.StalenessMinutes = request.StalenessMinutes.Value;
         if (!string.IsNullOrWhiteSpace(request.DedupKeyTemplate))
             existing.DedupKeyTemplate = request.DedupKeyTemplate.Trim();
+        if (request.SequenceSteps != null)
+            existing.SequenceSteps = MapSequenceSteps(request.SequenceSteps);
+        if (request.Metadata != null)
+            existing.Metadata = MapMetadata(request.Metadata);
+        if (request.Definition != null)
+            ScenarioCompiler.ApplyToLegacyFields(existing, request.Definition);
 
         existing.UpdatedAt = DateTime.UtcNow;
         await rules.UpdateAsync(existing, cancellationToken);

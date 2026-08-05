@@ -8,6 +8,9 @@ public static class AlarmCollectionNames
     public const string ObservationActivity = "@mon_alarm_observation_activity";
     public const string NotificationPolicies = "@mon_alarm_notification_policies";
     public const string NotificationCooldowns = "@mon_alarm_notification_cooldowns";
+    public const string ScenarioVersions = "@mon_alarm_scenario_versions";
+    public const string ScenarioAudit = "@mon_alarm_scenario_audit";
+    public const string SequenceState = "@mon_alarm_sequence_state";
 }
 
 public static class AlarmNotificationEventTypes

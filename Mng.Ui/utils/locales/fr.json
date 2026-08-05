@@ -910,11 +910,19 @@
     "cards": {
       "domainInfo": "Informations du Domaine",
       "domainSettings": "Paramètres du Domaine",
+      "managerGroups": "Groupes de Privilèges Manager",
       "licenseInfo": "Informations de la Licence"
+    },
+    "managerGroups": {
+      "description": "Sélectionnez les groupes Keeper existants qui accordent les privilèges Manager pour ce domaine. Le groupe manager système reste toujours actif.",
+      "label": "Groupes Manager",
+      "hint": "Seuls les groupes Keeper actifs sont affichés. Les noms libres ne sont pas autorisés.",
+      "empty": "Aucun groupe Manager supplémentaire n'est configuré."
     },
     "fields": {
       "name": "Nom du Domaine",
       "displayName": "Nom d'Affichage",
+      "discoveryRootLabel": "Nom Racine de la Découverte",
       "databaseName": "Nom de la Base de Données",
       "realmName": "Nom du Realm",
       "status": "Statut",
@@ -950,6 +958,9 @@
       "title": "Modifier le Domaine",
       "displayName": "Nom d'Affichage",
       "displayNamePlaceholder": "Entrez le nom d'affichage du domaine",
+      "discoveryRootLabel": "Nom Racine de la Découverte",
+      "discoveryRootLabelPlaceholder": "Ex. Réseau Odak Défense",
+      "discoveryRootLabelHint": "Le nom d'affichage du domaine est utilisé si ce champ est vide.",
       "relatedPersonPhone": "Téléphone de la Personne de Contact",
       "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
       "logoUrl": "URL du Logo",

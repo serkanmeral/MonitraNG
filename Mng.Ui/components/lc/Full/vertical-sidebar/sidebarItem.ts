@@ -403,6 +403,12 @@ const sidebarItem: menu[] = [
     to: "/apps/alarm-center/alarms",
   },
   {
+    title: "Akış Laboratuvarı",
+    pageCode: "alarmCenter.flowLab.menuTitle",
+    icon: GitBranchIcon,
+    to: "/apps/alarm-center/flow-lab",
+  },
+  {
     title: "SIEM Güvenlik Paneli",
     pageCode: "siemCenter.dashboard.menuTitle",
     icon: ShieldIcon,

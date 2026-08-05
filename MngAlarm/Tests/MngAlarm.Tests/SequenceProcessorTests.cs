@@ -128,6 +128,74 @@ public sealed class SequenceProcessorTests
         Assert.Equal(0, result.AlarmsRaised);
     }
 
+    [Fact]
+    public async Task Persistent_state_completes_three_step_sequence_after_processor_restart()
+    {
+        var rules = new FakeRuleRepository();
+        var alarms = new FakeAlarmRepository();
+        var state = new InMemorySequenceStateStore();
+        var rule = new AlarmRuleDocument
+        {
+            Id = "restart",
+            DomainName = "odak",
+            Type = AlarmRuleTypes.Sequence,
+            MatchKey = "three_step",
+            CooldownMinutes = 0,
+            Definition = new ScenarioDefinition
+            {
+                Source = new ScenarioSource { MatchKey = "three_step" },
+                Sequence = new ScenarioSequence
+                {
+                    Steps =
+                    [
+                        new() { MatchKey = "a", MinCount = 1, WithinSeconds = 60 },
+                        new() { MatchKey = "b", MinCount = 1, WithinSeconds = 60 },
+                        new() { MatchKey = "c", MinCount = 1, WithinSeconds = 60 }
+                    ]
+                },
+                Window = new ScenarioWindow { DurationSeconds = 60 },
+                Dedup = new ScenarioDedup { KeyTemplate = "{ruleId}:{groupKey}", CooldownSeconds = 0 }
+            },
+            SequenceSteps =
+            [
+                new() { MatchKey = "a", MinCount = 1, WithinMinutes = 1 },
+                new() { MatchKey = "b", MinCount = 1, WithinMinutes = 1 },
+                new() { MatchKey = "c", MinCount = 1, WithinMinutes = 1 }
+            ]
+        };
+        rules.SequenceRules.Add(rule);
+        var firstProcessor = CreateProcessor(rules, alarms, state);
+        var start = DateTime.UtcNow;
+        await firstProcessor.ProcessAsync(new ObservationEnvelope { DomainName = "odak", Key = "a", Timestamp = start });
+        await firstProcessor.ProcessAsync(new ObservationEnvelope { DomainName = "odak", Key = "b", Timestamp = start.AddSeconds(1) });
+
+        var restartedProcessor = CreateProcessor(rules, alarms, state);
+        var result = await restartedProcessor.ProcessAsync(new ObservationEnvelope
+        {
+            DomainId = "d1",
+            DomainName = "odak",
+            Key = "c",
+            Timestamp = start.AddSeconds(2)
+        });
+
+        Assert.Equal(1, result.AlarmsRaised);
+    }
+
+    private static ObservationProcessor CreateProcessor(
+        IAlarmRuleRepository rules,
+        IAlarmRepository alarms,
+        ISequenceStateStore state) =>
+        new(
+            rules,
+            alarms,
+            new FakePublisher(),
+            new NoOpNotificationDispatch(),
+            new InMemoryCorrelationWindowStore(),
+            state,
+            new InMemoryObservationActivityStore(),
+            Options.Create(new MngAlarmSettings()),
+            NullLogger<ObservationProcessor>.Instance);
+
     private sealed class FakeRuleRepository : IAlarmRuleRepository
     {
         public List<AlarmRuleDocument> SequenceRules { get; } = [];

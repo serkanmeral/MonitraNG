@@ -21,6 +21,21 @@ public interface IAlarmRuleRepository
     Task<IReadOnlyList<AlarmRuleDocument>> ListAllAsync(string domainName, CancellationToken cancellationToken = default);
 }
 
+public interface IScenarioRepository
+{
+    Task InsertVersionAsync(ScenarioVersionDocument version, CancellationToken cancellationToken = default);
+    Task UpdateVersionAsync(ScenarioVersionDocument version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> GetVersionAsync(string domainName, string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> GetLatestAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> GetPublishedAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScenarioVersionDocument>> ListAsync(string domainName, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScenarioVersionDocument>> ListVersionsAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default);
+    Task ArchiveVersionAsync(string domainName, string scenarioId, int version, DateTime updatedAt, CancellationToken cancellationToken = default);
+    Task ArchivePublishedExceptAsync(string domainName, string scenarioId, int version, DateTime updatedAt, CancellationToken cancellationToken = default);
+    Task InsertAuditAsync(ScenarioAuditDocument audit, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScenarioAuditDocument>> ListAuditAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default);
+}
+
 public interface IAlarmRepository
 {
     Task<AlarmDocument?> GetActiveByDedupKeyAsync(string domainName, string dedupKey, CancellationToken cancellationToken = default);
@@ -67,6 +82,57 @@ public interface IAlarmRuleService
     Task<AlarmRuleDocument?> GetAsync(string ruleId, CancellationToken cancellationToken = default);
     Task<AlarmRuleDocument?> UpdateAsync(string ruleId, UpdateAlarmRuleRequest request, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(string ruleId, CancellationToken cancellationToken = default);
+}
+
+public interface IScenarioService
+{
+    Task<IReadOnlyList<ScenarioCatalogItem>> ListAsync(bool includeDrafts, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument> CreateDraftAsync(CreateScenarioDraftRequest request, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> CreateNextDraftAsync(string scenarioId, CreateScenarioDraftRequest? request, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> CloneTemplateAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> UpdateDraftAsync(string scenarioId, int version, UpdateScenarioDraftRequest request, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> GetAsync(string scenarioId, int? version, CancellationToken cancellationToken = default);
+    Task<ScenarioValidationSnapshot?> ValidateAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> PublishAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> ArchiveAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> RollbackAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScenarioAuditDocument>> AuditAsync(string scenarioId, CancellationToken cancellationToken = default);
+    Task<ScenarioPreviewResponse> CompileAsync(string? scenarioId, int? version, ScenarioPreviewRequest request, CancellationToken cancellationToken = default);
+    Task<ScenarioPreviewResponse> PreviewAsync(string? scenarioId, int? version, ScenarioPreviewRequest request, CancellationToken cancellationToken = default);
+    Task<ScenarioPackageImportResult> ImportProductPackageAsync(ImportScenarioPackageRequest request, CancellationToken cancellationToken = default);
+}
+
+public interface IScenarioRuntimeCapabilities
+{
+    bool ScheduledQueryAvailable { get; }
+    bool MetaCorrelationAvailable { get; }
+}
+
+public sealed record ScenarioQueryRequest(
+    string DomainId,
+    string DomainName,
+    ScenarioVersionDocument Scenario,
+    DateTime EvaluationTime,
+    IReadOnlyList<ScenarioSampleObservation>? SuppliedSamples);
+
+public interface IScenarioQueryProvider
+{
+    bool IsAvailable { get; }
+    Task<IReadOnlyList<ObservationEnvelope>> QueryAsync(ScenarioQueryRequest request, CancellationToken cancellationToken = default);
+}
+
+public interface IScenarioSchedulerService
+{
+    Task<ScenarioScheduleTriggerResult> TriggerAsync(
+        string scenarioId,
+        int version,
+        ScenarioScheduleTriggerRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IScenarioPackageImportAuthorizer
+{
+    bool IsAuthorized(string? suppliedKey);
 }
 
 public interface IAlarmNotificationPolicyRepository

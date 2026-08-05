@@ -8,6 +8,7 @@ const route = useRoute();
 
 const activeTab = computed(() => {
   if (route.path.startsWith('/apps/alarm-center/notification-policies')) return 'policies';
+  if (route.path.startsWith('/apps/alarm-center/scenario-studio')) return 'studio';
   if (route.path.startsWith('/apps/alarm-center/rules')) return 'rules';
   return 'alarms';
 });
@@ -27,6 +28,9 @@ const activeTab = computed(() => {
     </v-btn>
     <v-btn value="rules" prepend-icon="mdi-shield-crown-outline" to="/apps/alarm-center/rules">
       {{ t('alarmCenter.navRules') }}
+    </v-btn>
+    <v-btn value="studio" prepend-icon="mdi-vector-polyline-edit" to="/apps/alarm-center/scenario-studio">
+      {{ t('alarmCenter.navScenarioStudio') }}
     </v-btn>
     <v-btn
       value="policies"

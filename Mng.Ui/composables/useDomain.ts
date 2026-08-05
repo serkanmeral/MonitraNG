@@ -6,6 +6,11 @@ export interface DirectoryPrivilegeSettings {
   managerGroupNames?: string[];
 }
 
+export interface UpdateDirectoryPrivilegeSettingsRequest {
+  adminGroupNames?: string[];
+  managerGroupNames?: string[];
+}
+
 export interface DirectoryLdapSettings {
   enabled?: boolean;
   host?: string;
@@ -20,6 +25,7 @@ export interface Domain {
   id: string;
   name: string;
   displayName: string;
+  discoveryRootLabel?: string | null;
   databaseName?: string;
   realmName?: string;
   storageBucket?: string;
@@ -32,7 +38,7 @@ export interface Domain {
     enableMqtt?: boolean;
     mqttSettings?: any;
     customSettings?: Record<string, any>;
-    directoryPrivileges?: DirectoryPrivilegeSettings | null;
+    directoryPrivileges?: UpdateDirectoryPrivilegeSettingsRequest | null;
     directoryLdap?: DirectoryLdapSettings | null;
   };
   createdAt?: string;
@@ -48,6 +54,7 @@ export interface Domain {
 
 export interface UpdateDomainRequest {
   displayName?: string;
+  discoveryRootLabel?: string;
   relatedPersonPhone?: string;
   logo?: string; // Base64 encoded image
   logoUrl?: string;

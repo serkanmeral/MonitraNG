@@ -910,11 +910,19 @@
     "cards": {
       "domainInfo": "معلومات النطاق",
       "domainSettings": "إعدادات النطاق",
+      "managerGroups": "مجموعات صلاحيات المدير",
       "licenseInfo": "معلومات الترخيص"
+    },
+    "managerGroups": {
+      "description": "اختر مجموعات Keeper الحالية التي تمنح صلاحيات المدير لهذا النطاق. تظل مجموعة المدير الافتراضية فعالة دائمًا.",
+      "label": "مجموعات المدير",
+      "hint": "تُعرض مجموعات Keeper النشطة فقط، ولا يُسمح بإدخال أسماء حرة.",
+      "empty": "لم يتم تكوين مجموعة مدير إضافية."
     },
     "fields": {
       "name": "اسم النطاق",
       "displayName": "اسم العرض",
+      "discoveryRootLabel": "اسم جذر الاكتشاف",
       "databaseName": "اسم قاعدة البيانات",
       "realmName": "اسم المجال",
       "status": "الحالة",
@@ -950,6 +958,9 @@
       "title": "تعديل النطاق",
       "displayName": "اسم العرض",
       "displayNamePlaceholder": "أدخل اسم عرض النطاق",
+      "discoveryRootLabel": "اسم جذر الاكتشاف",
+      "discoveryRootLabelPlaceholder": "مثال: شبكة أوداك الدفاعية",
+      "discoveryRootLabelHint": "يُستخدم اسم عرض النطاق عند ترك هذا الحقل فارغًا.",
       "relatedPersonPhone": "هاتف الشخص ذي الصلة",
       "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
       "logoUrl": "رابط الشعار",

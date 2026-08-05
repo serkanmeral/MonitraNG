@@ -1,5 +1,6 @@
 using MngAlarm.Domain.Entities;
 using MngAlarm.Infrastructure.Evaluation;
+using MngAlarm.Domain.Enums;
 using Xunit;
 
 namespace MngAlarm.Tests.Evaluation;
@@ -23,4 +24,12 @@ public sealed class ThresholdEvaluatorTests
         var rule = new AlarmRuleDocument { Id = "r1", DedupKeyTemplate = "{ruleId}:{key}" };
         Assert.Equal("r1:cpu_usage", ThresholdEvaluator.BuildDedupKey(rule, "cpu_usage"));
     }
+
+    [Theory]
+    [InlineData(AlarmStatus.Active, true)]
+    [InlineData(AlarmStatus.Acknowledged, true)]
+    [InlineData(AlarmStatus.Suppressed, true)]
+    [InlineData(AlarmStatus.Resolved, false)]
+    public void Dedup_open_status_semantics_are_explicit(AlarmStatus status, bool expected) =>
+        Assert.Equal(expected, status.IsOpen());
 }

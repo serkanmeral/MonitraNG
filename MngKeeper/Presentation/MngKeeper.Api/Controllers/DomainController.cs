@@ -163,6 +163,14 @@ namespace MngKeeper.Api.Controllers
                 if (!string.IsNullOrWhiteSpace(request.DisplayName))
                     existingDomain.DisplayName = request.DisplayName.Trim();
 
+                if (request.DiscoveryRootLabel != null)
+                {
+                    existingDomain.DiscoveryRootLabel =
+                        string.IsNullOrWhiteSpace(request.DiscoveryRootLabel)
+                            ? null
+                            : request.DiscoveryRootLabel.Trim();
+                }
+
                 // Only overwrite phone/logo when the client actually sent the property
                 // (UI always sends these today; keep defensive for partial clients).
                 if (request.RelatedPersonPhone != null)
@@ -295,23 +303,37 @@ namespace MngKeeper.Api.Controllers
             if (incoming.EnableMqtt.HasValue)
                 target.EnableMqtt = incoming.EnableMqtt.Value;
 
-            // Only replace privileges when the client sent at least one group name.
-            // Empty arrays from a partial form must never wipe Mongo configuration.
-            if (HasDirectoryPrivilegePayload(incoming.DirectoryPrivileges))
-                target.DirectoryPrivileges = incoming.DirectoryPrivileges!;
+            if (incoming.DirectoryPrivileges != null)
+                MergeDirectoryPrivileges(target, incoming.DirectoryPrivileges);
 
             if (incoming.DirectoryLdap != null)
                 MergeDirectoryLdap(target, incoming.DirectoryLdap);
         }
 
-        private static bool HasDirectoryPrivilegePayload(DirectoryPrivilegeSettings? privileges)
+        private static void MergeDirectoryPrivileges(
+            DomainSettings target,
+            UpdateDirectoryPrivilegeSettingsRequest incoming)
         {
-            if (privileges == null)
-                return false;
+            target.DirectoryPrivileges ??= new DirectoryPrivilegeSettings();
 
-            return (privileges.AdminGroupNames?.Count ?? 0) > 0
-                || (privileges.ManagerGroupNames?.Count ?? 0) > 0;
+            if (incoming.AdminGroupNames != null)
+            {
+                target.DirectoryPrivileges.AdminGroupNames = NormalizeGroupNames(incoming.AdminGroupNames);
+                target.FlatAdminGroupNames = null;
+            }
+            if (incoming.ManagerGroupNames != null)
+            {
+                target.DirectoryPrivileges.ManagerGroupNames = NormalizeGroupNames(incoming.ManagerGroupNames);
+                target.FlatManagerGroupNames = null;
+            }
         }
+
+        private static List<string> NormalizeGroupNames(IEnumerable<string> names) =>
+            names
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
         private static void MergeDirectoryLdap(DomainSettings target, DirectoryLdapSettings incoming)
         {

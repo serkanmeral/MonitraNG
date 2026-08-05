@@ -21,6 +21,10 @@ import type {
 type LayoutMode = 'tree' | 'split' | 'tiers' | 'graph';
 type DiscoverySegment = 'endpoints' | 'logSources';
 
+const props = defineProps<{
+  rootLabel?: string;
+}>();
+
 const LAYOUTS: LayoutMode[] = ['tree', 'split', 'tiers', 'graph'];
 const LAYOUT_STORAGE_KEY = 'siem.discovery.layout';
 const KPI_OPEN_STORAGE_KEY = 'siem.discovery.kpiOpen';
@@ -61,6 +65,9 @@ function loadKpiOpenPreference(): boolean {
 }
 
 const { t, locale } = useAppI18n();
+const resolvedRootLabel = computed(() =>
+  props.rootLabel?.trim() || t('siemCenter.discovery.rootLabel'),
+);
 
 const facet = ref<SiemDiscoveryFacet>('subnet');
 const layout = ref<LayoutMode>(loadLayoutPreference());
@@ -631,7 +638,7 @@ const graphLayout = computed(() => {
           <button type="button" class="node node-root" @click="expanded.size ? collapseAll() : expandAll()">
             <v-icon icon="mdi-lan-connect" size="22" class="me-2" />
             <div class="text-start">
-              <div class="text-body-2 font-weight-bold">{{ t('siemCenter.discovery.rootLabel') }}</div>
+              <div class="text-body-2 font-weight-bold">{{ resolvedRootLabel }}</div>
               <div class="text-caption text-medium-emphasis">
                 {{ t('siemCenter.discovery.rootHint', { n: hostCount, b: branches.length }) }}
               </div>
@@ -736,7 +743,7 @@ const graphLayout = computed(() => {
             <div class="d-flex align-center ga-2 mb-3">
               <div class="node node-root py-2 px-3">
                 <v-icon icon="mdi-lan" size="18" class="me-1" />
-                <span class="text-body-2 font-weight-bold">{{ t('siemCenter.discovery.rootLabel') }}</span>
+                <span class="text-body-2 font-weight-bold">{{ resolvedRootLabel }}</span>
               </div>
               <v-icon icon="mdi-arrow-right" size="18" class="text-medium-emphasis" />
               <div class="node node-branch py-2 px-3" style="width: auto">
@@ -768,7 +775,7 @@ const graphLayout = computed(() => {
         <div class="tier-track">
           <div class="node node-root">
             <v-icon icon="mdi-lan-connect" size="20" class="me-2" />
-            <span class="text-body-2 font-weight-bold">{{ t('siemCenter.discovery.rootLabel') }}</span>
+            <span class="text-body-2 font-weight-bold">{{ resolvedRootLabel }}</span>
           </div>
         </div>
       </div>
@@ -874,7 +881,7 @@ const graphLayout = computed(() => {
               text-anchor="middle"
               class="graph-text"
             >
-              {{ t('siemCenter.discovery.rootLabel') }}
+              {{ resolvedRootLabel }}
             </text>
           </g>
 

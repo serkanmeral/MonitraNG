@@ -16,6 +16,10 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("displayName")]
         public string DisplayName { get; set; } = string.Empty;
 
+        [BsonElement("discoveryRootLabel")]
+        [BsonIgnoreIfNull]
+        public string? DiscoveryRootLabel { get; set; }
+
         [BsonElement("databaseName")]
         public string DatabaseName { get; set; } = string.Empty;
 

@@ -74,7 +74,14 @@ public sealed class ObservationProcessor : IObservationProcessor
 
             if (!string.Equals(rule.Type, AlarmRuleTypes.Threshold, StringComparison.Ordinal))
             {
-                RecordScheduledActivity(rule, observation);
+                var scheduledDefinition = ScenarioCompiler.Compile(rule);
+                if (ScenarioCompiler.SourceMatches(scheduledDefinition.Source, observation)
+                    && StatefulScenarioConditionEvaluator.Matches(
+                        rule,
+                        scheduledDefinition.Condition,
+                        observation,
+                        _sequences))
+                    RecordScheduledActivity(rule, observation);
                 continue;
             }
 
@@ -126,8 +133,23 @@ public sealed class ObservationProcessor : IObservationProcessor
     {
         var dedupKey = ThresholdEvaluator.BuildDedupKey(rule, observation.Key);
         var existing = await _alarms.GetActiveByDedupKeyAsync(observation.DomainName, dedupKey, cancellationToken);
-        var matches = ThresholdEvaluator.Matches(rule, observation.Value);
         var now = DateTime.UtcNow;
+        var definition = ScenarioCompiler.Compile(rule);
+        var matches = rule.Definition == null
+            ? ThresholdEvaluator.Matches(rule, observation.Value)
+            : ScenarioCompiler.SourceMatches(definition.Source, observation)
+                && MetaChainAllows(rule, definition, observation)
+                && StatefulScenarioConditionEvaluator.Matches(rule, definition.Condition, observation, _sequences);
+        if (rule.Definition != null && definition.Hysteresis != null && observation.Value.HasValue)
+        {
+            var hysteresis = definition.Hysteresis;
+            matches = StatefulScenarioConditionEvaluator.ApplyHysteresis(
+                hysteresis,
+                observation.Value.Value,
+                matches,
+                existing?.FirstSeenAt,
+                now);
+        }
         var context = BuildThresholdContext(observation);
 
         if (!matches)
@@ -154,7 +176,11 @@ public sealed class ObservationProcessor : IObservationProcessor
         ObservationEnvelope observation,
         CancellationToken cancellationToken)
     {
-        if (!CorrelationEvaluator.MatchesEvent(rule, observation))
+        var definition = ScenarioCompiler.Compile(rule);
+        if (!CorrelationEvaluator.MatchesEvent(rule, observation)
+            || !ScenarioCompiler.SourceMatches(definition.Source, observation)
+            || !MetaChainAllows(rule, definition, observation)
+            || !StatefulScenarioConditionEvaluator.Matches(rule, definition.Condition, observation, _sequences))
             return RuleOutcome.Empty;
 
         var groupKey = CorrelationEvaluator.BuildGroupKey(rule, observation.Dimensions);
@@ -189,43 +215,52 @@ public sealed class ObservationProcessor : IObservationProcessor
         ObservationEnvelope observation,
         CancellationToken cancellationToken)
     {
-        var step0 = rule.SequenceSteps[0];
-        var step1 = rule.SequenceSteps[1];
+        var definition = ScenarioCompiler.Compile(rule);
+        var steps = definition.Sequence?.Steps;
+        if (steps == null || steps.Count < 2)
+            return RuleOutcome.Empty;
+
         var groupKey = CorrelationEvaluator.BuildGroupKey(rule, observation.Dimensions);
         var storeKey = SequenceEvaluator.BuildStoreKey(observation.DomainName, rule.Id, groupKey);
         var state = _sequences.GetOrCreate(storeKey);
         var now = DateTime.UtcNow;
+        var stepIndex = Math.Clamp(state.NextStepIndex, 0, steps.Count - 1);
+        var step = steps[stepIndex];
+        var deadlineSeconds = step.WithinSeconds > 0 ? step.WithinSeconds : Math.Max(1, rule.WindowMinutes) * 60;
 
-        if (string.Equals(observation.Key, step0.MatchKey, StringComparison.Ordinal))
+        if (state.LastStepTime.HasValue
+            && observation.Timestamp > state.LastStepTime.Value.AddSeconds(deadlineSeconds))
         {
-            var windowMinutes = step0.WithinMinutes > 0 ? step0.WithinMinutes : rule.WindowMinutes;
-            var window = TimeSpan.FromMinutes(Math.Max(1, windowMinutes));
-            var windowKey = SequenceEvaluator.BuildStepWindowKey(storeKey, 0);
-            var count = _windows.RecordAndCount(windowKey, observation.Timestamp, window);
+            _sequences.Reset(storeKey);
+            state = new SequenceRuntimeState();
+            stepIndex = 0;
+            step = steps[0];
+        }
 
-            if (count == 1 || !state.AnchorTime.HasValue)
-                state.AnchorTime = observation.Timestamp;
+        if (!string.Equals(observation.Key, step.MatchKey, StringComparison.Ordinal)
+            || !StatefulScenarioConditionEvaluator.Matches(
+                rule,
+                step.Condition,
+                observation,
+                _sequences,
+                $"sequence.{stepIndex}"))
+            return RuleOutcome.Empty;
 
-            if (!state.Armed && count >= Math.Max(1, step0.MinCount))
-                state.Armed = true;
-
+        state.AnchorTime ??= observation.Timestamp;
+        state.LastStepTime = observation.Timestamp;
+        state.CurrentStepCount++;
+        if (state.CurrentStepCount < Math.Max(1, step.MinCount))
+        {
             _sequences.Save(storeKey, state);
             return RuleOutcome.Empty;
         }
 
-        if (!string.Equals(observation.Key, step1.MatchKey, StringComparison.Ordinal)
-            || !state.Armed
-            || !state.AnchorTime.HasValue)
+        state.NextStepIndex = stepIndex + 1;
+        state.CurrentStepCount = 0;
+        state.Armed = state.NextStepIndex > 0;
+        if (state.NextStepIndex < steps.Count)
         {
-            return RuleOutcome.Empty;
-        }
-
-        var deadlineMinutes = step1.WithinMinutesAfterFirst > 0
-            ? step1.WithinMinutesAfterFirst
-            : Math.Max(1, rule.WindowMinutes);
-        if (observation.Timestamp > state.AnchorTime.Value.AddMinutes(deadlineMinutes))
-        {
-            _sequences.Reset(storeKey);
+            _sequences.Save(storeKey, state);
             return RuleOutcome.Empty;
         }
 
@@ -244,20 +279,37 @@ public sealed class ObservationProcessor : IObservationProcessor
                 observation,
                 groupKey,
                 state,
-                step0.MinCount);
+                steps[0].MinCount);
             var updated = await UpdateAsync(existing, updateContext, rule, rule.MatchKey, cancellationToken);
             _sequences.Reset(storeKey);
             return updated;
         }
 
-        var priorCount = _windows.GetCount(
-            SequenceEvaluator.BuildStepWindowKey(storeKey, 0),
-            observation.Timestamp,
-            TimeSpan.FromMinutes(Math.Max(1, step0.WithinMinutes > 0 ? step0.WithinMinutes : rule.WindowMinutes)));
-        var context = SequenceEvaluator.BuildContext(rule, observation, groupKey, state, priorCount);
+        var context = SequenceEvaluator.BuildContext(rule, observation, groupKey, state, steps[0].MinCount);
+        context["sequenceStepCount"] = steps.Count;
         var raised = await RaiseAsync(rule, observation, dedupKey, context, rule.MatchKey, cancellationToken);
         _sequences.Reset(storeKey);
         return raised;
+    }
+
+    private static bool MetaChainAllows(
+        AlarmRuleDocument rule,
+        ScenarioDefinition definition,
+        ObservationEnvelope observation)
+    {
+        if (definition.Source.Kind != ScenarioSourceKinds.MetaCorrelation)
+            return true;
+        if (!observation.Dimensions.TryGetValue("scenarioChain", out var value))
+            return true;
+
+        var chain = value switch
+        {
+            IEnumerable<string> strings => strings,
+            string text => text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            _ => []
+        };
+        return string.IsNullOrWhiteSpace(rule.ScenarioId)
+            || !chain.Contains(rule.ScenarioId, StringComparer.Ordinal);
     }
 
     private async Task<RuleOutcome> RaiseAsync(
@@ -286,12 +338,53 @@ public sealed class ObservationProcessor : IObservationProcessor
 
         await _alarms.InsertAsync(alarm, cancellationToken);
         await PublishEventAsync(alarm, AlarmEventTypes.Raised, context, cancellationToken);
+        await ProcessMetaObservationAsync(rule, observation, alarm, cancellationToken);
 
         _logger.LogInformation(
             "Alarm raised rule={RuleId} type={Type} alarm={AlarmId} key={Key}",
             rule.Id, rule.Type, alarm.Id, logKey);
 
         return new RuleOutcome(1, 0, 0, [alarm.Id]);
+    }
+
+    private async Task ProcessMetaObservationAsync(
+        AlarmRuleDocument sourceRule,
+        ObservationEnvelope sourceObservation,
+        AlarmDocument alarm,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sourceRule.ScenarioId))
+            return;
+
+        var chain = sourceObservation.Dimensions.TryGetValue("scenarioChain", out var chainValue)
+            ? chainValue switch
+            {
+                IEnumerable<string> strings => strings.ToList(),
+                string text => text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+                _ => []
+            }
+            : [];
+        chain.Add(sourceRule.ScenarioId);
+        if (chain.Count > 20)
+            return;
+
+        var dimensions = new Dictionary<string, object?>(alarm.Context, StringComparer.Ordinal)
+        {
+            ["alarmId"] = alarm.Id,
+            ["sourceScenarioId"] = sourceRule.ScenarioId,
+            ["scenarioChain"] = chain,
+            ["scenarioChainDepth"] = chain.Count
+        };
+        await ProcessAsync(new ObservationEnvelope
+        {
+            DomainId = alarm.DomainId,
+            DomainName = alarm.DomainName,
+            Kind = "alarm",
+            Key = AlarmEventTypes.Raised,
+            Value = alarm.Severity,
+            Timestamp = alarm.LastSeenAt,
+            Dimensions = dimensions
+        }, cancellationToken);
     }
 
     private async Task<RuleOutcome> UpdateAsync(

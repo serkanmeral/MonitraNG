@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useDomain, type Domain, type UpdateDomainRequest, type DirectoryLdapSettings, type DirectoryPrivilegeSettings } from '@/composables/useDomain';
+import { useGroupStore } from '@/stores/apps/group';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DomainBackupCard from '@/components/apps/domain/DomainBackupCard.vue';
@@ -30,10 +31,9 @@ const mapDirectoryLdap = (ldap?: DirectoryLdapSettings | null): DirectoryLdapSet
   bindPassword: '',
 });
 
-const mapDirectoryPrivileges = (
+const mapManagerPrivileges = (
   privileges?: DirectoryPrivilegeSettings | null
 ): DirectoryPrivilegeSettings => ({
-  adminGroupNames: [...(privileges?.adminGroupNames || [])],
   managerGroupNames: [...(privileges?.managerGroupNames || [])],
 });
 
@@ -51,8 +51,27 @@ const t = (key: string, params?: any) => {
 };
 
 const authStore = useAuthStore();
+const groupStore = useGroupStore();
 const router = useRouter();
 const { getCurrentDomain, updateDomain } = useDomain();
+
+const managerGroupOptions = computed<string[]>(() =>
+  [...new Set<string>(
+    groupStore.groups
+      .filter((group) => group.isActive)
+      .map((group) => group.name.trim())
+      .filter(Boolean),
+  )].sort((a, b) => a.localeCompare(b)),
+);
+
+const managerGroupNames = computed<string[]>({
+  get: () => formData.value.settings?.directoryPrivileges?.managerGroupNames ?? [],
+  set: (names) => {
+    formData.value.settings ??= {};
+    formData.value.settings.directoryPrivileges ??= {};
+    formData.value.settings.directoryPrivileges.managerGroupNames = names;
+  },
+});
 
 // Page title and breadcrumbs
 const page = computed(() => ({ title: t('domain.title') }));
@@ -123,6 +142,7 @@ const licenseError = ref<string | null>(null);
 // Form data
 const formData = ref<UpdateDomainRequest>({
   displayName: '',
+  discoveryRootLabel: '',
   relatedPersonPhone: '',
   logo: '',
   logoUrl: '',
@@ -130,7 +150,7 @@ const formData = ref<UpdateDomainRequest>({
     maxUsers: 100,
     maxAssets: 1000,
     enableMqtt: true,
-    directoryPrivileges: mapDirectoryPrivileges(null),
+    directoryPrivileges: mapManagerPrivileges(null),
     directoryLdap: emptyDirectoryLdap(),
   },
 });
@@ -273,6 +293,7 @@ const loadDomain = async () => {
     // Populate form with current domain data
     formData.value = {
       displayName: domainData.displayName || '',
+      discoveryRootLabel: domainData.discoveryRootLabel || '',
       relatedPersonPhone: domainData.relatedPersonPhone || '',
       logo: domainData.logo || '',
       logoUrl: domainData.logoUrl || '',
@@ -280,7 +301,7 @@ const loadDomain = async () => {
         maxUsers: domainData.settings?.maxUsers || 100,
         maxAssets: domainData.settings?.maxAssets || 1000,
         enableMqtt: domainData.settings?.enableMqtt ?? true,
-        directoryPrivileges: mapDirectoryPrivileges(domainData.settings?.directoryPrivileges),
+        directoryPrivileges: mapManagerPrivileges(domainData.settings?.directoryPrivileges),
         directoryLdap: mapDirectoryLdap(domainData.settings?.directoryLdap),
       },
     };
@@ -414,6 +435,7 @@ const cancelEdit = () => {
   // Reset form to original values
   formData.value = {
     displayName: domain.value.displayName || '',
+    discoveryRootLabel: domain.value.discoveryRootLabel || '',
     relatedPersonPhone: domain.value.relatedPersonPhone || '',
     logo: domain.value.logo || '',
     logoUrl: domain.value.logoUrl || '',
@@ -421,7 +443,7 @@ const cancelEdit = () => {
       maxUsers: domain.value.settings?.maxUsers || 100,
       maxAssets: domain.value.settings?.maxAssets || 1000,
       enableMqtt: domain.value.settings?.enableMqtt ?? true,
-      directoryPrivileges: mapDirectoryPrivileges(domain.value.settings?.directoryPrivileges),
+      directoryPrivileges: mapManagerPrivileges(domain.value.settings?.directoryPrivileges),
       directoryLdap: mapDirectoryLdap(domain.value.settings?.directoryLdap),
     },
   };
@@ -454,7 +476,10 @@ onMounted(async () => {
     // Optionally redirect to unauthorized page or dashboard
     // router.push('/unauthorized');
   } else {
-    await loadDomain();
+    await Promise.all([
+      loadDomain(),
+      groupStore.fetchAllGroups({ isActive: true }),
+    ]);
   }
 });
 </script>
@@ -620,6 +645,28 @@ onMounted(async () => {
                   variant="outlined"
                   density="comfortable"
                   required
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.fields.discoveryRootLabel')"
+                  :model-value="domain.discoveryRootLabel || domain.displayName || domain.name"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.discoveryRootLabel"
+                  :label="t('domain.edit.discoveryRootLabel')"
+                  :placeholder="t('domain.edit.discoveryRootLabelPlaceholder')"
+                  :hint="t('domain.edit.discoveryRootLabelHint')"
+                  persistent-hint
+                  maxlength="120"
+                  variant="outlined"
+                  density="comfortable"
                 />
               </v-col>
 
@@ -1167,6 +1214,67 @@ onMounted(async () => {
                 />
               </v-col>
             </v-row>
+          </v-card-text>
+        </v-card>
+
+        <!-- Manager privilege groups -->
+        <v-card elevation="10" class="mb-4">
+          <v-card-title class="d-flex align-center">
+            <ShieldIcon size="20" class="mr-2" />
+            {{ t('domain.cards.managerGroups') }}
+          </v-card-title>
+
+          <v-divider />
+
+          <v-card-text>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              {{ t('domain.managerGroups.description') }}
+            </p>
+
+            <div v-if="!isEditing" class="d-flex flex-wrap ga-2">
+              <v-chip
+                v-for="groupName in domain.settings?.directoryPrivileges?.managerGroupNames || []"
+                :key="groupName"
+                color="primary"
+                variant="tonal"
+              >
+                {{ groupName }}
+              </v-chip>
+              <span
+                v-if="!(domain.settings?.directoryPrivileges?.managerGroupNames?.length)"
+                class="text-body-2 text-medium-emphasis"
+              >
+                {{ t('domain.managerGroups.empty') }}
+              </span>
+            </div>
+
+            <div v-else>
+              <v-autocomplete
+                v-model="managerGroupNames"
+                :items="managerGroupOptions"
+                :label="t('domain.managerGroups.label')"
+                :hint="t('domain.managerGroups.hint')"
+                :loading="groupStore.loading"
+                :disabled="groupStore.loading"
+                multiple
+                chips
+                closable-chips
+                clearable
+                persistent-hint
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+              />
+              <v-alert
+                v-if="groupStore.error"
+                type="warning"
+                variant="tonal"
+                density="compact"
+                class="mt-3"
+              >
+                {{ groupStore.error }}
+              </v-alert>
+            </div>
           </v-card-text>
         </v-card>
 

@@ -1,8 +1,8 @@
 # SIEM Discovery — Keşif ve kapsam (Coverage)
 
-**Durum:** ✅ Faz 1–3 + demo UX Odak’ta kullanılabilir (Collector `:5091` + UI)  
+**Durum:** ✅ Faz 1–3 + demo UX Odak’ta kullanılabilir (Collector `:5091` + UI); otomatik AD sync kapalı
 **Route:** `/apps/siem-center/discovery`  
-**Son güncelleme:** 4 Ağustos 2026 (prod nginx `/api/logcollector/` — Discovery 405 fix)  
+**Son güncelleme:** 5 Ağustos 2026 (UI-only keşif · domain kök etiketi)
 **Canlı durum / park noktası:** [current_status.md](./current_status.md)
 
 Falcon Discover tarzı **ajan kapsamı boşluğu** + runZero-lite **kimlik parmak izi**. NetBox / Cisco L2 topoloji ve Armis/OT bilinçli olarak ertelendi.
@@ -19,7 +19,7 @@ Falcon Discover tarzı **ajan kapsamı boşluğu** + runZero-lite **kimlik parma
 
 Facet’ler: yalnızca **subnet / site**. VLAN / DHCP / AP UI’de gizlendi (sahte VLAN yok).
 
-AD taraması **opsiyonel zenginleştirme**; demo’da genelde kapalı. Birincil hikâye ağ taraması + ajan eşlemesi.
+AD taraması **opsiyonel zenginleştirme**. Production’daki altı saatlik `system-siem-discovery-ad-sync` scheduled job pasif durumdadır. Ağ keşfi yalnızca operatörün UI’daki **Keşfet** aksiyonuyla başlatılır; otomatik/periyodik ağ taraması yoktur.
 
 ---
 
@@ -52,6 +52,8 @@ AD taraması **opsiyonel zenginleştirme**; demo’da genelde kapalı. Birincil 
 - Toolbar: **Görünüm** + **Keşfet** + **Diğer işlemler** (sakin renkler; sadece Temizle error)
 - Canlı banner kaldırıldı; hero + toolbar birleşik discovery header
 - AD scan metni: opsiyonel isim eşlemesi; checkbox ipucu
+- Harita kök etiketi Domain UI’daki `discoveryRootLabel` alanından yönetilir.
+- Kök etiket fallback sırası: `discoveryRootLabel` → domain display name → domain name → oturum domain adı → i18n varsayılanı.
 - ~2 dk Odak demo: `192.168.20.0/24` tara → ajan yok filtresi → unmanaged detay → managed canlı ajan → site “Odak ofis”
 
 ---
@@ -62,7 +64,7 @@ AD taraması **opsiyonel zenginleştirme**; demo’da genelde kapalı. Birincil 
 |-------|------|-----|
 | GET | `/discovery/hosts` | Envanter |
 | GET | `/discovery/summary` | KPI |
-| POST | `/discovery/sync` | Ajan senkron |
+| POST | `/discovery/sync` | Ajan/AD senkron; endpoint mevcut, production scheduler pasif |
 | POST | `/discovery/scan` | CIDR tarama (kuyruk) |
 | GET | `/discovery/scan/{runId}` | İş durumu |
 | POST | `/discovery/scan/{runId}/cancel` | İptal |
@@ -116,7 +118,7 @@ Prefix PUT için BFF’de de `PUT` izinli olmalı (lokal); prod nginx tüm metod
 | Konu | Not |
 |------|-----|
 | **Ajansız host aksiyonları** | Sonraki oturum — aşağıdaki park notu |
-| Periyodik / zamanlanmış tarama | Sonra |
+| Periyodik / zamanlanmış tarama | Bilinçli kapalı; yalnız UI’dan manuel keşif |
 | L2 topoloji / NetBox | Bilinçli ertelendi (network control modülleri) |
 | Armis / OT | Ertelendi |
 | Engelle / izolasyon | Faz 3 müdahale; Discovery MVP dışı |
@@ -146,7 +148,7 @@ Prefix PUT için BFF’de de `PUT` izinli olmalı (lokal); prod nginx tüm metod
 
 ## Deploy notu (Odak)
 
-Collector değişiklikleri için `mnglogcollector` rebuild/deploy; UI / nginx proxy için **`mngui` NoCache rebuild** (nginx.conf image’a gömülü).  
+Collector değişiklikleri için `mnglogcollector` rebuild/deploy; UI / nginx proxy için **`mngui` NoCache rebuild** (nginx.conf image’a gömülü). Domain kök etiketi ve Manager grup backend’i `mngkeeper` production’a deploy edildi; ilgili Mng.Ui değişiklikleri henüz deploy edilmedi.
 Prefix varsayılanı Odak ofis CIDR ile seed / PUT ile doğrulanır.
 
 ```powershell

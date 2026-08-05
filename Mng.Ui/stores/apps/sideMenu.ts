@@ -79,6 +79,32 @@ interface SideMenuState {
   lastUpdated: number | null;
 }
 
+const flowLabRoute = '/apps/alarm-center/flow-lab';
+
+function ensureFlowLabMenuItem(items: SideMenuItem[]): SideMenuItem[] {
+  if (items.some(item => item.to === flowLabRoute)) return items;
+
+  const alarmCenterItem = items.find(item => item.to === '/apps/alarm-center/alarms');
+  return [
+    ...items,
+    {
+      __dataId: 'ui-alarm-center-flow-lab',
+      order: (alarmCenterItem?.order ?? 400) + 1,
+      itemType: 'item',
+      pageType: 'manager',
+      title: 'Akış Laboratuvarı',
+      pageCode: 'alarmCenter.flowLab.menuTitle',
+      icon: 'GitBranchIcon',
+      iconType: 'tabler',
+      to: flowLabRoute,
+      type: 'internal',
+      parentId: alarmCenterItem?.parentId ?? null,
+      level: alarmCenterItem?.level ?? 0,
+      disabled: false,
+    },
+  ];
+}
+
 export const useSideMenuStore = defineStore('sideMenu', {
   state: (): SideMenuState => ({
     menuItems: [],
@@ -142,7 +168,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
               
               // TTL kontrolü (10 dakika)
               if (now - timestamp < (ttl || 600000)) {
-                const items = JSON.parse(cachedData) as SideMenuItem[];
+                const items = ensureFlowLabMenuItem(JSON.parse(cachedData) as SideMenuItem[]);
                 this.menuItems = items;
                 this.menuItemsTree = this.buildMenuTree(items);
                 this.lastUpdated = timestamp;
@@ -188,7 +214,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
         }
 
         // Map items to SideMenuItem format (handle different field name cases)
-        this.menuItems = items.map((item: any) => ({
+        this.menuItems = ensureFlowLabMenuItem(items.map((item: any) => ({
           __dataId: item.__dataId ?? item.DataId ?? item.dataId,
           dataId: item.__dataId ?? item.DataId ?? item.dataId,
           itemType: item.itemType ?? item.ItemType ?? 'item',
@@ -212,7 +238,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
           chipVariant: item.chipVariant ?? item.ChipVariant,
           chipIcon: item.chipIcon ?? item.ChipIcon,
           permissions: item.permissions ?? item.Permissions,
-        })) as SideMenuItem[];
+        })) as SideMenuItem[]);
         this.menuItemsTree = this.buildMenuTree(this.menuItems);
         this.lastUpdated = Date.now();
 

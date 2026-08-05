@@ -9,6 +9,7 @@ namespace MngKeeper.Api.Contracts;
 public class UpdateDomainRequest
 {
     public string? DisplayName { get; set; }
+    public string? DiscoveryRootLabel { get; set; }
     public string? RelatedPersonPhone { get; set; }
     public string? Logo { get; set; }
     public string? LogoUrl { get; set; }
@@ -22,8 +23,17 @@ public class UpdateDomainSettingsRequest
     public bool? EnableMqtt { get; set; }
 
     /// <summary>When null/absent, existing directoryPrivileges are kept.</summary>
-    public DirectoryPrivilegeSettings? DirectoryPrivileges { get; set; }
+    public UpdateDirectoryPrivilegeSettingsRequest? DirectoryPrivileges { get; set; }
 
     /// <summary>When null/absent, existing directoryLdap is kept.</summary>
     public DirectoryLdapSettings? DirectoryLdap { get; set; }
+}
+
+public class UpdateDirectoryPrivilegeSettingsRequest
+{
+    /// <summary>Null keeps the current list; an empty list clears configured aliases.</summary>
+    public IReadOnlyList<string>? AdminGroupNames { get; set; }
+
+    /// <summary>Null keeps the current list; an empty list clears configured aliases.</summary>
+    public IReadOnlyList<string>? ManagerGroupNames { get; set; }
 }

@@ -29,12 +29,18 @@ public static class AlarmServiceCollectionExtensions
         services.AddSingleton<IObservationIngressPublisher, ObservationIngressPublisher>();
         services.AddSingleton<ICorrelationWindowStore, MongoCorrelationWindowStore>();
         services.AddSingleton<IObservationActivityStore, MongoObservationActivityStore>();
-        services.AddSingleton<ISequenceStateStore, InMemorySequenceStateStore>();
+        services.AddSingleton<ISequenceStateStore, MongoSequenceStateStore>();
 
         services.AddScoped<IAlarmRuleRepository, AlarmRuleRepository>();
+        services.AddScoped<IScenarioRepository, ScenarioRepository>();
         services.AddScoped<IAlarmNotificationPolicyRepository, AlarmNotificationPolicyRepository>();
         services.AddScoped<IAlarmRepository, AlarmRepository>();
         services.AddScoped<IAlarmRuleService, AlarmRuleService>();
+        services.AddScoped<IScenarioService, ScenarioService>();
+        services.AddSingleton<IScenarioQueryProvider, UnavailableScenarioQueryProvider>();
+        services.AddSingleton<IScenarioRuntimeCapabilities, ScenarioRuntimeCapabilities>();
+        services.AddScoped<IScenarioSchedulerService, ScenarioSchedulerService>();
+        services.AddSingleton<IScenarioPackageImportAuthorizer, ScenarioPackageImportAuthorizer>();
         services.AddScoped<IAlarmNotificationPolicyService, AlarmNotificationPolicyService>();
         services.AddSingleton<IAlarmNotificationCooldownStore, AlarmNotificationCooldownStore>();
         services.AddScoped<IAlarmDispatchTokenProvider, AlarmDispatchTokenProvider>();

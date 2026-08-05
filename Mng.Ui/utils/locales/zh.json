@@ -919,11 +919,19 @@
     "cards": {
       "domainInfo": "域信息",
       "domainSettings": "域设置",
+      "managerGroups": "Manager 权限组",
       "licenseInfo": "许可证信息"
+    },
+    "managerGroups": {
+      "description": "选择为此域授予 Manager 权限的现有 Keeper 组。系统默认 Manager 组始终有效。",
+      "label": "Manager 组",
+      "hint": "仅列出活动的 Keeper 组，不允许自由输入组名。",
+      "empty": "未配置额外的 Manager 组。"
     },
     "fields": {
       "name": "域名",
       "displayName": "显示名称",
+      "discoveryRootLabel": "发现根节点名称",
       "databaseName": "数据库名称",
       "realmName": "领域名称",
       "status": "状态",
@@ -959,6 +967,9 @@
       "title": "编辑域",
       "displayName": "显示名称",
       "displayNamePlaceholder": "输入域显示名称",
+      "discoveryRootLabel": "发现根节点名称",
+      "discoveryRootLabelPlaceholder": "例如：Odak 防御网络",
+      "discoveryRootLabelHint": "留空时使用域显示名称。",
       "relatedPersonPhone": "相关联系人电话",
       "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
       "logoUrl": "徽标 URL",

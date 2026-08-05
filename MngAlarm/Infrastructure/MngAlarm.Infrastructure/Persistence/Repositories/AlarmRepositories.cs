@@ -67,6 +67,106 @@ public sealed class AlarmRuleRepository(IAlarmMongoContext context) : IAlarmRule
         context.GetDatabase(domainName).GetCollection<AlarmRuleDocument>(AlarmCollectionNames.Rules);
 }
 
+public sealed class ScenarioRepository(IAlarmMongoContext context) : IScenarioRepository
+{
+    public Task InsertVersionAsync(ScenarioVersionDocument version, CancellationToken cancellationToken = default) =>
+        Versions(version.DomainName).InsertOneAsync(version, cancellationToken: cancellationToken);
+
+    public Task UpdateVersionAsync(ScenarioVersionDocument version, CancellationToken cancellationToken = default) =>
+        Versions(version.DomainName).ReplaceOneAsync(
+            x => x.Id == version.Id && x.Status != ScenarioLifecycleStatuses.Published,
+            version,
+            cancellationToken: cancellationToken);
+
+    public async Task<ScenarioVersionDocument?> GetVersionAsync(
+        string domainName,
+        string scenarioId,
+        int version,
+        CancellationToken cancellationToken = default) =>
+        await Versions(domainName).Find(x => x.ScenarioId == scenarioId && x.Version == version)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<ScenarioVersionDocument?> GetLatestAsync(
+        string domainName,
+        string scenarioId,
+        CancellationToken cancellationToken = default) =>
+        await Versions(domainName).Find(x => x.ScenarioId == scenarioId)
+            .SortByDescending(x => x.Version)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<ScenarioVersionDocument?> GetPublishedAsync(
+        string domainName,
+        string scenarioId,
+        CancellationToken cancellationToken = default) =>
+        await Versions(domainName)
+            .Find(x => x.ScenarioId == scenarioId && x.Status == ScenarioLifecycleStatuses.Published)
+            .SortByDescending(x => x.Version)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ScenarioVersionDocument>> ListAsync(
+        string domainName,
+        CancellationToken cancellationToken = default) =>
+        await Versions(domainName)
+            .Find(FilterDefinition<ScenarioVersionDocument>.Empty)
+            .SortByDescending(x => x.UpdatedAt)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ScenarioVersionDocument>> ListVersionsAsync(
+        string domainName,
+        string scenarioId,
+        CancellationToken cancellationToken = default) =>
+        await Versions(domainName).Find(x => x.ScenarioId == scenarioId)
+            .SortByDescending(x => x.Version)
+            .ToListAsync(cancellationToken);
+
+    public Task ArchiveVersionAsync(
+        string domainName,
+        string scenarioId,
+        int version,
+        DateTime updatedAt,
+        CancellationToken cancellationToken = default) =>
+        Versions(domainName).UpdateOneAsync(
+            x => x.ScenarioId == scenarioId
+                && x.Version == version
+                && x.Status == ScenarioLifecycleStatuses.Published,
+            Builders<ScenarioVersionDocument>.Update
+                .Set(x => x.Status, ScenarioLifecycleStatuses.Archived)
+                .Set(x => x.UpdatedAt, updatedAt),
+            cancellationToken: cancellationToken);
+
+    public Task ArchivePublishedExceptAsync(
+        string domainName,
+        string scenarioId,
+        int version,
+        DateTime updatedAt,
+        CancellationToken cancellationToken = default) =>
+        Versions(domainName).UpdateManyAsync(
+            x => x.ScenarioId == scenarioId
+                && x.Version != version
+                && x.Status == ScenarioLifecycleStatuses.Published,
+            Builders<ScenarioVersionDocument>.Update
+                .Set(x => x.Status, ScenarioLifecycleStatuses.Archived)
+                .Set(x => x.UpdatedAt, updatedAt),
+            cancellationToken: cancellationToken);
+
+    public Task InsertAuditAsync(ScenarioAuditDocument audit, CancellationToken cancellationToken = default) =>
+        Audit(audit.DomainName).InsertOneAsync(audit, cancellationToken: cancellationToken);
+
+    public async Task<IReadOnlyList<ScenarioAuditDocument>> ListAuditAsync(
+        string domainName,
+        string scenarioId,
+        CancellationToken cancellationToken = default) =>
+        await Audit(domainName).Find(x => x.ScenarioId == scenarioId)
+            .SortByDescending(x => x.Timestamp)
+            .ToListAsync(cancellationToken);
+
+    private IMongoCollection<ScenarioVersionDocument> Versions(string domainName) =>
+        context.GetDatabase(domainName).GetCollection<ScenarioVersionDocument>(AlarmCollectionNames.ScenarioVersions);
+
+    private IMongoCollection<ScenarioAuditDocument> Audit(string domainName) =>
+        context.GetDatabase(domainName).GetCollection<ScenarioAuditDocument>(AlarmCollectionNames.ScenarioAudit);
+}
+
 public sealed class AlarmNotificationPolicyRepository(IAlarmMongoContext context) : IAlarmNotificationPolicyRepository
 {
     public async Task InsertAsync(AlarmNotificationPolicyDocument policy, CancellationToken cancellationToken = default)
@@ -121,7 +221,10 @@ public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitia
     {
         await indexInitializer.EnsureAsync(domainName, cancellationToken);
         return await Collection(domainName)
-            .Find(x => x.DedupKey == dedupKey && x.Status == AlarmStatus.Active)
+            .Find(x => x.DedupKey == dedupKey
+                && (x.Status == AlarmStatus.Active
+                    || x.Status == AlarmStatus.Acknowledged
+                    || x.Status == AlarmStatus.Suppressed))
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -140,7 +243,10 @@ public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitia
     {
         await indexInitializer.EnsureAsync(domainName, cancellationToken);
         return await Collection(domainName)
-            .Find(x => x.RuleId == ruleId && x.Status == AlarmStatus.Active)
+            .Find(x => x.RuleId == ruleId
+                && (x.Status == AlarmStatus.Active
+                    || x.Status == AlarmStatus.Acknowledged
+                    || x.Status == AlarmStatus.Suppressed))
             .ToListAsync(cancellationToken);
     }
 

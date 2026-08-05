@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MngAlarm.Application.Contracts;
 using MngAlarm.Application.Observations;
 using MngAlarm.Application.Services;
+using MngAlarm.Domain.Entities;
 using MngAlarm.Domain.Enums;
 
 namespace MngAlarm.Api.Controllers;
@@ -40,6 +41,149 @@ public sealed class AlarmRulesController(IAlarmRuleService rules) : ControllerBa
     {
         var deleted = await rules.DeleteAsync(ruleId, cancellationToken);
         return deleted ? NoContent() : NotFound();
+    }
+}
+
+[ApiController]
+[Route("api/v1/scenarios")]
+public sealed class AlarmScenariosController(
+    IScenarioService scenarios,
+    IScenarioPackageImportAuthorizer packageImport,
+    IScenarioSchedulerService scheduler) : ControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> List(
+        [FromQuery] bool includeDrafts = true,
+        CancellationToken cancellationToken = default) =>
+        Ok(await scenarios.ListAsync(includeDrafts, cancellationToken));
+
+    [HttpPost("drafts")]
+    public async Task<IActionResult> CreateDraft(
+        [FromBody] CreateScenarioDraftRequest request,
+        CancellationToken cancellationToken)
+    {
+        var draft = await scenarios.CreateDraftAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { scenarioId = draft.ScenarioId, version = draft.Version }, draft);
+    }
+
+    [HttpPost("{scenarioId}/drafts")]
+    public async Task<IActionResult> CreateNextDraft(
+        string scenarioId,
+        [FromBody] CreateScenarioDraftRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var draft = await scenarios.CreateNextDraftAsync(scenarioId, request, cancellationToken);
+        return draft == null
+            ? NotFound()
+            : CreatedAtAction(nameof(Get), new { scenarioId = draft.ScenarioId, version = draft.Version }, draft);
+    }
+
+    [HttpPost("{scenarioId}/versions/{version:int}/clone-to-draft")]
+    public async Task<IActionResult> CloneTemplate(
+        string scenarioId,
+        int version,
+        CancellationToken cancellationToken)
+    {
+        var draft = await scenarios.CloneTemplateAsync(scenarioId, version, cancellationToken);
+        return draft == null
+            ? Conflict(new { code = "product_template_required" })
+            : CreatedAtAction(nameof(Get), new { scenarioId = draft.ScenarioId, version = draft.Version }, draft);
+    }
+
+    [HttpGet("{scenarioId}")]
+    public async Task<IActionResult> Get(
+        string scenarioId,
+        [FromQuery] int? version,
+        CancellationToken cancellationToken)
+    {
+        var item = await scenarios.GetAsync(scenarioId, version, cancellationToken);
+        return item == null ? NotFound() : Ok(item);
+    }
+
+    [HttpPut("{scenarioId}/versions/{version:int}/draft")]
+    public async Task<IActionResult> UpdateDraft(
+        string scenarioId,
+        int version,
+        [FromBody] UpdateScenarioDraftRequest request,
+        CancellationToken cancellationToken)
+    {
+        var item = await scenarios.UpdateDraftAsync(scenarioId, version, request, cancellationToken);
+        return item == null ? Conflict(new { code = "immutable_or_missing", message = "Only an existing draft can be edited." }) : Ok(item);
+    }
+
+    [HttpPost("{scenarioId}/versions/{version:int}/validate")]
+    public async Task<IActionResult> Validate(string scenarioId, int version, CancellationToken cancellationToken)
+    {
+        var result = await scenarios.ValidateAsync(scenarioId, version, cancellationToken);
+        return result == null ? Conflict(new { code = "immutable_or_missing" }) : Ok(result);
+    }
+
+    [HttpPost("{scenarioId}/versions/{version:int}/publish")]
+    public async Task<IActionResult> Publish(string scenarioId, int version, CancellationToken cancellationToken)
+    {
+        var item = await scenarios.PublishAsync(scenarioId, version, cancellationToken);
+        if (item == null)
+            return Conflict(new { code = "not_validated_or_missing" });
+        return item.Status == ScenarioLifecycleStatuses.Published
+            ? Ok(item)
+            : Conflict(new { code = "validation_failed", validation = item.Validation });
+    }
+
+    [HttpPost("{scenarioId}/versions/{version:int}/archive")]
+    public async Task<IActionResult> Archive(string scenarioId, int version, CancellationToken cancellationToken)
+    {
+        var item = await scenarios.ArchiveAsync(scenarioId, version, cancellationToken);
+        return item == null ? Conflict(new { code = "published_version_required" }) : Ok(item);
+    }
+
+    [HttpPost("{scenarioId}/versions/{version:int}/rollback")]
+    public async Task<IActionResult> Rollback(string scenarioId, int version, CancellationToken cancellationToken)
+    {
+        var item = await scenarios.RollbackAsync(scenarioId, version, cancellationToken);
+        return item == null ? Conflict(new { code = "published_version_required" }) : Ok(item);
+    }
+
+    [HttpGet("{scenarioId}/audit")]
+    public async Task<IActionResult> Audit(string scenarioId, CancellationToken cancellationToken) =>
+        Ok(await scenarios.AuditAsync(scenarioId, cancellationToken));
+
+    [HttpPost("preview")]
+    public async Task<IActionResult> Preview([FromBody] ScenarioPreviewRequest request, CancellationToken cancellationToken) =>
+        Ok(await scenarios.PreviewAsync(null, null, request, cancellationToken));
+
+    [HttpPost("compile")]
+    public async Task<IActionResult> Compile([FromBody] ScenarioPreviewRequest request, CancellationToken cancellationToken) =>
+        Ok(await scenarios.CompileAsync(null, null, request, cancellationToken));
+
+    [HttpPost("simulate")]
+    public async Task<IActionResult> Simulate([FromBody] ScenarioPreviewRequest request, CancellationToken cancellationToken) =>
+        Ok(await scenarios.PreviewAsync(null, null, request, cancellationToken));
+
+    [HttpPost("{scenarioId}/versions/{version:int}/simulate")]
+    public async Task<IActionResult> SimulateVersion(
+        string scenarioId,
+        int version,
+        [FromBody] ScenarioPreviewRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await scenarios.PreviewAsync(scenarioId, version, request, cancellationToken));
+
+    [HttpPost("{scenarioId}/versions/{version:int}/schedule/trigger")]
+    public async Task<IActionResult> TriggerSchedule(
+        string scenarioId,
+        int version,
+        [FromBody] ScenarioScheduleTriggerRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await scheduler.TriggerAsync(scenarioId, version, request, cancellationToken));
+
+    [HttpPost("packages/import")]
+    public async Task<IActionResult> ImportPackage(
+        [FromHeader(Name = "X-Scenario-Package-Key")] string? importKey,
+        [FromBody] ImportScenarioPackageRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!packageImport.IsAuthorized(importKey))
+            return Forbid();
+        return Ok(await scenarios.ImportProductPackageAsync(request, cancellationToken));
     }
 }
 

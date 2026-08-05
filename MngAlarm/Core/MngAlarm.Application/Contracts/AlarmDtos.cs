@@ -18,6 +18,7 @@ public sealed class CreateAlarmRuleRequest
     public string? DedupKeyTemplate { get; set; }
     public List<AlarmSequenceStepDto>? SequenceSteps { get; set; }
     public AlarmRuleMetadataDto? Metadata { get; set; }
+    public ScenarioDefinition? Definition { get; set; }
 }
 
 public sealed class AlarmRuleMetadataDto
@@ -45,6 +46,8 @@ public sealed class UpdateAlarmRuleRequest
 {
     public string? Name { get; set; }
     public bool? Enabled { get; set; }
+    public string? Type { get; set; }
+    public string? MatchKey { get; set; }
     public int? Severity { get; set; }
     public string? Operator { get; set; }
     public double? Threshold { get; set; }
@@ -53,6 +56,114 @@ public sealed class UpdateAlarmRuleRequest
     public int? WindowMinutes { get; set; }
     public int? StalenessMinutes { get; set; }
     public string? DedupKeyTemplate { get; set; }
+    public List<AlarmSequenceStepDto>? SequenceSteps { get; set; }
+    public AlarmRuleMetadataDto? Metadata { get; set; }
+    public ScenarioDefinition? Definition { get; set; }
+}
+
+public sealed class CreateScenarioDraftRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public int Severity { get; set; } = 5;
+    public bool Enabled { get; set; }
+    public ScenarioDefinition Definition { get; set; } = new();
+}
+
+public sealed class UpdateScenarioDraftRequest
+{
+    public string? Name { get; set; }
+    public int? Severity { get; set; }
+    public bool? Enabled { get; set; }
+    public ScenarioDefinition? Definition { get; set; }
+}
+
+public sealed class ScenarioPreviewRequest
+{
+    public ScenarioDefinition? Definition { get; set; }
+    public List<ScenarioSampleObservation>? Samples { get; set; }
+    public DateTime? From { get; set; }
+    public DateTime? To { get; set; }
+}
+
+public sealed class ScenarioSampleObservation
+{
+    public string Kind { get; set; } = "event";
+    public string Key { get; set; } = string.Empty;
+    public double? Value { get; set; }
+    public Dictionary<string, object?> Dimensions { get; set; } = new();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class ScenarioPreviewResponse
+{
+    public bool Supported { get; init; } = true;
+    public IReadOnlyList<ScenarioDiagnostic> Diagnostics { get; init; } = [];
+    public IReadOnlyList<ScenarioPreviewMatch> Matches { get; init; } = [];
+    public IReadOnlyDictionary<string, int> GroupCounts { get; init; } = new Dictionary<string, int>();
+    public IReadOnlyList<string> DedupKeys { get; init; } = [];
+}
+
+public sealed class ScenarioPreviewMatch
+{
+    public int SampleIndex { get; init; }
+    public bool Matched { get; init; }
+    public string Explanation { get; init; } = string.Empty;
+    public string GroupKey { get; init; } = "_all";
+    public string DedupKey { get; init; } = string.Empty;
+}
+
+public sealed class ScenarioCatalogItem
+{
+    public string ScenarioId { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public int LatestVersion { get; init; }
+    public string LatestStatus { get; init; } = string.Empty;
+    public int? PublishedVersion { get; init; }
+    public int? DraftVersion { get; init; }
+    public bool Enabled { get; init; }
+    public int Severity { get; init; }
+    public string Origin { get; init; } = ScenarioOrigins.User;
+    public bool IsReadOnly { get; init; }
+    public string? TemplateId { get; init; }
+    public string? PackageId { get; init; }
+    public string? PackageVersion { get; init; }
+    public DateTime UpdatedAt { get; init; }
+}
+
+public sealed class ImportScenarioPackageRequest
+{
+    public string PackageId { get; set; } = string.Empty;
+    public string PackageVersion { get; set; } = string.Empty;
+    public List<ImportScenarioTemplateRequest> Templates { get; set; } = [];
+}
+
+public sealed class ImportScenarioTemplateRequest
+{
+    public string TemplateId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public int Severity { get; set; } = 5;
+    public ScenarioDefinition Definition { get; set; } = new();
+}
+
+public sealed class ScenarioPackageImportResult
+{
+    public int Created { get; init; }
+    public int Skipped { get; init; }
+    public IReadOnlyList<string> ScenarioIds { get; init; } = [];
+}
+
+public sealed class ScenarioScheduleTriggerRequest
+{
+    public List<ScenarioSampleObservation>? Samples { get; set; }
+    public DateTime? EvaluationTime { get; set; }
+}
+
+public sealed class ScenarioScheduleTriggerResult
+{
+    public bool Supported { get; init; }
+    public string? DiagnosticCode { get; init; }
+    public int ObservationsProcessed { get; init; }
+    public int AlarmsRaised { get; init; }
 }
 
 public sealed class AlarmValidationScanResponse

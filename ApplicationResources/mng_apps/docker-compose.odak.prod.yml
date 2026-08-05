@@ -111,6 +111,7 @@ services:
       - EnableDevAlarmEndpoints=true
       - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngAlarmSettings__Engine__ConsumeObservations=false
+      - ScenarioStudio__PackageImportKey=${ALARM_SCENARIO_IMPORT_KEY:-}
 
   mngalarm-worker:
     environment:

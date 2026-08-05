@@ -6,6 +6,10 @@ public sealed class SequenceRuntimeState
 {
     public bool Armed { get; set; }
     public DateTime? AnchorTime { get; set; }
+    public int NextStepIndex { get; set; }
+    public int CurrentStepCount { get; set; }
+    public DateTime? LastStepTime { get; set; }
+    public DateTime? ConditionSince { get; set; }
 }
 
 public interface ISequenceStateStore
