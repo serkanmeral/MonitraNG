@@ -173,6 +173,79 @@ public sealed class ScenarioGraphV3Tests
         });
     }
 
+    [Fact]
+    public void Debug_output_emits_summary_and_path_payloads_without_alarm()
+    {
+        var definition = BranchGraph();
+        definition.Graph!.Nodes.Add(new ScenarioNode
+        {
+            Id = "debug",
+            Type = ScenarioNodeTypes.DebugOutput,
+            Layout = new ScenarioNodeLayout { Label = "Watch value" },
+            Config = new ScenarioNodeConfig
+            {
+                Debug = new ScenarioDebug { Mode = "path", Path = "value", Active = true }
+            }
+        });
+        definition.Graph.Nodes.Add(new ScenarioNode
+        {
+            Id = "debug-all",
+            Type = ScenarioNodeTypes.DebugOutput,
+            Config = new ScenarioNodeConfig
+            {
+                Debug = new ScenarioDebug { Mode = "complete", Active = true }
+            }
+        });
+        definition.Graph.Edges.Add(new ScenarioEdge
+        {
+            Id = "debug-edge",
+            From = "decision",
+            To = "debug",
+            FromPort = "true"
+        });
+        definition.Graph.Edges.Add(new ScenarioEdge
+        {
+            Id = "debug-all-edge",
+            From = "decision",
+            To = "debug-all",
+            FromPort = "true"
+        });
+
+        var result = Executor().Execute(Rule(definition), Observation("risk", 11, 0));
+
+        Assert.Contains(result.Outputs, x => x.OutputNodeId == "high");
+        Assert.Equal(2, result.DebugLines.Count);
+        Assert.Equal(11d, Convert.ToDouble(result.DebugLines.Single(x => x.NodeId == "debug").Payload));
+        var summary = Assert.IsType<Dictionary<string, object?>>(
+            result.DebugLines.Single(x => x.NodeId == "debug-all").Payload);
+        Assert.Equal("risk", summary["key"]);
+    }
+
+    [Fact]
+    public void Debug_output_alone_does_not_satisfy_required_output()
+    {
+        var definition = new ScenarioDefinition
+        {
+            SchemaVersion = 3,
+            Graph = new ScenarioGraph
+            {
+                Nodes =
+                [
+                    new() { Id = "source", Type = ScenarioNodeTypes.Source, Config = new() { Source = new() { MatchKey = "risk" } } },
+                    new() { Id = "debug", Type = ScenarioNodeTypes.DebugOutput, Config = new() { Debug = new() { Mode = "complete" } } }
+                ],
+                Edges =
+                [
+                    new() { Id = "e1", From = "source", To = "debug", FromPort = "next" }
+                ]
+            }
+        };
+
+        var validation = ScenarioCompiler.Validate(definition, true);
+        Assert.False(validation.IsValid);
+        Assert.Contains(validation.Diagnostics, x => x.Code == "graph.output.required");
+    }
+
     private static ScenarioGraphExecutor Executor() =>
         new(new InMemoryCorrelationWindowStore(), new InMemorySequenceStateStore());
 

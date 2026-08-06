@@ -26,6 +26,7 @@ const visuals: Record<ScenarioNodeType, { color: string; icon: string }> = {
   decision: { color: '#f2994a', icon: 'mdi-source-branch' },
   'alarm-output': { color: '#d64545', icon: 'mdi-bell-ring-outline' },
   'stop-output': { color: '#687386', icon: 'mdi-stop-circle-outline' },
+  'debug-output': { color: '#c9a227', icon: 'mdi-bug-outline' },
 };
 
 /** Recursively unwraps Vue proxies without relying on structuredClone. */
@@ -62,6 +63,12 @@ function subtitle(node: ScenarioGraphNode): string {
   if (config.sequence) return config.sequence.steps.map(step => step.matchKey).join(' → ');
   if (node.type === 'alarm-output') {
     return `severity ${config.severity ?? 5} · cooldown ${Math.round((config.dedup?.cooldownSeconds ?? 0) / 60)}m`;
+  }
+  if (node.type === 'debug-output') {
+    const debug = config.debug;
+    if (!debug?.active) return 'inactive';
+    if (debug.mode === 'path') return debug.path?.trim() || 'path';
+    return 'complete';
   }
   return '';
 }

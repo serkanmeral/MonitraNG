@@ -8000,7 +8000,10 @@
         "alarmDescription": "Produces an alarm when the flow matches.",
         "stop": "Stop",
         "stopSubtitle": "End the flow",
-        "stopDescription": "Ends this evaluation branch without producing an alarm."
+        "stopDescription": "Ends this evaluation branch without producing an alarm.",
+        "debug": "Debug",
+        "debugSubtitle": "Simulation watch",
+        "debugDescription": "Shows observation content during simulation; no production side effects."
       },
       "sample": {
         "filterLabel": "Destination IP filter",
@@ -8230,6 +8233,17 @@
       "sampleResult": "Sample {index}",
       "matched": "Matched",
       "notMatched": "Did not match",
+      "debug": {
+        "simOnlyHint": "Debug output runs only in simulation; it does not raise alarms or send notifications in production.",
+        "active": "Active",
+        "mode": "Display mode",
+        "modeComplete": "Full message summary",
+        "modePath": "Selected field",
+        "path": "Field path",
+        "pathHint": "e.g. value, key, dimensions.sourceHost",
+        "panelTitle": "Debug output",
+        "empty": "No debug lines for this simulation."
+      },
       "canonicalJson": "Canonical Scenario v3 JSON",
       "addCondition": "Add condition",
       "addAggregation": "Add aggregation",

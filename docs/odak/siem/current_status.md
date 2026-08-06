@@ -1,6 +1,6 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 5 Ağustos 2026 (Scenario Studio Flow Lab · Basit olay kaynağı: EventLog Windows/Linux · Metrik eşiği)  
+**Son güncelleme:** 6 Ağustos 2026 (Scenario Studio Flow Lab · Palette grupları · Debug output)  
 **Ortam:** Günlük çalışma = **Odak production** (`192.168.20.8`). Lokal Nuxt varsayılanı prod.  
 **Detay:** [SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md) · Events UI: [../monitoring/SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md)
 
@@ -21,26 +21,50 @@ Kapsam → kazanım → onay → kod.
 
 ## Son çalışılan konu
 
-**Scenario Studio / Flow Lab — basit olay kaynağı UX.**  
-Generic teknik alanlar “Gelişmiş” altında; kullanıcı Platform → Kanal → Olay/Metrik → Host ile flow kuruyor. Managed filtre/condition node’ları otomatik üretiliyor. **Mng.Ui production deploy yapılmadı.**
+**Scenario Studio / Flow Lab — çıktı node planı + Debug MVP + palette grupları.**  
+Basit olay kaynağı (EventLog/Metrik) önceki dilimde tamamdı. Bu dilimde palette Olaylar/Fonksiyonlar/Çıktılar gruplandı; **Debug** node (sim-only) eklendi. Bildirim (mail) ve OC WI planlandı ama kodlanmadı. **Prod deploy yapılmadı.**
 
 ---
 
-## Tamamlananlar (bu dilim — 5 Ağu, akşam)
+## Tamamlananlar (bu dilim — 6 Ağu)
 
-### Basit olay kaynağı ✓
+### Palette gruplama ✓
 
-- Inspector: platform (Windows/Linux/Other) · kanal (EventLog/Metrik/App) · host multiselect (Hepsi + discovery).
-- **Windows EventLog:** `AcEventSelectorField` modal tablo (channel dictionary + özel Event ID örn. 65002).
-- **Linux EventLog:** aynı modal (journal paket + `event.action` + özel paket/action).
-- **Metrik:** metrik + operatör (gt/gte/lt/lte/eq/neq) + eşik → otomatik **condition** node (`value …`).
-- Managed scope: OS / eventCode / host / metric; kaynak silinince birlikte silinir.
-- Backend: `ScenarioSource.matchKeys`, `in` operatörü güçlendirmesi, V3 aday sorgu `$or`.
+- Node paleti: **Olaylar** · **Fonksiyonlar** · **Çıktılar**
+- Grup başlıkları collapse/expand
+- Dosya: `Mng.Ui/components/apps/alarm-center/AcFlowLab.vue`
 
-### Önceki (aynı gün / önceki dilimler) ✓
+### Debug output (`debug-output`) ✓
 
-- Scenario v3 graph backend · katalog ağacı · boş canvas · RDP TERMINAL örnek senaryo · Flow Lab layout  
-- Discovery domain ayarları · FortiGate Events UX · filtre katalog  
+- Palette Çıktılar altında; terminal node (çıkış portu yok)
+- Config: `mode` (`complete` | `path`), `path`, `active`
+- Path: `value` / `key` / `kind` / `timestamp` veya `dimensions.*` (düz alan adı da dimensions’a düşer)
+- Complete: observation özeti (`kind`, `key`, `value`, `timestamp`, `dimensions`)
+- **Yalnızca simulate/preview** — prod eval yan etki/log yok
+- `graph.output.required` için sayılmaz (Alarm veya Stop şart)
+- Preview API: `debugLines[]` (kronolojik)
+- UI: simülasyon panelinde debug listesi
+- Test: `ScenarioGraphV3Tests` (debug emit + yalnız-debug reject)
+
+### Çıktı node planı (konuşuldu, kod yok) 📋
+
+| Node | Karar | Durum |
+|------|--------|--------|
+| Alarm | Mevcut; bağımsız (diğer çıktılar Alarm’sız da çalışabilir) | ✓ var |
+| Stop | Ayrı terminal; yan etkisiz | ✓ var |
+| Debug | Sim-only (Node-RED benzeri) | ✓ bu dilim |
+| **Bildirim** | MVP: **yalnız mail**; Telegram/inApp sonra | ⏸ sıradaki |
+| **OC Work Item** | Workspace + özelliklerle WI; ayrı dilimde konuşulacak | ⏸ sonra |
+| Bağımsızlık | Bildirim/WI Alarm’a bağlı değil | ✅ karar |
+
+---
+
+## Önceki dilim (5 Ağu) — basit olay kaynağı ✓
+
+- Platform / kanal / EventLog (Win+Linux) / Metrik / host
+- Managed: `__scope-os`, `__scope-eventcode`, `__scope-host`, `__scope-metric`
+- Backend: `matchKeys`, `in`, V3 `$or`
+- Commit: `7f3f3855`
 
 Detay: [../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md)
 
@@ -50,22 +74,25 @@ Detay: [../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMP
 
 | Bileşen | Durum |
 |---------|--------|
-| `mngalarm` / worker | Önceki v3 dilimleri prod’da olabilir; bu akşamki UI+matchKeys değişiklikleri **commit sonrası deploy bekliyor** |
-| `Mng.Ui` Flow Lab / basit kaynak | ✅ lokal · ⏸️ **prod deploy yok** |
-| `mnglogcollector` / `mngreactor` | Önceki dilimler (değişmedi) |
+| `mngalarm` (matchKeys + **debug-output**) | Kod commit’lenecek; **prod deploy yok** |
+| `Mng.Ui` Flow Lab (palette + debug + basit kaynak) | Lokal · **prod deploy yok** |
+| `mnglogcollector` / `mngreactor` | Değişmedi |
+
+> Debug satırları için Flow Lab simulate, güncel **MngAlarm** API ister.
 
 ---
 
-## Sıradaki adım
+## Sıradaki adım (buradan devam)
 
-1. **Uygulama/Servis** kanalı basit UX (veya Alarm/Stop çıktı node’ları).
-2. Basit condition/aggregation sadeleştirmesi (opsiyonel).
-3. UI (+ gerekirse Alarm) kontrollü prod deploy.
-4. Park maddeleri (UTM/VPN, new_flow, …) ayrı dilim.
+1. **Bildirim node (mail MVP)** — yapı konuşulup implement (Notifier mail API; Alarm’dan bağımsız).
+2. Alarm / Stop basit UX (opsiyonel, paralel).
+3. **App/Servis** kanalı basit UX (preset → live/staleness).
+4. OC Work Item çıktısı — ayrı planlama dilimi.
+5. Kontrollü `Mng.Ui` + `MngAlarm` prod deploy (açık talepte).
 
 ---
 
 ## Nerede kalmıştık
 
-Flow Lab üzerinde **basit olay kaynağı** Windows EventLog + Linux journal + Metrik eşiği tamamlandı.  
-**Kaldığımız nokta:** App/Servis kanalı veya çıktı node’ları (Alarm/Stop) ile devam; ardından UI deploy kararı.
+Flow Lab: palette grupları + **Debug** tamam.  
+**Kaldığımız nokta:** Bildirim (mail MVP) node yapısını konuşup geliştirmek; WI ve Telegram sonra. Deploy yok.

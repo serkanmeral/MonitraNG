@@ -8043,7 +8043,7 @@
       },
       "nodeGroups": {
         "subtitle": "Akış yapı taşları",
-        "events": "Olay",
+        "events": "Olaylar",
         "functions": "Fonksiyonlar",
         "outputs": "Çıktılar"
       },
@@ -8094,7 +8094,10 @@
         "alarmDescription": "Akış eşleştiğinde alarm üretir.",
         "stop": "Durdur",
         "stopSubtitle": "Akışı sonlandır",
-        "stopDescription": "Alarm üretmeden bu değerlendirme kolunu sonlandırır."
+        "stopDescription": "Alarm üretmeden bu değerlendirme kolunu sonlandırır.",
+        "debug": "Debug",
+        "debugSubtitle": "Simülasyon izleme",
+        "debugDescription": "Simülasyonda observation içeriğini gösterir; prod'da yan etki yok."
       },
       "sample": {
         "filterLabel": "Hedef IP filtresi",
@@ -8324,6 +8327,17 @@
       "sampleResult": "Örnek {index}",
       "matched": "Eşleşti",
       "notMatched": "Eşleşmedi",
+      "debug": {
+        "simOnlyHint": "Debug çıktısı yalnızca simülasyonda çalışır; yayınlanmış senaryoda alarm veya bildirim üretmez.",
+        "active": "Aktif",
+        "mode": "Gösterim modu",
+        "modeComplete": "Tam mesaj özeti",
+        "modePath": "Seçili alan",
+        "path": "Alan yolu",
+        "pathHint": "Örn: value, key, dimensions.sourceHost",
+        "panelTitle": "Debug çıktısı",
+        "empty": "Bu simülasyonda debug satırı yok."
+      },
       "canonicalJson": "Kanonik Scenario v3 JSON",
       "addCondition": "Koşul ekle",
       "addAggregation": "Toplama ekle",

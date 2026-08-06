@@ -751,8 +751,13 @@ public sealed class ScenarioService(
         };
         var matches = new List<ScenarioPreviewMatch>();
         var traces = new List<ScenarioPreviewNodeTrace>();
+        var debugLines = new List<ScenarioPreviewDebugLine>();
         var dedup = new HashSet<string>(StringComparer.Ordinal);
         DateTime? nextEvaluationAt = null;
+        var labels = definition.Graph?.Nodes.ToDictionary(
+            x => x.Id,
+            x => string.IsNullOrWhiteSpace(x.Layout?.Label) ? x.Id : x.Layout!.Label!,
+            StringComparer.Ordinal) ?? new Dictionary<string, string>(StringComparer.Ordinal);
         for (var i = 0; i < request.Samples!.Count; i++)
         {
             var sample = request.Samples[i];
@@ -788,12 +793,23 @@ public sealed class ScenarioService(
                 Outcome = x.Outcome,
                 NextEvaluationAt = x.NextEvaluationAt
             }));
+            debugLines.AddRange(execution.DebugLines.Select(x => new ScenarioPreviewDebugLine
+            {
+                SampleIndex = i,
+                NodeId = x.NodeId,
+                Label = labels.GetValueOrDefault(x.NodeId, x.NodeId),
+                Mode = x.Mode,
+                Path = x.Path,
+                Payload = x.Payload,
+                At = x.At
+            }));
         }
         return new ScenarioPreviewResponse
         {
             Matches = matches,
             DedupKeys = dedup.ToList(),
             NodeTrace = traces,
+            DebugLines = debugLines,
             ExecutionOrder = ScenarioCompiler.CompileGraph(definition).TopologicalOrder,
             NextEvaluationAt = nextEvaluationAt
         };

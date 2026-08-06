@@ -94,7 +94,14 @@ export type ScenarioNodeType =
   | 'sequence'
   | 'decision'
   | 'alarm-output'
-  | 'stop-output';
+  | 'stop-output'
+  | 'debug-output';
+
+export interface ScenarioDebug {
+  mode: 'complete' | 'path';
+  path?: string;
+  active: boolean;
+}
 
 export interface ScenarioNodeConfig {
   source?: ScenarioSource;
@@ -106,6 +113,7 @@ export interface ScenarioNodeConfig {
   dedup?: ScenarioDedup;
   severity?: number;
   settleAfterSeconds: number;
+  debug?: ScenarioDebug;
 }
 
 export interface ScenarioNodeLayout {
@@ -249,8 +257,19 @@ export interface ScenarioPreviewResponse {
   groupCounts: Record<string, number>;
   dedupKeys: string[];
   nodeTrace: ScenarioPreviewNodeTrace[];
+  debugLines?: ScenarioPreviewDebugLine[];
   executionOrder: string[];
   nextEvaluationAt?: string | null;
+}
+
+export interface ScenarioPreviewDebugLine {
+  sampleIndex: number;
+  nodeId: string;
+  label: string;
+  mode: string;
+  path?: string | null;
+  payload?: unknown;
+  at: string;
 }
 
 export interface ScenarioPreviewNodeTrace {

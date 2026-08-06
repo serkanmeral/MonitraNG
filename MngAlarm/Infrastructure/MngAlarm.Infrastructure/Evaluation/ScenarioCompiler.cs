@@ -289,7 +289,8 @@ public static class ScenarioCompiler
         var supported = new HashSet<string>([
             ScenarioNodeTypes.Source, ScenarioNodeTypes.Condition, ScenarioNodeTypes.Filter,
             ScenarioNodeTypes.Aggregation, ScenarioNodeTypes.Threshold, ScenarioNodeTypes.Sequence,
-            ScenarioNodeTypes.Decision, ScenarioNodeTypes.AlarmOutput, ScenarioNodeTypes.StopOutput
+            ScenarioNodeTypes.Decision, ScenarioNodeTypes.AlarmOutput, ScenarioNodeTypes.StopOutput,
+            ScenarioNodeTypes.DebugOutput
         ], StringComparer.Ordinal);
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (node, index) in graph.Nodes.Select((x, i) => (x, i)))
@@ -315,11 +316,20 @@ public static class ScenarioCompiler
                 if (string.IsNullOrWhiteSpace(node.Config.Dedup?.KeyTemplate))
                     Add("graph.output.dedup.required", "Alarm output requires dedup configuration.", $"{path}.config.dedup");
             }
+            if (node.Type == ScenarioNodeTypes.DebugOutput)
+            {
+                var mode = node.Config.Debug?.Mode?.Trim().ToLowerInvariant() ?? "complete";
+                if (mode is not ("complete" or "path"))
+                    Add("graph.debug.mode.invalid", "Debug mode must be 'complete' or 'path'.", $"{path}.config.debug.mode");
+                if (mode == "path" && string.IsNullOrWhiteSpace(node.Config.Debug?.Path))
+                    Add("graph.debug.path.required", "Debug path mode requires a field path.", $"{path}.config.debug.path");
+            }
             if (node.Config.SettleAfterSeconds is < 0 or > 604800)
                 Add("graph.node.settle.range", "settleAfterSeconds must be between 0 and 7 days.", $"{path}.config.settleAfterSeconds");
         }
         if (graph.Nodes.Count(x => x.Type == ScenarioNodeTypes.Source) == 0)
             Add("graph.source.required", "Graph requires at least one source.", "graph.nodes");
+        // Debug-output is sim-only and does not satisfy the required real output (alarm/stop).
         if (graph.Nodes.All(x => x.Type is not (ScenarioNodeTypes.AlarmOutput or ScenarioNodeTypes.StopOutput)))
             Add("graph.output.required", "Graph requires at least one output.", "graph.nodes");
 
@@ -342,7 +352,10 @@ public static class ScenarioCompiler
                 or ScenarioNodeTypes.Decision or ScenarioNodeTypes.Aggregation or ScenarioNodeTypes.Threshold
                 or ScenarioNodeTypes.Sequence
                 ? new[] { "true", "false" }
-                : fromType is ScenarioNodeTypes.AlarmOutput or ScenarioNodeTypes.StopOutput ? [] : ["next"];
+                : fromType is ScenarioNodeTypes.AlarmOutput or ScenarioNodeTypes.StopOutput
+                    or ScenarioNodeTypes.DebugOutput
+                    ? []
+                    : ["next"];
             if (!allowedPorts.Contains(edge.FromPort, StringComparer.Ordinal))
                 Add("graph.edge.fromPort.invalid", "Edge uses an invalid output port.", $"{path}.fromPort");
             indegree[edge.To]++;
@@ -458,14 +471,20 @@ public static class ScenarioCompiler
         return true;
     }
 
-    private static object? ResolveField(string field, ObservationEnvelope observation)
+    public static object? ResolveObservationField(string field, ObservationEnvelope observation)
     {
-        if (field == "value") return observation.Value;
-        if (field == "key") return observation.Key;
-        if (field == "kind") return observation.Kind;
-        var dimension = field.StartsWith("dimensions.", StringComparison.Ordinal) ? field[11..] : field;
+        if (string.IsNullOrWhiteSpace(field)) return null;
+        var trimmed = field.Trim();
+        if (trimmed == "value") return observation.Value;
+        if (trimmed == "key") return observation.Key;
+        if (trimmed == "kind") return observation.Kind;
+        if (trimmed == "timestamp") return observation.Timestamp;
+        var dimension = trimmed.StartsWith("dimensions.", StringComparison.Ordinal) ? trimmed[11..] : trimmed;
         return observation.Dimensions.TryGetValue(dimension, out var value) ? value : null;
     }
+
+    private static object? ResolveField(string field, ObservationEnvelope observation) =>
+        ResolveObservationField(field, observation);
 
     private static bool Compare(object? actual, object? expected, string op)
     {

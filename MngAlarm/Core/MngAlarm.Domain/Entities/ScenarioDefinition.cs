@@ -35,6 +35,7 @@ public static class ScenarioNodeTypes
     public const string Decision = "decision";
     public const string AlarmOutput = "alarm-output";
     public const string StopOutput = "stop-output";
+    public const string DebugOutput = "debug-output";
 }
 
 [BsonIgnoreExtraElements]
@@ -100,6 +101,27 @@ public sealed class ScenarioNodeConfig
 
     [BsonElement("settleAfterSeconds")]
     public int SettleAfterSeconds { get; set; }
+
+    [BsonElement("debug")]
+    [BsonIgnoreIfNull]
+    public ScenarioDebug? Debug { get; set; }
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioDebug
+{
+    /// <summary>complete = observation summary; path = single field from observation root.</summary>
+    [BsonElement("mode")]
+    public string Mode { get; set; } = "complete";
+
+    /// <summary>Field path when mode is path (e.g. value, key, dimensions.sourceHost).</summary>
+    [BsonElement("path")]
+    [BsonIgnoreIfNull]
+    public string? Path { get; set; }
+
+    /// <summary>When false, simulate still reaches the node but emits no debug line.</summary>
+    [BsonElement("active")]
+    public bool Active { get; set; } = true;
 }
 
 [BsonIgnoreExtraElements]

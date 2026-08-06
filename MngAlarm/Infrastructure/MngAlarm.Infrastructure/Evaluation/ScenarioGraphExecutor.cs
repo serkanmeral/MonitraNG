@@ -28,12 +28,13 @@ public sealed class ScenarioGraphExecutor(
         var reached = new HashSet<string>(StringComparer.Ordinal);
         var traces = new List<ScenarioNodeTrace>();
         var outputs = new List<ScenarioOutputMatch>();
+        var debugLines = new List<ScenarioDebugHit>();
         var pending = new List<ScenarioPendingEvaluation>();
         DateTime? nextEvaluationAt = null;
         if (settledNodeId != null)
         {
             if (!plan.Nodes.ContainsKey(settledNodeId))
-                return new ScenarioGraphExecutionResult(outputs, traces, pending, null);
+                return new ScenarioGraphExecutionResult(outputs, traces, pending, null, debugLines);
             var settledNode = plan.Nodes[settledNodeId];
             var settledGroup = BuildGroupKey(settledNode.Config.GroupBy, observation);
             states.Reset($"{observation.DomainName}:{rule.Id}:v3:{settledNode.Id}:{settledGroup}");
@@ -70,6 +71,7 @@ public sealed class ScenarioGraphExecutor(
                     EvaluateSequence(rule, node, observation, ref nodeNextEvaluationAt),
                 ScenarioNodeTypes.AlarmOutput => null,
                 ScenarioNodeTypes.StopOutput => null,
+                ScenarioNodeTypes.DebugOutput => null,
                 _ => false
             };
 
@@ -89,6 +91,24 @@ public sealed class ScenarioGraphExecutor(
             if (node.Type == ScenarioNodeTypes.StopOutput)
             {
                 traces.Add(new(nodeId, node.Type, "stopped", null, null));
+                continue;
+            }
+            if (node.Type == ScenarioNodeTypes.DebugOutput)
+            {
+                var debug = node.Config.Debug ?? new ScenarioDebug();
+                if (!debug.Active)
+                {
+                    traces.Add(new(nodeId, node.Type, "inactive", null, null));
+                    continue;
+                }
+
+                var mode = string.IsNullOrWhiteSpace(debug.Mode) ? "complete" : debug.Mode.Trim().ToLowerInvariant();
+                var path = string.IsNullOrWhiteSpace(debug.Path) ? null : debug.Path.Trim();
+                object? payload = mode == "path"
+                    ? ScenarioCompiler.ResolveObservationField(path ?? string.Empty, observation)
+                    : BuildObservationSummary(observation);
+                debugLines.Add(new ScenarioDebugHit(node.Id, mode, path, payload, observation.Timestamp));
+                traces.Add(new(nodeId, node.Type, "debug", null, null));
                 continue;
             }
 
@@ -111,8 +131,18 @@ public sealed class ScenarioGraphExecutor(
             traces.Add(new(nodeId, node.Type, outcome.Value ? "true" : "false", outcome, nodeNextEvaluationAt));
         }
 
-        return new ScenarioGraphExecutionResult(outputs, traces, pending, nextEvaluationAt);
+        return new ScenarioGraphExecutionResult(outputs, traces, pending, nextEvaluationAt, debugLines);
     }
+
+    private static Dictionary<string, object?> BuildObservationSummary(ObservationEnvelope observation) =>
+        new(StringComparer.Ordinal)
+        {
+            ["kind"] = observation.Kind,
+            ["key"] = observation.Key,
+            ["value"] = observation.Value,
+            ["timestamp"] = observation.Timestamp,
+            ["dimensions"] = observation.Dimensions,
+        };
 
     private bool? EvaluateThreshold(
         AlarmRuleDocument rule,
@@ -234,7 +264,15 @@ public sealed record ScenarioGraphExecutionResult(
     IReadOnlyList<ScenarioOutputMatch> Outputs,
     IReadOnlyList<ScenarioNodeTrace> Traces,
     IReadOnlyList<ScenarioPendingEvaluation> PendingEvaluations,
-    DateTime? NextEvaluationAt);
+    DateTime? NextEvaluationAt,
+    IReadOnlyList<ScenarioDebugHit> DebugLines);
+
+public sealed record ScenarioDebugHit(
+    string NodeId,
+    string Mode,
+    string? Path,
+    object? Payload,
+    DateTime At);
 
 public sealed record ScenarioPendingEvaluation(
     string NodeId,

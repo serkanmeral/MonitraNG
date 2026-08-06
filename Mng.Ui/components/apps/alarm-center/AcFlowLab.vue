@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import {
   Handle,
   MarkerType,
@@ -127,18 +127,86 @@ const aggregationNode = computed<any>(() =>
 );
 const alarmNode = computed<any>(() => nodes.value.find(node => node.data.nodeType === 'alarm-output'));
 
-const palette = computed(() => [
-  nodeTemplate('source', t('alarmCenter.flowLab.nodes.eventSource'), 'mdi-database-arrow-right-outline', '#2f80ed'),
-  // Advanced building blocks stay available; simple source covers the common path.
-  nodeTemplate('condition', t('alarmCenter.scenarioStudio.steps.condition'), 'mdi-code-braces', '#f2994a'),
-  nodeTemplate('filter', t('alarmCenter.flowLab.nodes.filter'), 'mdi-filter-outline', '#9c6ade'),
-  nodeTemplate('aggregation', t('alarmCenter.flowLab.nodes.aggregate'), 'mdi-chart-timeline-variant', '#00a896'),
-  nodeTemplate('threshold', t('alarmCenter.flowLab.nodes.threshold'), 'mdi-gauge', '#00a896'),
-  nodeTemplate('sequence', t('alarmCenter.flowLab.nodes.sequence'), 'mdi-format-list-numbered', '#5b5f97'),
-  nodeTemplate('decision', t('alarmCenter.flowLab.nodes.decision'), 'mdi-source-branch', '#f2994a'),
-  nodeTemplate('alarm-output', t('alarmCenter.flowLab.nodes.alarm'), 'mdi-bell-ring-outline', '#d64545'),
-  nodeTemplate('stop-output', t('alarmCenter.flowLab.nodes.stop'), 'mdi-stop-circle-outline', '#687386'),
+type PaletteGroupId = 'events' | 'functions' | 'outputs';
+
+const paletteGroupCollapsed = ref<Record<PaletteGroupId, boolean>>({
+  events: false,
+  functions: false,
+  outputs: false,
+});
+
+const paletteGroups = computed(() => [
+  {
+    id: 'events' as const,
+    title: t('alarmCenter.flowLab.nodeGroups.events'),
+    items: [
+      nodeTemplate('source', t('alarmCenter.flowLab.nodes.eventSource'), 'mdi-database-arrow-right-outline', '#2f80ed'),
+    ],
+  },
+  {
+    id: 'functions' as const,
+    title: t('alarmCenter.flowLab.nodeGroups.functions'),
+    items: [
+      // Advanced building blocks stay available; simple source covers the common path.
+      nodeTemplate('condition', t('alarmCenter.scenarioStudio.steps.condition'), 'mdi-code-braces', '#f2994a'),
+      nodeTemplate('filter', t('alarmCenter.flowLab.nodes.filter'), 'mdi-filter-outline', '#9c6ade'),
+      nodeTemplate('aggregation', t('alarmCenter.flowLab.nodes.aggregate'), 'mdi-chart-timeline-variant', '#00a896'),
+      nodeTemplate('threshold', t('alarmCenter.flowLab.nodes.threshold'), 'mdi-gauge', '#00a896'),
+      nodeTemplate('sequence', t('alarmCenter.flowLab.nodes.sequence'), 'mdi-format-list-numbered', '#5b5f97'),
+      nodeTemplate('decision', t('alarmCenter.flowLab.nodes.decision'), 'mdi-source-branch', '#f2994a'),
+    ],
+  },
+  {
+    id: 'outputs' as const,
+    title: t('alarmCenter.flowLab.nodeGroups.outputs'),
+    items: [
+      nodeTemplate('alarm-output', t('alarmCenter.flowLab.nodes.alarm'), 'mdi-bell-ring-outline', '#d64545'),
+      nodeTemplate('stop-output', t('alarmCenter.flowLab.nodes.stop'), 'mdi-stop-circle-outline', '#687386'),
+      nodeTemplate('debug-output', t('alarmCenter.flowLab.nodes.debug'), 'mdi-bug-outline', '#c9a227'),
+    ],
+  },
 ]);
+
+function togglePaletteGroup(groupId: PaletteGroupId) {
+  paletteGroupCollapsed.value[groupId] = !paletteGroupCollapsed.value[groupId];
+}
+
+const debugModeItems = computed(() => [
+  { value: 'complete', title: t('alarmCenter.scenarioStudio.debug.modeComplete') },
+  { value: 'path', title: t('alarmCenter.scenarioStudio.debug.modePath') },
+]);
+
+const debugLines = computed(() => simulationResult.value?.debugLines ?? []);
+
+watch(selectedNode, (node) => {
+  if (node?.data?.nodeType !== 'debug-output') return;
+  if (!node.data.config.debug) {
+    node.data.config.debug = { mode: 'complete', path: '', active: true };
+  }
+});
+
+function formatDebugPayload(payload: unknown): string {
+  if (payload === undefined) return 'undefined';
+  if (payload === null) return 'null';
+  if (typeof payload === 'string') return payload;
+  try {
+    return JSON.stringify(payload, null, 2);
+  } catch {
+    return String(payload);
+  }
+}
+
+function onDebugConfigChange() {
+  const node = selectedNode.value;
+  if (!node || node.data.nodeType !== 'debug-output') return;
+  const debug = node.data.config.debug ?? { mode: 'complete', path: '', active: true };
+  node.data.config.debug = debug;
+  node.data.subtitle = !debug.active
+    ? 'inactive'
+    : debug.mode === 'path'
+      ? (String(debug.path || '').trim() || 'path')
+      : 'complete';
+}
 
 function nodeTemplate(nodeType: ScenarioNodeType, label: string, icon: string, color: string) {
   const condition = { children: [], field: 'value', operator: 'gte', value: 1, sustainedForSeconds: 0 };
@@ -182,6 +250,11 @@ function nodeTemplate(nodeType: ScenarioNodeType, label: string, icon: string, c
       settleAfterSeconds: 0,
     },
     'stop-output': { groupBy: [], settleAfterSeconds: 0 },
+    'debug-output': {
+      debug: { mode: 'complete', path: '', active: true },
+      groupBy: [],
+      settleAfterSeconds: 0,
+    },
   };
   return { nodeType, label, icon, color, config: configs[nodeType] };
 }
@@ -916,19 +989,35 @@ onMounted(() => {
           />
         </div>
         <div class="node-library-scroll">
-          <button
-            v-for="item in palette"
-            :key="item.nodeType"
-            type="button"
-            class="palette-card"
-            draggable="true"
-            :disabled="!canEdit"
-            @dragstart="startDrag($event, item)"
-            @dblclick="addPaletteNode(item)"
-          >
-            <span :style="{ backgroundColor: item.color }"><v-icon :icon="item.icon" size="18" /></span>
-            <strong>{{ item.label }}</strong>
-          </button>
+          <div v-for="group in paletteGroups" :key="group.id" class="palette-group">
+            <button
+              type="button"
+              class="palette-group__header"
+              :aria-expanded="!paletteGroupCollapsed[group.id]"
+              @click="togglePaletteGroup(group.id)"
+            >
+              <v-icon
+                :icon="paletteGroupCollapsed[group.id] ? 'mdi-chevron-right' : 'mdi-chevron-down'"
+                size="18"
+              />
+              <strong>{{ group.title }}</strong>
+            </button>
+            <div v-show="!paletteGroupCollapsed[group.id]" class="palette-group__items">
+              <button
+                v-for="item in group.items"
+                :key="item.nodeType"
+                type="button"
+                class="palette-card"
+                draggable="true"
+                :disabled="!canEdit"
+                @dragstart="startDrag($event, item)"
+                @dblclick="addPaletteNode(item)"
+              >
+                <span :style="{ backgroundColor: item.color }"><v-icon :icon="item.icon" size="18" /></span>
+                <strong>{{ item.label }}</strong>
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -1019,13 +1108,13 @@ onMounted(() => {
               node-color="#4b5568"
               node-stroke-color="#94a3b8"
             />
-            <template v-for="nodeType in ['source','condition','filter','aggregation','threshold','sequence','decision','alarm-output','stop-output']"
+            <template v-for="nodeType in ['source','condition','filter','aggregation','threshold','sequence','decision','alarm-output','stop-output','debug-output']"
               #[`node-${nodeType}`]="{ data, selected, id }">
               <div :key="nodeType" class="flow-node"
                 :class="{
                   selected,
                   traced: traceNodeIds.includes(id),
-                  decision: !['source','alarm-output','stop-output'].includes(nodeType),
+                  decision: !['source','alarm-output','stop-output','debug-output'].includes(nodeType),
                   managed: Boolean(data.managedScope),
                 }"
                 :style="{ '--node-color': data.color }">
@@ -1033,7 +1122,7 @@ onMounted(() => {
                 <span class="accent" />
                 <v-icon :icon="data.icon" />
                 <span><strong>{{ data.label }}</strong><small>{{ data.subtitle }}</small></span>
-                <template v-if="!['source','alarm-output','stop-output'].includes(nodeType)">
+                <template v-if="!['source','alarm-output','stop-output','debug-output'].includes(nodeType)">
                   <Handle id="true" type="source" :position="Position.Right" :style="{ top: '32%', background: '#24a148' }" />
                   <Handle id="false" type="source" :position="Position.Right" :style="{ top: '72%', background: '#d64545' }" />
                 </template>
@@ -1136,6 +1225,41 @@ onMounted(() => {
               <v-text-field :model-value="selectedNode.data.config.groupBy.join(', ')" :disabled="!canEdit"
                 :label="t('alarmCenter.scenarioStudio.groupBy')" density="compact" @update:model-value="setGroupBy" />
             </template>
+            <template v-if="selectedNode.data.nodeType === 'debug-output'">
+              <v-alert type="info" variant="tonal" density="compact" class="mb-3">
+                {{ t('alarmCenter.scenarioStudio.debug.simOnlyHint') }}
+              </v-alert>
+              <v-switch
+                v-model="selectedNode.data.config.debug.active"
+                :disabled="!canEdit"
+                density="compact"
+                color="primary"
+                hide-details
+                class="mb-2"
+                :label="t('alarmCenter.scenarioStudio.debug.active')"
+                @update:model-value="onDebugConfigChange"
+              />
+              <v-select
+                v-model="selectedNode.data.config.debug.mode"
+                :disabled="!canEdit"
+                :items="debugModeItems"
+                item-title="title"
+                item-value="value"
+                :label="t('alarmCenter.scenarioStudio.debug.mode')"
+                density="compact"
+                @update:model-value="onDebugConfigChange"
+              />
+              <v-text-field
+                v-if="selectedNode.data.config.debug.mode === 'path'"
+                v-model="selectedNode.data.config.debug.path"
+                :disabled="!canEdit"
+                :label="t('alarmCenter.scenarioStudio.debug.path')"
+                :hint="t('alarmCenter.scenarioStudio.debug.pathHint')"
+                persistent-hint
+                density="compact"
+                @update:model-value="onDebugConfigChange"
+              />
+            </template>
             <v-btn block color="error" variant="tonal" prepend-icon="mdi-delete" :disabled="!canEdit" @click="removeSelectedNode">
               {{ t('alarmCenter.flowLab.deleteNode') }}
             </v-btn>
@@ -1154,6 +1278,26 @@ onMounted(() => {
             <small v-if="simulationResult">
               {{ simulationResult.matches.filter(item => item.matched).length }} / {{ simulationResult.matches.length }}
               {{ t('alarmCenter.scenarioStudio.matched') }}
+            </small>
+            <div v-if="debugLines.length" class="debug-sidebar mt-3">
+              <strong>{{ t('alarmCenter.scenarioStudio.debug.panelTitle') }}</strong>
+              <div
+                v-for="(line, index) in debugLines"
+                :key="`${line.nodeId}-${line.sampleIndex}-${index}`"
+                class="debug-line"
+              >
+                <div class="debug-line__meta">
+                  <span>{{ line.label || line.nodeId }}</span>
+                  <small>
+                    #{{ line.sampleIndex + 1 }}
+                    · {{ line.mode === 'path' ? (line.path || 'path') : 'complete' }}
+                  </small>
+                </div>
+                <pre>{{ formatDebugPayload(line.payload) }}</pre>
+              </div>
+            </div>
+            <small v-else-if="simulationResult" class="text-medium-emphasis d-block mt-2">
+              {{ t('alarmCenter.scenarioStudio.debug.empty') }}
             </small>
           </aside>
         </main>
@@ -1294,6 +1438,41 @@ onMounted(() => {
   overflow-x: hidden;
   overflow-y: auto;
   padding: 6px 8px;
+}
+
+.palette-group {
+  margin-bottom: 6px;
+}
+
+.palette-group__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.palette-group__header:hover {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.palette-group__header strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.palette-group__items {
+  padding-left: 2px;
 }
 
 .palette-card {
@@ -1463,11 +1642,54 @@ onMounted(() => {
   right: auto;
   bottom: 12px;
   width: min(360px, calc(100% - 24px));
+  max-height: min(420px, calc(100% - 24px));
+  overflow: auto;
 }
 
 .simulation-panel small {
   display: block;
   margin-top: 6px;
+}
+
+.debug-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debug-sidebar > strong {
+  font-size: 0.8rem;
+}
+
+.debug-line {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.debug-line__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.debug-line__meta small {
+  margin-top: 0;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.debug-line pre {
+  margin: 0;
+  max-height: 140px;
+  overflow: auto;
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .sequence-step {
