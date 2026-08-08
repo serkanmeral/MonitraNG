@@ -8,6 +8,7 @@ Versiyonlama [Semantic Versioning](https://semver.org/spec/v2.0.0.html) kullanı
 ## [Unreleased]
 
 ### Added
+- **Agent → Alarm observation köprüsü** — ingest sonrası `monitra.observations` publish (`AgentObservationPublisher`). Key: semantik (RDP) veya **paket id**; Event ID `dimensions.eventCode`; `sourceHost` kısa hostname. Allowlist `*` = tüm paketler. Odak: `mnglogcollector` deploy (8 Ağu 2026). Ayrıntı: `docs/odak/alarm/AGENT_OBSERVATION_AND_FLOW_LAB.md`.
 - **Linux agent (P3)** — `MngLogs.Agent.Core` + `MngLogs.Agent.Linux`: journald, systemd watch, Local UI, `publish-agent-linux.ps1`, Odak deploy scriptleri (`deploy-agent-odak-prod.ps1` / `*-test.ps1`).
 - **Collector retarget** — `retarget-collector-elevated.ps1` (varsayılan prod `:5091`).
 - **MSI / GPO paketleme** — WiX per-machine MSI (`MngLogsAgent` servisi), IT helper kılavuzları, self-update yok (MajorUpgrade).

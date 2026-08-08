@@ -9,6 +9,7 @@ import type {
   ScenarioNodeConfig,
   ScenarioNodeType,
 } from '@/types/apps/scenario';
+import { alarmOutputSubtitle, normalizeAlarmDedup } from '@/utils/alarm/alarmOutputMerge';
 
 export interface ScenarioVueFlow {
   nodes: Node[];
@@ -44,10 +45,14 @@ export function cloneScenarioValue<T>(value: T): T {
 }
 
 function normalizeConfig(config?: Partial<ScenarioNodeConfig>): ScenarioNodeConfig {
+  const cloned = cloneScenarioValue(config ?? {});
   return {
-    ...cloneScenarioValue(config ?? {}),
+    ...cloned,
     groupBy: cloneScenarioValue(config?.groupBy ?? []),
     settleAfterSeconds: Number(config?.settleAfterSeconds ?? 0),
+    dedup: config?.dedup || cloned.dedup
+      ? normalizeAlarmDedup(config?.dedup ?? cloned.dedup)
+      : undefined,
   };
 }
 
@@ -62,7 +67,12 @@ function subtitle(node: ScenarioGraphNode): string {
   }
   if (config.sequence) return config.sequence.steps.map(step => step.matchKey).join(' → ');
   if (node.type === 'alarm-output') {
-    return `severity ${config.severity ?? 5} · cooldown ${Math.round((config.dedup?.cooldownSeconds ?? 0) / 60)}m`;
+    return alarmOutputSubtitle({
+      groupBy: config.groupBy ?? [],
+      settleAfterSeconds: config.settleAfterSeconds ?? 0,
+      severity: config.severity,
+      dedup: config.dedup,
+    });
   }
   if (node.type === 'debug-output') {
     const debug = config.debug;
@@ -153,13 +163,37 @@ function projectV2(definition: ScenarioDefinitionV2, severity = 5): ScenarioDefi
   };
 }
 
+function clampSeverity(value: unknown, fallback = 5): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(10, Math.max(1, Math.round(n)));
+}
+
+/** Ensures every alarm-output node has an explicit severity (version field is fallback). */
+export function syncAlarmOutputSeverity(
+  definition: ScenarioDefinitionV3,
+  severity = 5,
+): ScenarioDefinitionV3 {
+  const next = cloneScenarioValue(definition);
+  const fallback = clampSeverity(severity, 5);
+  for (const node of next.graph.nodes) {
+    if (node.type !== 'alarm-output') continue;
+    node.config = normalizeConfig({
+      ...node.config,
+      severity: clampSeverity(node.config.severity ?? fallback, fallback),
+    });
+  }
+  return next;
+}
+
 export function ensureScenarioV3(
   definition: ScenarioDefinition,
   severity = 5,
 ): ScenarioDefinitionV3 {
-  return definition.schemaVersion === 3
+  const base = definition.schemaVersion === 3
     ? cloneScenarioValue(definition)
     : projectV2(definition, severity);
+  return syncAlarmOutputSeverity(base, severity);
 }
 
 export function scenarioToVueFlow(
@@ -206,6 +240,7 @@ export function vueFlowToScenario(
   nodes: Node[],
   edges: Edge[],
   previous?: ScenarioDefinitionV3,
+  severity = 5,
 ): ScenarioDefinitionV3 {
   const graphNodes: ScenarioGraphNode[] = nodes.map(node => ({
     id: node.id,
@@ -235,7 +270,10 @@ export function vueFlowToScenario(
       (legacy as Record<string, unknown>)[key] = cloneScenarioValue(previous[key]);
     }
   }
-  return { ...legacy, schemaVersion: 3, graph: { nodes: graphNodes, edges: graphEdges } };
+  return syncAlarmOutputSeverity(
+    { ...legacy, schemaVersion: 3, graph: { nodes: graphNodes, edges: graphEdges } },
+    severity,
+  );
 }
 
 export function isWizardCompatible(definition: ScenarioDefinitionV3): boolean {

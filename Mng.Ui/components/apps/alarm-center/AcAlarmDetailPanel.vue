@@ -21,7 +21,7 @@ import {
   statusColor,
   statusLabel,
 } from '@/composables/useAlarmList';
-import { copyTextToClipboard } from '@/composables/useSecEventList';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { buildRuleConditionSummary } from '@/composables/useAlarmRuleList';
 
 const props = defineProps<{

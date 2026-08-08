@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngAlarm.Application.Configuration;
 using MngAlarm.Application.Services;
+using MngAlarm.Domain.Entities;
+using MngAlarm.Infrastructure.Evaluation;
 using MngAlarm.Infrastructure.State;
 
 namespace MngAlarm.Infrastructure.Services;
@@ -74,6 +76,28 @@ public sealed class ScenarioDueEvaluationService(
                     state.Id,
                     state.RuleId,
                     state.NodeId);
+                try
+                {
+                    using var errorScope = scopeFactory.CreateScope();
+                    var rules = errorScope.ServiceProvider.GetRequiredService<IAlarmRuleRepository>();
+                    var rule = await rules.GetByIdAsync(state.DomainName, state.RuleId, cancellationToken);
+                    if (rule != null && !string.IsNullOrWhiteSpace(rule.ScenarioId))
+                    {
+                        rule.RuntimeHealth ??= new ScenarioRuntimeHealth();
+                        ScenarioHealthTracker.RecordError(
+                            rule.RuntimeHealth,
+                            timeProvider.GetUtcNow().UtcDateTime,
+                            ex,
+                            state.NodeId);
+                        rule.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
+                        await rules.UpdateAsync(rule, cancellationToken);
+                    }
+                }
+                catch (Exception healthEx)
+                {
+                    logger.LogWarning(healthEx, "Failed to persist runtime health for rule={RuleId}", state.RuleId);
+                }
+
                 await dueStates.ReleaseAsync(
                     state.Id,
                     state.ClaimToken!,

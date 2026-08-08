@@ -26,6 +26,7 @@ public sealed class ObservationProcessor : IObservationProcessor
     private readonly ILogger<ObservationProcessor> _logger;
     private readonly ScenarioGraphExecutor _graphExecutor;
     private readonly IScenarioDueStateStore _dueStates;
+    private readonly IScenarioExecutionRepository? _executions;
     private readonly TimeProvider _timeProvider;
 
     public ObservationProcessor(
@@ -40,6 +41,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         ILogger<ObservationProcessor> logger,
         ScenarioGraphExecutor? graphExecutor = null,
         IScenarioDueStateStore? dueStates = null,
+        IScenarioExecutionRepository? executions = null,
         TimeProvider? timeProvider = null)
     {
         _rules = rules;
@@ -53,6 +55,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         _logger = logger;
         _graphExecutor = graphExecutor ?? new ScenarioGraphExecutor(windows, sequences);
         _dueStates = dueStates ?? new InMemoryScenarioDueStateStore();
+        _executions = executions;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -77,11 +80,44 @@ public sealed class ObservationProcessor : IObservationProcessor
 
         foreach (var rule in graphRules)
         {
-            var outcome = await ProcessGraphAsync(rule, observation, cancellationToken);
-            raised += outcome.Raised;
-            updated += outcome.Updated;
-            resolved += outcome.Resolved;
-            alarmIds.AddRange(outcome.AlarmIds);
+            var startedAt = _timeProvider.GetUtcNow().UtcDateTime;
+            try
+            {
+                var outcome = await ProcessGraphAsync(rule, observation, cancellationToken);
+                await RecordRuleSuccessAsync(rule, cancellationToken);
+                await TryRecordExecutionAsync(
+                    rule,
+                    observation,
+                    ScenarioExecutionTriggers.Observation,
+                    startedAt,
+                    outcome.Execution,
+                    new RuleOutcomeSummary(outcome.Raised, outcome.Updated),
+                    null,
+                    cancellationToken);
+                raised += outcome.Raised;
+                updated += outcome.Updated;
+                resolved += outcome.Resolved;
+                alarmIds.AddRange(outcome.AlarmIds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "V3 graph evaluation failed rule={RuleId} scenario={ScenarioId} key={Key}",
+                    rule.Id,
+                    rule.ScenarioId,
+                    observation.Key);
+                await RecordRuleErrorAsync(rule, ex, null, cancellationToken);
+                await TryRecordExecutionAsync(
+                    rule,
+                    observation,
+                    ScenarioExecutionTriggers.Observation,
+                    startedAt,
+                    new ScenarioGraphExecutionResult([], [], [], null, []),
+                    null,
+                    ex,
+                    cancellationToken);
+            }
         }
 
         foreach (var rule in rules)
@@ -140,14 +176,15 @@ public sealed class ObservationProcessor : IObservationProcessor
         };
     }
 
-    private async Task<RuleOutcome> ProcessGraphAsync(
+    private async Task<GraphRuleOutcome> ProcessGraphAsync(
         AlarmRuleDocument rule,
         ObservationEnvelope observation,
         CancellationToken cancellationToken)
     {
         var execution = _graphExecutor.Execute(rule, observation);
         await PersistDueStatesAsync(rule, observation, execution, null, cancellationToken);
-        return await ProcessGraphOutputsAsync(rule, observation, execution, cancellationToken);
+        var outputs = await ProcessGraphOutputsAsync(rule, observation, execution, cancellationToken);
+        return new GraphRuleOutcome(outputs.Raised, outputs.Updated, outputs.Resolved, outputs.AlarmIds, execution);
     }
 
     public async Task<AlarmProcessResult> ProcessDueAsync(
@@ -170,9 +207,20 @@ public sealed class ObservationProcessor : IObservationProcessor
             Timestamp = state.NextEvaluationAt,
             Dimensions = ObservationValueNormalizer.NormalizeDimensions(state.Observation.Dimensions)
         };
+        var startedAt = _timeProvider.GetUtcNow().UtcDateTime;
         var execution = _graphExecutor.ExecuteDue(rule, observation, state.NodeId);
         await PersistDueStatesAsync(rule, observation, execution, state.Id, cancellationToken);
         var outcome = await ProcessGraphOutputsAsync(rule, observation, execution, cancellationToken);
+        await RecordRuleSuccessAsync(rule, cancellationToken);
+        await TryRecordExecutionAsync(
+            rule,
+            observation,
+            ScenarioExecutionTriggers.Due,
+            startedAt,
+            execution,
+            new RuleOutcomeSummary(outcome.Raised, outcome.Updated),
+            null,
+            cancellationToken);
         return new AlarmProcessResult
         {
             RulesEvaluated = 1,
@@ -181,6 +229,76 @@ public sealed class ObservationProcessor : IObservationProcessor
             AlarmsResolved = outcome.Resolved,
             AlarmIds = outcome.AlarmIds
         };
+    }
+
+    private async Task TryRecordExecutionAsync(
+        AlarmRuleDocument rule,
+        ObservationEnvelope observation,
+        string trigger,
+        DateTime startedAt,
+        ScenarioGraphExecutionResult execution,
+        RuleOutcomeSummary? outputs,
+        Exception? error,
+        CancellationToken cancellationToken)
+    {
+        if (_executions == null || string.IsNullOrWhiteSpace(rule.ScenarioId)) return;
+        if (error == null && !ScenarioExecutionRecorder.ShouldPersist(trigger, execution)) return;
+        try
+        {
+            var finishedAt = _timeProvider.GetUtcNow().UtcDateTime;
+            var document = ScenarioExecutionRecorder.Build(
+                rule,
+                observation,
+                execution,
+                trigger,
+                startedAt,
+                finishedAt,
+                outputs,
+                error);
+            await _executions.InsertAndPruneAsync(document, cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to persist scenario execution log scenario={ScenarioId} rule={RuleId}",
+                rule.ScenarioId,
+                rule.Id);
+        }
+    }
+
+    private async Task RecordRuleSuccessAsync(AlarmRuleDocument rule, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(rule.ScenarioId)) return;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+        var previous = rule.RuntimeHealth;
+        var shouldPersist = previous == null
+            || previous.ConsecutiveErrors > 0
+            || !string.Equals(previous.Level, ScenarioHealthLevels.Healthy, StringComparison.Ordinal)
+            || previous.LastSuccessAt == null
+            || now - previous.LastSuccessAt > TimeSpan.FromMinutes(5);
+        rule.RuntimeHealth ??= new ScenarioRuntimeHealth();
+        ScenarioHealthTracker.RecordSuccess(rule.RuntimeHealth, now);
+        if (!shouldPersist) return;
+        rule.UpdatedAt = now;
+        await _rules.UpdateAsync(rule, cancellationToken);
+    }
+
+    private async Task RecordRuleErrorAsync(
+        AlarmRuleDocument rule,
+        Exception exception,
+        string? nodeId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(rule.ScenarioId)) return;
+        rule.RuntimeHealth ??= new ScenarioRuntimeHealth();
+        ScenarioHealthTracker.RecordError(
+            rule.RuntimeHealth,
+            _timeProvider.GetUtcNow().UtcDateTime,
+            exception,
+            nodeId);
+        rule.UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime;
+        await _rules.UpdateAsync(rule, cancellationToken);
     }
 
     private async Task<RuleOutcome> ProcessGraphOutputsAsync(
@@ -192,10 +310,6 @@ public sealed class ObservationProcessor : IObservationProcessor
         var total = RuleOutcome.Empty;
         foreach (var output in execution.Outputs)
         {
-            var existing = await _alarms.GetActiveByDedupKeyAsync(
-                observation.DomainName,
-                output.DedupKey,
-                cancellationToken);
             var outputRule = CopyForOutput(rule, output);
             var context = BuildThresholdContext(observation);
             context["scenarioId"] = rule.ScenarioId;
@@ -213,6 +327,15 @@ public sealed class ObservationProcessor : IObservationProcessor
             }).ToList();
 
             RuleOutcome result;
+            AlarmDocument? existing = null;
+            if (output.MergeEnabled)
+            {
+                existing = await _alarms.GetActiveByDedupKeyAsync(
+                    observation.DomainName,
+                    output.DedupKey,
+                    cancellationToken);
+            }
+
             if (existing == null)
                 result = await RaiseAsync(outputRule, observation, output.DedupKey, context, output.OutputNodeId, cancellationToken);
             else if (output.CooldownSeconds > 0
@@ -712,6 +835,13 @@ public sealed class ObservationProcessor : IObservationProcessor
         await _publisher.PublishAsync(message, lifecycle, cancellationToken);
         await _notificationDispatch.DispatchAsync(message, cancellationToken);
     }
+
+    private readonly record struct GraphRuleOutcome(
+        int Raised,
+        int Updated,
+        int Resolved,
+        IReadOnlyList<string> AlarmIds,
+        ScenarioGraphExecutionResult Execution);
 
     private readonly record struct RuleOutcome(int Raised, int Updated, int Resolved, IReadOnlyList<string> AlarmIds)
     {

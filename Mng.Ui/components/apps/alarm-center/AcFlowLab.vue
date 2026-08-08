@@ -14,6 +14,7 @@ import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAppToast } from '@/composables/useAppToast';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useScenarioStudioApi } from '@/composables/useScenarioStudioApi';
 import {
@@ -22,19 +23,23 @@ import {
   type ScenarioCatalogItem,
   type ScenarioPreviewResponse,
   type ScenarioSampleObservation,
+  type ScenarioNodeConfig,
   type ScenarioNodeType,
   type ScenarioVersion,
+  type ScenarioExecution,
 } from '@/types/apps/scenario';
 import {
   cloneScenarioValue,
   ensureScenarioV3,
   isWizardCompatible,
   scenarioToVueFlow,
+  syncAlarmOutputSeverity,
   traceGraph,
   vueFlowToScenario,
 } from '@/utils/alarm/scenarioFlowMapper';
 import AcScenarioCatalogTree from '@/components/apps/alarm-center/AcScenarioCatalogTree.vue';
 import AcScenarioSourceInspector from '@/components/apps/alarm-center/AcScenarioSourceInspector.vue';
+import AcAlarmOutputInspector from '@/components/apps/alarm-center/AcAlarmOutputInspector.vue';
 import {
   coerceSimpleSourceState,
   defaultSimpleSourceState,
@@ -52,8 +57,23 @@ import {
   type SimpleMetricComparison,
   type SimpleSourceState,
 } from '@/utils/alarm/scenarioSimpleSource';
+import {
+  alarmOutputSubtitle,
+  applyMergeScopeToConfig,
+  defaultAlarmDedup,
+  normalizeAlarmDedup,
+} from '@/utils/alarm/alarmOutputMerge';
+import {
+  healthColor,
+  lifecycleChipColor,
+  resolveLifecycleChip,
+  resolveOperationalStatus,
+  showHealthBadge,
+} from '@/utils/alarm/scenarioOperationalStatus';
+import type { ScenarioOperationalStatus } from '@/types/apps/scenario';
 
 const { t } = useAppI18n();
+const { push: pushToast } = useAppToast();
 const api = useScenarioStudioApi();
 const { addEdges, fitView, removeNodes, screenToFlowCoordinate } = useVueFlow();
 const {
@@ -80,13 +100,18 @@ const nodes = ref<Node[]>([]);
 const edges = ref<Edge[]>([]);
 const selectedNodeId = ref<string | null>(null);
 const search = ref('');
-const message = ref('');
 const localError = ref('');
 const catalogLoaded = ref(false);
 const showWizard = ref(false);
 const showAudit = ref(false);
+const showRename = ref(false);
 const showSimulation = ref(false);
+const showExecutions = ref(false);
+const flowName = ref('');
+const renameInput = ref('');
 const auditEntries = ref<ScenarioAuditEntry[]>([]);
+const executionEntries = ref<ScenarioExecution[]>([]);
+const selectedExecutionId = ref<string | null>(null);
 const simulationResult = ref<ScenarioPreviewResponse | null>(null);
 const simulationJson = ref(JSON.stringify([{
   kind: 'event',
@@ -100,32 +125,96 @@ const traceEdgeIds = ref<string[]>([]);
 const selectedNode = computed<any>(() =>
   nodes.value.find(node => node.id === selectedNodeId.value) ?? null,
 );
-const canEdit = computed(() =>
-  !current.value || (current.value.status === 'draft' && !current.value.isReadOnly),
+const currentCatalogItem = computed(() =>
+  catalog.value.find(item => item.scenarioId === current.value?.scenarioId) ?? null,
 );
-const canPublish = computed(() =>
-  current.value?.status === 'validated'
-  && current.value.validation?.isValid === true
-  && !current.value.isReadOnly,
-);
+const operationalStatus = computed<ScenarioOperationalStatus>(() => {
+  if (currentCatalogItem.value) {
+    return currentCatalogItem.value.operationalStatus
+      || resolveOperationalStatus(currentCatalogItem.value);
+  }
+  if (!current.value) return 'draft';
+  if (current.value.status === 'published') {
+    return current.value.enabled ? 'running' : 'stopped';
+  }
+  if (current.value.status === 'archived') return 'archived';
+  return 'draft';
+});
+/** Open (running) flows are locked; close first to edit. */
+const isRunningLocked = computed(() => operationalStatus.value === 'running');
+const canEdit = computed(() => {
+  if (isRunningLocked.value) return false;
+  return !current.value
+    || (!current.value.isReadOnly
+      && (current.value.status === 'draft' || current.value.status === 'validated'));
+});
+const canPublish = computed(() => {
+  if (isRunningLocked.value || current.value?.isReadOnly) return false;
+  if (!current.value) return nodes.value.length > 0;
+  return current.value.status === 'draft' || current.value.status === 'validated';
+});
 const canStartEdit = computed(() =>
   !!current.value
   && !current.value.isReadOnly
-  && current.value.status !== 'draft',
+  && !isRunningLocked.value
+  && current.value.status !== 'draft'
+  && current.value.status !== 'validated',
 );
+const lifecycleChip = computed(() => {
+  if (currentCatalogItem.value?.publishedVersion != null) {
+    return currentCatalogItem.value.enabled ? 'publishedOn' : 'publishedOff';
+  }
+  if (currentCatalogItem.value?.latestStatus === 'archived' || current.value?.status === 'archived') {
+    return 'archived';
+  }
+  if (current.value?.status === 'published') {
+    return current.value.enabled ? 'publishedOn' : 'publishedOff';
+  }
+  return 'draft';
+});
+const canToggleRun = computed(() =>
+  !!current.value
+  && current.value.status === 'published'
+  && !current.value.isReadOnly
+  && current.value.origin !== 'product',
+);
+const canArchive = computed(() =>
+  !!current.value
+  && !current.value.isReadOnly
+  && current.value.origin !== 'product'
+  && current.value.status === 'published'
+  && operationalStatus.value !== 'running',
+);
+const canRename = computed(() =>
+  !current.value?.isReadOnly && current.value?.origin !== 'product',
+);
+const flowHealth = computed(() => currentCatalogItem.value?.health || 'unknown');
 const productTemplates = computed(() => filterCatalog('product'));
 const userScenarios = computed(() => filterCatalog('user'));
-const currentDefinition = computed(() =>
-  vueFlowToScenario(nodes.value, edges.value, current.value
-    ? ensureScenarioV3(current.value.definition, current.value.severity)
-    : undefined),
-);
-const wizardCompatible = computed(() => isWizardCompatible(currentDefinition.value));
 const sourceNode = computed<any>(() => nodes.value.find(node => node.data.nodeType === 'source'));
 const aggregationNode = computed<any>(() =>
   nodes.value.find(node => ['aggregation', 'threshold'].includes(node.data.nodeType)),
 );
 const alarmNode = computed<any>(() => nodes.value.find(node => node.data.nodeType === 'alarm-output'));
+const resolvedAlarmSeverity = computed(() => {
+  const fromNode = alarmNode.value?.data?.config?.severity;
+  const fallback = current.value?.severity ?? 5;
+  const n = Number(fromNode ?? fallback);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(10, Math.max(1, Math.round(n)));
+});
+const currentDefinition = computed(() => {
+  const previous = current.value
+    ? ensureScenarioV3(current.value.definition, current.value.severity)
+    : undefined;
+  return vueFlowToScenario(
+    nodes.value,
+    edges.value,
+    previous,
+    resolvedAlarmSeverity.value,
+  );
+});
+const wizardCompatible = computed(() => isWizardCompatible(currentDefinition.value));
 
 type PaletteGroupId = 'events' | 'functions' | 'outputs';
 
@@ -245,7 +334,7 @@ function nodeTemplate(nodeType: ScenarioNodeType, label: string, icon: string, c
     decision: { condition: cloneScenarioValue(condition), groupBy: [], settleAfterSeconds: 0 },
     'alarm-output': {
       severity: 5,
-      dedup: { keyTemplate: '{ruleId}:{key}', cooldownSeconds: 300 },
+      dedup: defaultAlarmDedup(),
       groupBy: [],
       settleAfterSeconds: 0,
     },
@@ -263,12 +352,37 @@ function filterCatalog(origin: 'user' | 'product') {
   const query = search.value.trim().toLocaleLowerCase();
   return catalog.value.filter(item =>
     item.origin === origin
+    && resolveLifecycleChip(item) !== 'archived'
     && (!query || `${item.name} ${item.scenarioId} ${item.templateId ?? ''}`.toLocaleLowerCase().includes(query)),
   );
 }
 
+function notifyOk(text: string) {
+  pushToast({
+    title: t('alarmCenter.scenarioStudio.toast.successTitle'),
+    message: text,
+    severity: 'success',
+  });
+}
+
+function notifyWarn(text: string) {
+  pushToast({
+    title: t('alarmCenter.scenarioStudio.toast.warningTitle'),
+    message: text,
+    severity: 'warning',
+  });
+}
+
+function notifyErr(text: string) {
+  pushToast({
+    title: t('alarmCenter.scenarioStudio.toast.errorTitle'),
+    message: text,
+    severity: 'error',
+  });
+}
+
 function displayError(cause: any) {
-  localError.value = api.error.value || cause?.message || t('alarmCenter.scenarioStudio.errors.request');
+  notifyErr(api.error.value || cause?.message || t('alarmCenter.scenarioStudio.errors.request'));
 }
 
 async function refreshCatalog() {
@@ -288,6 +402,10 @@ async function openCatalogItem(item: ScenarioCatalogItem) {
     : item.draftVersion ?? item.publishedVersion ?? item.latestVersion;
   try {
     loadVersion(await api.getScenario(item.scenarioId, version));
+    // Kapalı yayınlı flow: doğrudan düzenlenebilir taslağa geç
+    if (canStartEdit.value) {
+      await startEditVersion();
+    }
   } catch (cause) {
     displayError(cause);
   }
@@ -300,7 +418,7 @@ async function cloneTemplate(item = current.value) {
     const version = 'latestVersion' in item ? item.latestVersion : item.version;
     loadVersion(await api.cloneTemplateToDraft(scenarioId, version));
     await refreshCatalog();
-    message.value = t('alarmCenter.scenarioStudio.messages.cloned');
+    notifyOk(t('alarmCenter.scenarioStudio.messages.cloned'));
   } catch (cause) {
     displayError(cause);
   }
@@ -308,6 +426,7 @@ async function cloneTemplate(item = current.value) {
 
 function loadVersion(version: ScenarioVersion) {
   current.value = version;
+  flowName.value = version.name || '';
   const mapped = scenarioToVueFlow(version.definition, version.severity);
   nodes.value = mapped.nodes;
   edges.value = mapped.edges;
@@ -319,39 +438,181 @@ function loadVersion(version: ScenarioVersion) {
 
 function newScenario() {
   current.value = null;
+  flowName.value = '';
   const mapped = scenarioToVueFlow(createEmptyScenarioDefinitionV3(), 5);
   nodes.value = mapped.nodes;
   edges.value = mapped.edges;
   hydrateSimpleSourceNodes();
   selectedNodeId.value = null;
   clearTrace();
-  message.value = '';
   localError.value = '';
   void nextTick(() => fitView({ padding: 0.2, duration: 0 }));
 }
 
+function resolvedFlowName(): string {
+  const name = flowName.value.trim();
+  return name || t('alarmCenter.scenarioStudio.catalog.newScenario');
+}
+
+function applyAlarmSeverityToNodes(severity: number, nodeId?: string) {
+  const next = Math.min(10, Math.max(1, Math.round(Number(severity) || 5)));
+  nodes.value = nodes.value.map((node) => {
+    if (node.data?.nodeType !== 'alarm-output') return node;
+    if (nodeId && node.id !== nodeId) return node;
+    const config = { ...node.data.config, severity: next };
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        config,
+        subtitle: alarmOutputSubtitle(config),
+      },
+    };
+  });
+}
+
+function ensureAlarmSeveritiesFilled(fallback: number) {
+  const base = Math.min(10, Math.max(1, Math.round(Number(fallback) || 5)));
+  nodes.value = nodes.value.map((node) => {
+    if (node.data?.nodeType !== 'alarm-output') return node;
+    const existing = Number(node.data.config?.severity);
+    const next = Number.isFinite(existing)
+      ? Math.min(10, Math.max(1, Math.round(existing)))
+      : base;
+    if (node.data.config?.severity === next) return node;
+    const config = { ...node.data.config, severity: next };
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        config,
+        subtitle: alarmOutputSubtitle(config),
+      },
+    };
+  });
+}
+
+function onAlarmSeverityChange(value: unknown) {
+  if (!canEdit.value) return;
+  const targetId = selectedNode.value?.data?.nodeType === 'alarm-output'
+    ? selectedNode.value.id
+    : alarmNode.value?.id;
+  applyAlarmSeverityToNodes(Number(value), targetId);
+}
+
+function onAlarmOutputConfigChange(config: ScenarioNodeConfig) {
+  if (!canEdit.value || !selectedNode.value || selectedNode.value.data.nodeType !== 'alarm-output') return;
+  const nodeId = selectedNode.value.id;
+  const nextConfig = {
+    ...config,
+    dedup: normalizeAlarmDedup(config.dedup),
+    groupBy: [...(config.groupBy ?? [])],
+  };
+  const subtitle = alarmOutputSubtitle(nextConfig);
+  nodes.value = nodes.value.map((node) => {
+    if (node.id !== nodeId) return node;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        config: nextConfig,
+        subtitle,
+      },
+    };
+  });
+}
+
+function onWizardMergeToggle(enabled: boolean) {
+  if (!canEdit.value || !alarmNode.value) return;
+  const nodeId = alarmNode.value.id;
+  const nextConfig = applyMergeScopeToConfig(
+    alarmNode.value.data.config,
+    enabled ? 'all' : 'none',
+  );
+  nodes.value = nodes.value.map((node) => {
+    if (node.id !== nodeId) return node;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        config: nextConfig,
+        subtitle: alarmOutputSubtitle(nextConfig),
+      },
+    };
+  });
+}
+
 function requestBody() {
-  const alarm = alarmNode.value;
+  const severity = resolvedAlarmSeverity.value;
+  ensureAlarmSeveritiesFilled(severity);
   return {
-    name: current.value?.name || t('alarmCenter.scenarioStudio.catalog.newScenario'),
-    severity: Number(alarm?.data.config.severity ?? current.value?.severity ?? 5),
+    name: resolvedFlowName(),
+    severity,
     enabled: Boolean(current.value?.enabled ?? false),
-    definition: currentDefinition.value,
+    definition: syncAlarmOutputSeverity(currentDefinition.value, severity),
   };
 }
 
-async function saveDraft() {
+function openRenameDialog() {
+  if (current.value?.isReadOnly) return;
+  renameInput.value = flowName.value || current.value?.name || '';
+  showRename.value = true;
+}
+
+async function confirmRename() {
+  const name = renameInput.value.trim();
+  if (!name) {
+    localError.value = t('alarmCenter.scenarioStudio.errors.name');
+    notifyWarn(localError.value);
+    return;
+  }
+  flowName.value = name;
+  showRename.value = false;
+  localError.value = '';
+  try {
+    if (!current.value) {
+      notifyOk(t('alarmCenter.scenarioStudio.messages.renamedLocal'));
+      return;
+    }
+    if (canEdit.value) {
+      await saveDraft({ silent: true });
+      notifyOk(t('alarmCenter.scenarioStudio.messages.renamed'));
+      return;
+    }
+    if (canStartEdit.value) {
+      loadVersion(await api.createNextDraft(current.value.scenarioId, requestBody()));
+      await refreshCatalog();
+      notifyOk(t('alarmCenter.scenarioStudio.messages.renamedAsDraft'));
+    }
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function saveDraft(options?: { silent?: boolean }) {
   if (!canEdit.value) return;
+  if (!flowName.value.trim()) {
+    localError.value = t('alarmCenter.scenarioStudio.errors.name');
+    notifyWarn(localError.value);
+    openRenameDialog();
+    return;
+  }
   try {
     const saved = current.value
       ? await api.updateDraft(current.value.scenarioId, current.value.version, requestBody())
       : await api.createDraft(requestBody());
     loadVersion(saved);
     await refreshCatalog();
-    message.value = t('alarmCenter.scenarioStudio.messages.saved');
+    if (!options?.silent) {
+      notifyOk(t('alarmCenter.scenarioStudio.messages.saved'));
+    }
   } catch (cause) {
     displayError(cause);
   }
+}
+
+function onFlowNameEnter() {
+  if (canEdit.value || !current.value) void saveDraft();
 }
 
 async function validateDraft() {
@@ -359,30 +620,103 @@ async function validateDraft() {
   try {
     const validation = await api.validate(current.value.scenarioId, current.value.version);
     current.value = { ...current.value, status: validation.isValid ? 'validated' : 'draft', validation };
-    message.value = t('alarmCenter.scenarioStudio.messages.validated');
+    notifyOk(t('alarmCenter.scenarioStudio.messages.validated'));
   } catch (cause) {
     displayError(cause);
   }
 }
 
 async function startEditVersion() {
-  if (!current.value || current.value.isReadOnly) return;
+  if (!current.value || current.value.isReadOnly || isRunningLocked.value) return;
   if (current.value.status === 'draft') return;
   try {
     loadVersion(await api.createNextDraft(current.value.scenarioId, requestBody()));
     await refreshCatalog();
-    message.value = t('alarmCenter.scenarioStudio.messages.nextDraft');
+    notifyOk(t('alarmCenter.scenarioStudio.messages.nextDraft'));
   } catch (cause) {
     displayError(cause);
   }
 }
 
 async function publishDraft() {
-  if (!current.value) return;
+  if (!canPublish.value) return;
+  if (!flowName.value.trim()) {
+    localError.value = t('alarmCenter.scenarioStudio.errors.name');
+    notifyWarn(localError.value);
+    openRenameDialog();
+    return;
+  }
   try {
+    if (!current.value) {
+      loadVersion(await api.createDraft(requestBody()));
+    } else if (canEdit.value) {
+      loadVersion(await api.updateDraft(current.value.scenarioId, current.value.version, requestBody()));
+    }
+    if (!current.value) return;
+    const validation = await api.validate(current.value.scenarioId, current.value.version);
+    current.value = {
+      ...current.value,
+      status: validation.isValid ? 'validated' : 'draft',
+      validation,
+    };
+    if (!validation.isValid) {
+      notifyWarn(t('alarmCenter.scenarioStudio.messages.publishFailedValidation'));
+      return;
+    }
     loadVersion(await api.publish(current.value.scenarioId, current.value.version));
     await refreshCatalog();
-    message.value = t('alarmCenter.scenarioStudio.messages.published');
+    notifyOk(t('alarmCenter.scenarioStudio.messages.published'));
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function setFlowEnabled(enabled: boolean) {
+  if (!current.value || !canToggleRun.value) return;
+  try {
+    loadVersion(await api.setEnabled(current.value.scenarioId, current.value.version, enabled));
+    await refreshCatalog();
+    notifyOk(enabled
+      ? t('alarmCenter.scenarioStudio.messages.started')
+      : t('alarmCenter.scenarioStudio.messages.stopped'));
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function setCatalogItemEnabled(item: ScenarioCatalogItem, enabled: boolean) {
+  const version = item.publishedVersion;
+  if (!version || item.isReadOnly || item.origin === 'product') return;
+  try {
+    const updated = await api.setEnabled(item.scenarioId, version, enabled);
+    await refreshCatalog();
+    if (current.value?.scenarioId === item.scenarioId) {
+      loadVersion(updated);
+    }
+    notifyOk(enabled
+      ? t('alarmCenter.scenarioStudio.messages.started')
+      : t('alarmCenter.scenarioStudio.messages.stopped'));
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function archiveCatalogItem(item: ScenarioCatalogItem) {
+  const version = item.publishedVersion;
+  if (!version || item.isReadOnly || item.origin === 'product') return;
+  if ((item.operationalStatus || resolveOperationalStatus(item)) !== 'stopped') return;
+  const confirmed = window.confirm(
+    t('alarmCenter.scenarioStudio.deleteFlowConfirm').replace('{name}', item.name),
+  );
+  if (!confirmed) return;
+  try {
+    const wasCurrent = current.value?.scenarioId === item.scenarioId;
+    await api.archive(item.scenarioId, version);
+    await refreshCatalog();
+    if (wasCurrent) {
+      newScenario();
+    }
+    notifyOk(t('alarmCenter.scenarioStudio.messages.archived'));
   } catch (cause) {
     displayError(cause);
   }
@@ -393,7 +727,19 @@ async function rollbackVersion() {
   try {
     loadVersion(await api.rollback(current.value.scenarioId, current.value.version));
     await refreshCatalog();
-    message.value = t('alarmCenter.scenarioStudio.messages.rolledBack');
+    notifyOk(t('alarmCenter.scenarioStudio.messages.rolledBack'));
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+async function archiveVersion() {
+  if (!current.value || !canArchive.value) return;
+  try {
+    await api.archive(current.value.scenarioId, current.value.version);
+    await refreshCatalog();
+    newScenario();
+    notifyOk(t('alarmCenter.scenarioStudio.messages.archived'));
   } catch (cause) {
     displayError(cause);
   }
@@ -408,6 +754,40 @@ async function loadAudit() {
     displayError(cause);
   }
 }
+
+async function loadExecutions() {
+  if (!current.value) return;
+  try {
+    executionEntries.value = await api.listExecutions(current.value.scenarioId, 100);
+    selectedExecutionId.value = executionEntries.value[0]?.id ?? null;
+    showExecutions.value = true;
+  } catch (cause) {
+    displayError(cause);
+  }
+}
+
+function executionOutcomeColor(outcome: string): string {
+  switch (outcome) {
+    case 'matched': return 'success';
+    case 'stopped': return 'secondary';
+    case 'pending': return 'info';
+    case 'error': return 'error';
+    default: return 'default';
+  }
+}
+
+function formatExecutionTime(value?: string | null): string {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
+const selectedExecution = computed(() =>
+  executionEntries.value.find(item => item.id === selectedExecutionId.value) ?? null,
+);
 
 async function simulate() {
   try {
@@ -430,7 +810,7 @@ async function simulate() {
       edge.animated = true;
       edge.style = { stroke: '#f2c94c', strokeWidth: 4 };
     }
-    message.value = t('alarmCenter.scenarioStudio.messages.simulated');
+    notifyOk(t('alarmCenter.scenarioStudio.messages.simulated'));
   } catch (cause) {
     displayError(cause);
   }
@@ -922,13 +1302,6 @@ onMounted(() => {
 
 <template>
   <div class="flow-lab-root">
-    <v-alert v-if="localError" type="error" variant="tonal" closable class="mb-3" @click:close="localError = ''">
-      {{ localError }}
-    </v-alert>
-    <v-alert v-if="message" type="success" variant="tonal" closable class="mb-3" @click:close="message = ''">
-      {{ message }}
-    </v-alert>
-
     <div class="flow-lab">
       <aside
         v-if="!libraryCollapsed"
@@ -972,6 +1345,8 @@ onMounted(() => {
               @open="openCatalogItem"
               @clone="cloneTemplate"
               @create-scenario="newScenario"
+              @set-enabled="setCatalogItemEnabled"
+              @archive="archiveCatalogItem"
             />
           </div>
         </div>
@@ -1023,63 +1398,215 @@ onMounted(() => {
 
       <section class="flow-context">
         <header class="flow-toolbar">
-          <v-btn v-if="libraryCollapsed" icon="mdi-folder-multiple-outline" size="small" variant="text"
-            :title="t('alarmCenter.flowLab.expandLibrary')" @click="toggleLibrary" />
-          <v-btn v-if="paletteCollapsed" icon="mdi-shape-outline" size="small" variant="text"
-            :title="t('alarmCenter.flowLab.expandNodeList')" @click="togglePalette" />
-          <div class="flow-name">
-            <strong>{{ current?.name || t('alarmCenter.scenarioStudio.catalog.newScenario') }}</strong>
-            <small v-if="current">v{{ current.version }} · {{ current.status }}</small>
+          <div class="flow-toolbar__left">
+            <v-btn v-if="libraryCollapsed" icon="mdi-folder-multiple-outline" size="small" variant="text"
+              :title="t('alarmCenter.flowLab.expandLibrary')" @click="toggleLibrary" />
+            <v-btn v-if="paletteCollapsed" icon="mdi-shape-outline" size="small" variant="text"
+              :title="t('alarmCenter.flowLab.expandNodeList')" @click="togglePalette" />
           </div>
-          <v-chip v-if="current?.isReadOnly" size="small" prepend-icon="mdi-lock">
-            {{ t('alarmCenter.scenarioStudio.catalog.readOnly') }}
-          </v-chip>
-          <v-spacer />
-          <v-btn
-            v-if="canStartEdit"
-            size="small"
-            color="primary"
-            variant="tonal"
-            prepend-icon="mdi-pencil"
-            @click="startEditVersion"
-          >
-            {{ t('alarmCenter.scenarioStudio.editDraft') }}
-          </v-btn>
-          <v-btn v-if="current?.isReadOnly" size="small" color="primary" variant="tonal"
-            prepend-icon="mdi-content-copy" @click="cloneTemplate()">
-            {{ t('alarmCenter.scenarioStudio.catalog.clone') }}
-          </v-btn>
-          <v-btn size="small" variant="text" prepend-icon="mdi-form-select" @click="showWizard = true">
-            {{ t('alarmCenter.scenarioStudio.modeWizard') }}
-          </v-btn>
-          <v-btn size="small" variant="text" prepend-icon="mdi-fit-to-screen-outline"
-            @click="fitView({ padding: 0.18, duration: 250 })">
-            {{ t('alarmCenter.flowLab.fit') }}
-          </v-btn>
-          <v-btn size="small" variant="text" prepend-icon="mdi-flask-outline"
-            @click="showSimulation = !showSimulation">
-            {{ t('alarmCenter.scenarioStudio.simulationTitle') }}
-          </v-btn>
-          <v-menu>
-            <template #activator="{ props }">
-              <v-btn v-bind="props" size="small" variant="tonal" prepend-icon="mdi-dots-horizontal">
-                {{ t('alarmCenter.scenarioStudio.actions') }}
-              </v-btn>
-            </template>
-            <v-list density="compact">
-              <v-list-item
-                v-if="canStartEdit"
-                prepend-icon="mdi-pencil"
-                :title="t('alarmCenter.scenarioStudio.editDraft')"
-                @click="startEditVersion"
+
+          <div class="flow-toolbar__center">
+            <div class="flow-name">
+              <v-text-field
+                v-if="canEdit || !current"
+                v-model="flowName"
+                class="flow-name__input"
+                density="compact"
+                variant="underlined"
+                hide-details
+                :placeholder="t('alarmCenter.scenarioStudio.name')"
+                :readonly="Boolean(current?.isReadOnly)"
+                @keydown.enter.prevent="onFlowNameEnter"
               />
-              <v-list-item prepend-icon="mdi-content-save" :disabled="!canEdit" :title="t('alarmCenter.scenarioStudio.saveDraft')" @click="saveDraft" />
-              <v-list-item prepend-icon="mdi-check-decagram" :disabled="!current || current.isReadOnly" :title="t('alarmCenter.scenarioStudio.validate')" @click="validateDraft" />
-              <v-list-item prepend-icon="mdi-rocket-launch" :disabled="!canPublish" :title="t('alarmCenter.scenarioStudio.publish')" @click="publishDraft" />
-              <v-list-item prepend-icon="mdi-restore" :disabled="current?.status !== 'published'" :title="t('alarmCenter.scenarioStudio.rollback')" @click="rollbackVersion" />
-              <v-list-item prepend-icon="mdi-history" :disabled="!current" :title="t('alarmCenter.scenarioStudio.audit')" @click="loadAudit" />
-            </v-list>
-          </v-menu>
+              <template v-else>
+                <div class="flow-name__readonly">
+                  <strong>{{ flowName || current?.name || t('alarmCenter.scenarioStudio.catalog.newScenario') }}</strong>
+                  <v-btn
+                    v-if="canRename"
+                    icon="mdi-pencil"
+                    size="x-small"
+                    variant="text"
+                    :title="t('alarmCenter.scenarioStudio.rename')"
+                    @click="openRenameDialog"
+                  />
+                </div>
+              </template>
+              <small v-if="current">
+                v{{ current.version }}
+                · {{ t(`alarmCenter.scenarioStudio.versionStatus.${current.status === 'validated' ? 'validated' : current.status}`) }}
+              </small>
+            </div>
+            <div v-if="current" class="flow-toolbar__chips">
+              <v-chip
+                size="small"
+                variant="tonal"
+                :color="lifecycleChipColor(lifecycleChip)"
+              >
+                {{ t(`alarmCenter.scenarioStudio.lifecycleChip.${lifecycleChip}`) }}
+              </v-chip>
+              <v-chip
+                v-if="showHealthBadge(flowHealth)"
+                size="small"
+                variant="tonal"
+                :color="healthColor(flowHealth)"
+                :title="currentCatalogItem?.lastErrorMessage || undefined"
+              >
+                {{ t(`alarmCenter.scenarioStudio.health.${flowHealth}`) }}
+              </v-chip>
+              <v-chip v-if="current.isReadOnly" size="small" prepend-icon="mdi-lock">
+                {{ t('alarmCenter.scenarioStudio.catalog.readOnly') }}
+              </v-chip>
+            </div>
+          </div>
+
+          <div class="flow-toolbar__right">
+            <v-chip
+              v-if="isRunningLocked"
+              size="small"
+              color="warning"
+              variant="tonal"
+              prepend-icon="mdi-lock"
+              class="mr-2"
+            >
+              {{ t('alarmCenter.scenarioStudio.runningLockedHint') }}
+            </v-chip>
+            <v-btn
+              v-if="canStartEdit"
+              size="small"
+              color="primary"
+              variant="tonal"
+              prepend-icon="mdi-pencil"
+              @click="startEditVersion"
+            >
+              {{ t('alarmCenter.scenarioStudio.editDraft') }}
+            </v-btn>
+            <v-btn
+              v-if="canPublish"
+              size="small"
+              color="primary"
+              variant="flat"
+              prepend-icon="mdi-rocket-launch"
+              @click="publishDraft"
+            >
+              {{ t('alarmCenter.scenarioStudio.publish') }}
+            </v-btn>
+            <v-btn
+              v-if="canToggleRun && operationalStatus === 'stopped'"
+              size="small"
+              color="success"
+              variant="flat"
+              prepend-icon="mdi-play"
+              @click="setFlowEnabled(true)"
+            >
+              {{ t('alarmCenter.scenarioStudio.start') }}
+            </v-btn>
+            <v-btn
+              v-if="canToggleRun && operationalStatus === 'running'"
+              size="small"
+              color="warning"
+              variant="flat"
+              prepend-icon="mdi-pause"
+              @click="setFlowEnabled(false)"
+            >
+              {{ t('alarmCenter.scenarioStudio.stop') }}
+            </v-btn>
+            <v-menu location="bottom end" :close-on-content-click="true">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  size="small"
+                  variant="tonal"
+                  prepend-icon="mdi-menu"
+                  append-icon="mdi-menu-down"
+                >
+                  {{ t('alarmCenter.scenarioStudio.actions') }}
+                </v-btn>
+              </template>
+              <v-list class="flow-actions-menu" density="compact" min-width="260">
+                <v-list-subheader>{{ t('alarmCenter.scenarioStudio.actionsMenu.draft') }}</v-list-subheader>
+                <v-list-item
+                  v-if="canRename"
+                  prepend-icon="mdi-rename-outline"
+                  :title="t('alarmCenter.scenarioStudio.rename')"
+                  :subtitle="t('alarmCenter.scenarioStudio.actionsMenu.renameHint')"
+                  @click="openRenameDialog"
+                />
+                <v-list-item
+                  v-if="current?.isReadOnly"
+                  prepend-icon="mdi-content-copy"
+                  :title="t('alarmCenter.scenarioStudio.catalog.clone')"
+                  :subtitle="t('alarmCenter.scenarioStudio.actionsMenu.cloneHint')"
+                  @click="cloneTemplate()"
+                />
+                <v-list-item
+                  prepend-icon="mdi-content-save"
+                  :disabled="!canEdit && !!current"
+                  :title="t('alarmCenter.scenarioStudio.saveDraft')"
+                  @click="saveDraft"
+                />
+                <v-list-item
+                  prepend-icon="mdi-check-decagram"
+                  :disabled="!current || current.isReadOnly || !canEdit"
+                  :title="t('alarmCenter.scenarioStudio.validate')"
+                  :subtitle="t('alarmCenter.scenarioStudio.actionsMenu.validateHint')"
+                  @click="validateDraft"
+                />
+
+                <v-divider class="my-1" />
+                <v-list-subheader>{{ t('alarmCenter.scenarioStudio.actionsMenu.lifecycle') }}</v-list-subheader>
+                <v-list-item
+                  prepend-icon="mdi-restore"
+                  :disabled="current?.status !== 'published'"
+                  :title="t('alarmCenter.scenarioStudio.rollback')"
+                  @click="rollbackVersion"
+                />
+                <v-list-item
+                  prepend-icon="mdi-archive-outline"
+                  :disabled="!canArchive"
+                  :title="t('alarmCenter.scenarioStudio.archive')"
+                  :subtitle="t('alarmCenter.scenarioStudio.actionsMenu.archiveHint')"
+                  @click="archiveVersion"
+                />
+
+                <v-divider class="my-1" />
+                <v-list-subheader>{{ t('alarmCenter.scenarioStudio.actionsMenu.tools') }}</v-list-subheader>
+                <v-list-item
+                  prepend-icon="mdi-form-select"
+                  :title="t('alarmCenter.scenarioStudio.modeWizard')"
+                  @click="showWizard = true"
+                />
+                <v-list-item
+                  prepend-icon="mdi-fit-to-screen-outline"
+                  :title="t('alarmCenter.flowLab.fit')"
+                  @click="fitView({ padding: 0.18, duration: 250 })"
+                />
+                <v-list-item
+                  prepend-icon="mdi-flask-outline"
+                  :title="t('alarmCenter.scenarioStudio.simulationTitle')"
+                  :subtitle="showSimulation
+                    ? t('alarmCenter.scenarioStudio.actionsMenu.simulationHide')
+                    : t('alarmCenter.scenarioStudio.actionsMenu.simulationShow')"
+                  @click="showSimulation = !showSimulation"
+                />
+
+                <v-divider class="my-1" />
+                <v-list-subheader>{{ t('alarmCenter.scenarioStudio.actionsMenu.history') }}</v-list-subheader>
+                <v-list-item
+                  prepend-icon="mdi-history"
+                  :disabled="!current"
+                  :title="t('alarmCenter.scenarioStudio.executionsTitle')"
+                  :subtitle="t('alarmCenter.scenarioStudio.executionsHint')"
+                  @click="loadExecutions"
+                />
+                <v-list-item
+                  prepend-icon="mdi-clipboard-text-clock-outline"
+                  :disabled="!current"
+                  :title="t('alarmCenter.scenarioStudio.audit')"
+                  @click="loadAudit"
+                />
+              </v-list>
+            </v-menu>
+          </div>
         </header>
 
         <main class="flow-canvas" @dragover.prevent @drop="dropNode">
@@ -1215,15 +1742,13 @@ onMounted(() => {
                 :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.settleAfterSeconds')" density="compact" />
             </template>
             <template v-if="selectedNode.data.nodeType === 'alarm-output'">
-              <v-text-field v-model.number="selectedNode.data.config.severity" type="number" min="1" max="10"
-                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.severity')" density="compact" />
-              <v-text-field v-model="selectedNode.data.config.dedup.keyTemplate" :disabled="!canEdit"
-                :label="t('alarmCenter.scenarioStudio.dedupTemplate')" density="compact" />
-              <v-text-field :model-value="selectedNode.data.config.dedup.cooldownSeconds / 60" type="number"
-                :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.cooldownMinutes')" density="compact"
-                @update:model-value="selectedNode.data.config.dedup.cooldownSeconds = Number($event) * 60" />
-              <v-text-field :model-value="selectedNode.data.config.groupBy.join(', ')" :disabled="!canEdit"
-                :label="t('alarmCenter.scenarioStudio.groupBy')" density="compact" @update:model-value="setGroupBy" />
+              <AcAlarmOutputInspector
+                :config="selectedNode.data.config"
+                :disabled="!canEdit"
+                :severity="selectedNode.data.config.severity"
+                @change="onAlarmOutputConfigChange"
+                @update:severity="onAlarmSeverityChange"
+              />
             </template>
             <template v-if="selectedNode.data.nodeType === 'debug-output'">
               <v-alert type="info" variant="tonal" density="compact" class="mb-3">
@@ -1321,15 +1846,66 @@ onMounted(() => {
               @update:model-value="aggregationNode.data.config.window.durationSeconds = Number($event) * 60" />
           </template>
           <template v-if="alarmNode">
-            <v-slider v-model="alarmNode.data.config.severity" min="1" max="10" step="1"
-              :disabled="!canEdit" thumb-label />
-            <v-text-field :model-value="alarmNode.data.config.dedup.cooldownSeconds / 60" type="number"
-              :disabled="!canEdit" :label="t('alarmCenter.scenarioStudio.cooldownMinutes')"
-              @update:model-value="alarmNode.data.config.dedup.cooldownSeconds = Number($event) * 60" />
+            <v-slider
+              :model-value="resolvedAlarmSeverity"
+              min="1"
+              max="10"
+              step="1"
+              :disabled="!canEdit"
+              thumb-label
+              @update:model-value="onAlarmSeverityChange"
+            />
+            <v-switch
+              :model-value="alarmNode.data.config.dedup?.mergeEnabled !== false"
+              :disabled="!canEdit"
+              color="primary"
+              density="compact"
+              hide-details
+              class="mb-2"
+              :label="t('alarmCenter.scenarioStudio.alarmMerge.enabled')"
+              @update:model-value="onWizardMergeToggle"
+            />
+            <v-text-field
+              v-if="alarmNode.data.config.dedup?.mergeEnabled !== false"
+              :model-value="Math.round((alarmNode.data.config.dedup?.cooldownSeconds ?? 0) / 60)"
+              type="number"
+              :disabled="!canEdit"
+              :label="t('alarmCenter.scenarioStudio.cooldownMinutes')"
+              @update:model-value="alarmNode.data.config.dedup.cooldownSeconds = Number($event) * 60"
+            />
           </template>
         </template>
       </div>
     </v-navigation-drawer>
+
+    <v-dialog v-model="showRename" max-width="440">
+      <v-card>
+        <v-card-title>{{ t('alarmCenter.scenarioStudio.rename') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="renameInput"
+            :label="t('alarmCenter.scenarioStudio.name')"
+            density="compact"
+            autofocus
+            hide-details="auto"
+            :error-messages="!renameInput.trim() && localError ? [localError] : []"
+            @keyup.enter="confirmRename"
+          />
+          <p v-if="current && !canEdit" class="text-medium-emphasis text-caption mt-2 mb-0">
+            {{ t('alarmCenter.scenarioStudio.actionsMenu.renamePublishedHint') }}
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showRename = false">
+            {{ t('alarmCenter.flowLab.cancel') }}
+          </v-btn>
+          <v-btn color="primary" :disabled="!renameInput.trim()" @click="confirmRename">
+            {{ t('alarmCenter.scenarioStudio.renameApply') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="showAudit" max-width="680">
       <v-card>
@@ -1340,6 +1916,81 @@ onMounted(() => {
             :subtitle="new Date(entry.timestamp).toLocaleString()" />
           <v-list-item v-if="!auditEntries.length" :title="t('alarmCenter.scenarioStudio.auditEmpty')" />
         </v-list>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showExecutions" max-width="920">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <span>{{ t('alarmCenter.scenarioStudio.executionsTitle') }}</span>
+          <v-spacer />
+          <v-btn icon="mdi-refresh" size="small" variant="text" :disabled="!current" @click="loadExecutions" />
+          <v-btn icon="mdi-close" size="small" variant="text" @click="showExecutions = false" />
+        </v-card-title>
+        <v-card-text>
+          <p class="text-medium-emphasis mb-3">{{ t('alarmCenter.scenarioStudio.executionsHint') }}</p>
+          <div v-if="!executionEntries.length" class="text-medium-emphasis">
+            {{ t('alarmCenter.scenarioStudio.executionsEmpty') }}
+          </div>
+          <div v-else class="execution-layout">
+            <div class="execution-list">
+              <button
+                v-for="entry in executionEntries"
+                :key="entry.id"
+                type="button"
+                class="execution-row"
+                :class="{ active: selectedExecutionId === entry.id }"
+                @click="selectedExecutionId = entry.id"
+              >
+                <div class="execution-row__top">
+                  <v-chip size="x-small" variant="tonal" :color="executionOutcomeColor(entry.outcome)">
+                    {{ t(`alarmCenter.scenarioStudio.executionOutcome.${entry.outcome}`, entry.outcome) }}
+                  </v-chip>
+                  <small>{{ entry.durationMs }} ms</small>
+                </div>
+                <strong>{{ formatExecutionTime(entry.startedAt) }}</strong>
+                <small>
+                  {{ entry.trigger }}
+                  <template v-if="entry.observationKey"> · {{ entry.observationKey }}</template>
+                </small>
+              </button>
+            </div>
+            <div v-if="selectedExecution" class="execution-detail">
+              <div class="mb-2">
+                <strong>{{ t('alarmCenter.scenarioStudio.executionDetail') }}</strong>
+              </div>
+              <div class="execution-kv">
+                <span>{{ t('alarmCenter.scenarioStudio.executionFields.outcome') }}</span>
+                <v-chip size="small" variant="tonal" :color="executionOutcomeColor(selectedExecution.outcome)">
+                  {{ t(`alarmCenter.scenarioStudio.executionOutcome.${selectedExecution.outcome}`, selectedExecution.outcome) }}
+                </v-chip>
+              </div>
+              <div class="execution-kv">
+                <span>{{ t('alarmCenter.scenarioStudio.executionFields.trigger') }}</span>
+                <span>{{ selectedExecution.trigger }}</span>
+              </div>
+              <div class="execution-kv">
+                <span>{{ t('alarmCenter.scenarioStudio.executionFields.version') }}</span>
+                <span>v{{ selectedExecution.scenarioVersion }}</span>
+              </div>
+              <div class="execution-kv">
+                <span>{{ t('alarmCenter.scenarioStudio.executionFields.key') }}</span>
+                <span>{{ selectedExecution.observationKey || '—' }}</span>
+              </div>
+              <div class="execution-kv">
+                <span>{{ t('alarmCenter.scenarioStudio.executionFields.alarms') }}</span>
+                <span>{{ selectedExecution.alarmsRaised }} / {{ selectedExecution.alarmsUpdated }}</span>
+              </div>
+              <div v-if="selectedExecution.errorMessage" class="execution-error mt-2">
+                {{ selectedExecution.errorCode }}: {{ selectedExecution.errorMessage }}
+              </div>
+              <div class="mt-3">
+                <strong>{{ t('alarmCenter.scenarioStudio.executionFields.trace') }}</strong>
+                <pre class="execution-trace">{{ selectedExecution.nodeTrace.map(n => `${n.nodeId} · ${n.nodeType} · ${n.status}`).join('\n') || '—' }}</pre>
+              </div>
+            </div>
+          </div>
+        </v-card-text>
       </v-card>
     </v-dialog>
   </div>
@@ -1519,24 +2170,103 @@ onMounted(() => {
 }
 
 .flow-toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
   flex: 0 0 auto;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  min-height: 52px;
+  gap: 8px 12px;
+  min-height: 56px;
   padding: 8px 12px;
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
+.flow-toolbar__left,
+.flow-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.flow-toolbar__left {
+  justify-content: flex-start;
+}
+
+.flow-toolbar__right {
+  justify-content: flex-end;
+}
+
+.flow-toolbar__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: min(520px, 46vw);
+  text-align: center;
+}
+
+.flow-toolbar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
 .flow-name {
   display: grid;
-  min-width: 140px;
+  min-width: 0;
+  width: min(420px, 46vw);
+  justify-items: center;
+}
+
+.flow-name__input {
+  width: 100%;
+}
+
+.flow-name__input :deep(.v-field__input) {
+  min-height: 28px;
+  padding-top: 2px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.flow-name__readonly {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.flow-name__readonly strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-name strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .flow-name small {
   font-size: 0.65rem;
   opacity: 0.6;
+}
+
+.flow-actions-menu :deep(.v-list-subheader) {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  min-height: 28px;
+  padding-inline: 16px;
 }
 
 .flow-canvas {
@@ -1692,6 +2422,85 @@ onMounted(() => {
   word-break: break-word;
 }
 
+.execution-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(280px, 1.1fr);
+  gap: 12px;
+  min-height: 360px;
+}
+
+.execution-list {
+  max-height: 480px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.execution-row {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.execution-row.active,
+.execution-row:hover {
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.execution-row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.execution-row strong {
+  display: block;
+  font-size: 0.8rem;
+}
+
+.execution-row small {
+  display: block;
+  opacity: 0.7;
+  font-size: 0.7rem;
+}
+
+.execution-detail {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 480px;
+  overflow: auto;
+}
+
+.execution-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.8rem;
+  padding: 4px 0;
+}
+
+.execution-error {
+  color: rgb(var(--v-theme-error));
+  font-size: 0.8rem;
+}
+
+.execution-trace {
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+}
+
 .sequence-step {
   padding: 8px;
   margin-bottom: 8px;
@@ -1710,16 +2519,25 @@ onMounted(() => {
 
 @media (max-width: 1100px) {
   .flow-toolbar {
-    gap: 4px;
+    gap: 4px 8px;
     padding: 6px 8px;
   }
 
-  .flow-toolbar .v-btn {
+  .flow-toolbar__center {
+    max-width: min(360px, 42vw);
+  }
+
+  .flow-toolbar__right .v-btn {
     min-width: 36px;
   }
 
-  .flow-toolbar .v-btn :deep(.v-btn__content) {
+  .flow-toolbar__right .v-btn :deep(.v-btn__content) {
     font-size: 0;
+  }
+
+  .flow-toolbar__right .v-btn :deep(.v-btn__prepend),
+  .flow-toolbar__right .v-btn :deep(.v-btn__append) {
+    margin-inline: 0;
   }
 
   .flow-node {
@@ -1736,8 +2554,12 @@ onMounted(() => {
     display: none;
   }
 
-  .flow-name {
-    max-width: 180px;
+  .flow-toolbar {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .flow-toolbar__center {
+    max-width: none;
   }
 
   .node-inspector {

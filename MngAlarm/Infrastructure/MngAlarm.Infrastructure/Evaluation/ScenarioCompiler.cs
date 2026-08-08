@@ -527,8 +527,8 @@ public static class ScenarioCompiler
             case null:
                 yield break;
             case string text:
-                foreach (var part in text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                    yield return part;
+                foreach (var item in EnumerateInStringValues(text))
+                    yield return item;
                 yield break;
             case JsonElement json when json.ValueKind == JsonValueKind.Array:
                 foreach (var element in json.EnumerateArray())
@@ -542,6 +542,39 @@ public static class ScenarioCompiler
                 yield return expected;
                 break;
         }
+    }
+
+    /// <summary>
+    /// Supports comma-separated lists and legacy JSON-array strings
+    /// (e.g. <c>["21","23"]</c> produced by older value normalization).
+    /// </summary>
+    private static IEnumerable<object?> EnumerateInStringValues(string text)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.Length >= 2 && trimmed[0] == '[' && trimmed[^1] == ']')
+        {
+            List<object?>? parsed = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    parsed = doc.RootElement.EnumerateArray()
+                        .Select(el => Unwrap(el))
+                        .ToList();
+                }
+            }
+            catch (JsonException)
+            {
+                parsed = null;
+            }
+
+            if (parsed != null)
+                return parsed;
+        }
+
+        return trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Cast<object?>();
     }
 
     private static object? Unwrap(object? value) => value switch

@@ -36,7 +36,7 @@ export interface EventCatalogSelection {
 
 /**
  * Known EventID → observation key map (channel-scoped).
- * Unmapped rows still selectable; runtime relies on eventCode filter + "unknown"/mapped keys.
+ * Prefer optional semantic keys (e.g. rdp.logon); otherwise flows use package id + eventCode filter.
  */
 const MATCH_KEY_BY_VALUE: Record<string, string> = {
   [eventCatalogValue('Security', 4624)]: 'login_success',
@@ -53,6 +53,38 @@ const MATCH_KEY_BY_VALUE: Record<string, string> = {
   [eventCatalogValue('Microsoft-Windows-TerminalServices-LocalSessionManager/Operational', 24)]: 'rdp.disconnect',
   [eventCatalogValue('Microsoft-Windows-TerminalServices-LocalSessionManager/Operational', 25)]: 'rdp.reconnect',
 };
+
+/** Channel → agent package id (collector observation key when no semantic map). */
+const PACKAGE_KEY_BY_CHANNEL: Record<string, string> = {
+  'Windows PowerShell': 'powershell-engine',
+  'Microsoft-Windows-PowerShell/Operational': 'powershell-scriptblock',
+  'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational': 'rdp-session',
+  Security: 'security-auth',
+  System: 'system-lifecycle',
+  Application: 'application-signals',
+};
+
+export function packageKeyForChannel(channel: string): string {
+  const exact = PACKAGE_KEY_BY_CHANNEL[channel];
+  if (exact) return exact;
+  const normalized = channel.trim().toLowerCase();
+  for (const [name, key] of Object.entries(PACKAGE_KEY_BY_CHANNEL)) {
+    if (name.toLowerCase() === normalized) return key;
+  }
+  // Stable fallback from channel path (no per-EventID map required).
+  const leaf = channel.split(/[\\/]/).filter(Boolean).at(-1) || channel;
+  return leaf
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'windows.eventlog';
+}
+
+export function observationKeyForEvent(event: Pick<EventCatalogSelection, 'channel' | 'matchKey'>): string {
+  const semantic = String(event.matchKey || '').trim();
+  if (semantic) return semantic;
+  return packageKeyForChannel(event.channel);
+}
 
 export function flattenEventLogChannelDictionary(
   channels: EventLogChannelDictionary[],
@@ -154,21 +186,12 @@ export function selectionLabel(item: EventCatalogSelection): string {
 export function deriveMatchKeysFromEvents(events: EventCatalogSelection[]): string[] {
   const keys: string[] = [];
   const seen = new Set<string>();
-  let hasUnmapped = false;
 
   for (const event of events) {
-    const key = String(event.matchKey || '').trim();
-    if (!key) {
-      hasUnmapped = true;
-      continue;
-    }
-    if (seen.has(key)) continue;
+    const key = observationKeyForEvent(event);
+    if (!key || seen.has(key)) continue;
     seen.add(key);
     keys.push(key);
-  }
-
-  if (hasUnmapped && !seen.has('unknown')) {
-    keys.push('unknown');
   }
 
   return keys;

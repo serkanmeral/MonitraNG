@@ -4,6 +4,13 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
 import type { ScenarioCatalogItem } from '@/types/apps/scenario';
 import {
+  healthColor,
+  lifecycleChipColor,
+  resolveLifecycleChip,
+  resolveOperationalStatus,
+  showHealthBadge,
+} from '@/utils/alarm/scenarioOperationalStatus';
+import {
   PRODUCT_ROOT_ID,
   USER_ROOT_ID,
   childFoldersOf,
@@ -49,6 +56,8 @@ const emit = defineEmits<{
   open: [item: ScenarioCatalogItem];
   clone: [item: ScenarioCatalogItem];
   'create-scenario': [payload: { folderId: string | null; root: ScenarioCatalogRoot }];
+  'set-enabled': [item: ScenarioCatalogItem, enabled: boolean];
+  archive: [item: ScenarioCatalogItem];
 }>();
 
 const { t } = useAppI18n();
@@ -83,6 +92,82 @@ watch(
 
 function isExpanded(id: string): boolean {
   return folderState.value.expandedIds.includes(id);
+}
+
+function operationalOf(item: ScenarioCatalogItem) {
+  return item.operationalStatus || resolveOperationalStatus(item);
+}
+
+function lifecycleOf(item: ScenarioCatalogItem) {
+  return resolveLifecycleChip(item);
+}
+
+function operationalLabel(item: ScenarioCatalogItem) {
+  return t(`alarmCenter.scenarioStudio.lifecycleChip.${lifecycleOf(item)}`);
+}
+
+function operationalColor(item: ScenarioCatalogItem) {
+  return lifecycleChipColor(lifecycleOf(item));
+}
+
+function showHealth(item: ScenarioCatalogItem) {
+  return showHealthBadge(item.health);
+}
+
+function healthLabel(item: ScenarioCatalogItem) {
+  return t(`alarmCenter.scenarioStudio.health.${item.health || 'unknown'}`);
+}
+
+function healthChipColor(item: ScenarioCatalogItem) {
+  return healthColor(item.health);
+}
+
+function canChangeRunState(item: ScenarioCatalogItem): boolean {
+  return item.origin !== 'product'
+    && !item.isReadOnly
+    && item.publishedVersion != null;
+}
+
+function canStart(item: ScenarioCatalogItem): boolean {
+  return canChangeRunState(item) && operationalOf(item) === 'stopped';
+}
+
+function canStop(item: ScenarioCatalogItem): boolean {
+  return canChangeRunState(item) && operationalOf(item) === 'running';
+}
+
+/** Soft-delete (archive) only when published and Off. */
+function canDelete(item: ScenarioCatalogItem): boolean {
+  return canChangeRunState(item) && operationalOf(item) === 'stopped';
+}
+
+function folderIcon(row: Extract<CatalogRow, { kind: 'group' }>): string {
+  if (row.depth === 0) {
+    return row.root === 'product' ? 'mdi-package-variant-closed' : 'mdi-folder-account';
+  }
+  return isExpanded(row.id) ? 'mdi-folder-open' : 'mdi-folder';
+}
+
+function folderIconColor(row: Extract<CatalogRow, { kind: 'group' }>): string {
+  if (row.depth === 0) {
+    return row.root === 'product' ? 'deep-purple' : 'primary';
+  }
+  return 'amber-darken-2';
+}
+
+function flowIcon(item: ScenarioCatalogItem, root: ScenarioCatalogRoot): string {
+  if (root === 'product') return 'mdi-file-lock';
+  switch (lifecycleOf(item)) {
+    case 'publishedOn': return 'mdi-play-circle';
+    case 'publishedOff': return 'mdi-pause-circle';
+    case 'archived': return 'mdi-archive';
+    default: return 'mdi-file-document-edit';
+  }
+}
+
+function flowIconColor(item: ScenarioCatalogItem, root: ScenarioCatalogRoot): string {
+  if (root === 'product') return 'deep-purple';
+  return lifecycleChipColor(lifecycleOf(item));
 }
 
 function itemsFor(root: ScenarioCatalogRoot): ScenarioCatalogItem[] {
@@ -354,13 +439,13 @@ defineExpose({
           <v-icon
             :icon="isExpanded(row.id) ? 'mdi-chevron-down' : 'mdi-chevron-right'"
             size="18"
+            class="catalog-chevron"
           />
           <v-icon
-            :icon="row.depth === 0
-              ? (row.root === 'product' ? 'mdi-package-variant-closed' : 'mdi-folder-account-outline')
-              : 'mdi-folder-outline'"
-            size="16"
-            class="ms-1"
+            :icon="folderIcon(row)"
+            :color="folderIconColor(row)"
+            size="18"
+            class="catalog-folder-icon"
           />
           <strong>{{ row.title }}</strong>
           <small>{{ row.count }}</small>
@@ -415,16 +500,43 @@ defineExpose({
         @click="emit('open', row.item)"
       >
         <v-icon
-          :icon="row.root === 'product' ? 'mdi-file-lock-outline' : 'mdi-vector-polyline-edit'"
-          size="18"
+          :icon="flowIcon(row.item, row.root)"
+          :color="flowIconColor(row.item, row.root)"
+          size="20"
+          class="catalog-flow-icon"
         />
-        <span>
-          <strong>{{ row.item.name }}</strong>
-          <small v-if="row.root === 'product'">
+        <span class="catalog-item__body">
+          <span class="catalog-item__title">
+            <strong>{{ row.item.name }}</strong>
+            <v-chip
+              size="x-small"
+              variant="tonal"
+              label
+              :color="operationalColor(row.item)"
+              class="catalog-item__status"
+            >
+              {{ operationalLabel(row.item) }}
+            </v-chip>
+            <v-chip
+              v-if="showHealth(row.item)"
+              size="x-small"
+              variant="tonal"
+              label
+              :color="healthChipColor(row.item)"
+              class="catalog-item__status"
+              :title="row.item.lastErrorMessage || undefined"
+            >
+              {{ healthLabel(row.item) }}
+            </v-chip>
+          </span>
+          <small v-if="row.root === 'product'" class="catalog-item__meta">
             {{ row.item.templateId || row.item.scenarioId }}
           </small>
-          <small v-else>
-            v{{ row.item.latestVersion }} · {{ row.item.latestStatus }}
+          <small v-else class="catalog-item__meta">
+            <span>v{{ row.item.publishedVersion ?? row.item.latestVersion }}</span>
+            <span v-if="row.item.draftVersion && row.item.publishedVersion" class="ms-1 text-medium-emphasis">
+              · {{ t('alarmCenter.scenarioStudio.catalog.draftVersion').replace('{version}', String(row.item.draftVersion)) }}
+            </span>
           </small>
         </span>
         <v-menu location="bottom end">
@@ -444,6 +556,29 @@ defineExpose({
               :title="t('alarmCenter.scenarioStudio.catalog.clone')"
               @click="emit('clone', row.item)"
             />
+            <template v-if="canStart(row.item) || canStop(row.item) || canDelete(row.item)">
+              <v-list-item
+                v-if="canStart(row.item)"
+                prepend-icon="mdi-play"
+                :title="t('alarmCenter.scenarioStudio.start')"
+                @click="emit('set-enabled', row.item, true)"
+              />
+              <v-list-item
+                v-if="canStop(row.item)"
+                prepend-icon="mdi-pause"
+                :title="t('alarmCenter.scenarioStudio.stop')"
+                @click="emit('set-enabled', row.item, false)"
+              />
+              <v-list-item
+                v-if="canDelete(row.item)"
+                prepend-icon="mdi-delete-outline"
+                base-color="error"
+                :title="t('alarmCenter.scenarioStudio.deleteFlow')"
+                :subtitle="t('alarmCenter.scenarioStudio.deleteFlowHint')"
+                @click="emit('archive', row.item)"
+              />
+              <v-divider class="my-1" />
+            </template>
             <v-list-subheader>
               {{ t('alarmCenter.scenarioStudio.catalog.moveTo') }}
             </v-list-subheader>
@@ -547,6 +682,16 @@ defineExpose({
   cursor: pointer;
 }
 
+.catalog-chevron {
+  opacity: 0.55;
+  flex: 0 0 auto;
+}
+
+.catalog-folder-icon,
+.catalog-flow-icon {
+  flex: 0 0 auto;
+}
+
 .catalog-group__toggle strong {
   flex: 1;
   min-width: 0;
@@ -567,7 +712,7 @@ defineExpose({
 .catalog-item {
   width: 100%;
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: 24px 1fr auto;
   align-items: center;
   gap: 7px;
   padding: 8px;
@@ -584,29 +729,53 @@ defineExpose({
   background: rgba(var(--v-theme-primary), 0.1);
 }
 
-.catalog-item span {
-  min-width: 0;
-  display: grid;
+.catalog-item.active .catalog-flow-icon {
+  filter: drop-shadow(0 0 4px currentColor);
 }
 
-.catalog-item strong,
-.catalog-item small {
+.catalog-item__body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.catalog-item__title {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.catalog-item__title strong {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.catalog-item strong {
   font-size: 0.76rem;
 }
 
-.catalog-item small,
-.empty-state {
+.catalog-item__status {
+  flex: 0 0 auto;
+  height: 18px !important;
+  font-size: 0.62rem !important;
+}
+
+.catalog-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.65rem;
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
 .empty-state {
   padding: 10px;
+  font-size: 0.65rem;
+  color: rgba(var(--v-theme-on-surface), 0.55);
 }
 </style>

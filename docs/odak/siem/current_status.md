@@ -1,8 +1,8 @@
 # SIEM / Siber güvenlik platformu — mevcut durum
 
-**Son güncelleme:** 6 Ağustos 2026 (Scenario Studio Flow Lab · Palette grupları · Debug output)  
-**Ortam:** Günlük çalışma = **Odak production** (`192.168.20.8`). Lokal Nuxt varsayılanı prod.  
-**Detay:** [SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md) · Events UI: [../monitoring/SIEM_EVENTS_UI.md](../monitoring/SIEM_EVENTS_UI.md)
+**Son güncelleme:** 8 Ağustos 2026  
+**Ortam:** Günlük çalışma = **Odak production** (`192.168.20.8`).  
+**Detay:** [AGENT_OBSERVATION_AND_FLOW_LAB.md](../alarm/AGENT_OBSERVATION_AND_FLOW_LAB.md) · [SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md)
 
 ## Çalışma kuralı
 
@@ -15,58 +15,53 @@ Kapsam → kazanım → onay → kod.
 - Periyodik discovery scan · Hard publish · Host paket ataması (E3)  
 - UI’den parametreli agent indir  
 - Parser dictionary redesign  
+- Semantik Event ID → observation key kataloğu (opsiyonel; yayın yolu paket key)  
 **Freeze:** Eski SIEM security paneli · NXLog / Linux rsyslog host ingest · intent-only filter dialog  
 
 ---
 
 ## Son çalışılan konu
 
-**Scenario Studio / Flow Lab — çıktı node planı + Debug MVP + palette grupları.**  
-Basit olay kaynağı (EventLog/Metrik) önceki dilimde tamamdı. Bu dilimde palette Olaylar/Fonksiyonlar/Çıktılar gruplandı; **Debug** node (sim-only) eklendi. Bildirim (mail) ve OC WI planlandı ama kodlanmadı. **Prod deploy yapılmadı.**
+**Agent EventLog → Alarm + Flow Lab işletimi.**  
+Collector observation key = paket id (RDP semantik opsiyonel). Flow: Açık kilit / Kapalı düzenle; alarm birleştirme + gruplama. PowerShell Alerts v3 Odak’ta açık (`powershell-engine` + host `TERMINAL`).
 
 ---
 
-## Tamamlananlar (bu dilim — 6 Ağu)
+## Tamamlananlar (7–8 Ağu 2026)
 
-### Palette gruplama ✓
+### Collector → `monitra.observations` ✓
 
-- Node paleti: **Olaylar** · **Fonksiyonlar** · **Çıktılar**
-- Grup başlıkları collapse/expand
-- Dosya: `Mng.Ui/components/apps/alarm-center/AcFlowLab.vue`
+- `AgentObservationPublisher` + mapper; allowlist `*`
+- RDP: `21/23/24/25` → `rdp.*`; diğer paketler paket id (örn. `powershell-engine`)
+- `sourceHost` = kısa hostname (`TERMINAL`)
+- Event ID `dimensions.eventCode`
+- Odak: `mnglogcollector` deploy
 
-### Debug output (`debug-output`) ✓
+### MngAlarm runtime ✓
 
-- Palette Çıktılar altında; terminal node (çıkış portu yok)
-- Config: `mode` (`complete` | `path`), `path`, `active`
-- Path: `value` / `key` / `kind` / `timestamp` veya `dimensions.*` (düz alan adı da dimensions’a düşer)
-- Complete: observation özeti (`kind`, `key`, `value`, `timestamp`, `dimensions`)
-- **Yalnızca simulate/preview** — prod eval yan etki/log yok
-- `graph.output.required` için sayılmaz (Alarm veya Stop şart)
-- Preview API: `debugLines[]` (kronolojik)
-- UI: simülasyon panelinde debug listesi
-- Test: `ScenarioGraphV3Tests` (debug emit + yalnız-debug reject)
+- Queue bind `*.event.#` (noktalı key)
+- `in` filtresi: JSON dizi korunur
+- `ScenarioDedup.mergeEnabled` + graph executor
+- Severity: version ↔ alarm-output node senkron
+- Odak: `mngalarm` + `mngalarm-worker` deploy
 
-### Çıktı node planı (konuşuldu, kod yok) 📋
+### Flow Lab UX ✓
 
-| Node | Karar | Durum |
-|------|--------|--------|
-| Alarm | Mevcut; bağımsız (diğer çıktılar Alarm’sız da çalışabilir) | ✓ var |
-| Stop | Ayrı terminal; yan etkisiz | ✓ var |
-| Debug | Sim-only (Node-RED benzeri) | ✓ bu dilim |
-| **Bildirim** | MVP: **yalnız mail**; Telegram/inApp sonra | ⏸ sıradaki |
-| **OC Work Item** | Workspace + özelliklerle WI; ayrı dilimde konuşulacak | ⏸ sonra |
-| Bağımsızlık | Bildirim/WI Alarm’a bağlı değil | ✅ karar |
+- Sözlük: Taslak / Yayında · Açık|Kapalı / Arşiv
+- Yayınla = Kapalı kalır; Aç/Kapat ayrı
+- Açık flow düzenlenemez
+- Alarm node inspector: birleştir + kapsam (tümü / host / kullanıcı / özel)
+- Global toaster stack (kart alert kalktı)
+- UI: `mngui` deploy **bekliyor** (kullanıcı onayı)
 
----
+### PowerShell Alerts (prod) ✓
 
-## Önceki dilim (5 Ağu) — basit olay kaynağı ✓
+- v3, Açık; `matchKey=powershell-engine`; host=`TERMINAL`; Event ID 400/403/600
+- Sentetik ingest → alarm raised
 
-- Platform / kanal / EventLog (Win+Linux) / Metrik / host
-- Managed: `__scope-os`, `__scope-eventcode`, `__scope-host`, `__scope-metric`
-- Backend: `matchKeys`, `in`, V3 `$or`
-- Commit: `7f3f3855`
+### Önceki (6 Ağu) ✓
 
-Detay: [../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md)
+- Palette + debug-output · işletim status/health · execution log (son 100)
 
 ---
 
@@ -74,25 +69,22 @@ Detay: [../alarm/SCENARIO_STUDIO_SIMPLE_SOURCE.md](../alarm/SCENARIO_STUDIO_SIMP
 
 | Bileşen | Durum |
 |---------|--------|
-| `mngalarm` (matchKeys + **debug-output**) | Kod commit’lenecek; **prod deploy yok** |
-| `Mng.Ui` Flow Lab (palette + debug + basit kaynak) | Lokal · **prod deploy yok** |
-| `mnglogcollector` / `mngreactor` | Değişmedi |
-
-> Debug satırları için Flow Lab simulate, güncel **MngAlarm** API ister.
+| `mnglogcollector` | ✅ Odak prod (paket key, `SourceProducts=*`) |
+| `mngalarm` + worker | ✅ Odak prod |
+| `mngui` | Lokal hazır · **prod deploy yok** (onayla) |
 
 ---
 
-## Sıradaki adım (buradan devam)
+## Sıradaki adım
 
-1. **Bildirim node (mail MVP)** — yapı konuşulup implement (Notifier mail API; Alarm’dan bağımsız).
-2. Alarm / Stop basit UX (opsiyonel, paralel).
-3. **App/Servis** kanalı basit UX (preset → live/staleness).
-4. OC Work Item çıktısı — ayrı planlama dilimi.
-5. Kontrollü `Mng.Ui` + `MngAlarm` prod deploy (açık talepte).
+1. `mngui` prod deploy (Flow Lab / toaster / birleştirme UI)  
+2. İsteğe bağlı: semantik Event ID kataloğu  
+3. Bildirim node (mail MVP)  
+4. Flow migration kuyruğu U1+ onayla Aç — [FLOW_MIGRATION_QUEUE.md](../alarm/FLOW_MIGRATION_QUEUE.md)
 
 ---
 
 ## Nerede kalmıştık
 
-Flow Lab: palette grupları + **Debug** tamam.  
-**Kaldığımız nokta:** Bildirim (mail MVP) node yapısını konuşup geliştirmek; WI ve Telegram sonra. Deploy yok.
+Collector + Alarm backend Odak’ta; PowerShell Alerts çalışıyor.  
+**Kaldığımız nokta:** `mngui` deploy + yeni chat’te Flow Lab UI doğrulama / semantik katalog veya bildirim node.

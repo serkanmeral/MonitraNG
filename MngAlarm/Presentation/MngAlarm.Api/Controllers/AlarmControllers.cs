@@ -129,6 +129,19 @@ public sealed class AlarmScenariosController(
             : Conflict(new { code = "validation_failed", validation = item.Validation });
     }
 
+    [HttpPost("{scenarioId}/versions/{version:int}/enabled")]
+    public async Task<IActionResult> SetEnabled(
+        string scenarioId,
+        int version,
+        [FromBody] SetScenarioEnabledRequest request,
+        CancellationToken cancellationToken)
+    {
+        var item = await scenarios.SetEnabledAsync(scenarioId, version, request.Enabled, cancellationToken);
+        return item == null
+            ? Conflict(new { code = "published_version_required", message = "Only a published user scenario can be started or stopped." })
+            : Ok(item);
+    }
+
     [HttpPost("{scenarioId}/versions/{version:int}/archive")]
     public async Task<IActionResult> Archive(string scenarioId, int version, CancellationToken cancellationToken)
     {
@@ -146,6 +159,13 @@ public sealed class AlarmScenariosController(
     [HttpGet("{scenarioId}/audit")]
     public async Task<IActionResult> Audit(string scenarioId, CancellationToken cancellationToken) =>
         Ok(await scenarios.AuditAsync(scenarioId, cancellationToken));
+
+    [HttpGet("{scenarioId}/executions")]
+    public async Task<IActionResult> ListExecutions(
+        string scenarioId,
+        [FromQuery] int limit = 100,
+        CancellationToken cancellationToken = default) =>
+        Ok(await scenarios.ListExecutionsAsync(scenarioId, limit, cancellationToken));
 
     [HttpPost("preview")]
     public async Task<IActionResult> Preview([FromBody] ScenarioPreviewRequest request, CancellationToken cancellationToken) =>

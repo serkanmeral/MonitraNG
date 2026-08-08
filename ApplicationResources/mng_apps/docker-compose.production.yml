@@ -649,6 +649,13 @@ services:
       - MngLogCollectorSettings__MongoDB__EventLogCatalogDatabaseName=${MNGLOGCOLLECTOR_EVENTLOG_CATALOG_DB:-mng_odak}
       - MngLogCollectorSettings__Discovery__Prefixes__0__Cidr=${MNGLOGCOLLECTOR_PREFIX_0_CIDR:-192.168.20.0/24}
       - MngLogCollectorSettings__Discovery__Prefixes__0__Label=${MNGLOGCOLLECTOR_PREFIX_0_LABEL:-Odak ofis}
+      - MngLogCollectorSettings__RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
+      - MngLogCollectorSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - MngLogCollectorSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngLogCollectorSettings__RabbitMq__Username=${RABBITMQ_USERNAME:-admin}
+      - MngLogCollectorSettings__RabbitMq__Password=${RABBITMQ_PASSWORD:-admin123}
+      - MngLogCollectorSettings__ObservationPublish__Enabled=${MNGLOGCOLLECTOR_OBSERVATION_PUBLISH_ENABLED:-true}
+      - MngLogCollectorSettings__ObservationPublish__SourceProducts__0=*
     networks:
       - mng_common_mng_network
     restart: unless-stopped

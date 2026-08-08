@@ -13,6 +13,7 @@ public sealed class ScenarioService(
     IAlarmDomainAccessor domain,
     IScenarioRepository scenarios,
     IAlarmRuleRepository rules,
+    IScenarioExecutionRepository? executions = null,
     IScenarioRuntimeCapabilities? capabilities = null) : IScenarioService
 {
     public async Task<IReadOnlyList<ScenarioCatalogItem>> ListAsync(
@@ -21,6 +22,14 @@ public sealed class ScenarioService(
     {
         var ctx = domain.GetRequiredDomain();
         var versions = await scenarios.ListAsync(ctx.DomainName, cancellationToken);
+        var ruleHealth = (await rules.ListAllAsync(ctx.DomainName, cancellationToken))
+            .Where(x => !string.IsNullOrWhiteSpace(x.ScenarioId))
+            .GroupBy(x => x.ScenarioId!, StringComparer.Ordinal)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(x => x.UpdatedAt).First().RuntimeHealth,
+                StringComparer.Ordinal);
+
         return versions
             .GroupBy(x => x.ScenarioId, StringComparer.Ordinal)
             .Select(group =>
@@ -30,15 +39,22 @@ public sealed class ScenarioService(
                     ? ordered[0]
                     : ordered.FirstOrDefault(x => x.Status == ScenarioLifecycleStatuses.Published);
                 if (latest == null) return null;
+                var published = ordered.FirstOrDefault(x => x.Status == ScenarioLifecycleStatuses.Published);
+                var health = published != null && ruleHealth.TryGetValue(group.Key, out var rh) ? rh : null;
                 return new ScenarioCatalogItem
                 {
                     ScenarioId = group.Key,
                     Name = latest.Name,
                     LatestVersion = latest.Version,
                     LatestStatus = latest.Status,
-                    PublishedVersion = ordered.FirstOrDefault(x => x.Status == ScenarioLifecycleStatuses.Published)?.Version,
+                    PublishedVersion = published?.Version,
                     DraftVersion = ordered.FirstOrDefault(x => x.Status is ScenarioLifecycleStatuses.Draft or ScenarioLifecycleStatuses.Validated)?.Version,
-                    Enabled = latest.Enabled,
+                    Enabled = published?.Enabled ?? false,
+                    OperationalStatus = ScenarioHealthTracker.ResolveOperationalStatus(published, latest),
+                    Health = health?.Level ?? ScenarioHealthLevels.Unknown,
+                    LastErrorMessage = health?.LastErrorMessage,
+                    LastErrorAt = health?.LastErrorAt,
+                    LastSuccessAt = health?.LastSuccessAt,
                     Severity = latest.Severity,
                     Origin = latest.Origin,
                     IsReadOnly = latest.IsReadOnly,
@@ -69,6 +85,7 @@ public sealed class ScenarioService(
             Definition = NormalizeDefinition(request.Definition),
             Status = ScenarioLifecycleStatuses.Draft
         };
+        AlignAlarmSeverity(draft, request.Severity);
         await scenarios.InsertVersionAsync(draft, cancellationToken);
         await AuditAsync(draft, "draft.created", cancellationToken);
         return draft;
@@ -96,6 +113,7 @@ public sealed class ScenarioService(
             Enabled = request?.Enabled ?? latest.Enabled,
             Definition = request == null ? Clone(latest.Definition) : NormalizeDefinition(request.Definition)
         };
+        AlignAlarmSeverity(draft, request?.Severity);
         await scenarios.InsertVersionAsync(draft, cancellationToken);
         await AuditAsync(draft, "draft.created", cancellationToken);
         return draft;
@@ -224,6 +242,7 @@ public sealed class ScenarioService(
         if (request.Severity.HasValue) draft.Severity = request.Severity.Value;
         if (request.Enabled.HasValue) draft.Enabled = request.Enabled.Value;
         if (request.Definition != null) draft.Definition = NormalizeDefinition(request.Definition);
+        AlignAlarmSeverity(draft, request.Severity);
         draft.Validation = null;
         draft.UpdatedAt = DateTime.UtcNow;
         await scenarios.UpdateVersionAsync(draft, cancellationToken);
@@ -285,6 +304,7 @@ public sealed class ScenarioService(
 
         var now = DateTime.UtcNow;
         await scenarios.ArchivePublishedExceptAsync(item.DomainName, item.ScenarioId, item.Version, now, cancellationToken);
+        item.Enabled = false;
         var projections = (await rules.ListAllAsync(item.DomainName, cancellationToken))
             .Where(x => x.ScenarioId == item.ScenarioId)
             .ToList();
@@ -319,6 +339,38 @@ public sealed class ScenarioService(
         item.Validation = validation;
         await scenarios.UpdateVersionAsync(item, cancellationToken);
         await AuditAsync(item, "version.published", cancellationToken);
+        return item;
+    }
+
+    public async Task<ScenarioVersionDocument?> SetEnabledAsync(
+        string scenarioId,
+        int version,
+        bool enabled,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await GetAsync(scenarioId, version, cancellationToken);
+        if (item == null
+            || item.Status != ScenarioLifecycleStatuses.Published
+            || item.IsReadOnly
+            || item.Origin == ScenarioOrigins.Product)
+            return null;
+
+        var now = DateTime.UtcNow;
+        item.Enabled = enabled;
+        item.UpdatedAt = now;
+        await scenarios.UpdatePublishedEnabledAsync(item.DomainName, item.Id, enabled, now, cancellationToken);
+
+        var projections = (await rules.ListAllAsync(item.DomainName, cancellationToken))
+            .Where(x => x.ScenarioId == item.ScenarioId)
+            .ToList();
+        foreach (var projection in projections)
+        {
+            projection.Enabled = enabled && projection.ScenarioVersion == item.Version;
+            projection.UpdatedAt = now;
+            await rules.UpdateAsync(projection, cancellationToken);
+        }
+
+        await AuditAsync(item, enabled ? "version.enabled" : "version.disabled", cancellationToken);
         return item;
     }
 
@@ -387,6 +439,43 @@ public sealed class ScenarioService(
     {
         var ctx = domain.GetRequiredDomain();
         return await scenarios.ListAuditAsync(ctx.DomainName, scenarioId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ScenarioExecutionDto>> ListExecutionsAsync(
+        string scenarioId,
+        int limit = ScenarioExecutionDocument.DefaultRetainCount,
+        CancellationToken cancellationToken = default)
+    {
+        if (executions == null) return [];
+        var ctx = domain.GetRequiredDomain();
+        var items = await executions.ListRecentAsync(ctx.DomainName, scenarioId, limit, cancellationToken);
+        return items.Select(x => new ScenarioExecutionDto
+        {
+            Id = x.Id,
+            ScenarioId = x.ScenarioId,
+            ScenarioVersion = x.ScenarioVersion,
+            RuleId = x.RuleId,
+            Trigger = x.Trigger,
+            Outcome = x.Outcome,
+            StartedAt = x.StartedAt,
+            FinishedAt = x.FinishedAt,
+            DurationMs = x.DurationMs,
+            ObservationKind = x.ObservationKind,
+            ObservationKey = x.ObservationKey,
+            ObservationValue = x.ObservationValue,
+            AlarmsRaised = x.AlarmsRaised,
+            AlarmsUpdated = x.AlarmsUpdated,
+            OutputNodeIds = x.OutputNodeIds,
+            ErrorCode = x.ErrorCode,
+            ErrorMessage = x.ErrorMessage,
+            NodeTrace = x.NodeTrace.Select(t => new ScenarioExecutionTraceDto
+            {
+                NodeId = t.NodeId,
+                NodeType = t.NodeType,
+                Status = t.Status,
+                Outcome = t.Outcome
+            }).ToList()
+        }).ToList();
     }
 
     public async Task<ScenarioPreviewResponse> PreviewAsync(
@@ -620,29 +709,69 @@ public sealed class ScenarioService(
 
     private static void ApplyProjection(AlarmRuleDocument rule, ScenarioVersionDocument version)
     {
+        AlignAlarmSeverity(version, preferredSeverity: null);
         rule.Name = version.Name;
         rule.Enabled = version.Enabled;
         rule.Severity = version.Severity;
         rule.ScenarioId = version.ScenarioId;
         rule.ScenarioVersion = version.Version;
         rule.UpdatedAt = DateTime.UtcNow;
-        ScenarioCompiler.ApplyToLegacyFields(rule, Clone(version.Definition));
+        ScenarioCompiler.ApplyToLegacyFields(rule, NormalizeDefinition(version.Definition));
     }
+
+    /// <summary>
+    /// Keeps version.Severity and alarm-output node config.severity in sync so runtime
+    /// (node.Config.Severity ?? rule.Severity) always reflects the intended value.
+    /// Single-output graphs take preferredSeverity (or version) onto the node.
+    /// Multi-output graphs only fill missing node severities so distinct values are kept.
+    /// </summary>
+    private static void AlignAlarmSeverity(ScenarioVersionDocument version, int? preferredSeverity)
+    {
+        var outputs = version.Definition?.Graph?.Nodes
+            .Where(node => node.Type == ScenarioNodeTypes.AlarmOutput)
+            .ToList() ?? [];
+
+        if (preferredSeverity.HasValue)
+            version.Severity = ClampSeverity(preferredSeverity.Value);
+
+        if (outputs.Count == 0)
+            return;
+
+        if (outputs.Count == 1)
+        {
+            var only = outputs[0];
+            if (preferredSeverity.HasValue || !only.Config.Severity.HasValue)
+                only.Config.Severity = ClampSeverity(version.Severity);
+            else
+                version.Severity = ClampSeverity(only.Config.Severity.Value);
+            return;
+        }
+
+        foreach (var output in outputs)
+            output.Config.Severity ??= ClampSeverity(version.Severity);
+    }
+
+    private static int ClampSeverity(int severity) => Math.Clamp(severity, 1, 10);
 
     private static ScenarioDefinition NormalizeDefinition(ScenarioDefinition definition)
     {
-        var normalized = Clone(definition);
-        NormalizeCondition(normalized.Condition);
-        NormalizeSequence(normalized.Sequence);
-        if (normalized.Graph != null)
+        var normalized = JsonSerializer.Deserialize<ScenarioDefinition>(JsonSerializer.Serialize(definition))!;
+        NormalizeValuesInPlace(normalized);
+        return normalized;
+    }
+
+    private static void NormalizeValuesInPlace(ScenarioDefinition definition)
+    {
+        NormalizeCondition(definition.Condition);
+        NormalizeSequence(definition.Sequence);
+        if (definition.Graph != null)
         {
-            foreach (var node in normalized.Graph.Nodes)
+            foreach (var node in definition.Graph.Nodes)
             {
                 NormalizeCondition(node.Config.Condition);
                 NormalizeSequence(node.Config.Sequence);
             }
         }
-        return normalized;
     }
 
     private static void NormalizeCondition(ScenarioCondition? condition)
@@ -661,7 +790,7 @@ public sealed class ScenarioService(
     }
 
     private static ScenarioDefinition Clone(ScenarioDefinition definition) =>
-        JsonSerializer.Deserialize<ScenarioDefinition>(JsonSerializer.Serialize(definition))!;
+        NormalizeDefinition(definition);
 
     private static string BuildGroupKey(IEnumerable<string> fields, IReadOnlyDictionary<string, object?> dimensions)
     {

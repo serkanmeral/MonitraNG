@@ -76,6 +76,11 @@ public class AlarmRuleDocument
     [BsonIgnoreIfDefault]
     public int ScenarioVersion { get; set; }
 
+    /// <summary>Runtime health for scenario-backed rules (eval / side-effect failures).</summary>
+    [BsonElement("runtimeHealth")]
+    [BsonIgnoreIfNull]
+    public ScenarioRuntimeHealth? RuntimeHealth { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -1,7 +1,7 @@
 # DEVAM — Alarm & Rule Engine (Kaldığımız Yer)
 
-**Son güncelleme:** 7 Haziran 2026  
-**Durum:** ✅ Faz 0–2 motor · ✅ **Alarm Merkezi operatör UI** · ✅ **Alarm bildirim politikaları (AN-1→AN-5) Odak canlı** · **mola**
+**Son güncelleme:** 8 Ağustos 2026  
+**Durum:** ✅ Faz 0–2 motor · ✅ Alarm Merkezi UI · ✅ Bildirim politikaları · ✅ **Agent observation köprüsü + Flow Lab işletimi (Odak prod)**
 
 > **SIEM + Alarm birlikte devam:** [../monitoring/DEVAM.md](../monitoring/DEVAM.md) ⭐ mola checkpoint  
 > Workflow: [../workflow/DEVAM.md](../workflow/DEVAM.md) · Platform UI: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
@@ -10,9 +10,9 @@
 
 ## 1. Tek cümlede durum
 
-`MngAlarm` Odak'ta ayakta (threshold, correlation, scheduled, **sequence**). Operatör tarafı **Alarm Merkezi** (`/apps/alarm-center/*`): açık alarm/geçmiş, lifecycle, kural CRUD, **bildirim politikaları** (`/notification-policies`). SIEM olay arama ayrı: `/apps/siem-center/*`.
+`MngAlarm` Odak'ta ayakta (threshold, correlation, scheduled, **sequence**, **V3 graph / Flow Lab**). Operatör: Alarm Merkezi + **Flow Lab** (`/apps/alarm-center/flow-lab`). SIEM olay arama: `/apps/siem-center/*`.
 
-**Son geliştirme:** AN-1→AN-5 (CRUD API, dispatch inApp+email+Hub, UI, mail seed, E2E script). Manuel doğrulama: [CONTROL_CHECKLIST.md](../CONTROL_CHECKLIST.md) B+C.
+**Son geliştirme (7–8 Ağu 2026):** Agent EventLog → `monitra.observations` (paket key; RDP semantik opsiyonel); queue `*.event.#`; Event ID `in` dizi fix; Flow Lab Açık/Kapalı + düzenleme kilidi; alarm birleştirme/gruplama; severity senkron; toaster stack. Ayrıntı: [AGENT_OBSERVATION_AND_FLOW_LAB.md](./AGENT_OBSERVATION_AND_FLOW_LAB.md).
 
 ---
 
@@ -78,6 +78,22 @@ Reactor → observation stream → MngAlarm (threshold) → mng.alarms
 ```
 
 Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
+
+---
+
+## 4b. Agent → Alarm (8 Ağu 2026) ✅
+
+| # | Görev | Kabul |
+|---|-------|-------|
+| C1 | Collector observation publish (`rdp-session` MVP → tüm paket `*`) | ✅ Odak prod |
+| C2 | Routing bind `*.event.#` (noktalı key) | ✅ |
+| C3 | Observation key = paket id; Event ID = `dimensions.eventCode` | ✅ |
+| C4 | `in` operatörü JSON dizi koruması | ✅ |
+| C5 | Flow Lab: Açık kilit / Kapalı düzenle; Yayınla = Kapalı | ✅ kod (`mngui` deploy isteğe bağlı) |
+| C6 | Alarm node `mergeEnabled` + gruplama UX | ✅ kod + `mngalarm` prod |
+| C7 | PowerShell Alerts v3 (`powershell-engine` + host `TERMINAL`) | ✅ sentetik ingest alarm |
+
+Detay: [AGENT_OBSERVATION_AND_FLOW_LAB.md](./AGENT_OBSERVATION_AND_FLOW_LAB.md).
 
 ---
 

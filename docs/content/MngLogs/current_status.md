@@ -1,11 +1,11 @@
 # MngLogs — Son durum
 
-**Son güncelleme:** 2026-08-03  
-**Durum:** Windows + Linux agent canlı. **Günlük hedef = Odak PROD Collector** `http://192.168.20.8:5091`. Host telemetrisi NXLog/rsyslog yerine yalnızca agent.
+**Son güncelleme:** 2026-08-08  
+**Durum:** Windows + Linux agent canlı. **Günlük hedef = Odak PROD Collector** `http://192.168.20.8:5091`. Host telemetrisi NXLog/rsyslog yerine yalnızca agent. **Alarm observation publish açık** (`SourceProducts=*`).
 
 ## Son çalışılan konu
 
-Prod Collector deploy (RDP normalizer) + SIEM Events filtre kataloğu doğrulaması (OS → Reactor). Agent varsayılanı prod `:5091`.
+Collector → `monitra.observations`: paket-seviye observation key (RDP semantik opsiyonel). PowerShell paket olayları Alarm’a düşer. Ayrıntı: `docs/odak/alarm/AGENT_OBSERVATION_AND_FLOW_LAB.md`.
 
 ## Plan / faz
 

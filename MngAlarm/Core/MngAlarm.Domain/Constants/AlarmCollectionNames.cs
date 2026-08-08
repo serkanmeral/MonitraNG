@@ -10,6 +10,7 @@ public static class AlarmCollectionNames
     public const string NotificationCooldowns = "@mon_alarm_notification_cooldowns";
     public const string ScenarioVersions = "@mon_alarm_scenario_versions";
     public const string ScenarioAudit = "@mon_alarm_scenario_audit";
+    public const string ScenarioExecutions = "@mon_alarm_scenario_executions";
     public const string SequenceState = "@mon_alarm_sequence_state";
     public const string ScenarioDueState = "@mon_alarm_scenario_due_state";
 }
@@ -33,7 +34,15 @@ public static class AlarmMessagingConstants
     public const string ObservationQueue = "alarm.observation.inbound";
     public const string ObservationExchange = "monitra.observations";
     public const string ObservationRoutingPattern = "*.metric.*";
-    public const string ObservationEventRoutingPattern = "*.event.*";
+    /// <summary>
+    /// Topic pattern for event observations. Use <c>#</c> (not <c>*</c>) after
+    /// <c>event</c> so dotted keys like <c>rdp.logon</c> match
+    /// (<c>{domain}.event.rdp.logon</c> is four routing words).
+    /// </summary>
+    public const string ObservationEventRoutingPattern = "*.event.#";
+
+    /// <summary>Legacy bind from early event ingress; unbound on bootstrap.</summary>
+    public const string ObservationEventRoutingPatternLegacy = "*.event.*";
 
     /// <summary>MngReactor metric publish exchange (legacy path until Reactor emits monitra.observations directly).</summary>
     public const string ReactorMetricsExchange = "mng.topics";

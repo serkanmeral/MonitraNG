@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngLogCollector.Application.Abstractions.Ingest;
+using MngLogCollector.Application.Abstractions.Observations;
 using MngLogCollector.Application.Abstractions.OpenSearch;
 using MngLogCollector.Application.Configuration;
 using MngLogCollector.Application.Contracts.Ingest;
@@ -12,15 +13,18 @@ namespace MngLogCollector.Application.Services.Ingest;
 public sealed class IngestBatchService : IIngestBatchService
 {
     private readonly IOpenSearchBulkWriter _writer;
+    private readonly IAgentObservationPublisher _observations;
     private readonly MngLogCollectorSettings _settings;
     private readonly ILogger<IngestBatchService> _logger;
 
     public IngestBatchService(
         IOpenSearchBulkWriter writer,
+        IAgentObservationPublisher observations,
         IOptions<MngLogCollectorSettings> options,
         ILogger<IngestBatchService> logger)
     {
         _writer = writer;
+        _observations = observations;
         _settings = options.Value;
         _logger = logger;
     }
@@ -80,12 +84,50 @@ public sealed class IngestBatchService : IIngestBatchService
                 docs.Count);
         }
 
+        await PublishObservationsAsync(domain, hostId, request.Hostname, events, cancellationToken);
+
         return new IngestBatchResponse
         {
             Accepted = docs.Count,
             Written = written,
             OpenSearchWriteEnabled = _settings.OpenSearch.WriteEnabled
         };
+    }
+
+    private async Task PublishObservationsAsync(
+        string domain,
+        string hostId,
+        string? hostname,
+        IList<IngestEventItem> events,
+        CancellationToken cancellationToken)
+    {
+        var publish = _settings.ObservationPublish;
+        if (!publish.Enabled || events.Count == 0)
+            return;
+
+        foreach (var item in events)
+        {
+            if (!AgentObservationMapper.IsSourceProductAllowed(publish, item.SourceProduct))
+                continue;
+
+            var payload = AgentObservationMapper.TryMap(domain, hostId, hostname, item);
+            if (payload is null)
+                continue;
+
+            try
+            {
+                await _observations.PublishEventAsync(payload, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Observation publish failed domain={Domain} product={Product} key={Key}",
+                    domain,
+                    item.SourceProduct,
+                    payload.Key);
+            }
+        }
     }
 
     private static string? BuildRawPreview(JsonElement? raw)
@@ -103,8 +145,7 @@ public sealed class IngestBatchService : IIngestBatchService
         if (string.IsNullOrEmpty(text))
             return null;
 
-        // Keep enough Event Log XML / EventData in rawPreview for UI + parser triage.
-        const int max = 8192;
+        const int max = 2048;
         return text.Length <= max ? text : text[..max];
     }
 }

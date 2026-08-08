@@ -209,7 +209,7 @@ export function applySimpleSourceToConfig(
   if ((state.platform === 'windows' || state.platform === 'linux') && state.events.length) {
     const keys = deriveMatchKeysFromEvents(state.events);
     next.matchKeys = keys;
-    next.matchKey = keys[0] || (state.platform === 'linux' ? 'login_failed' : 'unknown');
+    next.matchKey = keys[0] || (state.platform === 'linux' ? 'login_failed' : 'windows.eventlog');
     return next;
   }
 

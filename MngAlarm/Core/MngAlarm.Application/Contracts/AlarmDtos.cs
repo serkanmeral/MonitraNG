@@ -146,6 +146,13 @@ public sealed class ScenarioCatalogItem
     public int? PublishedVersion { get; init; }
     public int? DraftVersion { get; init; }
     public bool Enabled { get; init; }
+    /// <summary>User-facing run state: draft | running | stopped | archived.</summary>
+    public string OperationalStatus { get; init; } = ScenarioOperationalStatuses.Draft;
+    /// <summary>Runtime health: unknown | healthy | warning | error.</summary>
+    public string Health { get; init; } = ScenarioHealthLevels.Unknown;
+    public string? LastErrorMessage { get; init; }
+    public DateTime? LastErrorAt { get; init; }
+    public DateTime? LastSuccessAt { get; init; }
     public int Severity { get; init; }
     public string Origin { get; init; } = ScenarioOrigins.User;
     public bool IsReadOnly { get; init; }
@@ -153,6 +160,41 @@ public sealed class ScenarioCatalogItem
     public string? PackageId { get; init; }
     public string? PackageVersion { get; init; }
     public DateTime UpdatedAt { get; init; }
+}
+
+public sealed class SetScenarioEnabledRequest
+{
+    public bool Enabled { get; set; }
+}
+
+public sealed class ScenarioExecutionDto
+{
+    public string Id { get; init; } = string.Empty;
+    public string ScenarioId { get; init; } = string.Empty;
+    public int ScenarioVersion { get; init; }
+    public string RuleId { get; init; } = string.Empty;
+    public string Trigger { get; init; } = string.Empty;
+    public string Outcome { get; init; } = string.Empty;
+    public DateTime StartedAt { get; init; }
+    public DateTime FinishedAt { get; init; }
+    public long DurationMs { get; init; }
+    public string? ObservationKind { get; init; }
+    public string? ObservationKey { get; init; }
+    public double? ObservationValue { get; init; }
+    public int AlarmsRaised { get; init; }
+    public int AlarmsUpdated { get; init; }
+    public IReadOnlyList<string> OutputNodeIds { get; init; } = [];
+    public string? ErrorCode { get; init; }
+    public string? ErrorMessage { get; init; }
+    public IReadOnlyList<ScenarioExecutionTraceDto> NodeTrace { get; init; } = [];
+}
+
+public sealed class ScenarioExecutionTraceDto
+{
+    public string NodeId { get; init; } = string.Empty;
+    public string NodeType { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public bool? Outcome { get; init; }
 }
 
 public sealed class ImportScenarioPackageRequest

@@ -4,6 +4,7 @@ import type {
   CreateScenarioDraftRequest,
   ScenarioAuditEntry,
   ScenarioCatalogItem,
+  ScenarioExecution,
   ScenarioPreviewRequest,
   ScenarioPreviewResponse,
   ScenarioValidationSnapshot,
@@ -103,6 +104,12 @@ export function useScenarioStudioApi() {
         { method: 'POST', headers: headers() },
       )),
 
+    setEnabled: (scenarioId: string, version: number, enabled: boolean) =>
+      execute(() => $fetch<ScenarioVersion>(
+        `${versionPath(scenarioId, version)}/enabled`,
+        { method: 'POST', headers: headers(), body: { enabled } },
+      )),
+
     rollback: (scenarioId: string, version: number) =>
       execute(() => $fetch<ScenarioVersion>(
         `${versionPath(scenarioId, version)}/rollback`,
@@ -119,6 +126,13 @@ export function useScenarioStudioApi() {
       execute(() => $fetch<ScenarioAuditEntry[]>(`${scenarioPath(scenarioId)}/audit`, {
         method: 'GET',
         headers: headers(),
+      })),
+
+    listExecutions: (scenarioId: string, limit = 100) =>
+      execute(() => $fetch<ScenarioExecution[]>(`${scenarioPath(scenarioId)}/executions`, {
+        method: 'GET',
+        headers: headers(),
+        query: { limit },
       })),
 
     compile: (body: ScenarioPreviewRequest) =>

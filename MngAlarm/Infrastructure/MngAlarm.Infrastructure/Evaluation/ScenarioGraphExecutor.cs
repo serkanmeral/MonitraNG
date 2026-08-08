@@ -78,13 +78,18 @@ public sealed class ScenarioGraphExecutor(
             if (node.Type == ScenarioNodeTypes.AlarmOutput)
             {
                 var groupKey = BuildGroupKey(node.Config.GroupBy, observation);
-                var dedup = node.Config.Dedup!;
+                var dedup = node.Config.Dedup ?? new ScenarioDedup();
+                var mergeEnabled = dedup.MergeEnabled;
+                var dedupKey = BuildDedupKey(dedup.KeyTemplate, rule, observation, groupKey, node.Id);
+                if (!mergeEnabled)
+                    dedupKey = $"{dedupKey}:{Guid.NewGuid():N}";
                 outputs.Add(new ScenarioOutputMatch(
                     node.Id,
                     node.Config.Severity ?? rule.Severity,
-                    BuildDedupKey(dedup.KeyTemplate, rule, observation, groupKey, node.Id),
-                    dedup.CooldownSeconds,
-                    groupKey));
+                    dedupKey,
+                    mergeEnabled ? dedup.CooldownSeconds : 0,
+                    groupKey,
+                    mergeEnabled));
                 traces.Add(new(nodeId, node.Type, "matched", null, null));
                 continue;
             }
@@ -285,7 +290,8 @@ public sealed record ScenarioOutputMatch(
     int Severity,
     string DedupKey,
     int CooldownSeconds,
-    string GroupKey);
+    string GroupKey,
+    bool MergeEnabled = true);
 
 public sealed record ScenarioNodeTrace(
     string NodeId,

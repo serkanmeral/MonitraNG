@@ -38,6 +38,22 @@ public static class ScenarioNodeTypes
     public const string DebugOutput = "debug-output";
 }
 
+public static class ScenarioOperationalStatuses
+{
+    public const string Draft = "draft";
+    public const string Running = "running";
+    public const string Stopped = "stopped";
+    public const string Archived = "archived";
+}
+
+public static class ScenarioHealthLevels
+{
+    public const string Unknown = "unknown";
+    public const string Healthy = "healthy";
+    public const string Warning = "warning";
+    public const string Error = "error";
+}
+
 [BsonIgnoreExtraElements]
 public sealed class ScenarioGraph
 {
@@ -323,6 +339,13 @@ public sealed class ScenarioDedup
 
     [BsonElement("cooldownSeconds")]
     public int CooldownSeconds { get; set; } = 300;
+
+    /// <summary>
+    /// When true (default), matching open alarms are updated (count++).
+    /// When false, every match raises a new alarm.
+    /// </summary>
+    [BsonElement("mergeEnabled")]
+    public bool MergeEnabled { get; set; } = true;
 }
 
 [BsonIgnoreExtraElements]
@@ -336,6 +359,43 @@ public sealed class ScenarioHysteresis
 
     [BsonElement("minimumStateSeconds")]
     public int MinimumStateSeconds { get; set; }
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioRuntimeHealth
+{
+    [BsonElement("level")]
+    public string Level { get; set; } = ScenarioHealthLevels.Unknown;
+
+    [BsonElement("lastSuccessAt")]
+    [BsonIgnoreIfNull]
+    public DateTime? LastSuccessAt { get; set; }
+
+    [BsonElement("lastErrorAt")]
+    [BsonIgnoreIfNull]
+    public DateTime? LastErrorAt { get; set; }
+
+    [BsonElement("lastErrorCode")]
+    [BsonIgnoreIfNull]
+    public string? LastErrorCode { get; set; }
+
+    [BsonElement("lastErrorMessage")]
+    [BsonIgnoreIfNull]
+    public string? LastErrorMessage { get; set; }
+
+    [BsonElement("lastErrorNodeId")]
+    [BsonIgnoreIfNull]
+    public string? LastErrorNodeId { get; set; }
+
+    [BsonElement("consecutiveErrors")]
+    public int ConsecutiveErrors { get; set; }
+
+    [BsonElement("errorCountWindow")]
+    public int ErrorCountWindow { get; set; }
+
+    [BsonElement("windowStartedAt")]
+    [BsonIgnoreIfNull]
+    public DateTime? WindowStartedAt { get; set; }
 }
 
 [BsonIgnoreExtraElements]
@@ -450,4 +510,111 @@ public sealed class ScenarioAuditDocument
 
     [BsonElement("timestamp")]
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+public static class ScenarioExecutionTriggers
+{
+    public const string Observation = "observation";
+    public const string Due = "due";
+    public const string Scheduled = "scheduled";
+    public const string Manual = "manual";
+}
+
+public static class ScenarioExecutionOutcomes
+{
+    public const string Matched = "matched";
+    public const string NoMatch = "no_match";
+    public const string Stopped = "stopped";
+    public const string Pending = "pending";
+    public const string Error = "error";
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioExecutionDocument
+{
+    public const int DefaultRetainCount = 100;
+    public const int MaxTraceEntries = 40;
+
+    [BsonId]
+    [BsonRepresentation(MongoDB.Bson.BsonType.String)]
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
+    [BsonElement("domainId")]
+    public string DomainId { get; set; } = string.Empty;
+
+    [BsonElement("domainName")]
+    public string DomainName { get; set; } = string.Empty;
+
+    [BsonElement("scenarioId")]
+    public string ScenarioId { get; set; } = string.Empty;
+
+    [BsonElement("scenarioVersion")]
+    public int ScenarioVersion { get; set; }
+
+    [BsonElement("ruleId")]
+    public string RuleId { get; set; } = string.Empty;
+
+    [BsonElement("trigger")]
+    public string Trigger { get; set; } = ScenarioExecutionTriggers.Observation;
+
+    [BsonElement("outcome")]
+    public string Outcome { get; set; } = ScenarioExecutionOutcomes.NoMatch;
+
+    [BsonElement("startedAt")]
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("finishedAt")]
+    public DateTime FinishedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("durationMs")]
+    public long DurationMs { get; set; }
+
+    [BsonElement("observationKind")]
+    [BsonIgnoreIfNull]
+    public string? ObservationKind { get; set; }
+
+    [BsonElement("observationKey")]
+    [BsonIgnoreIfNull]
+    public string? ObservationKey { get; set; }
+
+    [BsonElement("observationValue")]
+    [BsonIgnoreIfNull]
+    public double? ObservationValue { get; set; }
+
+    [BsonElement("alarmsRaised")]
+    public int AlarmsRaised { get; set; }
+
+    [BsonElement("alarmsUpdated")]
+    public int AlarmsUpdated { get; set; }
+
+    [BsonElement("outputNodeIds")]
+    public List<string> OutputNodeIds { get; set; } = [];
+
+    [BsonElement("errorCode")]
+    [BsonIgnoreIfNull]
+    public string? ErrorCode { get; set; }
+
+    [BsonElement("errorMessage")]
+    [BsonIgnoreIfNull]
+    public string? ErrorMessage { get; set; }
+
+    [BsonElement("nodeTrace")]
+    public List<ScenarioExecutionTraceEntry> NodeTrace { get; set; } = [];
+}
+
+[BsonIgnoreExtraElements]
+public sealed class ScenarioExecutionTraceEntry
+{
+    [BsonElement("nodeId")]
+    public string NodeId { get; set; } = string.Empty;
+
+    [BsonElement("nodeType")]
+    public string NodeType { get; set; } = string.Empty;
+
+    [BsonElement("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [BsonElement("outcome")]
+    [BsonIgnoreIfNull]
+    public bool? Outcome { get; set; }
 }

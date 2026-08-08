@@ -104,6 +104,14 @@ public sealed class AlarmTopologyBootstrapper
             AlarmMessagingConstants.ObservationExchange,
             routingKey: AlarmMessagingConstants.ObservationEventRoutingPattern,
             cancellationToken: cancellationToken);
+
+        // Dotted event.action keys (rdp.logon) need #; drop legacy 3-word bind to avoid duplicates.
+        await channel.QueueUnbindAsync(
+            AlarmMessagingConstants.ObservationQueue,
+            AlarmMessagingConstants.ObservationExchange,
+            routingKey: AlarmMessagingConstants.ObservationEventRoutingPatternLegacy,
+            arguments: null,
+            cancellationToken: cancellationToken);
     }
 
     public async Task EnsureReactorBridgeAsync(ReactorBridgeSettings settings, CancellationToken cancellationToken = default)

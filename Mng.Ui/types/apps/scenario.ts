@@ -1,4 +1,6 @@
 export type ScenarioLifecycleStatus = 'draft' | 'validated' | 'published' | 'archived';
+export type ScenarioOperationalStatus = 'draft' | 'running' | 'stopped' | 'archived';
+export type ScenarioHealthLevel = 'unknown' | 'healthy' | 'warning' | 'error';
 export type ScenarioOrigin = 'user' | 'product';
 export type ScenarioSourceKind =
   | 'observation'
@@ -63,6 +65,8 @@ export interface ScenarioSequence {
 export interface ScenarioDedup {
   keyTemplate: string;
   cooldownSeconds: number;
+  /** When true (default), matching open alarms are updated (count++). */
+  mergeEnabled?: boolean;
 }
 
 export interface ScenarioHysteresis {
@@ -200,6 +204,11 @@ export interface ScenarioCatalogItem {
   publishedVersion?: number;
   draftVersion?: number;
   enabled: boolean;
+  operationalStatus?: ScenarioOperationalStatus;
+  health?: ScenarioHealthLevel;
+  lastErrorMessage?: string | null;
+  lastErrorAt?: string | null;
+  lastSuccessAt?: string | null;
   severity: number;
   origin: ScenarioOrigin;
   isReadOnly: boolean;
@@ -216,6 +225,37 @@ export interface ScenarioAuditEntry {
   version: number;
   action: string;
   timestamp: string;
+}
+
+export type ScenarioExecutionTrigger = 'observation' | 'due' | 'scheduled' | 'manual' | string;
+export type ScenarioExecutionOutcome = 'matched' | 'no_match' | 'stopped' | 'pending' | 'error' | string;
+
+export interface ScenarioExecutionTrace {
+  nodeId: string;
+  nodeType: string;
+  status: string;
+  outcome?: boolean | null;
+}
+
+export interface ScenarioExecution {
+  id: string;
+  scenarioId: string;
+  scenarioVersion: number;
+  ruleId: string;
+  trigger: ScenarioExecutionTrigger;
+  outcome: ScenarioExecutionOutcome;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  observationKind?: string | null;
+  observationKey?: string | null;
+  observationValue?: number | null;
+  alarmsRaised: number;
+  alarmsUpdated: number;
+  outputNodeIds: string[];
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  nodeTrace: ScenarioExecutionTrace[];
 }
 
 export interface CreateScenarioDraftRequest {

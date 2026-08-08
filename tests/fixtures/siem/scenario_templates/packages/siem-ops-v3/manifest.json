@@ -1,0 +1,70 @@
+{
+  "packageId": "siem-ops-v3",
+  "packageVersion": "1.0.0",
+  "description": "Odak production SIEM flows (real matchKeys). Imported/published stopped; start one-by-one after approval.",
+  "templates": [
+    {
+      "templateId": "U1",
+      "name": "U1 — Brute force (başarısız login)",
+      "severity": 7,
+      "definition": {
+        "schemaVersion": 3,
+        "graph": {
+          "nodes": [
+            {
+              "id": "source",
+              "type": "source",
+              "layout": { "x": 60, "y": 180, "label": "login_failed" },
+              "config": {
+                "source": {
+                  "kind": "observation",
+                  "observationKind": "event",
+                  "matchKey": "login_failed"
+                }
+              }
+            },
+            {
+              "id": "threshold",
+              "type": "threshold",
+              "layout": { "x": 340, "y": 180, "label": "count >= 10 / 5m" },
+              "config": {
+                "aggregation": {
+                  "function": "count",
+                  "operator": "gte",
+                  "threshold": 10
+                },
+                "window": { "durationSeconds": 300, "stalenessSeconds": 0 },
+                "groupBy": ["userId", "srcIp"],
+                "settleAfterSeconds": 0
+              }
+            },
+            {
+              "id": "alarm",
+              "type": "alarm-output",
+              "layout": { "x": 620, "y": 80, "label": "Alarm" },
+              "config": {
+                "severity": 7,
+                "dedup": {
+                  "keyTemplate": "{ruleId}:{groupKey}",
+                  "cooldownSeconds": 900
+                },
+                "groupBy": ["userId", "srcIp"]
+              }
+            },
+            {
+              "id": "stop",
+              "type": "stop-output",
+              "layout": { "x": 620, "y": 280, "label": "Stop" },
+              "config": {}
+            }
+          ],
+          "edges": [
+            { "id": "e1", "from": "source", "to": "threshold", "fromPort": "next", "toPort": "in" },
+            { "id": "e2", "from": "threshold", "to": "alarm", "fromPort": "true", "toPort": "in" },
+            { "id": "e3", "from": "threshold", "to": "stop", "fromPort": "false", "toPort": "in" }
+          ]
+        }
+      }
+    }
+  ]
+}

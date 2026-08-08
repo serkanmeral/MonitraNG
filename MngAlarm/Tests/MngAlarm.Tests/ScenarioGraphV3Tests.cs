@@ -80,6 +80,29 @@ public sealed class ScenarioGraphV3Tests
     }
 
     [Fact]
+    public void Alarm_output_merge_disabled_emits_unique_dedup_keys()
+    {
+        var definition = BranchGraph();
+        var high = definition.Graph!.Nodes.Single(x => x.Id == "high");
+        high.Config.Dedup = new ScenarioDedup
+        {
+            KeyTemplate = "{scenarioId}:{outputNodeId}",
+            CooldownSeconds = 60,
+            MergeEnabled = false
+        };
+
+        var executor = Executor();
+        var rule = Rule(definition);
+        var first = executor.Execute(rule, Observation("risk", 11, 0)).Outputs.Single();
+        var second = executor.Execute(rule, Observation("risk", 12, 1)).Outputs.Single();
+
+        Assert.False(first.MergeEnabled);
+        Assert.Equal(0, first.CooldownSeconds);
+        Assert.NotEqual(first.DedupKey, second.DedupKey);
+        Assert.StartsWith("scenario:high:", first.DedupKey);
+    }
+
+    [Fact]
     public void Threshold_false_is_pending_until_settled_and_sets_next_evaluation()
     {
         var definition = ThresholdGraph();

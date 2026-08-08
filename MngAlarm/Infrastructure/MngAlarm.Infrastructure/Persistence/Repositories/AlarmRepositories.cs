@@ -201,11 +201,61 @@ public sealed class ScenarioRepository(IAlarmMongoContext context) : IScenarioRe
             .SortByDescending(x => x.Timestamp)
             .ToListAsync(cancellationToken);
 
+    public Task UpdatePublishedEnabledAsync(
+        string domainName,
+        string versionId,
+        bool enabled,
+        DateTime updatedAt,
+        CancellationToken cancellationToken = default) =>
+        Versions(domainName).UpdateOneAsync(
+            x => x.Id == versionId && x.Status == ScenarioLifecycleStatuses.Published,
+            Builders<ScenarioVersionDocument>.Update
+                .Set(x => x.Enabled, enabled)
+                .Set(x => x.UpdatedAt, updatedAt),
+            cancellationToken: cancellationToken);
+
     private IMongoCollection<ScenarioVersionDocument> Versions(string domainName) =>
         context.GetDatabase(domainName).GetCollection<ScenarioVersionDocument>(AlarmCollectionNames.ScenarioVersions);
 
     private IMongoCollection<ScenarioAuditDocument> Audit(string domainName) =>
         context.GetDatabase(domainName).GetCollection<ScenarioAuditDocument>(AlarmCollectionNames.ScenarioAudit);
+}
+
+public sealed class ScenarioExecutionRepository(IAlarmMongoContext context) : IScenarioExecutionRepository
+{
+    public async Task InsertAndPruneAsync(
+        ScenarioExecutionDocument execution,
+        int retainCount = ScenarioExecutionDocument.DefaultRetainCount,
+        CancellationToken cancellationToken = default)
+    {
+        var collection = Collection(execution.DomainName);
+        await collection.InsertOneAsync(execution, cancellationToken: cancellationToken);
+        var keep = Math.Clamp(retainCount, 1, 500);
+        var staleIds = await collection.Find(x => x.ScenarioId == execution.ScenarioId)
+            .SortByDescending(x => x.StartedAt)
+            .Skip(keep)
+            .Project(x => x.Id)
+            .ToListAsync(cancellationToken);
+        if (staleIds.Count == 0) return;
+        await collection.DeleteManyAsync(x => staleIds.Contains(x.Id), cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ScenarioExecutionDocument>> ListRecentAsync(
+        string domainName,
+        string scenarioId,
+        int limit = ScenarioExecutionDocument.DefaultRetainCount,
+        CancellationToken cancellationToken = default)
+    {
+        var take = Math.Clamp(limit, 1, 500);
+        return await Collection(domainName)
+            .Find(x => x.ScenarioId == scenarioId)
+            .SortByDescending(x => x.StartedAt)
+            .Limit(take)
+            .ToListAsync(cancellationToken);
+    }
+
+    private IMongoCollection<ScenarioExecutionDocument> Collection(string domainName) =>
+        context.GetDatabase(domainName).GetCollection<ScenarioExecutionDocument>(AlarmCollectionNames.ScenarioExecutions);
 }
 
 public sealed class AlarmNotificationPolicyRepository(IAlarmMongoContext context) : IAlarmNotificationPolicyRepository

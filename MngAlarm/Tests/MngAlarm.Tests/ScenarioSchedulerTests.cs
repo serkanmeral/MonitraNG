@@ -119,5 +119,6 @@ public sealed class ScenarioSchedulerTests
         public Task ArchivePublishedExceptAsync(string domainName, string scenarioId, int version, DateTime updatedAt, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task InsertAuditAsync(ScenarioAuditDocument audit, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<IReadOnlyList<ScenarioAuditDocument>> ListAuditAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ScenarioAuditDocument>>([]);
+        public Task UpdatePublishedEnabledAsync(string domainName, string versionId, bool enabled, DateTime updatedAt, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

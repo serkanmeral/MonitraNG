@@ -47,6 +47,26 @@ public interface IScenarioRepository
     Task ArchivePublishedExceptAsync(string domainName, string scenarioId, int version, DateTime updatedAt, CancellationToken cancellationToken = default);
     Task InsertAuditAsync(ScenarioAuditDocument audit, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ScenarioAuditDocument>> ListAuditAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default);
+    Task UpdatePublishedEnabledAsync(
+        string domainName,
+        string versionId,
+        bool enabled,
+        DateTime updatedAt,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IScenarioExecutionRepository
+{
+    Task InsertAndPruneAsync(
+        ScenarioExecutionDocument execution,
+        int retainCount = ScenarioExecutionDocument.DefaultRetainCount,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ScenarioExecutionDocument>> ListRecentAsync(
+        string domainName,
+        string scenarioId,
+        int limit = ScenarioExecutionDocument.DefaultRetainCount,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAlarmRepository
@@ -107,9 +127,14 @@ public interface IScenarioService
     Task<ScenarioVersionDocument?> GetAsync(string scenarioId, int? version, CancellationToken cancellationToken = default);
     Task<ScenarioValidationSnapshot?> ValidateAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
     Task<ScenarioVersionDocument?> PublishAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
+    Task<ScenarioVersionDocument?> SetEnabledAsync(string scenarioId, int version, bool enabled, CancellationToken cancellationToken = default);
     Task<ScenarioVersionDocument?> ArchiveAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
     Task<ScenarioVersionDocument?> RollbackAsync(string scenarioId, int version, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ScenarioAuditDocument>> AuditAsync(string scenarioId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScenarioExecutionDto>> ListExecutionsAsync(
+        string scenarioId,
+        int limit = ScenarioExecutionDocument.DefaultRetainCount,
+        CancellationToken cancellationToken = default);
     Task<ScenarioPreviewResponse> CompileAsync(string? scenarioId, int? version, ScenarioPreviewRequest request, CancellationToken cancellationToken = default);
     Task<ScenarioPreviewResponse> PreviewAsync(string? scenarioId, int? version, ScenarioPreviewRequest request, CancellationToken cancellationToken = default);
     Task<ScenarioPackageImportResult> ImportProductPackageAsync(ImportScenarioPackageRequest request, CancellationToken cancellationToken = default);

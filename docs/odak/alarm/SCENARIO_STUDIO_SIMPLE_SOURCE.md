@@ -1,8 +1,8 @@
 # SIEM Scenario Studio — Basit Olay Kaynağı & Flow Lab çıktıları
 
-**Son güncelleme:** 6 Ağustos 2026  
+**Son güncelleme:** 8 Ağustos 2026  
 **Kapsam:** `Mng.Ui` Alarm Merkezi → Scenario Studio / Flow Lab (`/apps/alarm-center/flow-lab`)  
-**Backend:** `MngAlarm` ScenarioDefinition **v3** (graph) + `matchKeys` + `debug-output`
+**Backend:** `MngAlarm` ScenarioDefinition **v3** (graph) + `matchKeys` + `debug-output` + `dedup.mergeEnabled`
 
 ---
 
@@ -28,6 +28,9 @@ Yardımcılar:
 - `utils/alarm/eventCatalog.ts` — Windows channel dictionary + özel Event ID
 - `utils/alarm/linuxJournalCatalog.ts` — Linux paket + `event.action` kataloğu
 - `utils/alarm/scenarioFlowMapper.ts` — v2↔v3 / Vue Flow mapping (debug visual dahil)
+- `utils/alarm/alarmOutputMerge.ts` — birleştirme kapsamı / `mergeEnabled` / groupBy
+- `utils/alarm/scenarioOperationalStatus.ts` — Açık/Kapalı / lifecycle chip
+- `AcAlarmOutputInspector.vue` — Alarm node birleştirme + gruplama UI
 
 ### 2.1 Palette grupları
 
@@ -61,7 +64,9 @@ Windows / Linux Event seçici, Metrik, Host — önceki dilimle aynı (detay ön
 
 - `ScenarioSource.MatchKeys` — observation.key bu listeden herhangi biriyle eşleşebilir.
 - `ScenarioCompiler.SourceMatches` / `EffectiveMatchKeys` · V3 aday sorgu `$or` (matchKey | matchKeys).
-- Condition `in` operatörü: dizi, JSON array, virgüllü string.
+- Condition `in` operatörü: dizi, JSON array, virgüllü string. Observation normalizer diziyi string’e çevirmez.
+- Observation **matchKey** Windows EventLog’da paket id (`powershell-engine`, `security-auth`, …) veya semantik (`rdp.logon`). Event ID ayrı filtre. Ayrıntı: [AGENT_OBSERVATION_AND_FLOW_LAB.md](./AGENT_OBSERVATION_AND_FLOW_LAB.md).
+- `ScenarioDedup.mergeEnabled` — açıkken aynı dedupKey’de adet++; kapalıyken her eşleşme yeni alarm.
 - **`debug-output`:** `ScenarioDebug` (`mode`, `path`, `active`); executor `ScenarioDebugHit`; preview `debugLines`. Prod `ObservationProcessor` alarm çıktılarından bağımsız — debug hit’leri alarm üretmez.
 - `graph.output.required`: yalnızca `alarm-output` veya `stop-output` (debug sayılmaz).
 
@@ -109,17 +114,44 @@ Sıradaki implement: **notify-output (mail)** → sonra WI.
 
 ## 8. Deploy durumu
 
-| Bileşen | Durum |
+| Bileşen | Durum (8 Ağu 2026, Odak `.8`) |
 |---------|--------|
-| `MngAlarm` (matchKeys + debug) | Kod; **prod deploy yok** |
-| `Mng.Ui` Flow Lab | Lokal; **prod deploy yok** |
+| `mngalarm` + worker | ✅ prod (graph, merge, `*.event.#`, `in` dizi, severity hiza) |
+| `mnglogcollector` | ✅ prod (paket observation key, `SourceProducts=*`) |
+| `Mng.Ui` Flow Lab / toaster / alarm inspector | Kod hazır; **mngui deploy kullanıcı onayıyla** |
 
 ---
 
-## 9. Sıradaki adımlar
+## 9. Flow işletim durumu ve sağlık
 
-1. Bildirim node — mail MVP (Notifier `POST .../mail` veya template).
-2. Alarm/Stop basit UX.
-3. App/Servis kanalı basit UX (live / staleness).
-4. OC workitem-output (ayrı konuşma).
-5. Kontrollü UI + Alarm prod deploy.
+| Kavram | Değerler | Not |
+|--------|----------|-----|
+| `operationalStatus` | draft / running / stopped / archived | UI: Taslak / **Açık** / **Kapalı** / Arşiv |
+| `enabled` | bool | **Aç/Kapat**; arşiv değil. **Açık flow düzenlenemez** |
+| `health` | unknown / healthy / warning / error | İkincil rozet; status’tan bağımsız |
+| Yayınla | save + validate + publish | **Kapalı kalır**; Aç ayrı |
+| API | `POST .../enabled` | Yalnız published user scenario |
+| Persist | `AlarmRuleDocument.runtimeHealth` | Eval hata/success |
+
+Otomatik disable on error: **kapalı** (bilinçli).
+
+### Execution log
+
+| Madde | Değer |
+|--------|--------|
+| Collection | `@mon_alarm_scenario_executions` |
+| Retain | Flow başına son **100** |
+| Yazılan | observation (source matched) · due · error |
+| Yazılmayan | skipped kaynak · simulate |
+| Outcome | matched / no_match / stopped / pending / error |
+| API | `GET .../scenarios/{id}/executions?limit=100` |
+
+---
+
+## 10. Sıradaki adımlar
+
+1. `mngui` prod deploy (Flow Lab toaster, birleştirme inspector, host/paket key UX).
+2. Semantik Event ID kataloğu (opsiyonel; yayın yolu paket key).
+3. Bildirim node — mail MVP (Notifier).
+4. App/Servis kanalı basit UX (live / staleness).
+5. OC workitem-output (ayrı konuşma).

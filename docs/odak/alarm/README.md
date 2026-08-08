@@ -2,7 +2,7 @@
 
 MonitraNG'nin platform geneli **tespit / alarm üretim katmanı**. Major Roadmap §4.2'nin somutlaştırılması. Metrik / olay / AI sinyali akışlarını tüketir, kuralları değerlendirir, **alarm üretir**. Aksiyon almaz — o Workflow Engine'in işidir.
 
-**Durum:** Planlama + Faz 0–2 motor ✅ · **Alarm Merkezi UI** ✅ — §15 kararlar kapalı
+**Durum:** Planlama + Faz 0–2 motor ✅ · **Alarm Merkezi UI** ✅ — §15 kararlar kapalı · **Agent observation + Flow Lab işletimi** ✅ (8 Ağu 2026)
 
 ---
 
@@ -37,7 +37,9 @@ Handoff: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 | [DEVAM.md](./DEVAM.md) | Kaldığımız yer, kilitli §15 kararlar, Faz 0/1 checklist | Güncel |
 | [ALARM_RULE_ENGINE_PLAN.md](./ALARM_RULE_ENGINE_PLAN.md) | Ana plan: mimari, kural/alarm modeli, fazlar | Güncel (§15 kapalı) |
 | [ALARM_NOTIFICATION_POLICIES.md](./ALARM_NOTIFICATION_POLICIES.md) | Bildirim politikaları (çoklu kullanıcı, kanallar, dispatch) | Kararlandı |
-| [SCENARIO_STUDIO_SIMPLE_SOURCE.md](./SCENARIO_STUDIO_SIMPLE_SOURCE.md) | Scenario Studio / Flow Lab basit olay kaynağı UX + managed node’lar | Güncel (5 Ağu 2026) |
+| [SCENARIO_STUDIO_SIMPLE_SOURCE.md](./SCENARIO_STUDIO_SIMPLE_SOURCE.md) | Scenario Studio / Flow Lab basit olay kaynağı UX + managed node’lar | Güncel (8 Ağu 2026) |
+| [AGENT_OBSERVATION_AND_FLOW_LAB.md](./AGENT_OBSERVATION_AND_FLOW_LAB.md) | Collector → `monitra.observations`, paket key, Açık/Kapalı, birleştirme | Güncel (8 Ağu 2026) |
+| [FLOW_MIGRATION_QUEUE.md](./FLOW_MIGRATION_QUEUE.md) | Legacy kural → Flow Lab geçiş kuyruğu (Odak) | Güncel |
 | [../siem/current_status.md](../siem/current_status.md) | SIEM oturum checkpoint (nerede kaldık) | Güncel |
 
 ---

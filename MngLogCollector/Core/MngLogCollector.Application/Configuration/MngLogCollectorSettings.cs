@@ -9,6 +9,8 @@ public sealed class MngLogCollectorSettings
     public IngestSettings Ingest { get; set; } = new();
     public MongoDbSettings MongoDB { get; set; } = new();
     public DiscoverySettings Discovery { get; set; } = new();
+    public RabbitMqSettings RabbitMq { get; set; } = new();
+    public ObservationPublishSettings ObservationPublish { get; set; } = new();
 }
 
 /// <summary>Site/subnet prefix table for honest discovery grouping (IPAM-style LPM).</summary>
@@ -73,4 +75,28 @@ public sealed class MongoDbSettings
     /// Tenant DB for editable Event Log package catalog (Odak: mng_odak).
     /// </summary>
     public string EventLogCatalogDatabaseName { get; set; } = "mng_odak";
+}
+
+public sealed class RabbitMqSettings
+{
+    public string Host { get; set; } = "rabbitmq";
+    public int Port { get; set; } = 5672;
+    public string VirtualHost { get; set; } = "/";
+    public string Username { get; set; } = "admin";
+    public string Password { get; set; } = "admin123";
+}
+
+/// <summary>
+/// Best-effort publish of agent sec-events to <c>monitra.observations</c> for MngAlarm.
+/// Observation keys: optional semantic (e.g. rdp.logon) else package id; Event ID stays in dimensions.
+/// </summary>
+public sealed class ObservationPublishSettings
+{
+    public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Case-insensitive sourceProduct allowlist.
+    /// Empty or <c>*</c> = publish all packages that stamp SourceProduct.
+    /// </summary>
+    public List<string> SourceProducts { get; set; } = ["*"];
 }

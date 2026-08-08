@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using MngLogCollector.Application.Abstractions.Observations;
 using MngLogCollector.Application.Abstractions.OpenSearch;
 using MngLogCollector.Application.Configuration;
 using MngLogCollector.Application.Contracts.Ingest;
@@ -14,7 +15,7 @@ public class IngestBatchServiceTests
     [Fact]
     public async Task IngestAsync_requires_domain_and_host()
     {
-        var svc = CreateService(writeEnabled: false, writer: new FakeWriter());
+        var svc = CreateService(writeEnabled: false, obsEnabled: false, writer: new FakeWriter(), observations: new FakeObservations());
         await Assert.ThrowsAsync<ArgumentException>(() =>
             svc.IngestAsync(new IngestBatchRequest { Domain = "", HostId = "h1" }));
         await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -25,7 +26,7 @@ public class IngestBatchServiceTests
     public async Task IngestAsync_accepts_without_write_when_disabled()
     {
         var writer = new FakeWriter();
-        var svc = CreateService(writeEnabled: false, writer);
+        var svc = CreateService(writeEnabled: false, obsEnabled: false, writer, new FakeObservations());
         var result = await svc.IngestAsync(new IngestBatchRequest
         {
             Domain = "odak",
@@ -46,7 +47,7 @@ public class IngestBatchServiceTests
     public async Task IngestAsync_writes_when_enabled()
     {
         var writer = new FakeWriter();
-        var svc = CreateService(writeEnabled: true, writer);
+        var svc = CreateService(writeEnabled: true, obsEnabled: false, writer, new FakeObservations());
         var result = await svc.IngestAsync(new IngestBatchRequest
         {
             Domain = "odak",
@@ -69,6 +70,88 @@ public class IngestBatchServiceTests
         Assert.Single(writer.Items);
         Assert.Equal("evt-1", writer.Items[0].Id);
         Assert.Equal("host-1", writer.Items[0].HostId);
+    }
+
+    [Fact]
+    public async Task IngestAsync_publishes_rdp_observation_when_enabled()
+    {
+        var observations = new FakeObservations();
+        var svc = CreateService(writeEnabled: false, obsEnabled: true, new FakeWriter(), observations);
+        await svc.IngestAsync(new IngestBatchRequest
+        {
+            Domain = "odak",
+            HostId = "host-1",
+            Hostname = "TERMINAL.odak.local",
+            Events =
+            [
+                new IngestEventItem
+                {
+                    Source = "windows-eventlog",
+                    SourceProduct = "rdp-session",
+                    Fields = new Dictionary<string, object?>
+                    {
+                        ["eventId"] = 21,
+                        ["eventData"] = new Dictionary<string, object?>
+                        {
+                            ["User"] = @"ODAK\monitra",
+                            ["Address"] = "192.168.20.1"
+                        }
+                    }
+                }
+            ]
+        });
+
+        Assert.Single(observations.Published);
+        Assert.Equal("rdp.logon", observations.Published[0].Key);
+        Assert.Equal("TERMINAL", observations.Published[0].Dimensions["sourceHost"]);
+    }
+
+    [Fact]
+    public async Task IngestAsync_skips_observation_when_publish_disabled()
+    {
+        var observations = new FakeObservations();
+        var svc = CreateService(writeEnabled: false, obsEnabled: false, new FakeWriter(), observations);
+        await svc.IngestAsync(new IngestBatchRequest
+        {
+            Domain = "odak",
+            HostId = "host-1",
+            Hostname = "TERMINAL",
+            Events =
+            [
+                new IngestEventItem
+                {
+                    Source = "windows-eventlog",
+                    SourceProduct = "rdp-session",
+                    Fields = new Dictionary<string, object?> { ["eventId"] = 21 }
+                }
+            ]
+        });
+
+        Assert.Empty(observations.Published);
+    }
+
+    [Fact]
+    public async Task IngestAsync_skips_observation_for_non_allowlisted_product()
+    {
+        var observations = new FakeObservations();
+        var svc = CreateService(writeEnabled: false, obsEnabled: true, new FakeWriter(), observations);
+        await svc.IngestAsync(new IngestBatchRequest
+        {
+            Domain = "odak",
+            HostId = "host-1",
+            Hostname = "TERMINAL",
+            Events =
+            [
+                new IngestEventItem
+                {
+                    Source = "windows-eventlog",
+                    SourceProduct = "windows-security",
+                    Fields = new Dictionary<string, object?> { ["eventId"] = 4625 }
+                }
+            ]
+        });
+
+        Assert.Empty(observations.Published);
     }
 
     [Fact]
@@ -96,14 +179,23 @@ public class IngestBatchServiceTests
         Assert.DoesNotContain("\"source\":\"windows-eventlog\"", ndjson);
     }
 
-    private static IngestBatchService CreateService(bool writeEnabled, IOpenSearchBulkWriter writer)
+    private static IngestBatchService CreateService(
+        bool writeEnabled,
+        bool obsEnabled,
+        IOpenSearchBulkWriter writer,
+        IAgentObservationPublisher observations)
     {
         var settings = Options.Create(new MngLogCollectorSettings
         {
             OpenSearch = new OpenSearchSettings { WriteEnabled = writeEnabled, Url = "http://opensearch:9200" },
-            Ingest = new IngestSettings { MaxEventsPerBatch = 500 }
+            Ingest = new IngestSettings { MaxEventsPerBatch = 500 },
+            ObservationPublish = new ObservationPublishSettings
+            {
+                Enabled = obsEnabled,
+                SourceProducts = ["rdp-session"]
+            }
         });
-        return new IngestBatchService(writer, settings, NullLogger<IngestBatchService>.Instance);
+        return new IngestBatchService(writer, observations, settings, NullLogger<IngestBatchService>.Instance);
     }
 
     private sealed class FakeWriter : IOpenSearchBulkWriter
@@ -117,6 +209,17 @@ public class IngestBatchServiceTests
         {
             Items.AddRange(documents);
             return Task.FromResult(documents.Count);
+        }
+    }
+
+    private sealed class FakeObservations : IAgentObservationPublisher
+    {
+        public List<AgentObservationPayload> Published { get; } = [];
+
+        public Task PublishEventAsync(AgentObservationPayload payload, CancellationToken cancellationToken = default)
+        {
+            Published.Add(payload);
+            return Task.CompletedTask;
         }
     }
 }

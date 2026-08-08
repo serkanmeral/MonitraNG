@@ -37,6 +37,7 @@ public static class AlarmServiceCollectionExtensions
 
         services.AddScoped<IAlarmRuleRepository, AlarmRuleRepository>();
         services.AddScoped<IScenarioRepository, ScenarioRepository>();
+        services.AddScoped<IScenarioExecutionRepository, ScenarioExecutionRepository>();
         services.AddScoped<IAlarmNotificationPolicyRepository, AlarmNotificationPolicyRepository>();
         services.AddScoped<IAlarmRepository, AlarmRepository>();
         services.AddScoped<IAlarmRuleService, AlarmRuleService>();

@@ -215,6 +215,75 @@ public sealed class ScenarioLifecycleTests
     }
 
     [Fact]
+    public async Task Publish_strips_json_elements_from_rule_projection_definition()
+    {
+        var versions = new MemoryScenarioRepository();
+        var rules = new MemoryRuleRepository();
+        var service = new ScenarioService(new FakeDomain(), versions, rules);
+        var jsonValue = System.Text.Json.JsonDocument.Parse("10").RootElement.Clone();
+        var definition = new ScenarioDefinition
+        {
+            SchemaVersion = 3,
+            Graph = new ScenarioGraph
+            {
+                Nodes =
+                [
+                    new()
+                    {
+                        Id = "source",
+                        Type = ScenarioNodeTypes.Source,
+                        Config = new() { Source = new() { MatchKey = "login_failed" } }
+                    },
+                    new()
+                    {
+                        Id = "decision",
+                        Type = ScenarioNodeTypes.Decision,
+                        Config = new()
+                        {
+                            Condition = new()
+                            {
+                                Field = "value",
+                                Operator = "gte",
+                                Value = jsonValue
+                            }
+                        }
+                    },
+                    new()
+                    {
+                        Id = "alarm",
+                        Type = ScenarioNodeTypes.AlarmOutput,
+                        Config = new()
+                        {
+                            Severity = 7,
+                            Dedup = new() { KeyTemplate = "{scenarioId}:{outputNodeId}", CooldownSeconds = 60 }
+                        }
+                    }
+                ],
+                Edges =
+                [
+                    new() { Id = "e1", From = "source", To = "decision", FromPort = "next" },
+                    new() { Id = "e2", From = "decision", To = "alarm", FromPort = "true" }
+                ]
+            }
+        };
+
+        var draft = await service.CreateDraftAsync(new CreateScenarioDraftRequest
+        {
+            Name = "U1 decision",
+            Definition = definition
+        });
+        await service.ValidateAsync(draft.ScenarioId, draft.Version);
+        var published = await service.PublishAsync(draft.ScenarioId, draft.Version);
+
+        Assert.Equal(ScenarioLifecycleStatuses.Published, published!.Status);
+        Assert.False(published.Enabled);
+        var projected = rules.Items.Single().Definition!.Graph!.Nodes
+            .Single(x => x.Id == "decision").Config.Condition!.Value;
+        Assert.IsNotType<System.Text.Json.JsonElement>(projected);
+        Assert.Equal(10d, Convert.ToDouble(projected));
+    }
+
+    [Fact]
     public async Task Catalog_is_tenant_scoped_and_summarizes_versions()
     {
         var versions = new MemoryScenarioRepository();
@@ -241,7 +310,7 @@ public sealed class ScenarioLifecycleTests
             new FakeDomain(),
             versions,
             new MemoryRuleRepository(),
-            new FakeCapabilities(false, true));
+            capabilities: new FakeCapabilities(false, true));
         var definition = Definition();
         definition.Source.Kind = ScenarioSourceKinds.ScheduledQuery;
         definition.Source.ScheduleDefinition = new ScenarioSchedule { Expression = "*/5 * * * *" };
@@ -265,7 +334,7 @@ public sealed class ScenarioLifecycleTests
             new FakeDomain(),
             new MemoryScenarioRepository(),
             new MemoryRuleRepository(),
-            new FakeCapabilities(true, true));
+            capabilities: new FakeCapabilities(true, true));
         var definition = Definition();
         definition.Source.Kind = ScenarioSourceKinds.ScheduledQuery;
         definition.Source.ScheduleDefinition = new ScenarioSchedule { Expression = "*/5 * * * *" };
@@ -291,7 +360,7 @@ public sealed class ScenarioLifecycleTests
             new FakeDomain(),
             versions,
             new MemoryRuleRepository(),
-            new FakeCapabilities(true, true));
+            capabilities: new FakeCapabilities(true, true));
         var firstDefinition = Definition();
         firstDefinition.Source.Kind = ScenarioSourceKinds.MetaCorrelation;
         firstDefinition.Source.MaxChainDepth = 5;
@@ -424,6 +493,22 @@ public sealed class ScenarioLifecycleTests
 
         public Task<IReadOnlyList<ScenarioAuditDocument>> ListAuditAsync(string domainName, string scenarioId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<ScenarioAuditDocument>>(Audit.Where(x => x.ScenarioId == scenarioId).ToList());
+
+        public Task UpdatePublishedEnabledAsync(
+            string domainName,
+            string versionId,
+            bool enabled,
+            DateTime updatedAt,
+            CancellationToken cancellationToken = default)
+        {
+            var item = Items.FirstOrDefault(x => x.Id == versionId && x.DomainName == domainName);
+            if (item != null && item.Status == ScenarioLifecycleStatuses.Published)
+            {
+                item.Enabled = enabled;
+                item.UpdatedAt = updatedAt;
+            }
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class MemoryRuleRepository : IAlarmRuleRepository

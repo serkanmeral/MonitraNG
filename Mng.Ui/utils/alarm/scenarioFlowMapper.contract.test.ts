@@ -74,7 +74,37 @@ test('V3 API JSON hydrates and serializes with backend field names', () => {
   assert.equal('legacyV2' in serialized, false);
 });
 
-test('V2 projection preserves every legacy root field in V3', () => {
+test('V3 alarm-output without severity inherits version severity', () => {
+  const definition = {
+    schemaVersion: 3,
+    graph: {
+      nodes: [
+        {
+          id: 'source',
+          type: 'source',
+          config: { source: { kind: 'observation', matchKey: 'x' } },
+        },
+        {
+          id: 'alarm',
+          type: 'alarm-output',
+          config: {
+            dedup: { keyTemplate: '{ruleId}:{key}', cooldownSeconds: 60 },
+          },
+        },
+      ],
+      edges: [
+        { id: 'e1', from: 'source', to: 'alarm', fromPort: 'next', toPort: 'in' },
+      ],
+    },
+  } as unknown as ScenarioDefinitionV3;
+
+  const hydrated = scenarioToVueFlow(definition, 9);
+  assert.equal(hydrated.nodes.at(-1)?.data.config.severity, 9);
+
+  const serialized = vueFlowToScenario(hydrated.nodes, hydrated.edges, definition, 9);
+  assert.equal(serialized.graph.nodes.at(-1)?.config.severity, 9);
+});
+
   const v2: ScenarioDefinitionV2 = {
     schemaVersion: 2,
     source: {

@@ -5,6 +5,7 @@ namespace MngAlarm.Application.Observations;
 /// <summary>
 /// API JSON deserialization leaves dimension values as <see cref="JsonElement"/>;
 /// MongoDB ObjectSerializer rejects them unless converted to primitives.
+/// Arrays/objects are expanded (not GetRawText) so condition operators like <c>in</c> keep working.
 /// </summary>
 public static class ObservationValueNormalizer
 {
@@ -40,6 +41,14 @@ public static class ObservationValueNormalizer
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Null or JsonValueKind.Undefined => null,
+            JsonValueKind.Array => element.EnumerateArray()
+                .Select(NormalizeJsonElement)
+                .ToList(),
+            JsonValueKind.Object => element.EnumerateObject()
+                .ToDictionary(
+                    prop => prop.Name,
+                    prop => NormalizeJsonElement(prop.Value),
+                    StringComparer.Ordinal),
             _ => element.GetRawText()
         };
 }
