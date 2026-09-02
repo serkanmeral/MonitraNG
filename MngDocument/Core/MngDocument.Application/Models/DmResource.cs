@@ -20,6 +20,9 @@ public class DmResource
     public string? description { get; set; }
     public List<string>? tags { get; set; }
 
+    /// <summary>DLP birincil sınıflandırma (<c>dm_tags</c> id, <c>kind=classification</c>).</summary>
+    public string? classificationTagId { get; set; }
+
     /// <summary>Markdown içeriği (yalnızca <c>type=markdown</c>). Dosyalarda boştur.</summary>
     public string? content { get; set; }
 

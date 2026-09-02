@@ -80,6 +80,9 @@ public interface IResourceService
     /// <summary>Belirli bir DOCX sürümünün binary içeriği.</summary>
     Task<(byte[] Content, string FileName)> GetFileVersionContentAsync(string id, int versionNumber, CancellationToken ct = default);
 
+    /// <summary>Güncel dosya içeriği (MinIO); sınıflandırma damgası uygulanır.</summary>
+    Task<(byte[] Content, string FileName)> GetCurrentFileContentAsync(string id, CancellationToken ct = default);
+
     /// <summary>WOPI sürüm önizlemesi — oturum açılırken yetki doğrulanır; DG token ile sürüm baytları.</summary>
     Task<(byte[] Content, string FileName)> GetFileVersionContentForEditorAsync(
         string id,

@@ -27,7 +27,7 @@ public sealed class TagService : ITagService
 
     private string? Token => _ctx.BearerToken;
 
-    public async Task<TagListResult> ListAsync(bool activeOnly = false, CancellationToken ct = default)
+    public async Task<TagListResult> ListAsync(bool activeOnly = false, string? kind = null, CancellationToken ct = default)
     {
         var page = await _dg.QueryPageAsync(
             DmDatasets.Tags,
@@ -36,11 +36,14 @@ public sealed class TagService : ITagService
             Token,
             ct);
 
+        var kindFilter = string.IsNullOrWhiteSpace(kind) ? null : TagKinds.Normalize(kind);
+
         var items = page.Items
             .Select(MapRow)
             .Where(r => r.__dataId is not null)
             .Where(r => !activeOnly || r.isActive != false)
             .Select(ToDto)
+            .Where(r => kindFilter is null || string.Equals(r.Kind, kindFilter, StringComparison.OrdinalIgnoreCase))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -65,12 +68,17 @@ public sealed class TagService : ITagService
         await EnsureNameUniqueAsync(name, exceptId: null, ct);
 
         var now = DateTime.UtcNow;
+        var kind = TagKinds.Normalize(request.Kind);
+        var isClass = TagKinds.IsClassification(kind);
         var payload = new Dictionary<string, object?>
         {
             ["name"] = name,
             ["color"] = string.IsNullOrWhiteSpace(request.Color) ? null : request.Color.Trim(),
             ["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             ["isActive"] = request.IsActive,
+            ["kind"] = kind,
+            ["sensitivity"] = NormalizeSensitivity(request.Sensitivity, isClass),
+            ["persistToFile"] = request.PersistToFile ?? isClass,
             ["createdBy"] = _ctx.Username,
             ["createdAt"] = now,
             ["updatedBy"] = _ctx.Username,
@@ -91,12 +99,17 @@ public sealed class TagService : ITagService
         var name = ValidateName(request.Name);
         await EnsureNameUniqueAsync(name, tagId, ct);
 
+        var kind = TagKinds.Normalize(request.Kind);
+        var isClass = TagKinds.IsClassification(kind);
         var payload = new Dictionary<string, object?>
         {
             ["name"] = name,
             ["color"] = string.IsNullOrWhiteSpace(request.Color) ? null : request.Color.Trim(),
             ["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             ["isActive"] = request.IsActive,
+            ["kind"] = kind,
+            ["sensitivity"] = NormalizeSensitivity(request.Sensitivity, isClass),
+            ["persistToFile"] = request.PersistToFile ?? isClass,
             ["updatedBy"] = _ctx.Username,
             ["updatedAt"] = DateTime.UtcNow
         };
@@ -120,7 +133,7 @@ public sealed class TagService : ITagService
         if (tags is null || tags.Count == 0)
             return Array.Empty<string>();
 
-        var catalog = await ListAsync(activeOnly: false, ct);
+        var catalog = await ListAsync(activeOnly: false, kind: null, ct);
         var byLower = catalog.Items.ToDictionary(
             t => t.Name.Trim().ToLowerInvariant(),
             t => t,
@@ -152,11 +165,70 @@ public sealed class TagService : ITagService
                     $"Pasif etiket seçilemez: {entry.Name}");
             }
 
+            if (TagKinds.IsClassification(entry.Kind))
+            {
+                throw DocumentException.Validation(
+                    "TAG_NOT_ORGANIZATIONAL",
+                    $"Classification tags cannot be used as organizational tags: {entry.Name}",
+                    $"Sınıflandırma etiketi organizasyonel etiket olarak seçilemez: {entry.Name}");
+            }
+
             if (seen.Add(entry.Name))
                 normalized.Add(entry.Name);
         }
 
         return normalized;
+    }
+
+    public async Task<string?> ResolveClassificationTagIdAsync(string? classificationTagIdOrName, CancellationToken ct = default)
+    {
+        var trimmed = classificationTagIdOrName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return null;
+
+        var catalog = await ListAsync(activeOnly: false, TagKinds.Classification, ct);
+        var match = catalog.Items.FirstOrDefault(t =>
+            string.Equals(t.Id, trimmed, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(t.Name, trimmed, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+        {
+            throw DocumentException.Validation(
+                "CLASSIFICATION_UNKNOWN",
+                $"Unknown classification: {trimmed}",
+                $"Bilinmeyen sınıflandırma: {trimmed}");
+        }
+
+        if (!match.IsActive)
+        {
+            throw DocumentException.Validation(
+                "CLASSIFICATION_INACTIVE",
+                $"Classification is inactive: {match.Name}",
+                $"Pasif sınıflandırma seçilemez: {match.Name}");
+        }
+
+        return match.Id;
+    }
+
+    public async Task<TagDto?> GetClassificationAsync(string? classificationTagId, CancellationToken ct = default)
+    {
+        var trimmed = classificationTagId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return null;
+
+        var catalog = await ListAsync(activeOnly: false, TagKinds.Classification, ct);
+        return catalog.Items.FirstOrDefault(t =>
+            string.Equals(t.Id, trimmed, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static int NormalizeSensitivity(int? value, bool isClassification)
+    {
+        var n = value ?? (isClassification ? 1 : 0);
+        if (n < 0)
+            n = 0;
+        if (n > 3)
+            n = 3;
+        return n;
     }
 
     private async Task EnsureNameUniqueAsync(string name, string? exceptId, CancellationToken ct)
@@ -212,6 +284,9 @@ public sealed class TagService : ITagService
             Color = row.color,
             Description = row.description,
             IsActive = row.isActive != false,
+            Kind = TagKinds.Normalize(row.kind),
+            Sensitivity = row.sensitivity ?? 0,
+            PersistToFile = row.persistToFile ?? TagKinds.IsClassification(row.kind),
             CreatedBy = row.createdBy,
             CreatedAt = row.createdAt,
             UpdatedAt = row.updatedAt

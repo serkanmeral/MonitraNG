@@ -6,6 +6,7 @@ using MngLogs.Agent.Queue;
 using MngLogs.Agent.Runtime;
 using MngLogs.Agent.Transport;
 using MngLogs.Agent.Workers;
+using MngLogs.Agent.Dlp;
 using MngLogs.Agent.EventLog;
 using MngLogs.Agent.Metrics;
 using Serilog;
@@ -62,6 +63,8 @@ builder.Services.AddHttpClient("collector", client =>
 });
 builder.Services.AddSingleton<ICollectorClient, CollectorClient>();
 builder.Services.AddSingleton<IEventLogPackageCatalogStore, EventLogPackageCatalogStore>();
+builder.Services.AddSingleton<IDlpPolicyStore, DlpPolicyStore>();
+builder.Services.AddSingleton<DlpLocalKeyStore>();
 builder.Services.AddSingleton<IHostMetricsCollector, HostMetricsCollector>();
 builder.Services.AddSingleton<IWindowsEventLogReader>(_ =>
     OperatingSystem.IsWindows()
@@ -75,6 +78,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton<EventLogCursorService>();
 builder.Services.AddHostedService<HeartbeatProducerWorker>();
 builder.Services.AddHostedService<PackageCatalogSyncWorker>();
+builder.Services.AddHostedService<DlpPolicySyncWorker>();
 builder.Services.AddHostedService<EventLogCollectorWorker>();
 builder.Services.AddHostedService<ServiceWatchWorker>();
 builder.Services.AddHostedService<OutboundShipperWorker>();

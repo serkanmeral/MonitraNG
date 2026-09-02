@@ -40,6 +40,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IDiscoveryScanJobStore, MongoDiscoveryScanJobStore>();
         services.AddScoped<IDiscoveryPrefixStore, MongoDiscoveryPrefixStore>();
         services.AddScoped<IEventLogPackageCatalogStore, MongoEventLogPackageCatalogStore>();
+        services.AddScoped<IDlpPolicyCatalogStore, MongoDlpPolicyStore>();
         services.AddScoped<IAdComputerDirectoryClient, AdComputerDirectoryClient>();
 
         return services;

@@ -46,6 +46,7 @@ public static class ServiceRegistration
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();
         services.AddScoped<ICoverPageService, CoverPageService>();
+        services.AddSingleton<IClassificationStampService, ClassificationStampService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ILetterheadEditorService, LetterheadEditorService>();
         services.AddScoped<ICoverPageEditorService, CoverPageEditorService>();

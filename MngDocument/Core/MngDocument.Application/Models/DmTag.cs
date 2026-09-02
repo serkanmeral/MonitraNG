@@ -8,6 +8,9 @@ public class DmTag
     public string? color { get; set; }
     public string? description { get; set; }
     public bool? isActive { get; set; }
+    public string? kind { get; set; }
+    public int? sensitivity { get; set; }
+    public bool? persistToFile { get; set; }
     public string? createdBy { get; set; }
     public DateTime? createdAt { get; set; }
     public string? updatedBy { get; set; }

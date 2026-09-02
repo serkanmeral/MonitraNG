@@ -287,6 +287,15 @@ public sealed class AgentConfigStore : IAgentConfigStore
                 .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.Last())
                 .ToList()
+        },
+        Dlp = new DlpAgentPolicy
+        {
+            EnforcementMode = string.IsNullOrWhiteSpace(p.Dlp?.EnforcementMode)
+                ? "auditOnly"
+                : p.Dlp.EnforcementMode.Trim(),
+            PolicySyncIntervalSeconds = p.Dlp?.PolicySyncIntervalSeconds is > 0 and var sec
+                ? sec
+                : 3600
         }
     };
 

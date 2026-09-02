@@ -48,6 +48,9 @@ public sealed class PolicyConfig
     public EventLogPolicy EventLog { get; set; } = new();
 
     public ServiceWatchPolicy ServiceWatch { get; set; } = new();
+
+    /// <summary>Local DLP overrides. Compiled rules live in <c>dlp-policy.json</c>.</summary>
+    public DlpAgentPolicy Dlp { get; set; } = new();
 }
 
 public sealed class MetricsPolicy
@@ -164,4 +167,12 @@ public sealed class WatchedApplication
 
     /// <summary>Optional working directory for Process.Start.</summary>
     public string? WorkingDirectory { get; set; }
+}
+
+public sealed class DlpAgentPolicy
+{
+    /// <summary><c>auditOnly</c> (Dilim 1) or <c>enforce</c>. Empty = use server policy.</summary>
+    public string EnforcementMode { get; set; } = "auditOnly";
+
+    public int PolicySyncIntervalSeconds { get; set; } = 3600;
 }

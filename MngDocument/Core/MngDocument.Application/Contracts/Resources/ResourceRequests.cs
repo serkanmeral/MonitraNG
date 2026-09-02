@@ -29,6 +29,8 @@ public sealed class CreateMarkdownRequest
     public string? Description { get; set; }
     public List<string>? Tags { get; set; }
 
+    public string? ClassificationTagId { get; set; }
+
     /// <summary><c>true</c> ise doküman taslak olarak oluşturulur (<c>status=draft</c>); aksi halde yayınlanmış.</summary>
     public bool IsDraft { get; set; }
 }
@@ -39,6 +41,8 @@ public sealed class UpdateMarkdownRequest
     public string Content { get; set; } = string.Empty;
     public string? Description { get; set; }
     public List<string>? Tags { get; set; }
+
+    public string? ClassificationTagId { get; set; }
 
     /// <summary>
     /// Optimistic concurrency: istemcinin elindeki sürüm. Sunucudaki güncel sürümden
@@ -70,6 +74,8 @@ public sealed class CreateFileResourceRequest
     public string? Extension { get; set; }
     public long? Size { get; set; }
     public List<string>? Tags { get; set; }
+
+    public string? ClassificationTagId { get; set; }
 
     /// <summary>Base64 dosya içeriği (data URL öneki olmadan). DG <c>file</c> alanına işlenir.</summary>
     public string Content { get; set; } = string.Empty;
@@ -103,6 +109,8 @@ public sealed class CreateNativeDocumentRequest
     public string? Description { get; set; }
     public List<string>? Tags { get; set; }
 
+    public string? ClassificationTagId { get; set; }
+
     /// <summary>Opsiyonel antet katalog id. Boşsa antetsiz boş DOCX oluşturulur.</summary>
     public string? LetterheadId { get; set; }
 
@@ -128,6 +136,8 @@ public sealed class CreateNativeOfficeRequest
 
     public string? Description { get; set; }
     public List<string>? Tags { get; set; }
+
+    public string? ClassificationTagId { get; set; }
 }
 
 /// <summary>
@@ -152,6 +162,9 @@ public sealed class UpdateResourceMetadataRequest
 {
     public List<string>? Tags { get; set; }
     public string? Description { get; set; }
+
+    /// <summary>Null = değiştirme. Boş string = sınıflandırmayı kaldır.</summary>
+    public string? ClassificationTagId { get; set; }
 }
 
 /// <summary>Yönetilen DOCX sürüm kaydının değişiklik notunu günceller.</summary>

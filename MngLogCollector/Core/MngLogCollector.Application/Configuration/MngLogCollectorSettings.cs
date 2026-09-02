@@ -9,8 +9,22 @@ public sealed class MngLogCollectorSettings
     public IngestSettings Ingest { get; set; } = new();
     public MongoDbSettings MongoDB { get; set; } = new();
     public DiscoverySettings Discovery { get; set; } = new();
+    public AgentPackagesSettings AgentPackages { get; set; } = new();
     public RabbitMqSettings RabbitMq { get; set; } = new();
     public ObservationPublishSettings ObservationPublish { get; set; } = new();
+}
+
+/// <summary>IT-facing Windows/Linux agent installers served from this collector.</summary>
+public sealed class AgentPackagesSettings
+{
+    /// <summary>Host folder mounted into the container (MSI + tar.gz + optional manifest.json).</summary>
+    public string Directory { get; set; } = "/var/lib/mnglogcollector/agent-packages";
+
+    /// <summary>
+    /// Public collector base for install commands (LAN URL agents will use).
+    /// Empty = derive from the incoming request.
+    /// </summary>
+    public string PublicBaseUrl { get; set; } = string.Empty;
 }
 
 /// <summary>Site/subnet prefix table for honest discovery grouping (IPAM-style LPM).</summary>

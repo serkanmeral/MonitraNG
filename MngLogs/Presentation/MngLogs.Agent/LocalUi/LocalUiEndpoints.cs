@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MngLogs.Agent.Configuration;
+using MngLogs.Agent.Dlp;
 using MngLogs.Agent.EventLog;
 using MngLogs.Agent.Queue;
 using MngLogs.Agent.Runtime;
@@ -497,6 +498,135 @@ public static class LocalUiEndpoints
                 });
             }
         });
+
+        app.MapPost("/dlp/evaluate", async (
+            HttpRequest req,
+            DlpEvaluateRequest body,
+            IDlpPolicyStore store,
+            IAgentConfigStore config,
+            DlpLocalKeyStore keys,
+            IOutboundQueue queue,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var presented = req.Headers[DlpLocalKeyStore.HeaderName].FirstOrDefault();
+                if (!keys.IsValid(presented))
+                {
+                    return Results.Json(
+                        FailOpen(store.Current, "invalid dlp key"),
+                        statusCode: StatusCodes.Status401Unauthorized);
+                }
+
+                var policy = store.Current;
+                var classes = ResolveAttachments(body, policy);
+                var response = DlpEngine.Evaluate(
+                    policy,
+                    body,
+                    classes,
+                    config.Current.Policy.Dlp.EnforcementMode);
+                await EnqueueDlpEventAsync(queue, response, body, ct);
+                return Results.Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(FailOpen(store.Current, ex.Message));
+            }
+        });
+    }
+
+    private static List<DlpClassificationHit> ResolveAttachments(DlpEvaluateRequest body, DlpCompiledPolicy policy)
+    {
+        var list = new List<DlpClassificationHit>();
+        foreach (var att in body.Attachments ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(att.ClassificationId))
+            {
+                var known = policy.Classifications.FirstOrDefault(c =>
+                    string.Equals(c.Id, att.ClassificationId, StringComparison.OrdinalIgnoreCase));
+                list.Add(new DlpClassificationHit
+                {
+                    Id = att.ClassificationId.Trim(),
+                    Name = known?.Name,
+                    Sensitivity = known?.Sensitivity ?? 0,
+                    Source = "override"
+                });
+                continue;
+            }
+
+            var embedded = DlpStampReader.TryReadFile(att.Path);
+            if (embedded is not null)
+            {
+                var known = policy.Classifications.FirstOrDefault(c =>
+                    string.Equals(c.Id, embedded.Id, StringComparison.OrdinalIgnoreCase));
+                if (known is not null)
+                {
+                    embedded.Name = known.Name;
+                    if (embedded.Sensitivity == 0)
+                        embedded.Sensitivity = known.Sensitivity;
+                }
+
+                list.Add(embedded);
+            }
+        }
+
+        return list;
+    }
+
+    private static DlpEvaluateResponse FailOpen(DlpCompiledPolicy policy, string reason) =>
+        new()
+        {
+            CorrelationId = Guid.NewGuid().ToString("D"),
+            PolicyVersion = policy.Version,
+            EnforcementMode = policy.EnforcementMode,
+            Decision = "allow",
+            Effect = "audit",
+            AllowSend = true,
+            WouldBlock = false,
+            Classification = new DlpClassificationHit { Source = "none" },
+            EmailScope = "any",
+            Identity = new DlpIdentityHit { Source = "unresolved" },
+            Prompt = new DlpPrompt { Kind = "none" },
+            Message = reason
+        };
+
+    private static async Task EnqueueDlpEventAsync(
+        IOutboundQueue queue,
+        DlpEvaluateResponse response,
+        DlpEvaluateRequest request,
+        CancellationToken ct)
+    {
+        try
+        {
+            await queue.EnqueueAsync(new Contracts.IngestEventItem
+            {
+                TimestampUtc = DateTime.UtcNow,
+                Source = "mnglogs.dlp",
+                Severity = response.WouldBlock ? "high" : "info",
+                Message = response.MatchedRuleName ?? "dlp.evaluate",
+                Fields = new Dictionary<string, object?>
+                {
+                    ["correlationId"] = response.CorrelationId,
+                    ["action"] = request.Action,
+                    ["decision"] = response.Decision,
+                    ["effect"] = response.Effect,
+                    ["wouldBlock"] = response.WouldBlock,
+                    ["allowSend"] = response.AllowSend,
+                    ["classificationId"] = response.Classification?.Id,
+                    ["emailScope"] = response.EmailScope,
+                    ["matchedRuleId"] = response.MatchedRuleId,
+                    ["windowsUser"] = request.WindowsUser,
+                    ["identitySource"] = response.Identity.Source,
+                    ["policyVersion"] = response.PolicyVersion,
+                    ["enforcementMode"] = response.EnforcementMode,
+                    ["clientKind"] = request.Client?.Kind
+                }
+            }, ct);
+        }
+        catch
+        {
+            /* best-effort */
+        }
     }
 
     private static bool TryAuthorize(HttpRequest req, ILocalUiPinAuth auth, out IResult? denied)

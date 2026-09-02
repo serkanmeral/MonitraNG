@@ -19,8 +19,11 @@ public sealed class TagsController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(TagListResult), StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] bool activeOnly = false, CancellationToken ct = default) =>
-        Ok(await _tags.ListAsync(activeOnly, ct));
+    public async Task<IActionResult> List(
+        [FromQuery] bool activeOnly = false,
+        [FromQuery] string? kind = null,
+        CancellationToken ct = default) =>
+        Ok(await _tags.ListAsync(activeOnly, kind, ct));
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(TagDto), StatusCodes.Status200OK)]

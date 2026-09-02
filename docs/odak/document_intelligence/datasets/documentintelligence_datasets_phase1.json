@@ -80,6 +80,16 @@
       },
       {
         "fieldType": "text",
+        "name": "classificationTagId",
+        "title": "Siniflandirma etiket id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
         "name": "content",
         "title": "Markdown icerik",
         "mandatory": false,
@@ -1076,6 +1086,30 @@
         "unique": false,
         "isArray": false,
         "defaultValue": true
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Tur (organizational / classification)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "sensitivity",
+        "title": "Hassasiyet (0-3)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "bool",
+        "name": "persistToFile",
+        "title": "Dosyaya damga",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
       },
       {
         "fieldType": "text",

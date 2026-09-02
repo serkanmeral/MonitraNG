@@ -11,6 +11,7 @@ public sealed record ResourceDto
     public string? Title { get; init; }
     public string? Description { get; init; }
     public IReadOnlyList<string> Tags { get; init; } = Array.Empty<string>();
+    public string? ClassificationTagId { get; init; }
     public string? ContentType { get; init; }
     public string? MimeType { get; init; }
     public string? Extension { get; init; }

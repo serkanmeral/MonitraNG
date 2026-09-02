@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <ComVisible>true</ComVisible>
+    <RootNamespace>MngLogs.OutlookAddin</RootNamespace>
+    <AssemblyName>MngLogs.OutlookAddin</AssemblyName>
+    <Version>0.1.0</Version>
+    <AssemblyTitle>MngLogs DLP Outlook Add-in</AssemblyTitle>
+    <Description>Classic Outlook COM add-in: ItemSend → local MngLogsAgent /dlp/evaluate</Description>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+    <PackageReference Include="Microsoft.Office.Interop.Outlook" Version="15.0.4797.1004" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+</Project>

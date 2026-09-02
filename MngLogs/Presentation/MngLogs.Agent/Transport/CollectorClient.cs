@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MngLogs.Agent.Configuration;
 using MngLogs.Agent.Contracts;
+using MngLogs.Agent.Dlp;
 
 namespace MngLogs.Agent.Transport;
 
@@ -11,6 +12,10 @@ public interface ICollectorClient
     Task<IngestBatchResponse?> SendBatchAsync(IngestBatchRequest request, CancellationToken cancellationToken = default);
     Task<bool> HealthAsync(CancellationToken cancellationToken = default);
     Task<EventLogPackageCatalogPullResult> GetEventLogPackageCatalogAsync(
+        string? ifNoneMatchVersion = null,
+        CancellationToken cancellationToken = default);
+
+    Task<DlpPolicyPullResult> GetDlpPolicyAsync(
         string? ifNoneMatchVersion = null,
         CancellationToken cancellationToken = default);
 }
@@ -126,6 +131,47 @@ public sealed class CollectorClient : ICollectorClient
         catch
         {
             return EventLogPackageCatalogPullResult.Failed();
+        }
+    }
+
+    public async Task<DlpPolicyPullResult> GetDlpPolicyAsync(
+        string? ifNoneMatchVersion = null,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = _config.Current.System;
+        var baseUrl = NormalizeBase(settings.CollectorBaseUrl);
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return DlpPolicyPullResult.Failed();
+
+        var client = _httpClientFactory.CreateClient("collector");
+        using var message = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/api/v1/policy/dlp");
+
+        if (!string.IsNullOrWhiteSpace(settings.ApiKey))
+            message.Headers.TryAddWithoutValidation("X-MngLogs-ApiKey", settings.ApiKey);
+
+        if (!string.IsNullOrWhiteSpace(ifNoneMatchVersion))
+        {
+            var etag = ifNoneMatchVersion.Trim();
+            if (!etag.StartsWith('"'))
+                etag = $"\"{etag}\"";
+            message.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        }
+
+        try
+        {
+            using var response = await client.SendAsync(message, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.NotModified)
+                return DlpPolicyPullResult.Unchanged();
+
+            if (!response.IsSuccessStatusCode)
+                return DlpPolicyPullResult.Failed();
+
+            var body = await response.Content.ReadFromJsonAsync<DlpCompiledPolicy>(JsonOptions, cancellationToken);
+            return body is null ? DlpPolicyPullResult.Failed() : DlpPolicyPullResult.Ok(body);
+        }
+        catch
+        {
+            return DlpPolicyPullResult.Failed();
         }
     }
 

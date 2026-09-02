@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
+using MngDocument.Application.Contracts.Dlp;
 using MngDocument.Application.Contracts.Letterheads;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Contracts.Templates;
@@ -37,6 +38,7 @@ public class ResourceService : IResourceService
     private readonly IPermissionService _perms;
     private readonly ILetterheadService _letterheads;
     private readonly ITagService _tags;
+    private readonly IClassificationStampService _stamp;
     private readonly ITemplateBrandingApplier _brandingApplier;
     private readonly LetterheadHeaderValueEnricher _headerEnricher;
     private readonly IDocumentRenderService _render;
@@ -49,6 +51,7 @@ public class ResourceService : IResourceService
         IPermissionService perms,
         ILetterheadService letterheads,
         ITagService tags,
+        IClassificationStampService stamp,
         ITemplateBrandingApplier brandingApplier,
         LetterheadHeaderValueEnricher headerEnricher,
         IDocumentRenderService render,
@@ -60,6 +63,7 @@ public class ResourceService : IResourceService
         _perms = perms;
         _letterheads = letterheads;
         _tags = tags;
+        _stamp = stamp;
         _brandingApplier = brandingApplier;
         _headerEnricher = headerEnricher;
         _render = render;
@@ -279,6 +283,8 @@ public class ResourceService : IResourceService
             payload["tags"] = await ResolveTagsAsync(request.Tags, ct);
         if (request.Description is not null)
             payload["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        if (request.ClassificationTagId is not null)
+            payload["classificationTagId"] = await _tags.ResolveClassificationTagIdAsync(request.ClassificationTagId, ct);
 
         if (payload.Count == 0)
             return ToDto(resource, snapshot.Resolve(resource));
@@ -366,6 +372,7 @@ public class ResourceService : IResourceService
         await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Create, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
         var tags = await ResolveTagsAsync(request.Tags, ct);
+        var classificationTagId = await _tags.ResolveClassificationTagIdAsync(request.ClassificationTagId, ct);
 
         var payload = new Dictionary<string, object?>
         {
@@ -376,6 +383,7 @@ public class ResourceService : IResourceService
             ["title"] = request.Title.Trim(),
             ["description"] = request.Description,
             ["tags"] = tags,
+            ["classificationTagId"] = classificationTagId,
             ["content"] = request.Content,
             ["contentType"] = ResourceContentType.Markdown,
             ["extension"] = "md",
@@ -426,6 +434,8 @@ public class ResourceService : IResourceService
             payload["description"] = request.Description;
         if (request.Tags != null)
             payload["tags"] = await ResolveTagsAsync(request.Tags, ct);
+        if (request.ClassificationTagId is not null)
+            payload["classificationTagId"] = await _tags.ResolveClassificationTagIdAsync(request.ClassificationTagId, ct);
         if (request.IsDraft.HasValue)
             payload["status"] = request.IsDraft.Value ? ResourceStatus.Draft : ResourceStatus.Published;
 
@@ -586,6 +596,37 @@ public class ResourceService : IResourceService
         snapshot.EnsureCan(resource, ResourceAction.View);
 
         return await ReadFileVersionBytesAsync(resource, versionNumber, null, ct);
+    }
+
+    public async Task<(byte[] Content, string FileName)> GetCurrentFileContentAsync(string id, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_FILE",
+                "Resource is not a file.",
+                "Kaynak bir dosya değil.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        if (!snapshot.Resolve(resource).CanDownload)
+            throw DocumentException.Forbidden("Dosyayı indirmek için yetki gerekir.");
+
+        var (path, storedName) = ReadFileField(resource.file);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw DocumentException.Validation(
+                "FILE_MISSING",
+                "File content is missing.",
+                "Dosya içeriği bulunamadı.");
+        }
+
+        var bytes = await _dg.DownloadFileAsync(path, Token, ct);
+        var fileName = storedName ?? resource.name ?? resource.title ?? "file";
+        bytes = await StampIfNeededAsync(bytes, resource.extension ?? fileName, resource.classificationTagId, ct);
+        return (bytes, fileName);
     }
 
     public async Task<(byte[] Content, string FileName)> GetFileVersionContentForEditorAsync(
@@ -757,6 +798,7 @@ public class ResourceService : IResourceService
             OriginalFileName = fileName,
             Description = request.Description,
             Tags = request.Tags,
+            ClassificationTagId = request.ClassificationTagId,
             MimeType = profile.MimeType,
             Extension = "." + profile.Extension,
             Size = officeBytes.Length,
@@ -814,13 +856,18 @@ public class ResourceService : IResourceService
 
         // DG dm_resources.file (fieldType=file) alanı: { content (base64), originalFileName } verildiğinde
         // DataController dosyayı MinIO'ya yükler ve alanı { path, file_name, file_ext, file_size, ... } ile değiştirir.
+        var tags = await ResolveTagsAsync(request.Tags, ct);
+        var classificationTagId = await _tags.ResolveClassificationTagIdAsync(request.ClassificationTagId, ct);
+
+        var contentBytes = Convert.FromBase64String(request.Content.Trim());
+        contentBytes = await StampIfNeededAsync(contentBytes, request.Extension ?? request.OriginalFileName, classificationTagId, ct);
+        var contentBase64 = Convert.ToBase64String(contentBytes);
+
         var filePayload = new Dictionary<string, object?>
         {
-            ["content"] = request.Content,
+            ["content"] = contentBase64,
             ["originalFileName"] = string.IsNullOrWhiteSpace(request.OriginalFileName) ? request.Name.Trim() : request.OriginalFileName
         };
-
-        var tags = await ResolveTagsAsync(request.Tags, ct);
 
         var payload = new Dictionary<string, object?>
         {
@@ -831,10 +878,11 @@ public class ResourceService : IResourceService
             ["title"] = request.Name.Trim(),
             ["description"] = request.Description,
             ["tags"] = tags,
+            ["classificationTagId"] = classificationTagId,
             ["contentType"] = ResourceContentType.Binary,
             ["mimeType"] = request.MimeType,
             ["extension"] = request.Extension,
-            ["size"] = request.Size,
+            ["size"] = contentBytes.LongLength,
             ["file"] = filePayload,
             ["currentVersionNumber"] = 1
         };
@@ -859,14 +907,13 @@ public class ResourceService : IResourceService
         var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
         if (ResourceOrigin.IsManagedDocument(origin))
         {
-            var bytes = Convert.FromBase64String(request.Content);
             var fileName = string.IsNullOrWhiteSpace(request.OriginalFileName) ? request.Name.Trim() : request.OriginalFileName;
             if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
                 fileName += ".docx";
             await WriteFileVersionAsync(
                 created.__dataId!,
                 1,
-                bytes,
+                contentBytes,
                 fileName,
                 initialVersionChangeNote ?? "initial",
                 ct);
@@ -981,7 +1028,8 @@ public class ResourceService : IResourceService
             GenerationProfile = source.generationProfile,
             LetterheadId = source.letterheadId,
             DocumentNo = documentNo,
-            Tags = new List<string>()
+            Tags = new List<string>(),
+            ClassificationTagId = source.classificationTagId
         }, ct, ResourceAction.Create, $"clone from {sourceLabel}");
     }
 
@@ -1107,6 +1155,7 @@ public class ResourceService : IResourceService
             OriginalFileName = fileName,
             Description = request.Description,
             Tags = request.Tags,
+            ClassificationTagId = request.ClassificationTagId,
             MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             Extension = ".docx",
             Size = docxBytes.Length,
@@ -1833,6 +1882,7 @@ public class ResourceService : IResourceService
         var resolvedProfile = ResolveManagedOfficeProfile(resource);
         fileName = ManagedOfficeProfiles.EnsureFileNameHasExtension(fileName, resolvedProfile);
 
+        bytes = await StampIfNeededAsync(bytes, fileName, resource.classificationTagId, ct);
         return (bytes, fileName);
     }
 
@@ -1980,6 +2030,7 @@ public class ResourceService : IResourceService
             Title = r.title,
             Description = r.description,
             Tags = r.tags ?? new List<string>(),
+            ClassificationTagId = r.classificationTagId,
             ContentType = r.contentType,
             MimeType = r.mimeType,
             Extension = r.extension,
@@ -2041,6 +2092,22 @@ public class ResourceService : IResourceService
     {
         var normalized = await _tags.NormalizeActiveTagNamesAsync(tags, ct);
         return normalized.ToList();
+    }
+
+    private async Task<byte[]> StampIfNeededAsync(
+        byte[] content,
+        string? extensionOrFileName,
+        string? classificationTagId,
+        CancellationToken ct)
+    {
+        var tag = await _tags.GetClassificationAsync(classificationTagId, ct);
+        if (tag is null || !tag.PersistToFile)
+            return content;
+
+        return _stamp.Apply(
+            content,
+            extensionOrFileName,
+            new ClassificationStamp(tag.Id, tag.Name, tag.Sensitivity, ClassificationStampKeys.SchemaVersion));
     }
 
     private static void ValidateName(string? name)

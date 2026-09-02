@@ -16,5 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Presentation\MngLogs.Agent\MngLogs.Agent.csproj" />
+    <Compile Include="..\..\Presentation\MngLogs.OutlookAddin\DlpSendGate.cs" Link="Dlp\DlpSendGate.cs" />
+    <Compile Include="..\..\Presentation\MngLogs.OutlookAddin\AddressUtil.cs" Link="Dlp\AddressUtil.cs" />
   </ItemGroup>
 </Project>

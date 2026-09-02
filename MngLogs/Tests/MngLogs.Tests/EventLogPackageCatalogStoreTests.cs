@@ -1,5 +1,6 @@
 using MngLogs.Agent.Configuration;
 using MngLogs.Agent.Contracts;
+using MngLogs.Agent.Dlp;
 using MngLogs.Agent.EventLog;
 using MngLogs.Agent.Transport;
 using Microsoft.Extensions.Options;
@@ -187,5 +188,10 @@ public class EventLogPackageCatalogStoreTests
                 return Task.FromResult(EventLogPackageCatalogPullResult.Failed());
             return Task.FromResult(EventLogPackageCatalogPullResult.Ok(Catalog));
         }
+
+        public Task<DlpPolicyPullResult> GetDlpPolicyAsync(
+            string? ifNoneMatchVersion = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(DlpPolicyPullResult.Failed());
     }
 }

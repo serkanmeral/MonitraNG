@@ -1,7 +1,7 @@
 # MngLogs — Son durum
 
-**Son güncelleme:** 2026-08-08  
-**Durum:** Windows + Linux agent canlı. **Günlük hedef = Odak PROD Collector** `http://192.168.20.8:5091`. Host telemetrisi NXLog/rsyslog yerine yalnızca agent. **Alarm observation publish açık** (`SourceProducts=*`).
+**Son güncelleme:** 2026-09-02  
+**Durum:** Windows + Linux agent canlı. **Günlük hedef = Odak PROD Collector** `http://192.168.20.8:5091`. Host telemetrisi NXLog/rsyslog yerine yalnızca agent. **Alarm observation publish açık** (`SourceProducts=*`). Bu TERMINAL’de DLP lab collector **test** `http://192.168.20.20:5091` (agent 1.0.11); prod’a bilinçsiz retarget yok.
 
 ## Son çalışılan konu
 
@@ -52,13 +52,18 @@ pwsh -File .\scripts\tests\MngLogs\linux\deploy-agent-odak-test.ps1
 | Linux | `MngLogs/Presentation/MngLogs.Agent.Linux/` |
 | RDP normalize (sunucu) | `MngLogCollector/.../AgentSecEventActionNormalizer.cs` |
 
+## DLP / Outlook (park — 2 Eyl 2026)
+
+Origin DLP Dilim 0+1 motor bu Windows agent **1.0.11** içinde (`POST /dlp/evaluate`, politika sync). Classic Outlook COM eklentisi kuruldu; **Active teyidi Office IT aktivasyonuna bırakıldı**. Ayrıntı: `docs/odak/dlp/current_status.md`.
+
 ## Park
 
 - UI’den parametreli agent indir
 - P3d deb · Analytics L3
 - Windows→Core refactor (devam)
+- DLP Outlook ItemSend lab (Office lisansı sonrası)
 
 ## Kontrol
 
-Local UI Durum: `collectorBaseUrl` = prod `:5091`, `collectorHealthy: true`  
-SIEM Events: filtre kataloğu modal · RDP `sourceProduct` / `event.code` OpenSearch üzerinden (prod Reactor ✓)
+Bu TERMINAL (DLP lab): Local UI `collectorBaseUrl` = **test** `:5091` (`192.168.20.20`), agent 1.0.11.  
+Linux prod host varsayılanı hâlâ `192.168.20.8:5091`. SIEM Events: filtre kataloğu modal · RDP `sourceProduct` / `event.code` OpenSearch üzerinden (prod Reactor ✓)

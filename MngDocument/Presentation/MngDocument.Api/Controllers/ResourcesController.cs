@@ -126,6 +126,22 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetById(string id, CancellationToken ct) =>
         Ok(await _resources.GetByIdAsync(id, ct));
 
+    /// <summary>Güncel dosya indirme; sınıflandırma damgası uygulanır.</summary>
+    [HttpGet("{id}/download")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadCurrent(string id, CancellationToken ct)
+    {
+        var (bytes, fileName) = await _resources.GetCurrentFileContentAsync(id, ct);
+        var ext = Path.GetExtension(fileName);
+        var contentType = ManagedOfficeProfiles.TryResolve(ext, null, out var profile)
+            ? profile.MimeType
+            : "application/octet-stream";
+        if (string.Equals(ext, ".pdf", StringComparison.OrdinalIgnoreCase))
+            contentType = "application/pdf";
+        return File(bytes, contentType, fileName);
+    }
+
     /// <summary>Kök -> ... -> kaynak yol bilgisi (breadcrumb).</summary>
     [HttpGet("{id}/breadcrumb")]
     [ProducesResponseType(typeof(IReadOnlyList<BreadcrumbDto>), StatusCodes.Status200OK)]

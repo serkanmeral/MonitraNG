@@ -13,6 +13,9 @@ public sealed class TagDto
     public string? Color { get; init; }
     public string? Description { get; init; }
     public bool IsActive { get; init; } = true;
+    public string Kind { get; init; } = "organizational";
+    public int Sensitivity { get; init; }
+    public bool PersistToFile { get; init; }
     public string? CreatedBy { get; init; }
     public DateTime? CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
@@ -24,6 +27,9 @@ public sealed class CreateTagRequest
     public string? Color { get; set; }
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? Kind { get; set; }
+    public int? Sensitivity { get; set; }
+    public bool? PersistToFile { get; set; }
 }
 
 public sealed class UpdateTagRequest
@@ -32,4 +38,7 @@ public sealed class UpdateTagRequest
     public string? Color { get; set; }
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? Kind { get; set; }
+    public int? Sensitivity { get; set; }
+    public bool? PersistToFile { get; set; }
 }

@@ -29,8 +29,9 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 | **[widgets/README.md](./widgets/README.md)** | **Widget & Dashboard designer** — planlama tamam; [DEVAM.md](./widgets/DEVAM.md) |
 | **[dynamicforms/README.md](./dynamicforms/README.md)** | **Dinamik formlar** — Tedarikçiler AF CRUD POC; yarın: [DEVAM.md](./dynamicforms/DEVAM.md) |
 | **[reporting_services/DEVAM.md](./reporting_services/DEVAM.md)** | **Reporting Services** — katalog + designer + Odak Eğitim POC (9 Tem 2026) |
+| **[dlp/DEVAM.md](./dlp/DEVAM.md)** | **DLP** — Dilim 0+1 motor sahada; Outlook COM park (Office IT, 2 Eyl 2026) |
 
-Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne; widget/dashboard mimarisi için **widgets** klasörüne; dinamik form planlaması için **dynamicforms** klasörüne; raporlama servisleri için **reporting_services** klasörüne bakın.
+Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne; widget/dashboard mimarisi için **widgets** klasörüne; dinamik form planlaması için **dynamicforms** klasörüne; raporlama servisleri için **reporting_services** klasörüne; DLP planlaması için **dlp** klasörüne bakın.
 
 ---
 
@@ -128,6 +129,12 @@ docs/odak/
 │   └── DEVAM.md                ← kaldığımız yer
 ├── reporting_services/
 │   └── README.md               ← Reporting Services planlama (başlangıç)
+├── dlp/
+│   ├── README.md               ← DLP planlama indeksi
+│   ├── DLP_PLANNING.md         ← origin sınıflandırma + kanal + fazlar
+│   ├── POLICY.md               ← servis + kural JSON + evaluate
+│   ├── LAB.md                  ← smtp4dev / Outlook lab
+│   └── DEVAM.md                ← kaldığımız yer (IT Office aktivasyonu, 2 Eyl 2026)
 └── domain/
     ├── DOMAIN_OLUSTURMA.md
     ├── DOMAIN_OLUSTURMA_API.md

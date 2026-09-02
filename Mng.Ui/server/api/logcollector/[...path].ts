@@ -30,6 +30,9 @@ export default defineEventHandler(async (event) => {
   const isEventLogPolicyWrite =
     pathLower.includes('policy/eventlog-packages')
     && (method === 'POST' || method === 'PUT' || method === 'DELETE');
+  const isDlpPolicyWrite =
+    pathLower.includes('policy/dlp')
+    && (method === 'POST' || method === 'PUT' || method === 'DELETE');
 
   const isDiscoverySync = method === 'POST' && pathLower.includes('discovery/sync');
   const isDiscoveryScanWrite =
@@ -49,7 +52,8 @@ export default defineEventHandler(async (event) => {
     || isDiscoveryScanWrite
     || isDiscoveryClear
     || isDiscoveryPrefixesWrite
-    || isEventLogPolicyWrite;
+    || isEventLogPolicyWrite
+    || isDlpPolicyWrite;
 
   if (!allowed) {
     throw createError({

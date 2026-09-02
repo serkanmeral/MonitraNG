@@ -11,7 +11,9 @@ namespace MngLogCollector.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/policy")]
 [IngestApiKey]
-public sealed class PolicyController(IEventLogPackageCatalogService catalog) : ControllerBase
+public sealed class PolicyController(
+    IEventLogPackageCatalogService catalog,
+    IDlpPolicyCatalogService dlp) : ControllerBase
 {
     public const string HostnameHeader = "X-MngLogs-Hostname";
 
@@ -166,4 +168,48 @@ public sealed class PolicyController(IEventLogPackageCatalogService catalog) : C
     [ProducesResponseType(typeof(EventLogPackageCatalogResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<EventLogPackageCatalogResponse>> Publish(CancellationToken ct) =>
         Ok(await catalog.PublishAsync(ct));
+
+    /// <summary>Published DLP policy for agents (ETag = version).</summary>
+    [HttpGet("dlp")]
+    [ProducesResponseType(typeof(DlpPolicyResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<DlpPolicyResponse>> GetDlp(CancellationToken ct)
+    {
+        var response = await dlp.GetPublishedAsync(ct);
+        var etag = $"\"{response.Version}\"";
+        Response.Headers.ETag = etag;
+        var incoming = Request.Headers.IfNoneMatch.ToString();
+        if (!string.IsNullOrWhiteSpace(incoming) &&
+            string.Equals(incoming.Trim(), etag, StringComparison.Ordinal))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        return Ok(response);
+    }
+
+    [HttpGet("dlp/manage")]
+    [ProducesResponseType(typeof(DlpPolicyManageResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<DlpPolicyManageResponse>> GetDlpManage(CancellationToken ct) =>
+        Ok(await dlp.GetManageAsync(ct));
+
+    [HttpPut("dlp")]
+    [ProducesResponseType(typeof(DlpPolicyManageResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<DlpPolicyManageResponse>> PutDlp(
+        [FromBody] DlpPolicyUpsertRequest request,
+        CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await dlp.UpsertDraftAsync(request, ct));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("dlp/publish")]
+    [ProducesResponseType(typeof(DlpPolicyResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<DlpPolicyResponse>> PublishDlp(CancellationToken ct) =>
+        Ok(await dlp.PublishAsync(ct));
 }
