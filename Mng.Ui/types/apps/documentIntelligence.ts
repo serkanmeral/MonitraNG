@@ -69,6 +69,8 @@ export interface DiResource {
   title: string | null;
   description: string | null;
   tags: string[];
+  /** DLP birincil sınıflandırma (dm_tags id, kind=classification). */
+  classificationTagId: string | null;
   contentType: string | null;
   mimeType: string | null;
   extension: string | null;
@@ -194,6 +196,8 @@ export interface DiMoveRequest {
 export interface DiUpdateResourceMetadataRequest {
   tags?: string[];
   description?: string | null;
+  /** Boş string sınıflandırmayı kaldırır. */
+  classificationTagId?: string | null;
 }
 
 export interface DiCloneResourceRequest {
@@ -210,6 +214,9 @@ export interface DiTag {
   color: string | null;
   description: string | null;
   isActive: boolean;
+  kind: string;
+  sensitivity: number;
+  persistToFile: boolean;
   createdBy: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -225,6 +232,9 @@ export interface DiCreateTagRequest {
   color?: string | null;
   description?: string | null;
   isActive?: boolean;
+  kind?: string;
+  sensitivity?: number;
+  persistToFile?: boolean;
 }
 
 export interface DiUpdateTagRequest {
@@ -232,6 +242,9 @@ export interface DiUpdateTagRequest {
   color?: string | null;
   description?: string | null;
   isActive?: boolean;
+  kind?: string;
+  sensitivity?: number;
+  persistToFile?: boolean;
 }
 
 export interface DiCreateMarkdownRequest {
@@ -240,6 +253,7 @@ export interface DiCreateMarkdownRequest {
   content: string;
   description?: string | null;
   tags?: string[];
+  classificationTagId?: string | null;
   /** true ise taslak olarak oluşturur (status=draft). */
   isDraft?: boolean;
 }
@@ -249,6 +263,8 @@ export interface DiUpdateMarkdownRequest {
   content: string;
   description?: string | null;
   tags?: string[];
+  /** Boş string sınıflandırmayı kaldırır. */
+  classificationTagId?: string | null;
   expectedVersionNumber: number;
   /** true=taslak, false=yayınla, undefined=mevcut durumu koru. */
   isDraft?: boolean | null;
@@ -287,6 +303,7 @@ export interface DiCreateFileResourceRequest {
   extension?: string | null;
   size?: number | null;
   tags?: string[];
+  classificationTagId?: string | null;
   /** Base64 dosya içeriği (data URL öneki olmadan). */
   content: string;
   /** Orijinal dosya adı (indirmede kullanılır). */
@@ -300,6 +317,7 @@ export interface DiCreateNativeDocumentRequest {
   documentNo: string;
   description?: string | null;
   tags?: string[];
+  classificationTagId?: string | null;
   /** Boş/null → antetsiz boş DOCX. */
   letterheadId?: string | null;
   /** Antet seçildiyse doldurulacak header parametreleri. */
@@ -313,6 +331,7 @@ export interface DiCreateNativeOfficeRequest {
   documentNo?: string | null;
   description?: string | null;
   tags?: string[];
+  classificationTagId?: string | null;
 }
 
 /** Ağaç kökü için sanal düğüm kimliği (UI). */

@@ -84,9 +84,9 @@ import {
 } from '@/utils/reportingDocumentTokens';
 import { diGenerateFromTemplate } from '@/services/documentIntelligenceService';
 import { openDiResourceInNewTab } from '@/utils/diResourceLink';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   buildReportingShareHref,
-  copyTextToClipboard,
   REPORTING_BROWSE_SHARE_PATH,
 } from '@/utils/reportingShareLink';
 import type { DiResource } from '@/types/apps/documentIntelligence';

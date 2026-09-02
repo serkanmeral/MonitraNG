@@ -6,6 +6,7 @@ import DiBrowseToolbar from '@/components/apps/document-intelligence/DiBrowseToo
 import DiDiscoveryHome from '@/components/apps/document-intelligence/DiDiscoveryHome.vue';
 import DiAreaIndexBanner from '@/components/apps/document-intelligence/DiAreaIndexBanner.vue';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
+import DiClassificationField from '@/components/apps/document-intelligence/DiClassificationField.vue';
 import DiResourceTagsDialog from '@/components/apps/document-intelligence/DiResourceTagsDialog.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
@@ -64,7 +65,7 @@ import {
   diCreateNativePresentation,
   diListLetterheads,
   diGetLetterhead,
-  diFetchFileBlob,
+  diDownloadResource,
   diFetchResourceExportPdf,
   diErrorStatus,
 } from '@/services/documentIntelligenceService';
@@ -164,6 +165,7 @@ const docMode = ref<'view' | 'edit'>('view');
 const docLoading = ref(false);
 const editContent = ref('');
 const editTags = ref<string[]>([]);
+const editClassificationId = ref<string | null>(null);
 const saving = ref(false);
 
 // Etiket filtresi (klasör listesi)
@@ -640,7 +642,11 @@ function openResourceTags(resource: DiResource) {
 async function onResourceTagsSaved(updated: DiResource) {
   notify(t('documentIntelligence.saved'), 'success');
   if (openDoc.value?.id === updated.id) {
-    openDoc.value = { ...openDoc.value, tags: updated.tags };
+    openDoc.value = {
+      ...openDoc.value,
+      tags: updated.tags,
+      classificationTagId: updated.classificationTagId,
+    };
   }
   await refreshListing();
 }
@@ -661,6 +667,7 @@ function formatDateTime(iso: string | null): string {
 function startEdit() {
   editContent.value = docContent.value;
   editTags.value = [...(openDoc.value?.tags ?? [])];
+  editClassificationId.value = openDoc.value?.classificationTagId ?? null;
   docMode.value = 'edit';
 }
 
@@ -692,6 +699,7 @@ async function saveEdit(asDraft = false, changeNote = ''): Promise<boolean> {
     const updated = await diUpdateMarkdown(openDoc.value.id, {
       content: editContent.value,
       tags: editTags.value,
+      classificationTagId: editClassificationId.value ?? '',
       expectedVersionNumber: docVersion.value,
       isDraft: asDraft,
       changeNote: changeNote || null,
@@ -1178,11 +1186,11 @@ async function downloadFile(resource: DiResource) {
   }
   downloadingId.value = resource.id;
   try {
-    const blob = await diFetchFileBlob(resource.filePath);
+    const { blob, fileName } = await diDownloadResource(resource.id, resource.fileName || resource.name);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = resource.fileName || resource.name || 'dosya';
+    a.download = fileName || resource.fileName || resource.name || 'dosya';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1540,7 +1548,8 @@ watch(
                 </span>
               </div>
 
-              <div v-if="docMode === 'view'" class="mb-3">
+              <div v-if="docMode === 'view'" class="mb-3 d-flex flex-wrap align-center ga-2">
+                <DiClassificationField :model-value="openDoc.classificationTagId" readonly />
                 <DiTagPicker
                   :model-value="openDoc.tags ?? []"
                   readonly
@@ -1550,6 +1559,7 @@ watch(
                 />
               </div>
               <div v-else class="mb-3">
+                <DiClassificationField v-model="editClassificationId" density="compact" />
                 <DiTagPicker v-model="editTags" density="compact" />
               </div>
 

@@ -92,7 +92,7 @@ function ensureScenarioStudioMenuItem(items: SideMenuItem[]): SideMenuItem[] {
       order: (alarmCenterItem?.order ?? 400) + 1,
       itemType: 'item',
       pageType: 'manager',
-      title: 'Alarm Senaryo Tasarımı',
+      title: 'Alarm senaryoları',
       pageCode: 'alarmCenter.scenarioStudio.menuTitle',
       icon: 'GitBranchIcon',
       iconType: 'tabler',

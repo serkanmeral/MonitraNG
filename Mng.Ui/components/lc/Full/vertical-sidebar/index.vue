@@ -9,6 +9,7 @@ import { PowerIcon } from 'vue-tabler-icons';
 import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import type { menu } from './sidebarItem';
+import { resolveDomainLogoSrc } from '@/composables/useDomain';
 
 const customizer = useCustomizerStore();
 const authStore = useAuthStore();
@@ -274,72 +275,18 @@ const currentUser = computed(() => {
   };
 });
 
-// Get domain logo for background
+// Get domain logo for background — uploaded `logo` wins over stale `logoUrl`
 const domainLogoStyle = computed(() => {
-  const domainInfo = authStore.domainInfo;
-  
-  // If no domain info, use fallback
-  if (!domainInfo) {
+  const logoSrc = resolveDomainLogoSrc(authStore.domainInfo);
+  if (logoSrc) {
     return {
-      backgroundImage: 'url("/images/backgrounds/user-info.jpg")',
-      backgroundSize: 'cover',
+      backgroundImage: `url("${logoSrc}")`,
+      backgroundSize: 'contain',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
     };
   }
 
-  // Prefer logoUrl if available (more efficient than base64)
-  if (domainInfo.logoUrl) {
-    try {
-      return {
-        backgroundImage: `url("${domainInfo.logoUrl}")`,
-        backgroundSize: 'contain',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      };
-    } catch (error) {
-      // Silently handle error - will try fallback logo
-      // Fall through to try logo base64
-    }
-  }
-
-  // Try to use base64 logo if available
-  if (domainInfo.logo) {
-    try {
-      // Check if logo is already a data URI
-      let logoData = domainInfo.logo;
-      
-      // If not a data URI, assume it's base64 and add data URI prefix
-      if (!logoData.startsWith('data:')) {
-        // Try to detect image type from base64 or default to image/png
-        // Common base64 image formats: /9j/ (JPEG), iVBORw0KGgo (PNG), R0lGODlh (GIF), UklGR (WebP)
-        let mimeType = 'image/png'; // default
-        if (logoData.startsWith('/9j/') || logoData.startsWith('/9j/')) {
-          mimeType = 'image/jpeg';
-        } else if (logoData.startsWith('iVBORw0KGgo')) {
-          mimeType = 'image/png';
-        } else if (logoData.startsWith('R0lGODlh')) {
-          mimeType = 'image/gif';
-        } else if (logoData.startsWith('UklGR')) {
-          mimeType = 'image/webp';
-        }
-        
-        logoData = `data:${mimeType};base64,${logoData}`;
-      }
-      
-      return {
-        backgroundImage: `url("${logoData}")`,
-        backgroundSize: 'contain',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      };
-    } catch (error) {
-      // Silently handle error - will use fallback logo
-      // Fall through to fallback
-    }
-  }
-
-  // Fallback to default background image
   return {
     backgroundImage: 'url("/images/backgrounds/user-info.jpg")',
     backgroundSize: 'cover',

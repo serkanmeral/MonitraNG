@@ -149,10 +149,15 @@ export function formModelToPayload(
   packageId: string
 ): Record<string, unknown> {
   const poItem = form.customerPoItemNo.trim();
+  const rawLineNo = form.lineNo as number | string | null;
+  const lineNo =
+    rawLineNo == null || rawLineNo === ''
+      ? null
+      : Number(rawLineNo);
   const payload: Record<string, unknown> = {
     parentPackageId: packageId,
     parentWorkItemId: packageId,
-    lineNo: form.lineNo,
+    lineNo: lineNo != null && !Number.isNaN(lineNo) ? lineNo : null,
     customerProjectNo: form.customerProjectNo.trim() || null,
     customerPoNo: form.customerPoNo.trim() || null,
     customerPoItemNo: poItem ? Number(poItem) : null,

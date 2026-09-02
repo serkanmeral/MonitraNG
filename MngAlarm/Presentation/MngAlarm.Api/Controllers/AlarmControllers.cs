@@ -146,7 +146,7 @@ public sealed class AlarmScenariosController(
     public async Task<IActionResult> Archive(string scenarioId, int version, CancellationToken cancellationToken)
     {
         var item = await scenarios.ArchiveAsync(scenarioId, version, cancellationToken);
-        return item == null ? Conflict(new { code = "published_version_required" }) : Ok(item);
+        return item == null ? Conflict(new { code = "not_archivable" }) : Ok(item);
     }
 
     [HttpPost("{scenarioId}/versions/{version:int}/rollback")]

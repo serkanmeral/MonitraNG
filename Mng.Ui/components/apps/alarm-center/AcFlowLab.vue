@@ -18,7 +18,6 @@ import { useAppToast } from '@/composables/useAppToast';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useScenarioStudioApi } from '@/composables/useScenarioStudioApi';
 import {
-  createEmptyScenarioDefinitionV3,
   type ScenarioAuditEntry,
   type ScenarioCatalogItem,
   type ScenarioPreviewResponse,
@@ -178,13 +177,11 @@ const canToggleRun = computed(() =>
   && !current.value.isReadOnly
   && current.value.origin !== 'product',
 );
-const canArchive = computed(() =>
-  !!current.value
-  && !current.value.isReadOnly
-  && current.value.origin !== 'product'
-  && current.value.status === 'published'
-  && operationalStatus.value !== 'running',
-);
+const canArchive = computed(() => {
+  if (!current.value || current.value.isReadOnly || current.value.origin === 'product') return false;
+  if (current.value.status === 'published') return operationalStatus.value !== 'running';
+  return current.value.status === 'draft' || current.value.status === 'validated';
+});
 const canRename = computed(() =>
   !current.value?.isReadOnly && current.value?.origin !== 'product',
 );
@@ -216,40 +213,32 @@ const currentDefinition = computed(() => {
 });
 const wizardCompatible = computed(() => isWizardCompatible(currentDefinition.value));
 
-type PaletteGroupId = 'events' | 'functions' | 'outputs';
+type PaletteGroupId = 'basics' | 'advanced';
 
 const paletteGroupCollapsed = ref<Record<PaletteGroupId, boolean>>({
-  events: false,
-  functions: false,
-  outputs: false,
+  basics: false,
+  advanced: true,
 });
 
 const paletteGroups = computed(() => [
   {
-    id: 'events' as const,
-    title: t('alarmCenter.flowLab.nodeGroups.events'),
+    id: 'basics' as const,
+    title: t('alarmCenter.flowLab.nodeGroups.basics'),
     items: [
       nodeTemplate('source', t('alarmCenter.flowLab.nodes.eventSource'), 'mdi-database-arrow-right-outline', '#2f80ed'),
+      nodeTemplate('threshold', t('alarmCenter.flowLab.nodes.threshold'), 'mdi-gauge', '#00a896'),
+      nodeTemplate('alarm-output', t('alarmCenter.flowLab.nodes.alarm'), 'mdi-bell-ring-outline', '#d64545'),
     ],
   },
   {
-    id: 'functions' as const,
-    title: t('alarmCenter.flowLab.nodeGroups.functions'),
+    id: 'advanced' as const,
+    title: t('alarmCenter.flowLab.nodeGroups.advanced'),
     items: [
-      // Advanced building blocks stay available; simple source covers the common path.
       nodeTemplate('condition', t('alarmCenter.scenarioStudio.steps.condition'), 'mdi-code-braces', '#f2994a'),
       nodeTemplate('filter', t('alarmCenter.flowLab.nodes.filter'), 'mdi-filter-outline', '#9c6ade'),
       nodeTemplate('aggregation', t('alarmCenter.flowLab.nodes.aggregate'), 'mdi-chart-timeline-variant', '#00a896'),
-      nodeTemplate('threshold', t('alarmCenter.flowLab.nodes.threshold'), 'mdi-gauge', '#00a896'),
       nodeTemplate('sequence', t('alarmCenter.flowLab.nodes.sequence'), 'mdi-format-list-numbered', '#5b5f97'),
       nodeTemplate('decision', t('alarmCenter.flowLab.nodes.decision'), 'mdi-source-branch', '#f2994a'),
-    ],
-  },
-  {
-    id: 'outputs' as const,
-    title: t('alarmCenter.flowLab.nodeGroups.outputs'),
-    items: [
-      nodeTemplate('alarm-output', t('alarmCenter.flowLab.nodes.alarm'), 'mdi-bell-ring-outline', '#d64545'),
       nodeTemplate('stop-output', t('alarmCenter.flowLab.nodes.stop'), 'mdi-stop-circle-outline', '#687386'),
       nodeTemplate('debug-output', t('alarmCenter.flowLab.nodes.debug'), 'mdi-bug-outline', '#c9a227'),
     ],
@@ -439,10 +428,7 @@ function loadVersion(version: ScenarioVersion) {
 function newScenario() {
   current.value = null;
   flowName.value = '';
-  const mapped = scenarioToVueFlow(createEmptyScenarioDefinitionV3(), 5);
-  nodes.value = mapped.nodes;
-  edges.value = mapped.edges;
-  hydrateSimpleSourceNodes();
+  seedHappyPathGraph();
   selectedNodeId.value = null;
   clearTrace();
   localError.value = '';
@@ -701,17 +687,34 @@ async function setCatalogItemEnabled(item: ScenarioCatalogItem, enabled: boolean
   }
 }
 
+function versionsToArchive(item: ScenarioCatalogItem): number[] {
+  const versions: number[] = [];
+  const operational = item.operationalStatus || resolveOperationalStatus(item);
+  if (item.publishedVersion != null && operational === 'stopped') {
+    versions.push(item.publishedVersion);
+  }
+  if (item.draftVersion != null && !versions.includes(item.draftVersion)) {
+    versions.push(item.draftVersion);
+  }
+  if (!versions.length && item.latestVersion != null) {
+    versions.push(item.latestVersion);
+  }
+  return versions;
+}
+
 async function archiveCatalogItem(item: ScenarioCatalogItem) {
-  const version = item.publishedVersion;
-  if (!version || item.isReadOnly || item.origin === 'product') return;
-  if ((item.operationalStatus || resolveOperationalStatus(item)) !== 'stopped') return;
+  if (item.isReadOnly || item.origin === 'product') return;
+  const versions = versionsToArchive(item);
+  if (!versions.length) return;
   const confirmed = window.confirm(
     t('alarmCenter.scenarioStudio.deleteFlowConfirm').replace('{name}', item.name),
   );
   if (!confirmed) return;
   try {
     const wasCurrent = current.value?.scenarioId === item.scenarioId;
-    await api.archive(item.scenarioId, version);
+    for (const version of versions) {
+      await api.archive(item.scenarioId, version);
+    }
     await refreshCatalog();
     if (wasCurrent) {
       newScenario();
@@ -857,6 +860,80 @@ function createNode(item: ReturnType<typeof nodeTemplate>, position: { x: number
       ...(simple ? { simple } : {}),
     },
   };
+}
+
+function starterSourceTemplate() {
+  const item = nodeTemplate(
+    'source',
+    t('alarmCenter.flowLab.nodes.eventSource'),
+    'mdi-database-arrow-right-outline',
+    '#2f80ed',
+  );
+  return {
+    ...item,
+    config: {
+      ...item.config,
+      source: {
+        kind: 'observation' as const,
+        observationKind: 'event' as const,
+        matchKey: '',
+        matchKeys: [],
+        dependsOnScenarioIds: [],
+        maxChainDepth: 5,
+      },
+    },
+  };
+}
+
+function seedHappyPathGraph() {
+  const source = createNode(starterSourceTemplate(), { x: 60, y: 180 });
+  const threshold = createNode(
+    nodeTemplate('threshold', t('alarmCenter.flowLab.nodes.threshold'), 'mdi-gauge', '#00a896'),
+    { x: 560, y: 180 },
+  );
+  const alarm = createNode(
+    nodeTemplate('alarm-output', t('alarmCenter.flowLab.nodes.alarm'), 'mdi-bell-ring-outline', '#d64545'),
+    { x: 860, y: 180 },
+  );
+
+  const aggregation = threshold.data.config.aggregation;
+  if (aggregation) {
+    threshold.data.subtitle = `${aggregation.function} ${aggregation.operator} ${aggregation.threshold}`;
+  }
+  alarm.data.subtitle = alarmOutputSubtitle(alarm.data.config);
+
+  nodes.value = [source, threshold, alarm];
+  edges.value = [
+    {
+      id: `edge-${crypto.randomUUID()}`,
+      source: source.id,
+      target: threshold.id,
+      type: 'smoothstep',
+      markerEnd: MarkerType.ArrowClosed,
+      animated: true,
+      data: { fromPort: 'next', toPort: 'in' },
+    },
+    {
+      id: `edge-${crypto.randomUUID()}`,
+      source: threshold.id,
+      target: alarm.id,
+      sourceHandle: 'true',
+      label: 'True',
+      type: 'smoothstep',
+      markerEnd: MarkerType.ArrowClosed,
+      data: { fromPort: 'true', toPort: 'in' },
+    },
+  ];
+
+  hydrateSimpleSourceNodes();
+  const sourceNode = nodes.value.find(node => node.id === source.id);
+  if (sourceNode?.data?.simple) {
+    syncSimpleSourceScope(
+      sourceNode.id,
+      sourceNode.data.simple as SimpleSourceState,
+      sourceTypeForPlatform(sourceNode.data.simple.platform, sourceNode.data.simple.channel),
+    );
+  }
 }
 
 function addPaletteNode(item: ReturnType<typeof nodeTemplate>) {

@@ -19,6 +19,7 @@ const breadcrumbs = computed(() => [
 
 const tableHeaders = computed(() => [
   { title: t('documentIntelligence.tagsCatalog.name'), key: 'name', sortable: true },
+  { title: t('documentIntelligence.tagsCatalog.kind'), key: 'kind', sortable: true, width: '160px' },
   { title: t('documentIntelligence.tagsCatalog.color'), key: 'color', sortable: false, width: '120px' },
   { title: t('documentIntelligence.tagsCatalog.isActive'), key: 'isActive', sortable: true, width: '120px' },
   { title: t('documentIntelligence.designer.columnActions'), key: 'actions', sortable: false, align: 'end' as const, width: '140px' },
@@ -41,12 +42,28 @@ const deleting = ref(false);
 const editingId = ref<string | null>(null);
 const deleteTarget = ref<DiTag | null>(null);
 
-const form = ref<{ name: string; color: string | null; description: string; isActive: boolean }>({
+const form = ref<{
+  name: string;
+  color: string | null;
+  description: string;
+  isActive: boolean;
+  kind: string;
+  sensitivity: number;
+  persistToFile: boolean;
+}>({
   name: '',
   color: null,
   description: '',
   isActive: true,
+  kind: 'organizational',
+  sensitivity: 1,
+  persistToFile: true,
 });
+
+const kindItems = computed(() => [
+  { title: t('documentIntelligence.tagsCatalog.kindOrganizational'), value: 'organizational' },
+  { title: t('documentIntelligence.tagsCatalog.kindClassification'), value: 'classification' },
+]);
 
 async function loadTags() {
   loading.value = true;
@@ -64,7 +81,7 @@ async function loadTags() {
 
 function openCreate() {
   editingId.value = null;
-  form.value = { name: '', color: null, description: '', isActive: true };
+  form.value = { name: '', color: null, description: '', isActive: true, kind: 'organizational', sensitivity: 1, persistToFile: false };
   dialogOpen.value = true;
 }
 
@@ -75,6 +92,9 @@ function openEdit(tag: DiTag) {
     color: tag.color && isTmStatusThemeColor(tag.color) ? tag.color : null,
     description: tag.description ?? '',
     isActive: tag.isActive,
+    kind: tag.kind === 'classification' ? 'classification' : 'organizational',
+    sensitivity: tag.sensitivity ?? 1,
+    persistToFile: tag.persistToFile,
   };
   dialogOpen.value = true;
 }
@@ -82,6 +102,13 @@ function openEdit(tag: DiTag) {
 function openDelete(tag: DiTag) {
   deleteTarget.value = tag;
   deleteDialogOpen.value = true;
+}
+
+function onKindPicked(kind: string) {
+  if (kind === 'classification') {
+    form.value.persistToFile = true;
+    if (!form.value.sensitivity) form.value.sensitivity = 1;
+  }
 }
 
 async function save() {
@@ -96,6 +123,9 @@ async function save() {
       color: form.value.color,
       description: form.value.description.trim() || null,
       isActive: form.value.isActive,
+      kind: form.value.kind,
+      sensitivity: form.value.kind === 'classification' ? form.value.sensitivity : 0,
+      persistToFile: form.value.kind === 'classification' ? form.value.persistToFile : false,
     };
     if (editingId.value) {
       await diUpdateTag(editingId.value, payload);
@@ -167,6 +197,13 @@ onMounted(() => void loadTags());
         density="comfortable"
         :no-data-text="t('documentIntelligence.tagsCatalog.empty')"
       >
+        <template #item.kind="{ item }">
+          <v-chip size="small" variant="tonal" :color="item.kind === 'classification' ? 'warning' : 'primary'">
+            {{ item.kind === 'classification'
+              ? t('documentIntelligence.tagsCatalog.kindClassification')
+              : t('documentIntelligence.tagsCatalog.kindOrganizational') }}
+          </v-chip>
+        </template>
         <template #item.color="{ item }">
           <v-chip v-if="item.color" size="small" variant="flat" :color="item.color">{{ item.color }}</v-chip>
           <span v-else class="text-medium-emphasis">—</span>
@@ -206,6 +243,36 @@ onMounted(() => void loadTags());
             class="mb-3"
           />
           <v-textarea v-model="form.description" :label="t('documentIntelligence.tagsCatalog.description')" variant="outlined" density="comfortable" rows="2" class="mb-3" />
+          <v-select
+            v-model="form.kind"
+            :items="kindItems"
+            item-title="title"
+            item-value="value"
+            :label="t('documentIntelligence.tagsCatalog.kind')"
+            variant="outlined"
+            density="comfortable"
+            class="mb-3"
+            @update:model-value="onKindPicked"
+          />
+          <v-text-field
+            v-if="form.kind === 'classification'"
+            v-model.number="form.sensitivity"
+            type="number"
+            min="0"
+            max="3"
+            :label="t('documentIntelligence.tagsCatalog.sensitivity')"
+            variant="outlined"
+            density="comfortable"
+            class="mb-3"
+          />
+          <v-switch
+            v-if="form.kind === 'classification'"
+            v-model="form.persistToFile"
+            :label="t('documentIntelligence.tagsCatalog.persistToFile')"
+            color="primary"
+            hide-details
+            class="mb-3"
+          />
           <v-switch v-model="form.isActive" :label="t('documentIntelligence.tagsCatalog.isActive')" color="primary" hide-details />
         </v-card-text>
         <v-card-actions>

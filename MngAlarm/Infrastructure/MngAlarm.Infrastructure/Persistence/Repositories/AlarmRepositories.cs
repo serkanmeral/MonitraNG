@@ -169,7 +169,9 @@ public sealed class ScenarioRepository(IAlarmMongoContext context) : IScenarioRe
         Versions(domainName).UpdateOneAsync(
             x => x.ScenarioId == scenarioId
                 && x.Version == version
-                && x.Status == ScenarioLifecycleStatuses.Published,
+                && (x.Status == ScenarioLifecycleStatuses.Draft
+                    || x.Status == ScenarioLifecycleStatuses.Validated
+                    || x.Status == ScenarioLifecycleStatuses.Published),
             Builders<ScenarioVersionDocument>.Update
                 .Set(x => x.Status, ScenarioLifecycleStatuses.Archived)
                 .Set(x => x.UpdatedAt, updatedAt),

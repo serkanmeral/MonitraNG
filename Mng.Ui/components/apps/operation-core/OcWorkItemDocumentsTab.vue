@@ -7,7 +7,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   diDeleteResourceLink,
-  diFetchFileBlob,
+  diDownloadResource,
   diGetById,
   diGetLinkedResourcesForWorkItem,
 } from '@/services/documentIntelligenceService';
@@ -124,18 +124,14 @@ async function openPreview(item: DiLinkedResource) {
 }
 
 async function downloadResource(resource: DiResource) {
-  if (!resource.filePath) {
-    error.value = t('operationCore.profile.documents.downloadError');
-    return;
-  }
   downloadingId.value = resource.id;
   error.value = null;
   try {
-    const blob = await diFetchFileBlob(resource.filePath);
+    const { blob, fileName } = await diDownloadResource(resource.id, resource.fileName || resource.name);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = resource.fileName || resource.name || 'dosya';
+    a.download = fileName || resource.fileName || resource.name || 'dosya';
     document.body.appendChild(a);
     a.click();
     a.remove();

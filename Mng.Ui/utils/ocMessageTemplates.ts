@@ -113,5 +113,3 @@ export function renderMessageTemplatePreview(
     return String(cur);
   });
 }
-
-export { extractPlaceholderPaths };

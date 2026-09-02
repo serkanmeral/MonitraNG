@@ -108,6 +108,10 @@ withDefaults(
   min-width: 100%;
 }
 
+.odak-sub-list-table-host :deep(.v-data-table-footer) {
+  justify-content: flex-start;
+}
+
 .odak-sub-list-table-host :deep(.odak-sub-list-table .v-table),
 .odak-sub-list-table-host :deep(.odak-sub-list-table .v-table__wrapper) {
   overflow: visible !important;

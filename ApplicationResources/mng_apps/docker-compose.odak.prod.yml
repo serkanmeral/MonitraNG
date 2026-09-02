@@ -140,6 +140,7 @@ services:
       - MngLogCollectorSettings__RabbitMq__Password=${RABBITMQ_PASSWORD:-admin123}
       - MngLogCollectorSettings__ObservationPublish__Enabled=true
       - MngLogCollectorSettings__ObservationPublish__SourceProducts__0=*
+      - MngLogCollectorSettings__AgentPackages__PublicBaseUrl=http://192.168.20.8:5091
 
   mngoperations:
     ports:

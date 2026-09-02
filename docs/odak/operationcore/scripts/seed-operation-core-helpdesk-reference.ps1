@@ -220,7 +220,14 @@ $transitions = @(
     @{ transitionKey = "start_from_new"; fromStateId = $stateNewId; toStateId = $stateProgressId; label = "Dogrudan isle"; order = 2 },
     @{ transitionKey = "wait_customer"; fromStateId = $stateProgressId; toStateId = $stateWaitingId; label = "Musteriden yanit bekle"; order = 3 },
     @{ transitionKey = "resume"; fromStateId = $stateWaitingId; toStateId = $stateProgressId; label = "Devam et"; order = 4 },
-    @{ transitionKey = "resolve"; fromStateId = $stateProgressId; toStateId = $stateResolvedId; label = "Coz"; order = 5 },
+    @{
+        transitionKey  = "resolve"
+        fromStateId    = $stateProgressId
+        toStateId      = $stateResolvedId
+        label          = "Coz"
+        order          = 5
+        requiredFields = @("resolutionSummary")
+    },
     @{ transitionKey = "close"; fromStateId = $stateResolvedId; toStateId = $stateClosedId; label = "Kapat"; order = 6 },
     @{ transitionKey = "reopen"; fromStateId = $stateResolvedId; toStateId = $stateAssignedId; label = "Yeniden ac"; order = 7 },
     @{ transitionKey = "reopen_closed"; fromStateId = $stateClosedId; toStateId = $stateAssignedId; label = "Yeniden ac"; order = 8 }

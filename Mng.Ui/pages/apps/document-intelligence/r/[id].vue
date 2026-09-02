@@ -7,6 +7,8 @@ import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdown
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
+import DiClassificationField from '@/components/apps/document-intelligence/DiClassificationField.vue';
+import DiResourceTagsDialog from '@/components/apps/document-intelligence/DiResourceTagsDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
 import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklinksPanel.vue';
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
@@ -22,7 +24,7 @@ import { DI_HOME_PATH, DI_LAST_FOLDER_STORAGE_KEY, buildDiFolderUrl, parseFromFo
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
   diErrorStatus,
-  diFetchFileBlob,
+  diDownloadResource,
   diFetchResourceExportPdf,
   diGetBreadcrumb,
   diGetById,
@@ -57,7 +59,9 @@ const docVersion = ref(0);
 const docMode = ref<'view' | 'edit'>('view');
 const editContent = ref('');
 const editTags = ref<string[]>([]);
+const editClassificationId = ref<string | null>(null);
 const saving = ref(false);
+const tagsDialog = ref(false);
 
 const saveDialog = ref(false);
 const saveDialogMode = ref<DiSavePageMode>('save');
@@ -145,16 +149,12 @@ async function goToParentFolder() {
 }
 
 async function downloadFile(r: DiResource) {
-  if (!r.filePath) {
-    errorMessage.value = t('documentIntelligence.errors.download');
-    return;
-  }
   try {
-    const blob = await diFetchFileBlob(r.filePath);
+    const { blob, fileName } = await diDownloadResource(r.id, r.fileName || r.name);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = r.fileName || r.name || 'dosya';
+    a.download = fileName || r.fileName || r.name || 'dosya';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -270,6 +270,7 @@ async function loadResource() {
 function startEdit() {
   editContent.value = markdownContent.value;
   editTags.value = [...(resource.value?.tags ?? [])];
+  editClassificationId.value = resource.value?.classificationTagId ?? null;
   docMode.value = 'edit';
 }
 
@@ -301,6 +302,7 @@ async function saveEdit(asDraft = false, changeNote = ''): Promise<boolean> {
     const updated = await diUpdateMarkdown(resource.value.id, {
       content: editContent.value,
       tags: editTags.value,
+      classificationTagId: editClassificationId.value ?? '',
       expectedVersionNumber: docVersion.value,
       isDraft: asDraft,
       changeNote: changeNote || null,
@@ -357,6 +359,10 @@ function onEditorOpenChange(open: boolean) {
 function onEditorSaved(updated: DiResource) {
   resource.value = updated;
   docVersion.value = updated.currentVersionNumber ?? docVersion.value;
+}
+
+function onResourceTagsSaved(updated: DiResource) {
+  resource.value = updated;
 }
 
 function onPreviewOpenChange(open: boolean) {
@@ -519,10 +525,12 @@ onBeforeRouteLeave((to) => {
           {{ t('documentIntelligence.viewOnlyHint') }}
         </v-alert>
 
-        <div v-if="docMode === 'view'" class="mb-3">
+        <div v-if="docMode === 'view'" class="mb-3 d-flex flex-wrap align-center ga-2">
+          <DiClassificationField :model-value="resource.classificationTagId" readonly />
           <DiTagPicker :model-value="resource.tags ?? []" readonly density="compact" />
         </div>
         <div v-else class="mb-3">
+          <DiClassificationField v-model="editClassificationId" density="compact" />
           <DiTagPicker v-model="editTags" density="compact" />
         </div>
 
@@ -575,6 +583,16 @@ onBeforeRouteLeave((to) => {
             @click="editorOpen = true"
           >
             {{ t('documentIntelligence.edit') }}
+          </v-btn>
+          <v-btn
+            v-if="resource.permissions.canEdit"
+            size="small"
+            variant="text"
+            class="text-none"
+            prepend-icon="mdi-tag-outline"
+            @click="tagsDialog = true"
+          >
+            {{ t('documentIntelligence.tags.editTitle') }}
           </v-btn>
           <v-btn
             size="small"
@@ -641,7 +659,8 @@ onBeforeRouteLeave((to) => {
           </v-list-item>
         </v-list>
 
-        <div class="mb-3">
+        <div class="mb-3 d-flex flex-wrap align-center ga-2">
+          <DiClassificationField :model-value="resource.classificationTagId" readonly />
           <DiTagPicker :model-value="resource.tags ?? []" readonly density="compact" />
         </div>
 
@@ -675,6 +694,8 @@ onBeforeRouteLeave((to) => {
       @update:model-value="onEditorOpenChange"
       @saved="onEditorSaved"
     />
+
+    <DiResourceTagsDialog v-model="tagsDialog" :resource="resource" @saved="onResourceTagsSaved" />
 
     <DiFilePreviewDialog
       :model-value="previewOpen"

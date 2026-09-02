@@ -136,9 +136,11 @@ function canStop(item: ScenarioCatalogItem): boolean {
   return canChangeRunState(item) && operationalOf(item) === 'running';
 }
 
-/** Soft-delete (archive) only when published and Off. */
+/** Soft-delete (archive): Off published, or a draft/validated with no running publish. */
 function canDelete(item: ScenarioCatalogItem): boolean {
-  return canChangeRunState(item) && operationalOf(item) === 'stopped';
+  if (item.origin === 'product' || item.isReadOnly) return false;
+  if (item.publishedVersion != null) return operationalOf(item) === 'stopped';
+  return item.latestStatus === 'draft' || item.latestStatus === 'validated';
 }
 
 function folderIcon(row: Extract<CatalogRow, { kind: 'group' }>): string {

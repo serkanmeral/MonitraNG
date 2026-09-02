@@ -13,6 +13,8 @@ const props = withDefaults(
     clickable?: boolean;
     density?: 'default' | 'comfortable' | 'compact';
     activeOnly?: boolean;
+    /** Katalog süzgeci. Varsayılan: organizasyonel (sınıflandırma karışmaz). */
+    kind?: string;
   }>(),
   {
     modelValue: () => [],
@@ -20,6 +22,7 @@ const props = withDefaults(
     clickable: false,
     density: 'comfortable',
     activeOnly: true,
+    kind: 'organizational',
   }
 );
 
@@ -63,7 +66,7 @@ async function loadCatalog() {
   loading.value = true;
   loadError.value = null;
   try {
-    const res = await diListTags(false);
+    const res = await diListTags(false, props.kind);
     catalog.value = res.items;
   } catch (e: unknown) {
     loadError.value = panelError(e, 'documentIntelligence.tags.loadError');
@@ -79,6 +82,7 @@ function onTagClick(tag: string) {
 
 onMounted(() => void loadCatalog());
 watch(() => props.activeOnly, () => void loadCatalog());
+watch(() => props.kind, () => void loadCatalog());
 </script>
 
 <template>

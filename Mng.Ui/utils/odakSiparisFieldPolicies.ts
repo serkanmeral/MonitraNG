@@ -339,6 +339,19 @@ export interface OdakShipmentFormLike {
   qcfNotes?: string;
 }
 
+/**
+ * Temporary hardcode: these LDAP/Keeper groups bypass hub fieldPolicies
+ * (full visible + editable). Replace with proper hub/menu ACL mapping later.
+ * Used for İnci Kuru (`ikuru`) → Idare Users.
+ */
+export const ODAK_SIPARIS_FULL_ACCESS_GROUPS = ['Idare Users'] as const;
+
+function userHasOdakSiparisFullAccess(userGroups: string[]): boolean {
+  if (!userGroups.length) return false;
+  const lower = userGroups.map((g) => g.toLowerCase());
+  return ODAK_SIPARIS_FULL_ACCESS_GROUPS.some((g) => lower.includes(g.toLowerCase()));
+}
+
 function groupMatches(policyGroups: string[], userGroups: string[]): boolean {
   if (!policyGroups.length) return true;
   const lower = userGroups.map((g) => g.toLowerCase());
@@ -404,6 +417,11 @@ export function resolveOdakFieldAccess(
   record: Record<string, unknown>,
   blob: OdakFieldPoliciesBlob | null | undefined
 ): OdakFieldAccess {
+  // Temporary full-access bypass (see ODAK_SIPARIS_FULL_ACCESS_GROUPS).
+  if (userHasOdakSiparisFullAccess(userGroups)) {
+    return { visible: true, editable: true };
+  }
+
   const policies = blob?.policiesByField?.[fieldKey];
   if (!policies?.length) {
     return { visible: true, editable: true };

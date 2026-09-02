@@ -354,7 +354,7 @@
     {
       "name": "idx_parent_line",
       "fields": { "parentPackageId": 1, "lineNo": 1 },
-      "unique": true
+      "unique": false
     },
     {
       "name": "idx_parentPackageId",

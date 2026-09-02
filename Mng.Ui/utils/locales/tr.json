@@ -198,6 +198,7 @@
     "odakSiparis.egitim.stats.menuTitle": "Eğitim İstatistikleri",
     "securityManagement.menuHeader": "Güvenlik Yönetimi",
     "alarmCenter.menuTitle": "Alarm Merkezi",
+    "alarmCenter.scenarioStudio.menuTitle": "Alarm senaryoları",
     "siemCenter.dashboard.menuTitle": "SIEM Güvenlik Paneli",
     "documentIntelligence.menuTitle": "Dokümanlar",
     "documentIntelligence.designer.menuTitle": "Belge Tasarımcısı",
@@ -4658,6 +4659,10 @@
       "editTitle": "Etiketleri düzenle",
       "editHint": "Etiketler kontrollü katalogdan seçilir. Yeni etiket için Belge Tasarımcısı → Etiket kataloğu."
     },
+    "classification": {
+      "label": "Sınıflandırma",
+      "none": "Yok (sınıflandırılmamış)"
+    },
     "tagsCatalog": {
       "title": "Etiket kataloğu",
       "subtitle": "Döküman ve sayfalarda seçilebilecek etiketleri yönetin.",
@@ -4667,6 +4672,11 @@
       "name": "Etiket adı",
       "color": "Renk",
       "description": "Açıklama",
+      "kind": "Tür",
+      "kindOrganizational": "Organizasyonel",
+      "kindClassification": "Sınıflandırma",
+      "sensitivity": "Hassasiyet (0–3)",
+      "persistToFile": "Dosya metasına yaz",
       "isActive": "Aktif",
       "active": "Aktif",
       "inactive": "Pasif",
@@ -4911,9 +4921,9 @@
       "search": "Ara",
       "clear": "Temizle",
       "clientFilterHint": "Müşteri / kalem bazlı arama aktif — sonuçlar yüklenen paketler üzerinde filtrelenir.",
-      "poProjectLazyHint": "Müşteri PO ve Proje No, listedeki paketlerin kalem özetinden doldurulur.",
+      "poProjectLazyHint": "Müşteri PO ve Müşteri İş Emri No, listedeki paketlerin kalem özetinden doldurulur.",
       "lineSearchPanel": "Kalem bazlı arama",
-      "lineSearchHint": "Kalemlerde arama yapılır (Müşteri PO, proje no, ürün tanımı). En fazla 500 paket üzerinde filtrelenir; tam sonuç için paket alanlarını üstteki gelişmiş filtrede kullanın.",
+      "lineSearchHint": "Kalemlerde arama yapılır (Müşteri PO, müşteri iş emri no, ürün tanımı). En fazla 500 paket üzerinde filtrelenir; tam sonuç için paket alanlarını üstteki gelişmiş filtrede kullanın.",
       "paginationSummary": "{from}–{to} / {total} kayıt",
       "notFound": "İş paketi bulunamadı.",
       "deleteTitle": "İş paketini sil",
@@ -4952,7 +4962,7 @@
         "name": "İş Paketi İsmi",
         "customer": "Müşteri",
         "customerPo": "Müşteri PO",
-        "projectNo": "Proje No",
+        "projectNo": "Müşteri İş Emri No",
         "partCount": "Parça Sayısı",
         "stockCount": "Stok Sayısı",
         "lineCount": "Kalem",
@@ -4966,7 +4976,7 @@
         "packageName": "İş Paketi İsmi",
         "customerPo": "Müşteri PO No",
         "customerName": "Müşteri",
-        "customerProjectNo": "Müşteri Proje No",
+        "customerProjectNo": "Müşteri İş Emri No",
         "customerPoItem": "Müşteri PO Kalem",
         "productDesc": "Ürün / Hizmet Tanımı",
         "productDescHint": "Kalem bazlı — yüklenen paketler üzerinde"
@@ -5172,7 +5182,7 @@
           "lineCount": "Kalem sayısı",
           "poVersion": "Revize numarası (Rev No)",
           "customerPo": "Müşteri PO",
-          "projectNo": "Proje No",
+          "projectNo": "Müşteri İş Emri No",
           "poDocumentsGlobal": "PO PDF (genel)",
           "poDocumentsRestricted": "PO PDF (yetkilendirilmiş)"
         },
@@ -8001,7 +8011,7 @@
     "menuTitle": "Alarm Merkezi",
     "navAlarms": "Alarmlar",
     "navRules": "Kurallar",
-    "navScenarioStudio": "Senaryo Stüdyosu",
+    "navScenarioStudio": "Alarm senaryoları",
     "navNotificationPolicies": "Bildirim politikaları",
     "menuHeader": "Alarm Merkezi",
     "breadcrumbRoot": "Alarm Merkezi",
@@ -8043,6 +8053,8 @@
       },
       "nodeGroups": {
         "subtitle": "Akış yapı taşları",
+        "basics": "Temel",
+        "advanced": "Gelişmiş",
         "events": "Olaylar",
         "functions": "Fonksiyonlar",
         "outputs": "Çıktılar"
@@ -8112,9 +8124,9 @@
       }
     },
     "scenarioStudio": {
-      "menuTitle": "Alarm Senaryo Tasarımı",
-      "pageTitle": "SIEM Senaryo Stüdyosu",
-      "pageSubtitle": "Scenario v3 akışlarını görsel olarak tasarlayın, test edin, versiyonlayın ve yayınlayın.",
+      "menuTitle": "Alarm senaryoları",
+      "pageTitle": "Alarm senaryoları",
+      "pageSubtitle": "Olayı seçin, eşiği ayarlayın, alarmı yayınlayın.",
       "catalog": {
         "title": "Senaryo kataloğu",
         "subtitle": "Kullanıcı senaryosu seçin veya ürün şablonunu inceleyin; elle ID girmek isteğe bağlıdır.",
@@ -8337,16 +8349,16 @@
         "validateHint": "Yayınlamadan yalnızca doğrular",
         "renameHint": "Flow adını değiştir",
         "renamePublishedHint": "Yayınlı flow için ad değişikliği yeni taslak oluşturur",
-        "archiveHint": "Yalnızca Kapalı yayınlı versiyon arşivlenebilir",
+        "archiveHint": "Kapalı yayınlı veya taslak arşivlenebilir; Açık flow önce kapatılır",
         "simulationShow": "Simülasyon panelini aç",
         "simulationHide": "Simülasyon panelini kapat"
       },
       "editDraft": "Düzenle",
       "runningLockedHint": "Açık flow düzenlenemez — önce Kapat",
       "toast": {
-        "successTitle": "Flow Lab",
-        "warningTitle": "Flow Lab",
-        "errorTitle": "Flow Lab"
+        "successTitle": "Alarm senaryoları",
+        "warningTitle": "Alarm senaryoları",
+        "errorTitle": "Alarm senaryoları"
       },
       "saveDraft": "Taslağı kaydet",
       "validate": "Doğrula (önizleme)",
@@ -8358,9 +8370,9 @@
       "rename": "Yeniden adlandır",
       "renameApply": "Kaydet",
       "deleteFlow": "Sil",
-      "deleteFlowHint": "Kapalı yayınlı flow arşivlenir",
+      "deleteFlowHint": "Kapalı yayınlı veya taslak flow arşivlenir",
       "deleteFlowConfirmTitle": "Flow silinsin mi?",
-      "deleteFlowConfirm": "\"{name}\" kapalı flow arşivlenecek ve katalogdan kalkacak. Devam edilsin mi?",
+      "deleteFlowConfirm": "\"{name}\" arşivlenecek ve katalogdan kalkacak. Devam edilsin mi?",
       "lifecycleChip": {
         "draft": "Taslak",
         "publishedOn": "Yayında · Açık",
@@ -9846,6 +9858,26 @@
         "autoOn": "Otomatik yenileme: açık",
         "autoOff": "Otomatik yenileme: kapalı",
         "groupFixed": "Grup: {name}"
+      },
+      "agentInstall": {
+        "menu": "Ajan kurulumu",
+        "title": "MngLogs ajan paketi",
+        "subtitle": "Windows MSI veya Linux tar.gz indirin; kurulumda collector bu SIEM ortamıdır. Paketi buradan alıp hedefe taşıyabilir veya hedef makinede aynı adresten indirebilirsiniz.",
+        "collector": "Collector",
+        "windows": "Windows (MSI)",
+        "linux": "Linux (tar.gz)",
+        "version": "sürüm {version}",
+        "sha256": "SHA-256",
+        "download": "İndir",
+        "copyCommand": "Komutu kopyala",
+        "copied": "Kopyalandı",
+        "empty": "Bu collector’da henüz ajan paketi yok. MSI / tar.gz yüklendikten sonra burada görünür.",
+        "loadError": "Paket listesi alınamadı.",
+        "onThisPc": "Bu PC’de kur (indirilen dosya)",
+        "onTarget": "Hedef makinede indir ve kur",
+        "windowsLocalCmd": "msiexec /i \"{fileName}\" /qn COLLECTORURL={collectorUrl}",
+        "windowsTargetCmd": "Invoke-WebRequest -Uri \"{downloadUrl}\" -OutFile \"$env:TEMP/{fileName}\"\nmmsiexec /i \"$env:TEMP/{fileName}\" /qn COLLECTORURL={collectorUrl}",
+        "linuxTargetCmd": "curl -fsSL -o /tmp/{fileName} \"{downloadUrl}\"\nmkdir -p /tmp/mnglogs-agent && tar -xzf /tmp/{fileName} -C /tmp/mnglogs-agent\nsudo bash /tmp/mnglogs-agent/packaging/install.sh\nsudo /opt/mnglogs/agent/MngLogs.Agent config set --collector {collectorUrl} --config-dir /etc/mnglogs/agent --data-dir /var/lib/mnglogs/agent\nsudo systemctl restart mnglogs-agent.service"
       },
       "layouts": {
         "tree": "Ağaç",

@@ -163,6 +163,7 @@
     "odakSiparis.egitim.stats.menuTitle": "Training statistics",
     "securityManagement.menuHeader": "Security Management",
     "alarmCenter.menuTitle": "Alarm Center",
+    "alarmCenter.scenarioStudio.menuTitle": "Alarm scenarios",
     "siemCenter.dashboard.menuTitle": "SIEM Security Panel",
     "documentIntelligence.menuTitle": "Documents",
     "documentIntelligence.designer.menuTitle": "Document Designer",
@@ -4744,6 +4745,10 @@
       "editTitle": "Edit tags",
       "editHint": "Tags are selected from the controlled catalog. Add new tags under Document Designer → Tag catalog."
     },
+    "classification": {
+      "label": "Classification",
+      "none": "None (unclassified)"
+    },
     "tagsCatalog": {
       "title": "Tag catalog",
       "subtitle": "Manage tags that can be assigned to documents and pages.",
@@ -4753,6 +4758,11 @@
       "name": "Tag name",
       "color": "Color",
       "description": "Description",
+      "kind": "Kind",
+      "kindOrganizational": "Organizational",
+      "kindClassification": "Classification",
+      "sensitivity": "Sensitivity (0–3)",
+      "persistToFile": "Write to file metadata",
       "isActive": "Active",
       "active": "Active",
       "inactive": "Inactive",
@@ -4997,9 +5007,9 @@
       "search": "Search",
       "clear": "Clear",
       "clientFilterHint": "Customer / line search is active — results are filtered on loaded packages.",
-      "poProjectLazyHint": "Customer PO and Project No are filled from line summaries for packages on the current page.",
+      "poProjectLazyHint": "Customer PO and Customer Work Order No are filled from line summaries for packages on the current page.",
       "lineSearchPanel": "Line-based search",
-      "lineSearchHint": "Searches order lines (customer PO, project no, description). Filters up to 500 packages; use advanced filters above for package fields.",
+      "lineSearchHint": "Searches order lines (customer PO, customer work order no, description). Filters up to 500 packages; use advanced filters above for package fields.",
       "paginationSummary": "{from}–{to} of {total} records",
       "notFound": "Work package not found.",
       "deleteTitle": "Delete work package",
@@ -5038,7 +5048,7 @@
         "name": "Work Package Name",
         "customer": "Customer",
         "customerPo": "Customer PO",
-        "projectNo": "Project No",
+        "projectNo": "Customer Work Order No",
         "partCount": "Part Count",
         "stockCount": "Stock Count",
         "lineCount": "Lines",
@@ -5052,7 +5062,7 @@
         "packageName": "Work Package Name",
         "customerPo": "Customer PO No",
         "customerName": "Customer",
-        "customerProjectNo": "Customer Project No",
+        "customerProjectNo": "Customer Work Order No",
         "customerPoItem": "Customer PO Item",
         "productDesc": "Product / Service Description",
         "productDescHint": "Line-based — on loaded packages"
@@ -5177,7 +5187,7 @@
           "lineCount": "Line count",
           "poVersion": "Revision no",
           "customerPo": "Customer PO",
-          "projectNo": "Project no",
+          "projectNo": "Customer Work Order No",
           "poDocumentsGlobal": "PO PDF (global)",
           "poDocumentsRestricted": "PO PDF (restricted)"
         },
@@ -7907,7 +7917,7 @@
     "menuTitle": "Alarm Center",
     "navAlarms": "Alarms",
     "navRules": "Rules",
-    "navScenarioStudio": "Scenario Studio",
+    "navScenarioStudio": "Alarm scenarios",
     "navNotificationPolicies": "Notification policies",
     "menuHeader": "Alarm Center",
     "breadcrumbRoot": "Alarm Center",
@@ -7949,6 +7959,8 @@
       },
       "nodeGroups": {
         "subtitle": "Flow building blocks",
+        "basics": "Basics",
+        "advanced": "Advanced",
         "events": "Events",
         "functions": "Functions",
         "outputs": "Outputs"
@@ -8018,9 +8030,9 @@
       }
     },
     "scenarioStudio": {
-      "menuTitle": "Alarm Scenario Designer",
-      "pageTitle": "SIEM Scenario Studio",
-      "pageSubtitle": "Visually design, test, version, and publish Scenario v3 flows.",
+      "menuTitle": "Alarm scenarios",
+      "pageTitle": "Alarm scenarios",
+      "pageSubtitle": "Pick the event, set the threshold, publish the alarm.",
       "catalog": {
         "title": "Scenario catalog",
         "subtitle": "Choose a user scenario or inspect a product template; manual IDs are optional.",
@@ -8243,16 +8255,16 @@
         "validateHint": "Validate only, without publishing",
         "renameHint": "Change the flow name",
         "renamePublishedHint": "Renaming a published flow creates a new draft",
-        "archiveHint": "Only an Off published version can be archived",
+        "archiveHint": "Off published or draft versions can be archived; turn Off a running flow first",
         "simulationShow": "Open simulation panel",
         "simulationHide": "Close simulation panel"
       },
       "editDraft": "Edit",
       "runningLockedHint": "On flows can’t be edited — turn off first",
       "toast": {
-        "successTitle": "Flow Lab",
-        "warningTitle": "Flow Lab",
-        "errorTitle": "Flow Lab"
+        "successTitle": "Alarm scenarios",
+        "warningTitle": "Alarm scenarios",
+        "errorTitle": "Alarm scenarios"
       },
       "saveDraft": "Save draft",
       "validate": "Validate (preview)",
@@ -8264,9 +8276,9 @@
       "rename": "Rename",
       "renameApply": "Save",
       "deleteFlow": "Delete",
-      "deleteFlowHint": "Archives an Off published flow",
+      "deleteFlowHint": "Archives an Off published or draft flow",
       "deleteFlowConfirmTitle": "Delete this flow?",
-      "deleteFlowConfirm": "\"{name}\" is Off and will be archived (removed from the active catalog). Continue?",
+      "deleteFlowConfirm": "\"{name}\" will be archived and removed from the active catalog. Continue?",
       "lifecycleChip": {
         "draft": "Draft",
         "publishedOn": "Published · On",
@@ -9752,6 +9764,26 @@
         "autoOn": "Auto-refresh: on",
         "autoOff": "Auto-refresh: off",
         "groupFixed": "Group: {name}"
+      },
+      "agentInstall": {
+        "menu": "Agent setup",
+        "title": "MngLogs agent package",
+        "subtitle": "Download the Windows MSI or Linux tar.gz. Install using this SIEM collector URL. Take the file to the target host, or download it there from the same address.",
+        "collector": "Collector",
+        "windows": "Windows (MSI)",
+        "linux": "Linux (tar.gz)",
+        "version": "version {version}",
+        "sha256": "SHA-256",
+        "download": "Download",
+        "copyCommand": "Copy command",
+        "copied": "Copied",
+        "empty": "No agent package is published on this collector yet. Upload an MSI / tar.gz to see it here.",
+        "loadError": "Could not load the package list.",
+        "onThisPc": "Install on this PC (downloaded file)",
+        "onTarget": "Download and install on the target host",
+        "windowsLocalCmd": "msiexec /i \"{fileName}\" /qn COLLECTORURL={collectorUrl}",
+        "windowsTargetCmd": "Invoke-WebRequest -Uri \"{downloadUrl}\" -OutFile \"$env:TEMP/{fileName}\"\nmmsiexec /i \"$env:TEMP/{fileName}\" /qn COLLECTORURL={collectorUrl}",
+        "linuxTargetCmd": "curl -fsSL -o /tmp/{fileName} \"{downloadUrl}\"\nmkdir -p /tmp/mnglogs-agent && tar -xzf /tmp/{fileName} -C /tmp/mnglogs-agent\nsudo bash /tmp/mnglogs-agent/packaging/install.sh\nsudo /opt/mnglogs/agent/MngLogs.Agent config set --collector {collectorUrl} --config-dir /etc/mnglogs/agent --data-dir /var/lib/mnglogs/agent\nsudo systemctl restart mnglogs-agent.service"
       },
       "layouts": {
         "tree": "Tree",

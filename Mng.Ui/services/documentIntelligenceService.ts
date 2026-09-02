@@ -150,6 +150,7 @@ function mapResource(raw: unknown): DiResource {
     title: str(o, 'title'),
     description: str(o, 'description'),
     tags: strArray(o.tags),
+    classificationTagId: str(o, 'classificationTagId'),
     contentType: str(o, 'contentType'),
     mimeType: str(o, 'mimeType'),
     extension: str(o, 'extension'),
@@ -669,6 +670,43 @@ export async function diFetchResourcePreviewPdf(resourceId: string): Promise<Blo
     throw err;
   }
   return await res.blob();
+}
+
+/** Güncel dosyayı MngDocument üzerinden indirir (sınıflandırma damgası uygulanır). */
+export async function diDownloadResource(
+  resourceId: string,
+  suggestedFileName?: string | null,
+): Promise<{ blob: Blob; fileName: string }> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // devam et
+  }
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
+  }
+  const path = `${BASE}/${encodeURIComponent(resourceId)}/download`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const serverPath = cleanPath.replace(/^\/api\/v1\//, 'v1/');
+  const fullUrl = `/api/documents/${serverPath}`;
+  const res = await fetch(fullUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    const err: any = new Error(msg || `Request failed: ${res.status}`);
+    err.statusCode = res.status;
+    err.status = res.status;
+    throw err;
+  }
+  const blob = await res.blob();
+  const headerName = parseContentDispositionFileName(res.headers.get('content-disposition'));
+  const fileName = headerName || suggestedFileName || 'file';
+  return { blob, fileName };
 }
 
 /** Yüklenen dosyayı DG üzerinden blob olarak indirir (binary MngDocument'ten geçmez). */
@@ -1699,20 +1737,27 @@ export async function diDeleteCoverPage(id: string): Promise<void> {
 
 function mapTag(raw: unknown): DiTag {
   const o = asRecord(raw);
+  const kind = str(o, 'kind') ?? 'organizational';
   return {
     id: str(o, 'id') ?? '',
     name: str(o, 'name') ?? '',
     color: str(o, 'color'),
     description: str(o, 'description'),
     isActive: o.isActive !== false,
+    kind,
+    sensitivity: num(o, 'sensitivity') ?? 0,
+    persistToFile: o.persistToFile == null ? kind === 'classification' : Boolean(o.persistToFile),
     createdBy: str(o, 'createdBy'),
     createdAt: str(o, 'createdAt'),
     updatedAt: str(o, 'updatedAt'),
   };
 }
 
-export async function diListTags(activeOnly = false): Promise<DiTagListResult> {
-  const query = activeOnly ? '?activeOnly=true' : '';
+export async function diListTags(activeOnly = false, kind?: string): Promise<DiTagListResult> {
+  const params = new URLSearchParams();
+  if (activeOnly) params.set('activeOnly', 'true');
+  if (kind) params.set('kind', kind);
+  const query = params.toString() ? `?${params.toString()}` : '';
   const raw = await fetchFromDocuments(`${TAGS_BASE}${query}`, 'GET');
   const o = asRecord(raw);
   const itemsRaw = Array.isArray(o.items) ? o.items : Array.isArray(o.Items) ? o.Items : [];

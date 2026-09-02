@@ -84,7 +84,8 @@ export default defineNuxtConfig({
       llmUrl: process.env.LLM_URL || 'https://localhost:5030',
       adminUrl,
       schedulerUrl,
-      // Fallback menu control (default: false - disabled)
+      // LAN collector URL for agent package download links (e.g. http://192.168.20.20:5091)
+      logCollectorUrl,
       enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false,
       // GeoServer base URL (harita altlığı, çevrimdışı). Örn. http://localhost:8082
       geoServerBaseUrl: (process.env.GEOSERVER_BASE_URL && process.env.GEOSERVER_BASE_URL.trim()) ? process.env.GEOSERVER_BASE_URL.trim().replace(/\/$/, '') : '',

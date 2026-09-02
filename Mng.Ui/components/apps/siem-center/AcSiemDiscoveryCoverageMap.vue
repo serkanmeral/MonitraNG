@@ -9,6 +9,7 @@ import AcSiemDiscoveryHostDetailDialog from '@/components/apps/siem-center/AcSie
 import AcSiemDiscoveryHostNode from '@/components/apps/siem-center/AcSiemDiscoveryHostNode.vue';
 import AcSiemDiscoveryScanDialog from '@/components/apps/siem-center/AcSiemDiscoveryScanDialog.vue';
 import AcSiemDiscoveryPrefixesPanel from '@/components/apps/siem-center/AcSiemDiscoveryPrefixesPanel.vue';
+import AcSiemAgentInstallDialog from '@/components/apps/siem-center/AcSiemAgentInstallDialog.vue';
 import AcSiemDiscoveryLogSourcesPanel from '@/components/apps/siem-center/AcSiemDiscoveryLogSourcesPanel.vue';
 import { clearDiscoveryHosts } from '@/services/siemDiscoveryService';
 import type {
@@ -95,6 +96,7 @@ const detailOpen = ref(false);
 const selectedHost = ref<SiemDiscoveryHost | null>(null);
 const scanOpen = ref(false);
 const prefixesOpen = ref(false);
+const agentInstallOpen = ref(false);
 const clearOpen = ref(false);
 const clearing = ref(false);
 const clearScope = ref<'all' | 'scan' | 'ad'>('all');
@@ -497,6 +499,11 @@ const graphLayout = computed(() => {
             </template>
             <v-list density="compact" min-width="220" class="discovery-actions-menu">
               <v-list-item
+                prepend-icon="mdi-download"
+                :title="t('siemCenter.discovery.agentInstall.menu')"
+                @click="agentInstallOpen = true"
+              />
+              <v-list-item
                 prepend-icon="mdi-ip-network"
                 :title="t('siemCenter.settings.tabs.prefixes')"
                 @click="prefixesOpen = true"
@@ -578,6 +585,7 @@ const graphLayout = computed(() => {
 
     <template v-if="segment === 'endpoints'">
     <AcSiemDiscoveryScanDialog v-model:open="scanOpen" @completed="refresh" />
+    <AcSiemAgentInstallDialog v-model:open="agentInstallOpen" />
 
     <v-dialog v-model="prefixesOpen" max-width="920" scrollable>
       <v-card>

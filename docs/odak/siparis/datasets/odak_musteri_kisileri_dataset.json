@@ -85,7 +85,7 @@
   "indexList": [
     { "name": "idx_parentCustomerId", "fields": { "parentCustomerId": 1 }, "unique": false },
     { "name": "idx_parentCustomerId_birincil", "fields": { "parentCustomerId": 1, "birincilKisi": 1 }, "unique": false },
-    { "name": "idx_legacyContactId", "fields": { "legacyContactId": 1 }, "unique": true },
+    { "name": "idx_legacyContactId", "fields": { "legacyContactId": 1 }, "unique": true, "sparse": true },
     { "name": "idx_email", "fields": { "email": 1 }, "unique": false }
   ]
 }

@@ -52,6 +52,41 @@ export interface Domain {
   [key: string]: any;
 }
 
+/** Uploaded file (`logo`) wins over `logoUrl` so Domain Yönetimi and the sidebar stay in sync. */
+export function resolveDomainLogoSrc(
+  domain?: Pick<Domain, 'logo' | 'logoUrl' | 'updatedAt'> | null
+): string {
+  if (!domain) return '';
+
+  const logo = domain.logo?.trim();
+  if (logo) {
+    if (
+      logo.startsWith('data:') ||
+      logo.startsWith('http://') ||
+      logo.startsWith('https://') ||
+      logo.startsWith('/')
+    ) {
+      return logo;
+    }
+
+    let mimeType = 'image/png';
+    if (logo.startsWith('/9j/')) mimeType = 'image/jpeg';
+    else if (logo.startsWith('iVBORw0KGgo')) mimeType = 'image/png';
+    else if (logo.startsWith('R0lGODlh')) mimeType = 'image/gif';
+    else if (logo.startsWith('UklGR')) mimeType = 'image/webp';
+
+    return `data:${mimeType};base64,${logo}`;
+  }
+
+  const url = domain.logoUrl?.trim();
+  if (!url) return '';
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
+
+  const version = domain.updatedAt ? Date.parse(domain.updatedAt) : Date.now();
+  const stamp = Number.isFinite(version) ? String(version) : String(Date.now());
+  return url.includes('?') ? `${url}&v=${stamp}` : `${url}?v=${stamp}`;
+}
+
 export interface UpdateDomainRequest {
   displayName?: string;
   discoveryRootLabel?: string;

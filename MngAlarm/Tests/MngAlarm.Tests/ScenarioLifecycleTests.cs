@@ -86,6 +86,47 @@ public sealed class ScenarioLifecycleTests
     }
 
     [Fact]
+    public async Task Archive_draft_marks_version_archived()
+    {
+        var versions = new MemoryScenarioRepository();
+        var service = new ScenarioService(new FakeDomain(), versions, new MemoryRuleRepository());
+        var draft = await service.CreateDraftAsync(new CreateScenarioDraftRequest
+        {
+            Name = "scratch",
+            Definition = Definition()
+        });
+
+        var archived = await service.ArchiveAsync(draft.ScenarioId, draft.Version);
+        var catalog = await service.ListAsync(true);
+
+        Assert.NotNull(archived);
+        Assert.Equal(ScenarioLifecycleStatuses.Archived, archived!.Status);
+        Assert.Equal(ScenarioLifecycleStatuses.Archived, catalog.Single().LatestStatus);
+        Assert.Contains(versions.Audit, x => x.Action == "version.archived");
+    }
+
+    [Fact]
+    public async Task Archive_running_published_is_rejected()
+    {
+        var versions = new MemoryScenarioRepository();
+        var service = new ScenarioService(new FakeDomain(), versions, new MemoryRuleRepository());
+        var draft = await service.CreateDraftAsync(new CreateScenarioDraftRequest
+        {
+            Name = "live",
+            Definition = Definition()
+        });
+        await service.ValidateAsync(draft.ScenarioId, 1);
+        var published = await service.PublishAsync(draft.ScenarioId, 1);
+        await service.SetEnabledAsync(published!.ScenarioId, published.Version, true);
+
+        var archived = await service.ArchiveAsync(published.ScenarioId, published.Version);
+
+        Assert.Null(archived);
+        Assert.Equal(ScenarioLifecycleStatuses.Published, versions.Items.Single().Status);
+        Assert.True(versions.Items.Single().Enabled);
+    }
+
+    [Fact]
     public async Task Publishing_new_version_archives_previous_and_keeps_single_projection()
     {
         var versions = new MemoryScenarioRepository();

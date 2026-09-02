@@ -348,16 +348,10 @@ const horizontalItems: menu[] = [
         to: "/apps/alarm-center/alarms",
       },
       {
-        title: "Alarm Senaryo Tasarımı",
+        title: "Alarm senaryoları",
         pageCode: "alarmCenter.scenarioStudio.menuTitle",
         icon: GitBranchIcon,
         to: "/apps/alarm-center/scenario-studio",
-      },
-      {
-        title: "SIEM Güvenlik Paneli",
-        pageCode: "siemCenter.dashboard.menuTitle",
-        icon: ShieldIcon,
-        to: "/apps/siem-center",
       },
       {
         title: "SIEM ayarları",

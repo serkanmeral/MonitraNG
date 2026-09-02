@@ -218,7 +218,8 @@ namespace MngDataGateway.Persistence.Services
                         var indexOptions = new CreateIndexOptions
                         {
                             Name = indexDef.name,
-                            Unique = indexDef.unique
+                            Unique = indexDef.unique,
+                            Sparse = indexDef.sparse
                         };
 
                         var indexModel = new CreateIndexModel<BsonDocument>(indexKeys, indexOptions);

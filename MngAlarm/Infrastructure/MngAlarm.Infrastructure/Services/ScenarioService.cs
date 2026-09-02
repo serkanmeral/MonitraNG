@@ -411,9 +411,18 @@ public sealed class ScenarioService(
     {
         var item = await GetAsync(scenarioId, version, cancellationToken);
         if (item == null
-            || item.Status != ScenarioLifecycleStatuses.Published
             || item.IsReadOnly
-            || item.Origin == ScenarioOrigins.Product)
+            || item.Origin == ScenarioOrigins.Product
+            || item.Status == ScenarioLifecycleStatuses.Archived)
+            return null;
+
+        var archivable = item.Status is ScenarioLifecycleStatuses.Draft
+            or ScenarioLifecycleStatuses.Validated
+            or ScenarioLifecycleStatuses.Published;
+        if (!archivable)
+            return null;
+
+        if (item.Status == ScenarioLifecycleStatuses.Published && item.Enabled)
             return null;
 
         item.Status = ScenarioLifecycleStatuses.Archived;

@@ -346,6 +346,7 @@ const saveDomain = async () => {
       }
       
       isEditing.value = false;
+      authStore.domainInfo = updatedDomain;
       successMessage.value = t('domain.messages.updateSuccess');
       
       // Clear success message after 3 seconds
@@ -393,6 +394,7 @@ const handleLogoFile = (file: File) => {
     const result = e.target?.result as string;
     if (result) {
       formData.value.logo = result;
+      formData.value.logoUrl = '';
       logoPreview.value = result;
       logoError.value = null;
     }

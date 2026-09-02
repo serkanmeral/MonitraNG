@@ -299,7 +299,7 @@ watch(
               <v-row dense>
                 <v-col v-if="fieldVisible('lineNo')" cols="12" sm="4">
                   <v-text-field
-                    v-model="form.lineNo"
+                    v-model.number="form.lineNo"
                     :label="t('odakSiparis.lines.fields.lineNo')"
                     :readonly="isFieldReadonly('lineNo') || internalMode === 'edit'"
                     variant="outlined"

@@ -96,6 +96,7 @@ services:
       - MngLogCollectorSettings__RabbitMq__Password=${RABBITMQ_PASSWORD:-admin123}
       - MngLogCollectorSettings__ObservationPublish__Enabled=true
       - MngLogCollectorSettings__ObservationPublish__SourceProducts__0=*
+      - MngLogCollectorSettings__AgentPackages__PublicBaseUrl=http://192.168.20.20:5091
 
   # Ollama/MngLLM kapalı; mngui nginx "mngllm" upstream + depends_on için stub
   ollama:
@@ -146,6 +147,7 @@ services:
       - EnableDevAlarmEndpoints=true
       - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngAlarmSettings__Engine__ConsumeObservations=false
+      - ScenarioStudio__PackageImportKey=${ALARM_SCENARIO_IMPORT_KEY:-}
 
   mngalarm-worker:
     environment:

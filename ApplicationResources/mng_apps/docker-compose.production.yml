@@ -656,6 +656,10 @@ services:
       - MngLogCollectorSettings__RabbitMq__Password=${RABBITMQ_PASSWORD:-admin123}
       - MngLogCollectorSettings__ObservationPublish__Enabled=${MNGLOGCOLLECTOR_OBSERVATION_PUBLISH_ENABLED:-true}
       - MngLogCollectorSettings__ObservationPublish__SourceProducts__0=*
+      - MngLogCollectorSettings__AgentPackages__Directory=/var/lib/mnglogcollector/agent-packages
+      - MngLogCollectorSettings__AgentPackages__PublicBaseUrl=${MNGLOGCOLLECTOR_PUBLIC_BASE_URL:-}
+    volumes:
+      - ${MNGLOGCOLLECTOR_AGENT_PACKAGES_DIR:-/home/odak/mnglogs-agent-packages}:/var/lib/mnglogcollector/agent-packages:ro
     networks:
       - mng_common_mng_network
     restart: unless-stopped

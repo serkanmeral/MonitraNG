@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
-import { diUpdateResourceMetadata } from '@/services/documentIntelligenceService';
-import type { DiResource } from '@/types/apps/documentIntelligence';
+import { diListTags, diUpdateResourceMetadata } from '@/services/documentIntelligenceService';
+import type { DiResource, DiTag } from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -21,16 +21,30 @@ const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = ref(false);
 const editTags = ref<string[]>([]);
+const classificationId = ref<string | null>(null);
+const classOptions = ref<DiTag[]>([]);
 const saving = ref(false);
 const error = ref<string | null>(null);
 
+const classItems = computed(() => [
+  { title: t('documentIntelligence.classification.none'), value: null as string | null },
+  ...classOptions.value.map((c) => ({ title: c.name, value: c.id })),
+]);
+
 watch(
   () => props.modelValue,
-  (isOpen) => {
+  async (isOpen) => {
     open.value = isOpen;
     if (isOpen && props.resource) {
       editTags.value = [...(props.resource.tags ?? [])];
+      classificationId.value = props.resource.classificationTagId;
       error.value = null;
+      try {
+        const res = await diListTags(true, 'classification');
+        classOptions.value = res.items;
+      } catch {
+        classOptions.value = [];
+      }
     }
   },
   { immediate: true }
@@ -43,7 +57,10 @@ async function save() {
   saving.value = true;
   error.value = null;
   try {
-    const updated = await diUpdateResourceMetadata(props.resource.id, { tags: editTags.value });
+    const updated = await diUpdateResourceMetadata(props.resource.id, {
+      tags: editTags.value,
+      classificationTagId: classificationId.value ?? '',
+    });
     emit('saved', updated);
     open.value = false;
   } catch (e: unknown) {
@@ -64,7 +81,18 @@ async function save() {
         <p class="text-caption text-medium-emphasis mb-3">
           {{ t('documentIntelligence.tags.editHint') }}
         </p>
-        <DiTagPicker v-model="editTags" density="comfortable" />
+        <v-select
+          v-model="classificationId"
+          :items="classItems"
+          item-title="title"
+          item-value="value"
+          :label="t('documentIntelligence.classification.label')"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          class="mb-3"
+        />
+        <DiTagPicker v-model="editTags" density="comfortable" kind="organizational" />
         <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-3">
           {{ error }}
         </v-alert>

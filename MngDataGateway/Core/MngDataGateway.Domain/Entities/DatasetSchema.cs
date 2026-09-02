@@ -331,6 +331,13 @@ public class IndexDefinition
     /// Is unique index
     /// </summary>
     public bool unique { get; set; } = false;
+
+    /// <summary>
+    /// Sparse index — documents missing the indexed field are omitted.
+    /// Required for optional unique fields (e.g. legacyContactId) so multiple
+    /// null/missing values are allowed while real values stay unique.
+    /// </summary>
+    public bool sparse { get; set; } = false;
 }
 
 /// <summary>

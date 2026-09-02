@@ -4,7 +4,6 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import type { MessageTemplate } from '@/types/apps/messageTemplates';
 import {
   buildMessageTemplatePayload,
-  extractPlaceholderPaths,
   isSystemMessageTemplate,
   newMessageTemplateDraft,
   parseMessageTemplateToDraft,
@@ -12,7 +11,7 @@ import {
   validateMessageTemplateDraft,
   type OcMessageTemplateDraft,
 } from '@/utils/ocMessageTemplates';
-import { parseSampleContextJson } from '@/utils/ocMailTemplates';
+import { extractPlaceholderPaths, parseSampleContextJson } from '@/utils/ocMailTemplates';
 
 const props = defineProps<{
   modelValue: boolean;

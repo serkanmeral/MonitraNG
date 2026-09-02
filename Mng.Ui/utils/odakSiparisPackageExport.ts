@@ -44,7 +44,7 @@ export function odakPackageExportColumns(labels: Record<string, string>): OdakPa
     { key: 'name', label: labels.name ?? 'İş Paketi İsmi' },
     { key: 'customer', label: labels.customer ?? 'Müşteri' },
     { key: 'customerPo', label: labels.customerPo ?? 'Müşteri PO' },
-    { key: 'projectNo', label: labels.projectNo ?? 'Proje No' },
+    { key: 'projectNo', label: labels.projectNo ?? 'Müşteri İş Emri No' },
     { key: 'partCount', label: labels.partCount ?? 'Parça Sayısı' },
     { key: 'stockCount', label: labels.stockCount ?? 'Stok Sayısı' },
     { key: 'lineCount', label: labels.lineCount ?? 'Kalem' },
