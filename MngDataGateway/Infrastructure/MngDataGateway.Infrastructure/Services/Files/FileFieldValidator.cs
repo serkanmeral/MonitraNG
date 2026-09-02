@@ -167,8 +167,28 @@ public class FileFieldValidator : IFileFieldValidator
             return "image/svg+xml";
         }
 
+        if (LooksLikeDrawio(fileBytes))
+        {
+            _logger.LogDebug("Detected MIME type: application/vnd.jgraph.mxfile");
+            return "application/vnd.jgraph.mxfile";
+        }
+
         _logger.LogWarning("Could not detect MIME type from magic bytes, defaulting to application/octet-stream");
         return "application/octet-stream";
+    }
+
+    private static bool LooksLikeDrawio(byte[] fileBytes)
+    {
+        if (fileBytes == null || fileBytes.Length < 6)
+            return false;
+
+        var sampleLength = Math.Min(fileBytes.Length, 1024);
+        var prefix = Encoding.UTF8.GetString(fileBytes, 0, sampleLength)
+            .TrimStart('\uFEFF')
+            .TrimStart();
+
+        return prefix.Contains("<mxfile", StringComparison.OrdinalIgnoreCase)
+            || prefix.Contains("<mxGraphModel", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool LooksLikeSvg(byte[] fileBytes)
@@ -258,6 +278,7 @@ public class FileFieldValidator : IFileFieldValidator
             { "image/webp", ".webp" },
             { "image/bmp", ".bmp" },
             { "image/svg+xml", ".svg" },
+            { "application/vnd.jgraph.mxfile", ".drawio" },
             { "image/*", ".jpg" },
 
             // Videos

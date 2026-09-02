@@ -1,0 +1,155 @@
+{
+  "id": "teslimat-omurgasi",
+  "version": "0.26.0",
+  "updated": "2026-09-02",
+  "description": "F1-0..F1-9 + F2-1..F2-13 + F3-1..F3-5 + F4-1 + F4-2 (sökmede boş DI klasör silme).",
+  "category": {
+    "file": "docs/odak/document_intelligence/datasets/documentintelligence_dataset_category.json",
+    "name": "DocumentIntelligenceDatasets"
+  },
+  "schemaFiles": [
+    "docs/odak/document_intelligence/datasets/documentintelligence_datasets_phase1.json",
+    "docs/odak/document_intelligence/datasets/dm_document_context_types_dataset.json",
+    "docs/odak/document_intelligence/datasets/dm_data_sources_dataset.json",
+    "docs/odak/document_intelligence/datasets/dm_document_producers_dataset.json",
+    "docs/odak/document_intelligence/datasets/dm_resource_kinds_dataset.json",
+    "docs/odak/document_intelligence/datasets/dm_relation_types_dataset.json"
+  ],
+  "datasetOrder": [
+    "dm_resources",
+    "dm_resource_versions",
+    "dm_resource_permissions",
+    "dm_resource_links",
+    "dm_template_categories",
+    "dm_document_templates",
+    "dm_generation_counters",
+    "dm_letterheads",
+    "dm_cover_pages",
+    "dm_tags",
+    "dm_document_context_types",
+    "dm_data_sources",
+    "dm_document_producers",
+    "dm_resource_kinds",
+    "dm_relation_types"
+  ],
+  "verifyFields": {
+    "dm_tags": ["name", "kind", "sensitivity", "persistToFile"],
+    "dm_resources": ["type", "parentId", "classificationTagId", "documentNo", "kind", "status", "baselineVersionNumber"],
+    "dm_document_templates": ["code", "modelJson"],
+    "dm_document_context_types": ["type"],
+    "dm_data_sources": ["code"],
+    "dm_document_producers": ["code"],
+    "dm_resource_kinds": ["code", "family"],
+    "dm_relation_types": ["code", "appliesTo"]
+  },
+  "projectDatasets": {
+    "category": {
+      "file": "docs/odak/project_management/datasets/project_management_dataset_category.json",
+      "name": "ProjectManagementDatasets"
+    },
+    "schemaFiles": [
+      "docs/odak/project_management/datasets/pm_datasets.json"
+    ],
+    "datasetOrder": [
+      "pm_projects",
+      "pm_wbs_items",
+      "pm_dependencies",
+      "pm_decisions",
+      "pm_project_packs",
+      "pm_stage_gates",
+      "pm_raid_items",
+      "pm_resource_assignments",
+      "pm_budget_lines",
+      "pm_acknowledgements",
+      "pm_obligations",
+      "pm_audit_packs",
+      "pm_meetings",
+      "pm_meeting_actions",
+      "pm_stakeholders",
+      "pm_process_maps"
+    ],
+    "verifyFields": {
+      "pm_projects": ["code", "name", "status", "baselineSetAt"],
+      "pm_wbs_items": ["projectId", "kind", "name", "plannedStart", "baselineStart"],
+      "pm_dependencies": ["projectId", "predecessorId", "successorId", "type"],
+      "pm_decisions": ["projectId", "title", "kind", "status", "wbsIds"],
+      "pm_project_packs": ["projectId", "packCode", "version"],
+      "pm_stage_gates": ["projectId", "name", "status", "wbsId"],
+      "pm_raid_items": ["projectId", "kind", "title", "status"],
+      "pm_resource_assignments": ["projectId", "wbsId", "name", "plannedHours"],
+      "pm_budget_lines": ["projectId", "wbsId", "category", "name", "plannedAmount"],
+      "pm_acknowledgements": ["projectId", "resourceId", "title", "personName", "status"],
+      "pm_obligations": ["projectId", "title", "clauseRef", "status", "dueDate"],
+      "pm_audit_packs": ["projectId", "name", "kind", "status", "resourceIds"],
+      "pm_meetings": ["projectId", "name", "heldAt", "minutesResourceId", "wbsId"],
+      "pm_meeting_actions": ["projectId", "meetingId", "title", "status", "workItemId"],
+      "pm_stakeholders": ["projectId", "name", "kind", "status", "resourceIds"],
+      "pm_process_maps": ["projectId", "name", "kind", "status", "resourceId"]
+    }
+  },
+  "profiles": {
+    "core": {
+      "description": "Required on every new environment. Schema sync + catalog seed + DI roots + side menu. Not Odak demo content.",
+      "seeds": [
+        {
+          "id": "context-types",
+          "script": "docs/odak/document_intelligence/scripts/seed-dm-document-context-types.ps1"
+        },
+        {
+          "id": "data-sources",
+          "script": "docs/odak/document_intelligence/scripts/seed-dm-data-sources.ps1"
+        },
+        {
+          "id": "producers",
+          "script": "docs/odak/document_intelligence/scripts/seed-dm-document-producers.ps1"
+        },
+        {
+          "id": "resource-kinds",
+          "script": "docs/odak/document_intelligence/scripts/seed-dm-resource-kinds.ps1"
+        },
+        {
+          "id": "relation-types",
+          "script": "docs/odak/document_intelligence/scripts/seed-dm-relation-types.ps1"
+        },
+        {
+          "id": "template-categories",
+          "script": "docs/odak/document_intelligence/scripts/seed-designer-template-categories.ps1"
+        },
+        {
+          "id": "resource-roots",
+          "script": "docs/odak/document_intelligence/scripts/seed-resource-root-folders.ps1"
+        },
+        {
+          "id": "side-menu",
+          "script": "docs/odak/document_intelligence/scripts/patch-document-side-menu.ps1"
+        },
+        {
+          "id": "project-side-menu",
+          "script": "docs/odak/project_management/scripts/patch-project-side-menu.ps1"
+        }
+      ]
+    },
+    "odak-content": {
+      "description": "Optional Odak sample content. Not required for a greenfield customer install.",
+      "seeds": [
+        {
+          "id": "coc-standard",
+          "script": "docs/odak/document_intelligence/scripts/seed-designer-template-coc-standard.ps1"
+        },
+        {
+          "id": "tutorials",
+          "script": "docs/odak/document_intelligence/scripts/seed-monitrang-tutorials.ps1"
+        }
+      ]
+    },
+    "packs": {
+      "description": "Job packs (PMO, quality). Content + structure; no new schema fields.",
+      "seeds": [
+        {
+          "id": "job-packs",
+          "script": "docs/odak/project_management/scripts/seed-job-packs.ps1"
+        }
+      ]
+    }
+  }
+}

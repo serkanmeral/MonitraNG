@@ -39,6 +39,8 @@ public sealed class LinkedResourceSummaryDto
     public required string LinkId { get; init; }
     public required string ResourceId { get; init; }
     public required string RelationType { get; init; }
+    public string? Direction { get; init; }
+    public string? Kind { get; init; }
     public string? ResourceType { get; init; }
     public string? Name { get; init; }
     public string? Title { get; init; }

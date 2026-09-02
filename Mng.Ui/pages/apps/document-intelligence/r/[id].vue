@@ -8,8 +8,11 @@ import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFileP
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
 import DiClassificationField from '@/components/apps/document-intelligence/DiClassificationField.vue';
+import DiResourceKindField from '@/components/apps/document-intelligence/DiResourceKindField.vue';
+import DiLifecycleBar from '@/components/apps/document-intelligence/DiLifecycleBar.vue';
 import DiResourceTagsDialog from '@/components/apps/document-intelligence/DiResourceTagsDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
+import DiRelatedResourcesPanel from '@/components/apps/document-intelligence/DiRelatedResourcesPanel.vue';
 import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklinksPanel.vue';
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
@@ -30,6 +33,7 @@ import {
   diGetById,
   diGetMarkdownContent,
   diUpdateMarkdown,
+  diUpdateResourceMetadata,
 } from '@/services/documentIntelligenceService';
 import type { DiBreadcrumb, DiResource } from '@/types/apps/documentIntelligence';
 
@@ -60,6 +64,7 @@ const docMode = ref<'view' | 'edit'>('view');
 const editContent = ref('');
 const editTags = ref<string[]>([]);
 const editClassificationId = ref<string | null>(null);
+const editKind = ref<string | null>(null);
 const saving = ref(false);
 const tagsDialog = ref(false);
 
@@ -271,6 +276,7 @@ function startEdit() {
   editContent.value = markdownContent.value;
   editTags.value = [...(resource.value?.tags ?? [])];
   editClassificationId.value = resource.value?.classificationTagId ?? null;
+  editKind.value = resource.value?.kind ?? null;
   docMode.value = 'edit';
 }
 
@@ -309,7 +315,11 @@ async function saveEdit(asDraft = false, changeNote = ''): Promise<boolean> {
     });
     markdownContent.value = editContent.value;
     docVersion.value = updated.currentVersionNumber || docVersion.value + 1;
-    resource.value = updated;
+    if ((editKind.value ?? '') !== (updated.kind ?? '')) {
+      resource.value = await diUpdateResourceMetadata(updated.id, { kind: editKind.value ?? '' });
+    } else {
+      resource.value = updated;
+    }
     docMode.value = 'view';
     notify(asDraft ? t('documentIntelligence.draftSaved') : t('documentIntelligence.published'), 'success');
     return true;
@@ -365,9 +375,17 @@ function onResourceTagsSaved(updated: DiResource) {
   resource.value = updated;
 }
 
+function onLifecycleUpdated(updated: DiResource) {
+  resource.value = updated;
+}
+
 function onPreviewOpenChange(open: boolean) {
   previewOpen.value = open;
   if (!open) void goToParentFolder();
+}
+
+function onFilePreviewUpdated(updated: DiResource) {
+  resource.value = updated;
 }
 
 async function copyShareLink() {
@@ -456,15 +474,12 @@ onBeforeRouteLeave((to) => {
           <v-icon :icon="diPageResourceIcon(resource)" color="primary" class="mr-1" />
           <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(resource) }}</h3>
           <v-chip size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
-          <v-chip
-            v-if="resource.status === 'draft'"
-            size="x-small"
-            variant="flat"
-            color="warning"
-            prepend-icon="mdi-file-document-edit-outline"
-          >
-            {{ t('documentIntelligence.draft') }}
-          </v-chip>
+          <DiLifecycleBar
+            :resource="resource"
+            :can-edit="resource.permissions.canEdit"
+            :show-actions="docMode === 'view'"
+            @updated="onLifecycleUpdated"
+          />
           <v-spacer />
           <template v-if="docMode === 'view'">
             <v-btn
@@ -526,10 +541,12 @@ onBeforeRouteLeave((to) => {
         </v-alert>
 
         <div v-if="docMode === 'view'" class="mb-3 d-flex flex-wrap align-center ga-2">
+          <DiResourceKindField :model-value="resource.kind" readonly />
           <DiClassificationField :model-value="resource.classificationTagId" readonly />
           <DiTagPicker :model-value="resource.tags ?? []" readonly density="compact" />
         </div>
         <div v-else class="mb-3">
+          <DiResourceKindField v-model="editKind" density="compact" />
           <DiClassificationField v-model="editClassificationId" density="compact" />
           <DiTagPicker v-model="editTags" density="compact" />
         </div>
@@ -552,6 +569,12 @@ onBeforeRouteLeave((to) => {
           :resource-id="resource.id"
           class="mt-4"
         />
+        <DiRelatedResourcesPanel
+          v-if="docMode !== 'edit'"
+          :resource-id="resource.id"
+          :can-edit="resource.permissions.canEdit"
+          class="mt-4"
+        />
         <DiBacklinksPanel
           v-if="docMode !== 'edit'"
           :resource-id="resource.id"
@@ -564,6 +587,11 @@ onBeforeRouteLeave((to) => {
           <v-icon :icon="diPageResourceIcon(resource)" color="primary" class="mr-1" />
           <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(resource) }}</h3>
           <v-chip v-if="docVersion > 0" size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
+          <DiLifecycleBar
+            :resource="resource"
+            :can-edit="resource.permissions.canEdit"
+            @updated="onLifecycleUpdated"
+          />
           <v-chip
             v-if="isDiManagedDocument(resource) && resource.documentNo"
             size="x-small"
@@ -660,11 +688,17 @@ onBeforeRouteLeave((to) => {
         </v-list>
 
         <div class="mb-3 d-flex flex-wrap align-center ga-2">
+          <DiResourceKindField :model-value="resource.kind" readonly />
           <DiClassificationField :model-value="resource.classificationTagId" readonly />
           <DiTagPicker :model-value="resource.tags ?? []" readonly density="compact" />
         </div>
 
         <DiLinkedWorkItemsPanel :resource-id="resource.id" class="mt-2" />
+        <DiRelatedResourcesPanel
+          :resource-id="resource.id"
+          :can-edit="resource.permissions.canEdit"
+          class="mt-2"
+        />
       </template>
 
       <v-alert
@@ -701,6 +735,8 @@ onBeforeRouteLeave((to) => {
       :model-value="previewOpen"
       :resource="resource"
       @update:model-value="onPreviewOpenChange"
+      @download="downloadFile"
+      @updated="onFilePreviewUpdated"
     />
 
     <DiSavePageDialog

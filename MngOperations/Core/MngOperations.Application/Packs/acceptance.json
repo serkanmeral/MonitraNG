@@ -1,0 +1,71 @@
+{
+  "code": "acceptance",
+  "name": "Kabul",
+  "version": "1.0.0",
+  "description": "Müşteri kabul ve kapanış: teslimat listesi, eksik, kabul tutanağı, devir. E-imza veya denetim sihirbazı değildir.",
+  "kinds": ["deliverable", "punchlist", "acceptance", "closeout", "evidence", "diagram"],
+  "folders": [
+    { "name": "Teslimat" },
+    { "name": "Eksik" },
+    { "name": "Kabul" },
+    { "name": "Kapanış" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Teslim",
+      "kind": "summary",
+      "children": [
+        { "name": "Teslimat listesi", "kind": "task" },
+        { "name": "Eksik listesi", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Kabul",
+      "kind": "summary",
+      "children": [
+        { "name": "Kabul tutanağı", "kind": "task" },
+        { "name": "Müşteri kabulü", "kind": "milestone" }
+      ]
+    },
+    {
+      "name": "Kapanış",
+      "kind": "summary",
+      "children": [
+        { "name": "Devir", "kind": "task" },
+        { "name": "Proje kapanışı", "kind": "milestone" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "Teslimat",
+      "title": "Teslimat envanteri",
+      "kind": "deliverable",
+      "body": "# Teslimat envanteri\n\nMüşteriye giden kalemler. ZIP paketleyici yoktur; her satır bir kayıt + kanıta bağlanır.\n\n| Kalem | WBS | Kanıt | Durum |\n| --- | --- | --- | --- |\n|  |  |  |  |\n"
+    },
+    {
+      "folder": "Eksik",
+      "title": "Eksik listesi",
+      "kind": "punchlist",
+      "body": "# Eksik listesi\n\nKabul öncesi açık kalemler. Kapanışta boş olmalı veya sapma kaydı düşülmeli.\n\n| # | Eksik | Sahip | Hedef | Durum |\n| --- | --- | --- | --- | --- |\n|  |  |  |  | açık |\n"
+    },
+    {
+      "folder": "Kabul",
+      "title": "Kabul tutanağı",
+      "kind": "acceptance",
+      "body": "# Kabul tutanağı\n\nMüşteri kabul kaydı. E-imza yoktur; imzalı PDF kanıt olarak bağlanır.\n\n- Tarih / yer\n- Taraflar\n- Kabul edilen teslimatlar\n- Saklı tutulan eksikler\n- Karar: kabul / şartlı kabul / ret\n"
+    },
+    {
+      "folder": "Kapanış",
+      "title": "Kapanış özeti",
+      "kind": "closeout",
+      "body": "# Kapanış özeti\n\nDevir ve arşiv indeksi. Denetim paketi ayrı sekmededir; bu sayfa kapanış gerçeğidir.\n\n- Kabul referansı\n- Devir (sistem / belge / erişim)\n- Açık yükümlülük yok\n- Dersler (isteğe bağlı)\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "Kabul akışı.drawio",
+    "kind": "diagram"
+  }
+}

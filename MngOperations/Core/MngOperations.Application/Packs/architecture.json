@@ -1,0 +1,72 @@
+{
+  "code": "architecture",
+  "name": "Mimari",
+  "version": "1.0.0",
+  "description": "C4 görünürlük, ADR ve ICD. Mimari çalışma alanı; çizim editörü veya PLM değildir.",
+  "kinds": ["adr", "icd", "architecture", "diagram"],
+  "folders": [
+    { "name": "ADR" },
+    { "name": "ICD" },
+    { "name": "C4" },
+    { "name": "Mimari" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Görünürlük",
+      "kind": "summary",
+      "children": [
+        { "name": "C4 bağlam", "kind": "task" },
+        { "name": "C4 konteyner", "kind": "task" },
+        { "name": "C4 bileşen", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Arayüz ve karar",
+      "kind": "summary",
+      "children": [
+        { "name": "ADR", "kind": "task" },
+        { "name": "ICD", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Mimari kapanış",
+      "kind": "summary",
+      "children": [
+        { "name": "Mimari inceleme", "kind": "task" },
+        { "name": "Mimari baseline", "kind": "milestone" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "ADR",
+      "title": "ADR şablonu",
+      "kind": "adr",
+      "body": "# ADR\n\nMimari karar kaydı. Yönetim kararı (Karar türü) değildir.\n\n- Durum: önerilen / kabul / superseded\n- Bağlam\n- Karar\n- Sonuçlar\n- Etkilenen C4 / ICD / WBS\n"
+    },
+    {
+      "folder": "ICD",
+      "title": "ICD şablonu",
+      "kind": "icd",
+      "body": "# ICD\n\nArayüz kontrol belgesi. Kod veya API spec üreticisi değildir; sözleşmeyi kaydeder.\n\n- Taraflar\n- Protokol / biçim\n- Sorumluluk sınırı\n- Hata ve sürüm\n- Kanıt (diyagram veya örnek)\n"
+    },
+    {
+      "folder": "C4",
+      "title": "C4 bağlam notu",
+      "kind": "architecture",
+      "body": "# C4 bağlam\n\nSistem kimlere ne sunar. Görsel gerçek draw.io dosyasıdır (C4 klasörüne yüklenir); bu sayfa kapsam notudur.\n\n- Kullanıcılar / dış sistemler\n- Sistem sınırı\n- İlişkiler\n"
+    },
+    {
+      "folder": "Mimari",
+      "title": "Mimari özet",
+      "kind": "architecture",
+      "body": "# Mimari özet\n\nBu projenin görünürlük + karar + arayüz indeksi.\n\n- C4 (bağlam / konteyner / bileşen)\n- Açık ADR’ler\n- ICD listesi\n- Baseline (WBS kilometre taşı)\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "C4 bağlam.drawio",
+    "kind": "diagram"
+  }
+}

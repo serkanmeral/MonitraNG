@@ -55,10 +55,22 @@ public sealed class UpdateMarkdownRequest
     /// </summary>
     public bool? IsDraft { get; set; }
 
-    /// <summary>
-    /// Sürüm kaydına yazılacak değişiklik notu. Boşsa varsayılan <c>update</c> kullanılır.
-    /// </summary>
+    /// <summary>Sürüm kaydına yazılacak değişiklik notu. Boşsa varsayılan <c>update</c> kullanılır.</summary>
     public string? ChangeNote { get; set; }
+}
+
+public sealed class ChangeResourceLifecycleRequest
+{
+    /// <summary><c>submit</c> | <c>approve</c> | <c>reject</c> | <c>revise</c></summary>
+    public string Action { get; set; } = string.Empty;
+    public string? Note { get; set; }
+}
+
+public sealed class SetResourceBaselineRequest
+{
+    /// <summary>Boşsa güncel sürüm alınır.</summary>
+    public int? VersionNumber { get; set; }
+    public string? Note { get; set; }
 }
 
 /// <summary>
@@ -90,6 +102,21 @@ public sealed class CreateFileResourceRequest
     public string? LetterheadId { get; set; }
     public string? CoverPageId { get; set; }
     public string? DocumentNo { get; set; }
+
+    /// <summary>Teslimat omurgası kaynak türü. Boşsa görsel dosyalarda <c>diagram</c> atanır.</summary>
+    public string? Kind { get; set; }
+}
+
+/// <summary>Yüklenen dosyanın içeriğini yeni sürüm olarak değiştirir (<c>origin=upload</c>).</summary>
+public sealed class ReplaceFileContentRequest
+{
+    /// <summary>Base64 dosya içeriği (data URL öneki olmadan).</summary>
+    public string Content { get; set; } = string.Empty;
+
+    public string? OriginalFileName { get; set; }
+    public string? MimeType { get; set; }
+    public string? Extension { get; set; }
+    public string? ChangeNote { get; set; }
 }
 
 /// <summary>
@@ -165,6 +192,9 @@ public sealed class UpdateResourceMetadataRequest
 
     /// <summary>Null = değiştirme. Boş string = sınıflandırmayı kaldır.</summary>
     public string? ClassificationTagId { get; set; }
+
+    /// <summary>Null = değiştirme. Boş string = türü kaldır.</summary>
+    public string? Kind { get; set; }
 }
 
 /// <summary>Yönetilen DOCX sürüm kaydının değişiklik notunu günceller.</summary>

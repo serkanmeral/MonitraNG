@@ -26,7 +26,21 @@ export function findDiAreaIndexPage(resources: DiResource[]): DiResource | null 
 export function diPageResourceIcon(resource: Pick<DiResource, 'type' | 'status'>): string {
   if (resource.type !== DI_RESOURCE_TYPE.markdown) return 'mdi-file-outline';
   if (resource.status === 'draft') return 'mdi-book-edit-outline';
+  if (resource.status === 'inReview') return 'mdi-book-clock-outline';
   return 'mdi-book-open-page-variant-outline';
+}
+
+export function diLifecycleStatus(status: string | null | undefined): 'draft' | 'inReview' | 'published' {
+  if (status === 'draft') return 'draft';
+  if (status === 'inReview') return 'inReview';
+  return 'published';
+}
+
+export function diLifecycleChipColor(status: string | null | undefined): string {
+  const s = diLifecycleStatus(status);
+  if (s === 'draft') return 'warning';
+  if (s === 'inReview') return 'info';
+  return 'success';
 }
 
 export function diPageResourceLabel(resource: DiResource): string {

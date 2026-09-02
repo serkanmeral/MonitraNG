@@ -64,10 +64,9 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             _logger.LogDebug("Step 2: Validating file (size, type, extension)");
             ValidateFile(decodedData, request, options);
 
-            // Step 3: Detect MIME type
+            // Step 3: Detect MIME type (magic bytes + original file name for draw.io)
             _logger.LogDebug("Step 3: Detecting MIME type from magic bytes");
-            string mimeType = _validator.DetectMimeType(decodedData);
-            string extension = _validator.GetExtensionFromMimeType(mimeType);
+            var (mimeType, extension) = ResolveUploadType(decodedData, request.OriginalFileName);
 
             // Step 4: Validate folder path
             _logger.LogDebug("Step 4: Validating folder path");
@@ -336,9 +335,8 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             throw new ArgumentException(
                 $"File size {fileData.Length} bytes exceeds maximum {options.MaxFileSize} bytes");
 
-        // Detect MIME type and extension
-        string mimeType = _validator.DetectMimeType(fileData);
-        string extension = _validator.GetExtensionFromMimeType(mimeType);
+        // Detect MIME type and extension (draw.io XML has no magic bytes; honor original name)
+        var (mimeType, extension) = ResolveUploadType(fileData, request.OriginalFileName);
 
         // Check extension (if restrictions exist)
         if (options.AllowedExtensions != null && options.AllowedExtensions.Count > 0)
@@ -435,6 +433,44 @@ public class FileProcessingPipeline : IFileProcessingPipeline
         };
 
         return metadata;
+    }
+
+    /// <summary>
+    /// Magic-byte MIME plus original file name. Draw.io XML has no magic header;
+    /// compressed/unknown blobs honor <c>.drawio</c> (and <c>.drawio.xml</c>) from the client name.
+    /// </summary>
+    private (string MimeType, string Extension) ResolveUploadType(byte[] fileData, string? originalFileName)
+    {
+        var mimeType = _validator.DetectMimeType(fileData);
+        var extension = _validator.GetExtensionFromMimeType(mimeType);
+        var namedExt = ExtensionFromOriginalName(originalFileName);
+
+        if (string.Equals(namedExt, ".drawio", StringComparison.OrdinalIgnoreCase)
+            || (string.Equals(extension, ".bin", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(namedExt)))
+        {
+            if (!string.IsNullOrEmpty(namedExt))
+                extension = namedExt;
+            if (string.Equals(namedExt, ".drawio", StringComparison.OrdinalIgnoreCase))
+                mimeType = "application/vnd.jgraph.mxfile";
+        }
+
+        return (mimeType, extension);
+    }
+
+    private static string? ExtensionFromOriginalName(string? originalFileName)
+    {
+        if (string.IsNullOrWhiteSpace(originalFileName))
+            return null;
+
+        var name = Path.GetFileName(originalFileName.Trim());
+        if (name.EndsWith(".drawio.xml", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".drawio", StringComparison.OrdinalIgnoreCase))
+        {
+            return ".drawio";
+        }
+
+        var ext = Path.GetExtension(name);
+        return string.IsNullOrEmpty(ext) ? null : ext.ToLowerInvariant();
     }
 
     /// <summary>

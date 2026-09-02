@@ -215,8 +215,13 @@ onMounted(() => {
                 </template>
                 <v-list-item-title class="text-body-2">
                   {{ diPageResourceLabel(item) }}
-                  <v-chip size="x-small" variant="flat" color="warning" class="ml-1">
-                    {{ t('documentIntelligence.draft') }}
+                  <v-chip
+                    size="x-small"
+                    variant="flat"
+                    :color="item.status === 'inReview' ? 'info' : 'warning'"
+                    class="ml-1"
+                  >
+                    {{ t(`documentIntelligence.lifecycle.statuses.${item.status === 'inReview' ? 'inReview' : 'draft'}`) }}
                   </v-chip>
                 </v-list-item-title>
                 <v-list-item-subtitle v-if="item.updatedAt" class="text-caption">

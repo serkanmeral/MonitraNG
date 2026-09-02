@@ -56,4 +56,11 @@ public sealed class ResourceLinksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetLinkedResourcesForWorkItem(string workItemId, CancellationToken ct) =>
         Ok(await _links.GetLinkedResourcesForWorkItemAsync(workItemId, ct));
+
+    [HttpGet("resources/{resourceId}/related-resources")]
+    [ProducesResponseType(typeof(ResourceLinkListResult<LinkedResourceSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRelatedResources(string resourceId, CancellationToken ct) =>
+        Ok(await _links.GetRelatedResourcesAsync(resourceId, ct));
 }

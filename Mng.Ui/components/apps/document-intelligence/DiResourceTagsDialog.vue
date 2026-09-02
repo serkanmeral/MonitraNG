@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
+import DiResourceKindField from '@/components/apps/document-intelligence/DiResourceKindField.vue';
 import { diListTags, diUpdateResourceMetadata } from '@/services/documentIntelligenceService';
 import type { DiResource, DiTag } from '@/types/apps/documentIntelligence';
 
@@ -22,6 +23,7 @@ const panelError = usePanelErrorNotify('errors.dg.generic');
 const open = ref(false);
 const editTags = ref<string[]>([]);
 const classificationId = ref<string | null>(null);
+const kindCode = ref<string | null>(null);
 const classOptions = ref<DiTag[]>([]);
 const saving = ref(false);
 const error = ref<string | null>(null);
@@ -38,6 +40,7 @@ watch(
     if (isOpen && props.resource) {
       editTags.value = [...(props.resource.tags ?? [])];
       classificationId.value = props.resource.classificationTagId;
+      kindCode.value = props.resource.kind;
       error.value = null;
       try {
         const res = await diListTags(true, 'classification');
@@ -60,6 +63,7 @@ async function save() {
     const updated = await diUpdateResourceMetadata(props.resource.id, {
       tags: editTags.value,
       classificationTagId: classificationId.value ?? '',
+      kind: kindCode.value ?? '',
     });
     emit('saved', updated);
     open.value = false;
@@ -92,6 +96,7 @@ async function save() {
           clearable
           class="mb-3"
         />
+        <DiResourceKindField v-model="kindCode" density="comfortable" />
         <DiTagPicker v-model="editTags" density="comfortable" kind="organizational" />
         <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-3">
           {{ error }}

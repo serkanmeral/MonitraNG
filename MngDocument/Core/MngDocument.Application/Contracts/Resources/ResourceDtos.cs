@@ -12,6 +12,7 @@ public sealed record ResourceDto
     public string? Description { get; init; }
     public IReadOnlyList<string> Tags { get; init; } = Array.Empty<string>();
     public string? ClassificationTagId { get; init; }
+    public string? Kind { get; init; }
     public string? ContentType { get; init; }
     public string? MimeType { get; init; }
     public string? Extension { get; init; }
@@ -19,8 +20,22 @@ public sealed record ResourceDto
     public int CurrentVersionNumber { get; init; }
     public bool HasContent { get; init; }
 
-    /// <summary>Doküman durumu (<c>draft</c>/<c>published</c>; yalnızca markdown). Varsayılan <c>published</c>.</summary>
+    /// <summary>Doküman durumu (<c>draft</c>/<c>inReview</c>/<c>published</c>). Varsayılan <c>published</c>.</summary>
     public string Status { get; init; } = "published";
+
+    public string? SubmittedBy { get; init; }
+    public DateTime? SubmittedAt { get; init; }
+    public string? ApprovedBy { get; init; }
+    public DateTime? ApprovedAt { get; init; }
+    public string? ReviewNote { get; init; }
+
+    public int? BaselineVersionNumber { get; init; }
+    public string? BaselineSetBy { get; init; }
+    public DateTime? BaselineSetAt { get; init; }
+    public string? BaselineNote { get; init; }
+
+    /// <summary>Baseline varsa ve güncel sürüm farklıysa sapma.</summary>
+    public bool BaselineDrifted { get; init; }
 
     /// <summary>Yüklenen dosyanın MinIO path'i (yalnızca <c>type=file</c>). İndirme için kullanılır.</summary>
     public string? FilePath { get; init; }

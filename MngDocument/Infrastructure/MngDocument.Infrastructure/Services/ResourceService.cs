@@ -38,6 +38,7 @@ public class ResourceService : IResourceService
     private readonly IPermissionService _perms;
     private readonly ILetterheadService _letterheads;
     private readonly ITagService _tags;
+    private readonly IResourceKindCatalog _kinds;
     private readonly IClassificationStampService _stamp;
     private readonly ITemplateBrandingApplier _brandingApplier;
     private readonly LetterheadHeaderValueEnricher _headerEnricher;
@@ -51,6 +52,7 @@ public class ResourceService : IResourceService
         IPermissionService perms,
         ILetterheadService letterheads,
         ITagService tags,
+        IResourceKindCatalog kinds,
         IClassificationStampService stamp,
         ITemplateBrandingApplier brandingApplier,
         LetterheadHeaderValueEnricher headerEnricher,
@@ -63,6 +65,7 @@ public class ResourceService : IResourceService
         _perms = perms;
         _letterheads = letterheads;
         _tags = tags;
+        _kinds = kinds;
         _stamp = stamp;
         _brandingApplier = brandingApplier;
         _headerEnricher = headerEnricher;
@@ -285,9 +288,135 @@ public class ResourceService : IResourceService
             payload["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
         if (request.ClassificationTagId is not null)
             payload["classificationTagId"] = await _tags.ResolveClassificationTagIdAsync(request.ClassificationTagId, ct);
+        if (request.Kind is not null)
+            payload["kind"] = await _kinds.NormalizeAsync(request.Kind, ct);
 
         if (payload.Count == 0)
             return ToDto(resource, snapshot.Resolve(resource));
+
+        var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        return ToDto(updated, snapshot.Resolve(updated));
+    }
+
+    public async Task<ResourceDto> ChangeLifecycleAsync(string id, ChangeResourceLifecycleRequest request, CancellationToken ct = default)
+    {
+        var action = request.Action?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (!ResourceLifecycleAction.IsValid(action))
+        {
+            throw DocumentException.Validation(
+                "LIFECYCLE_ACTION_INVALID",
+                "Action must be submit, approve, reject or revise.",
+                "Eylem submit, approve, reject veya revise olmalıdır.");
+        }
+
+        var resource = await LoadOrThrowAsync(id, ct);
+        if (resource.type == ResourceType.Folder)
+        {
+            throw DocumentException.Validation(
+                "LIFECYCLE_FOLDER",
+                "Folders do not have an approval lifecycle.",
+                "Klasörlerin onay döngüsü yoktur.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.Edit);
+
+        var current = ResourceStatus.Normalize(resource.status);
+        var note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
+        var actor = _ctx.Username;
+        var now = DateTime.UtcNow;
+        var payload = new Dictionary<string, object?>();
+
+        switch (action)
+        {
+            case ResourceLifecycleAction.Submit:
+                if (current == ResourceStatus.InReview)
+                {
+                    throw DocumentException.Validation(
+                        "LIFECYCLE_ALREADY_IN_REVIEW",
+                        "Resource is already in review.",
+                        "Kaynak zaten incelemede.");
+                }
+                payload["status"] = ResourceStatus.InReview;
+                payload["submittedBy"] = actor;
+                payload["submittedAt"] = now;
+                payload["reviewNote"] = note;
+                break;
+
+            case ResourceLifecycleAction.Approve:
+                if (current == ResourceStatus.Published)
+                {
+                    throw DocumentException.Validation(
+                        "LIFECYCLE_ALREADY_PUBLISHED",
+                        "Resource is already published.",
+                        "Kaynak zaten yayınlanmış.");
+                }
+                payload["status"] = ResourceStatus.Published;
+                payload["approvedBy"] = actor;
+                payload["approvedAt"] = now;
+                payload["reviewNote"] = note;
+                break;
+
+            case ResourceLifecycleAction.Reject:
+                if (current != ResourceStatus.InReview)
+                {
+                    throw DocumentException.Validation(
+                        "LIFECYCLE_NOT_IN_REVIEW",
+                        "Only in-review resources can be sent back.",
+                        "Yalnızca incelemedeki kayıt geri gönderilebilir.");
+                }
+                payload["status"] = ResourceStatus.Draft;
+                payload["reviewNote"] = note;
+                break;
+
+            case ResourceLifecycleAction.Revise:
+                if (current == ResourceStatus.Draft)
+                {
+                    throw DocumentException.Validation(
+                        "LIFECYCLE_ALREADY_DRAFT",
+                        "Resource is already a draft.",
+                        "Kaynak zaten taslak.");
+                }
+                payload["status"] = ResourceStatus.Draft;
+                payload["reviewNote"] = note;
+                break;
+        }
+
+        var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        return ToDto(updated, snapshot.Resolve(updated));
+    }
+
+    public async Task<ResourceDto> SetBaselineAsync(string id, SetResourceBaselineRequest request, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        if (resource.type == ResourceType.Folder)
+        {
+            throw DocumentException.Validation(
+                "BASELINE_FOLDER",
+                "Folders do not have a document baseline.",
+                "Klasörlerin belge baseline'ı yoktur.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.Edit);
+
+        var currentVersion = resource.currentVersionNumber ?? 1;
+        var version = request.VersionNumber ?? currentVersion;
+        if (version < 1 || version > currentVersion)
+        {
+            throw DocumentException.Validation(
+                "BASELINE_VERSION_INVALID",
+                $"Baseline version must be between 1 and {currentVersion}.",
+                $"Baseline sürümü 1 ile {currentVersion} arasında olmalıdır.");
+        }
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["baselineVersionNumber"] = version,
+            ["baselineSetBy"] = _ctx.Username,
+            ["baselineSetAt"] = DateTime.UtcNow,
+            ["baselineNote"] = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim()
+        };
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         return ToDto(updated, snapshot.Resolve(updated));
@@ -437,7 +566,18 @@ public class ResourceService : IResourceService
         if (request.ClassificationTagId is not null)
             payload["classificationTagId"] = await _tags.ResolveClassificationTagIdAsync(request.ClassificationTagId, ct);
         if (request.IsDraft.HasValue)
-            payload["status"] = request.IsDraft.Value ? ResourceStatus.Draft : ResourceStatus.Published;
+        {
+            if (request.IsDraft.Value)
+            {
+                payload["status"] = ResourceStatus.Draft;
+            }
+            else
+            {
+                payload["status"] = ResourceStatus.Published;
+                payload["approvedBy"] = _ctx.Username;
+                payload["approvedAt"] = DateTime.UtcNow;
+            }
+        }
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         await WriteVersionAsync(id, newVersion, request.Content ?? string.Empty, ResolveChangeNote(request.ChangeNote, "update"), ct);
@@ -576,7 +716,7 @@ public class ResourceService : IResourceService
     public async Task<IReadOnlyList<MarkdownVersionDto>> GetFileVersionsAsync(string id, CancellationToken ct = default)
     {
         var resource = await LoadOrThrowAsync(id, ct);
-        EnsureManagedOfficeFile(resource);
+        EnsureVersionableFile(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
@@ -590,7 +730,7 @@ public class ResourceService : IResourceService
         CancellationToken ct = default)
     {
         var resource = await LoadOrThrowAsync(id, ct);
-        EnsureManagedOfficeFile(resource);
+        EnsureVersionableFile(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
@@ -654,14 +794,13 @@ public class ResourceService : IResourceService
     public async Task<ResourceDto> RestoreFileVersionAsync(string id, int versionNumber, CancellationToken ct = default)
     {
         var existing = await LoadOrThrowAsync(id, ct);
-        EnsureManagedOfficeFile(existing);
+        EnsureVersionableFile(existing);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(existing, ResourceAction.Edit);
 
         var (bytes, fileName) = await ReadFileVersionBytesAsync(existing, versionNumber, null, ct);
         var newVersion = (existing.currentVersionNumber ?? 1) + 1;
-        var profile = ResolveManagedOfficeProfile(existing);
 
         var filePayload = new Dictionary<string, object?>
         {
@@ -673,13 +812,24 @@ public class ResourceService : IResourceService
         {
             ["file"] = filePayload,
             ["currentVersionNumber"] = newVersion,
-            ["size"] = bytes.LongLength,
-            ["mimeType"] = profile.MimeType,
-            ["extension"] = profile.Extension
+            ["size"] = bytes.LongLength
         };
 
+        string mimeForVersion;
+        if (ResourceOrigin.IsManagedDocument(existing.origin)
+            && ManagedOfficeProfiles.TryResolve(existing.extension, existing.mimeType, out var profile))
+        {
+            payload["mimeType"] = profile.MimeType;
+            payload["extension"] = profile.Extension;
+            mimeForVersion = profile.MimeType;
+        }
+        else
+        {
+            mimeForVersion = VisualEvidence.GuessContentType(existing.extension, fileName, existing.mimeType);
+        }
+
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
-        await WriteFileVersionAsync(id, newVersion, bytes, fileName, $"restore from v{versionNumber}", ct);
+        await WriteFileVersionAsync(id, newVersion, bytes, fileName, $"restore from v{versionNumber}", ct, mimeType: mimeForVersion);
         return ToDto(updated, snapshot.Resolve(updated));
     }
 
@@ -690,7 +840,7 @@ public class ResourceService : IResourceService
         CancellationToken ct = default)
     {
         var existing = await LoadOrThrowAsync(id, ct);
-        EnsureManagedOfficeFile(existing);
+        EnsureVersionableFile(existing);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(existing, ResourceAction.Edit);
@@ -841,6 +991,60 @@ public class ResourceService : IResourceService
     public Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default) =>
         CreateFileResourceCoreAsync(request, ct, ResourceAction.Upload);
 
+    public async Task<ResourceDto> ReplaceFileContentAsync(
+        string id,
+        ReplaceFileContentRequest request,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Content))
+            throw DocumentException.Validation("CONTENT_REQUIRED", "File content is required.", "Dosya içeriği zorunludur.");
+
+        var existing = await LoadOrThrowAsync(id, ct);
+        EnsureUploadedFile(existing);
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(existing, ResourceAction.Edit);
+
+        var originalName = string.IsNullOrWhiteSpace(request.OriginalFileName)
+            ? (existing.name ?? "file")
+            : request.OriginalFileName.Trim();
+        var mime = VisualEvidence.GuessContentType(request.Extension, originalName, request.MimeType);
+        var contentBytes = Convert.FromBase64String(request.Content.Trim());
+        contentBytes = await StampIfNeededAsync(contentBytes, request.Extension ?? originalName, existing.classificationTagId, ct);
+
+        var newVersion = (existing.currentVersionNumber ?? 1) + 1;
+        var payload = new Dictionary<string, object?>
+        {
+            ["file"] = new Dictionary<string, object?>
+            {
+                ["content"] = Convert.ToBase64String(contentBytes),
+                ["originalFileName"] = originalName
+            },
+            ["size"] = contentBytes.LongLength,
+            ["mimeType"] = mime,
+            ["currentVersionNumber"] = newVersion
+        };
+        if (!string.IsNullOrWhiteSpace(request.Extension))
+            payload["extension"] = request.Extension.Trim();
+
+        if (string.IsNullOrWhiteSpace(existing.kind)
+            && VisualEvidence.IsVisualEvidence(request.Extension, originalName, mime))
+        {
+            payload["kind"] = await _kinds.NormalizeAsync(ResourceKindCode.Diagram, ct);
+        }
+
+        var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        await WriteFileVersionAsync(
+            id,
+            newVersion,
+            contentBytes,
+            originalName,
+            ResolveChangeNote(request.ChangeNote, "replace"),
+            ct,
+            mimeType: mime);
+        return ToDto(updated, snapshot.Resolve(updated));
+    }
+
     private async Task<ResourceDto> CreateFileResourceCoreAsync(
         CreateFileResourceRequest request,
         CancellationToken ct,
@@ -887,6 +1091,18 @@ public class ResourceService : IResourceService
             ["currentVersionNumber"] = 1
         };
 
+        var storedFileName = string.IsNullOrWhiteSpace(request.OriginalFileName)
+            ? request.Name.Trim()
+            : request.OriginalFileName.Trim();
+        var kindCode = request.Kind;
+        if (string.IsNullOrWhiteSpace(kindCode)
+            && VisualEvidence.IsVisualEvidence(request.Extension, storedFileName, request.MimeType))
+        {
+            kindCode = ResourceKindCode.Diagram;
+        }
+        if (!string.IsNullOrWhiteSpace(kindCode))
+            payload["kind"] = await _kinds.NormalizeAsync(kindCode, ct);
+
         if (!string.IsNullOrWhiteSpace(request.Origin))
             payload["origin"] = request.Origin.Trim();
         else
@@ -905,18 +1121,34 @@ public class ResourceService : IResourceService
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
 
         var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
+        var versionFileName = storedFileName;
         if (ResourceOrigin.IsManagedDocument(origin))
         {
-            var fileName = string.IsNullOrWhiteSpace(request.OriginalFileName) ? request.Name.Trim() : request.OriginalFileName;
-            if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-                fileName += ".docx";
+            if (!versionFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+                && !versionFileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+                && !versionFileName.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase))
+            {
+                versionFileName += ".docx";
+            }
             await WriteFileVersionAsync(
                 created.__dataId!,
                 1,
                 contentBytes,
-                fileName,
+                versionFileName,
                 initialVersionChangeNote ?? "initial",
-                ct);
+                ct,
+                mimeType: request.MimeType);
+        }
+        else if (VisualEvidence.ShouldSnapshotOnCreate(request.Extension, storedFileName, request.MimeType))
+        {
+            await WriteFileVersionAsync(
+                created.__dataId!,
+                1,
+                contentBytes,
+                storedFileName,
+                initialVersionChangeNote ?? "initial",
+                ct,
+                mimeType: VisualEvidence.GuessContentType(request.Extension, storedFileName, request.MimeType));
         }
 
         return await ToDtoWithEffectiveAsync(created, ct);
@@ -1375,7 +1607,7 @@ public class ResourceService : IResourceService
         var items = page.Items
             .Select(MapRow)
             .Where(r => snapshot.Resolve(r).CanView)
-            .Where(r => r.type != ResourceType.Markdown || ResourceStatus.Normalize(r.status) == ResourceStatus.Published)
+            .Where(r => r.type != ResourceType.Markdown || ResourceStatus.IsPublished(r.status))
             .Select(r => ToDto(r, snapshot.Resolve(r)))
             .ToList();
         return new ResourceListResult { Items = items, Total = items.Count };
@@ -1390,7 +1622,7 @@ public class ResourceService : IResourceService
         var items = page.Items
             .Select(MapRow)
             .Where(r => snapshot.Resolve(r).CanView)
-            .Where(r => ResourceStatus.Normalize(r.status) == ResourceStatus.Published)
+            .Where(r => ResourceStatus.IsPublished(r.status))
             .Select(r => ToDto(r, snapshot.Resolve(r)))
             .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt ?? DateTime.MinValue)
             .Take(safeLimit)
@@ -1402,14 +1634,11 @@ public class ResourceService : IResourceService
     {
         var safeLimit = Math.Clamp(limit <= 0 ? 50 : limit, 1, 200);
         var snapshot = await _perms.LoadSnapshotAsync(ct);
-        var match = new Dictionary<string, object?>
-        {
-            ["type"] = ResourceType.Markdown,
-            ["status"] = ResourceStatus.Draft,
-        };
+        var match = new Dictionary<string, object?> { ["type"] = ResourceType.Markdown };
         var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
         var allDrafts = page.Items
             .Select(MapRow)
+            .Where(r => ResourceStatus.IsWorkInProgress(r.status))
             .Where(r => snapshot.Resolve(r).CanEdit)
             .Select(r => ToDto(r, snapshot.Resolve(r)))
             .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt ?? DateTime.MinValue)
@@ -1790,7 +2019,8 @@ public class ResourceService : IResourceService
         string fileName,
         string changeNote,
         CancellationToken ct,
-        string? dataGatewayToken = null)
+        string? dataGatewayToken = null,
+        string? mimeType = null)
     {
         var token = dataGatewayToken ?? Token;
         var payload = new Dictionary<string, object?>
@@ -1801,7 +2031,7 @@ public class ResourceService : IResourceService
             ["contentSnapshot"] = Convert.ToBase64String(content),
             ["filePathSnapshot"] = fileName,
             ["size"] = content.LongLength,
-            ["mimeType"] = DocxMime,
+            ["mimeType"] = string.IsNullOrWhiteSpace(mimeType) ? DocxMime : mimeType.Trim(),
             ["createdBy"] = _ctx.Username,
             ["createdAt"] = DateTime.UtcNow
         };
@@ -1875,15 +2105,40 @@ public class ResourceService : IResourceService
         if (string.IsNullOrWhiteSpace(fileName))
         {
             var (_, storedName) = ReadFileField(resource.file);
-            var profile = ResolveManagedOfficeProfile(resource);
-            fileName = storedName ?? resource.name ?? resource.title ?? profile.DefaultFileName;
+            fileName = storedName ?? resource.name ?? resource.title ?? "file";
         }
 
-        var resolvedProfile = ResolveManagedOfficeProfile(resource);
-        fileName = ManagedOfficeProfiles.EnsureFileNameHasExtension(fileName, resolvedProfile);
+        if (ResourceOrigin.IsManagedDocument(resource.origin)
+            && ManagedOfficeProfiles.TryResolve(resource.extension, resource.mimeType, out var resolvedProfile))
+        {
+            fileName = ManagedOfficeProfiles.EnsureFileNameHasExtension(fileName, resolvedProfile);
+        }
 
         bytes = await StampIfNeededAsync(bytes, fileName, resource.classificationTagId, ct);
         return (bytes, fileName);
+    }
+
+    private static void EnsureVersionableFile(DmResource resource)
+    {
+        if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_FILE",
+                "Resource is not a file.",
+                "Kaynak bir dosya değil.");
+        }
+    }
+
+    private static void EnsureUploadedFile(DmResource resource)
+    {
+        EnsureVersionableFile(resource);
+        if (ResourceOrigin.IsManagedDocument(resource.origin))
+        {
+            throw DocumentException.Validation(
+                "NOT_UPLOADED_FILE",
+                "Managed documents cannot be replaced via this endpoint.",
+                "Yönetilen dökümanların içeriği bu uç ile değiştirilemez.");
+        }
     }
 
     private static void EnsureManagedOfficeFile(DmResource resource)
@@ -2031,6 +2286,7 @@ public class ResourceService : IResourceService
             Description = r.description,
             Tags = r.tags ?? new List<string>(),
             ClassificationTagId = r.classificationTagId,
+            Kind = r.kind,
             ContentType = r.contentType,
             MimeType = r.mimeType,
             Extension = r.extension,
@@ -2039,6 +2295,17 @@ public class ResourceService : IResourceService
             HasContent = (r.type == ResourceType.Markdown && !string.IsNullOrEmpty(r.content))
                 || (r.type == ResourceType.File && !string.IsNullOrEmpty(filePath)),
             Status = ResourceStatus.Normalize(r.status),
+            SubmittedBy = r.submittedBy,
+            SubmittedAt = r.submittedAt,
+            ApprovedBy = r.approvedBy,
+            ApprovedAt = r.approvedAt,
+            ReviewNote = r.reviewNote,
+            BaselineVersionNumber = r.baselineVersionNumber,
+            BaselineSetBy = r.baselineSetBy,
+            BaselineSetAt = r.baselineSetAt,
+            BaselineNote = r.baselineNote,
+            BaselineDrifted = r.baselineVersionNumber is int baseline
+                && baseline != (r.currentVersionNumber ?? 1),
             FilePath = filePath,
             FileName = fileName,
             Origin = r.origin,

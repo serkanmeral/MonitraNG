@@ -1,0 +1,71 @@
+{
+  "code": "quality",
+  "name": "Kalite",
+  "version": "1.0.0",
+  "description": "İnce doküman kontrolü: prosedür, form, kayıt, revizyon. Denetim sihirbazı değildir.",
+  "kinds": ["procedure", "form", "record", "revision", "diagram"],
+  "folders": [
+    { "name": "Prosedür" },
+    { "name": "Form" },
+    { "name": "Kayıt" },
+    { "name": "Revizyon" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Doküman kontrolü",
+      "kind": "summary",
+      "children": [
+        { "name": "Prosedür seti", "kind": "task" },
+        { "name": "Form envanteri", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Kayıtlar",
+      "kind": "summary",
+      "children": [
+        { "name": "Kalite kaydı", "kind": "task" },
+        { "name": "Kanıt bağlama", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Revizyon",
+      "kind": "summary",
+      "children": [
+        { "name": "Revizyon bildirimi", "kind": "task" },
+        { "name": "Yayın kapısı", "kind": "milestone" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "Prosedür",
+      "title": "Doküman kontrol prosedürü",
+      "kind": "procedure",
+      "body": "# Doküman kontrol prosedürü\n\n- Amaç\n- Kapsam\n- Sorumluluk\n- Taslak → inceleme → onay/yayın\n- Revizyon\n"
+    },
+    {
+      "folder": "Form",
+      "title": "Kayıt formu",
+      "kind": "form",
+      "body": "# Kayıt formu\n\n| Alan | Değer |\n| --- | --- |\n| Tarih |  |\n| İş / WBS |  |\n| Sonuç |  |\n"
+    },
+    {
+      "folder": "Kayıt",
+      "title": "Kalite kaydı",
+      "kind": "record",
+      "body": "# Kalite kaydı\n\nBu sayfa doldurulmuş formun resmi kaydıdır. İş kapanışında kanıt olarak bağlanır.\n"
+    },
+    {
+      "folder": "Revizyon",
+      "title": "Revizyon bildirimi",
+      "kind": "revision",
+      "body": "# Revizyon bildirimi\n\n- Eski sürüm\n- Yeni sürüm\n- Neden\n- Etkilenen belgeler\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "Doküman kontrolü.drawio",
+    "kind": "diagram"
+  }
+}

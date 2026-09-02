@@ -18,4 +18,8 @@ public interface IResourceLinkService
     Task<ResourceLinkListResult<LinkedResourceSummaryDto>> GetLinkedResourcesForWorkItemAsync(
         string workItemId,
         CancellationToken ct = default);
+
+    Task<ResourceLinkListResult<LinkedResourceSummaryDto>> GetRelatedResourcesAsync(
+        string resourceId,
+        CancellationToken ct = default);
 }

@@ -1,0 +1,5 @@
+{
+  "categoryName": "ProjectManagementDatasets",
+  "categoryDescription": "Teslimat Omurgasi proje katmani — pm_projects, pm_wbs_items, pm_dependencies, pm_decisions, pm_project_packs, pm_stage_gates, pm_raid_items, pm_resource_assignments, pm_budget_lines, pm_acknowledgements, pm_obligations, pm_audit_packs, pm_meetings, pm_meeting_actions, pm_stakeholders, pm_process_maps. Runtime: MngOperations.",
+  "isSystemCategory": true
+}

@@ -1,0 +1,69 @@
+{
+  "name": "dm_resource_kinds",
+  "description": "Document Intelligence — resource kind catalog (Teslimat Omurgasi F1-1)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "code",
+      "title": "Kind code",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "displayName",
+      "title": "Display name",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 256 }
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Description",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "family",
+      "title": "Family (document | record | visual)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "number",
+      "name": "sortOrder",
+      "title": "Sort order",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Active",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_kind_code",
+      "fields": { "code": 1 },
+      "unique": true
+    }
+  ]
+}

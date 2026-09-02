@@ -8,7 +8,7 @@ import {
   diGetBootstrap,
 } from '@/services/documentIntelligenceService';
 import {
-  DI_LINK_RELATION_TYPES,
+  DI_WORK_ITEM_LINK_RELATION_TYPES,
   DI_RESOURCE_TYPE,
   type DiLinkRelationType,
   type DiResource,
@@ -45,7 +45,7 @@ const errorLocal = ref<string | null>(null);
 const selectedResourceId = ref<string | null>(null);
 
 const relationItems = computed(() =>
-  DI_LINK_RELATION_TYPES.map((value) => ({
+  DI_WORK_ITEM_LINK_RELATION_TYPES.map((value) => ({
     value,
     title: t(`operationCore.profile.documents.relationTypes.${value}`),
   }))

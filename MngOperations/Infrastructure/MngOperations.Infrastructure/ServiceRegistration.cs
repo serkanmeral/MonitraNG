@@ -85,6 +85,9 @@ public static class ServiceRegistration
             () => sp.GetRequiredService<IWorkItemCommandService>()));
         services.AddScoped<ISlaBreachScanService, SlaBreachScanService>();
         services.AddScoped<ISlaBreachScanSyncService, SlaBreachScanSyncService>();
+        services.AddScoped<IProjectPlanningService, ProjectPlanningService>();
+        services.AddScoped(sp => new Lazy<IProjectPlanningService>(
+            () => sp.GetRequiredService<IProjectPlanningService>()));
 
         return services;
     }

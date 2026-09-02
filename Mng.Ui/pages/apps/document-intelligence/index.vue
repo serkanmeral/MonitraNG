@@ -7,6 +7,8 @@ import DiDiscoveryHome from '@/components/apps/document-intelligence/DiDiscovery
 import DiAreaIndexBanner from '@/components/apps/document-intelligence/DiAreaIndexBanner.vue';
 import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
 import DiClassificationField from '@/components/apps/document-intelligence/DiClassificationField.vue';
+import DiResourceKindField from '@/components/apps/document-intelligence/DiResourceKindField.vue';
+import DiLifecycleBar from '@/components/apps/document-intelligence/DiLifecycleBar.vue';
 import DiResourceTagsDialog from '@/components/apps/document-intelligence/DiResourceTagsDialog.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
@@ -14,6 +16,7 @@ import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermi
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
+import DiRelatedResourcesPanel from '@/components/apps/document-intelligence/DiRelatedResourcesPanel.vue';
 import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklinksPanel.vue';
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
@@ -25,7 +28,7 @@ import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligenc
 import DiEditorLockDialog from '@/components/apps/document-intelligence/DiEditorLockDialog.vue';
 import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
-import { isDiPreviewable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiCloneable, isDiSheet, isDiPresentation } from '@/utils/diFilePreview';
+import { isDiPreviewable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiCloneable, isDiSheet, isDiPresentation, isDiUploadedFile, isDiDrawioFile, isDiVisualEvidenceFile } from '@/utils/diFilePreview';
 import { useDiLazyFolderTree } from '@/composables/useDiLazyFolderTree';
 import {
   DI_HOME_PATH,
@@ -55,11 +58,13 @@ import {
   diCreateFolder,
   diCreateMarkdown,
   diUpdateMarkdown,
+  diUpdateResourceMetadata,
   diRename,
   diMove,
   diDelete,
   diSearch,
   diCreateFileResource,
+  diReplaceFileContent,
   diCreateNativeDocument,
   diCreateNativeSheet,
   diCreateNativePresentation,
@@ -166,6 +171,7 @@ const docLoading = ref(false);
 const editContent = ref('');
 const editTags = ref<string[]>([]);
 const editClassificationId = ref<string | null>(null);
+const editKind = ref<string | null>(null);
 const saving = ref(false);
 
 // Etiket filtresi (klasör listesi)
@@ -257,6 +263,8 @@ const fileDialog = ref(false);
 const fileInputEl = ref<HTMLInputElement | null>(null);
 const pickedFile = ref<File | null>(null);
 const fileDisplayName = ref('');
+const fileKind = ref<string | null>(null);
+const replaceTarget = ref<DiResource | null>(null);
 const downloadingId = ref<string | null>(null);
 
 // Dosya inline önizleme
@@ -629,6 +637,11 @@ async function onFileVersionRestored(_restored: DiResource) {
   await refreshListing();
 }
 
+async function onFilePreviewUpdated(updated: DiResource) {
+  filePreviewResource.value = updated;
+  await refreshListing();
+}
+
 function openResourceInfo(resource: DiResource) {
   infoTarget.value = resource;
   infoDialog.value = true;
@@ -646,9 +659,17 @@ async function onResourceTagsSaved(updated: DiResource) {
       ...openDoc.value,
       tags: updated.tags,
       classificationTagId: updated.classificationTagId,
+      kind: updated.kind,
     };
   }
   await refreshListing();
+}
+
+function onLifecycleUpdated(updated: DiResource) {
+  if (openDoc.value?.id === updated.id) {
+    openDoc.value = updated;
+  }
+  void refreshListing();
 }
 
 async function onVersionRestored(restored: DiResource) {
@@ -668,6 +689,7 @@ function startEdit() {
   editContent.value = docContent.value;
   editTags.value = [...(openDoc.value?.tags ?? [])];
   editClassificationId.value = openDoc.value?.classificationTagId ?? null;
+  editKind.value = openDoc.value?.kind ?? null;
   docMode.value = 'edit';
 }
 
@@ -706,7 +728,11 @@ async function saveEdit(asDraft = false, changeNote = ''): Promise<boolean> {
     });
     docContent.value = editContent.value;
     docVersion.value = updated.currentVersionNumber || docVersion.value + 1;
-    openDoc.value = updated;
+    if ((editKind.value ?? '') !== (updated.kind ?? '')) {
+      openDoc.value = await diUpdateResourceMetadata(updated.id, { kind: editKind.value ?? '' });
+    } else {
+      openDoc.value = updated;
+    }
     docMode.value = 'view';
     notify(asDraft ? t('documentIntelligence.draftSaved') : t('documentIntelligence.published'), 'success');
     return true;
@@ -1113,8 +1139,18 @@ function onToolbarPermissions() {
 
 // --- Dosya yükleme ---
 function openFileDialog() {
+  replaceTarget.value = null;
   pickedFile.value = null;
   fileDisplayName.value = '';
+  fileKind.value = null;
+  fileDialog.value = true;
+}
+
+function openReplaceDialog(resource: DiResource) {
+  replaceTarget.value = resource;
+  pickedFile.value = null;
+  fileDisplayName.value = resource.name;
+  fileKind.value = resource.kind;
   fileDialog.value = true;
 }
 
@@ -1128,6 +1164,9 @@ function onFilePick(event: Event) {
   if (file) {
     pickedFile.value = file;
     if (!fileDisplayName.value.trim()) fileDisplayName.value = file.name;
+    if (!replaceTarget.value && !fileKind.value && isDiVisualEvidenceFile(file.name, file.type)) {
+      fileKind.value = 'diagram';
+    }
   }
   if (fileInputEl.value) fileInputEl.value.value = '';
 }
@@ -1145,6 +1184,8 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 function fileExtension(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.drawio.xml')) return 'drawio';
   const i = name.lastIndexOf('.');
   return i >= 0 ? name.slice(i + 1).toLowerCase() : '';
 }
@@ -1160,20 +1201,33 @@ async function submitFile() {
   busy.value = true;
   try {
     const content = await fileToBase64(file);
-    await diCreateFileResource({
-      parentId: selectedFolderId.value,
-      name,
-      originalFileName: file.name,
-      content,
-      mimeType: file.type || null,
-      extension: fileExtension(file.name) || null,
-      size: file.size,
-    });
+    const extension = fileExtension(file.name) || null;
+    if (replaceTarget.value) {
+      await diReplaceFileContent(replaceTarget.value.id, {
+        content,
+        originalFileName: file.name,
+        mimeType: file.type || null,
+        extension,
+        changeNote: 'replace',
+      });
+      notify(t('documentIntelligence.fileReplaced'), 'success');
+    } else {
+      await diCreateFileResource({
+        parentId: selectedFolderId.value,
+        name,
+        originalFileName: file.name,
+        content,
+        mimeType: file.type || null,
+        extension,
+        size: file.size,
+        kind: fileKind.value,
+      });
+      notify(t('documentIntelligence.fileUploaded'), 'success');
+    }
     fileDialog.value = false;
-    notify(t('documentIntelligence.fileUploaded'), 'success');
     await refreshListing();
   } catch (e) {
-    notifyError(e, 'documentIntelligence.errors.upload');
+    notifyError(e, replaceTarget.value ? 'documentIntelligence.errors.replace' : 'documentIntelligence.errors.upload');
   } finally {
     busy.value = false;
   }
@@ -1258,6 +1312,7 @@ function resourceIcon(resource: DiResource): string {
   if (resource.type === 'markdown') return diPageResourceIcon(resource);
   const mime = resource.mimeType || '';
   const ext = (resource.extension || '').toLowerCase();
+  if (isDiDrawioFile(resource) || ext === 'drawio') return 'mdi-graph-outline';
   if (mime.startsWith('image/')) return 'mdi-file-image-outline';
   if (mime.includes('pdf') || ext === 'pdf') return 'mdi-file-pdf-box';
   if (mime.includes('word') || ['doc', 'docx'].includes(ext)) return 'mdi-file-word-box';
@@ -1495,9 +1550,12 @@ watch(
                 <v-icon :icon="diPageResourceIcon(openDoc)" color="primary" class="mr-1" />
                 <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(openDoc) }}</h3>
                 <v-chip size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
-                <v-chip v-if="openDoc.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1" prepend-icon="mdi-file-document-edit-outline">
-                  {{ t('documentIntelligence.draft') }}
-                </v-chip>
+                <DiLifecycleBar
+                  :resource="openDoc"
+                  :can-edit="openDoc.permissions.canEdit"
+                  :show-actions="docMode === 'view'"
+                  @updated="onLifecycleUpdated"
+                />
                 <v-spacer />
                 <template v-if="docMode === 'view'">
                   <v-btn v-if="openDoc.permissions.canEdit" size="small" variant="tonal" class="text-none" prepend-icon="mdi-pencil" @click="startEdit">
@@ -1549,6 +1607,7 @@ watch(
               </div>
 
               <div v-if="docMode === 'view'" class="mb-3 d-flex flex-wrap align-center ga-2">
+                <DiResourceKindField :model-value="openDoc.kind" readonly />
                 <DiClassificationField :model-value="openDoc.classificationTagId" readonly />
                 <DiTagPicker
                   :model-value="openDoc.tags ?? []"
@@ -1559,6 +1618,7 @@ watch(
                 />
               </div>
               <div v-else class="mb-3">
+                <DiResourceKindField v-model="editKind" density="compact" />
                 <DiClassificationField v-model="editClassificationId" density="compact" />
                 <DiTagPicker v-model="editTags" density="compact" />
               </div>
@@ -1577,6 +1637,12 @@ watch(
               <DiLinkedWorkItemsPanel
                 v-if="openDoc && docMode !== 'edit'"
                 :resource-id="openDoc.id"
+                class="mt-4"
+              />
+              <DiRelatedResourcesPanel
+                v-if="openDoc && docMode !== 'edit'"
+                :resource-id="openDoc.id"
+                :can-edit="openDoc.permissions.canEdit"
                 class="mt-4"
               />
               <DiBacklinksPanel
@@ -1764,8 +1830,14 @@ watch(
                           <v-chip v-if="isDiManagedDocument(d) && d.documentNo" size="x-small" variant="tonal" color="primary" class="ml-1">
                             {{ d.documentNo }}
                           </v-chip>
-                          <v-chip v-if="d.type === 'markdown' && d.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1">
-                            {{ t('documentIntelligence.draft') }}
+                          <v-chip
+                            v-if="d.type !== 'folder' && d.status && d.status !== 'published'"
+                            size="x-small"
+                            variant="flat"
+                            :color="d.status === 'inReview' ? 'info' : 'warning'"
+                            class="ml-1"
+                          >
+                            {{ t(`documentIntelligence.lifecycle.statuses.${d.status === 'inReview' ? 'inReview' : 'draft'}`) }}
                           </v-chip>
                         </v-list-item-title>
                         <v-list-item-subtitle v-if="hasResourceSubtitle(d)">
@@ -1813,7 +1885,8 @@ watch(
                               <v-list-item prepend-icon="mdi-information-outline" :title="t('documentIntelligence.resourceInfoTitle')" @click="openResourceInfo(d)" />
                               <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-tag-outline" :title="t('documentIntelligence.tags.editTitle')" @click="openResourceTags(d)" />
                               <v-list-item v-if="isDiCloneable(d)" prepend-icon="mdi-content-copy" :title="t('documentIntelligence.clone')" @click="openClone(d)" />
-                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficeEditable(d)" prepend-icon="mdi-history" :title="t('documentIntelligence.versionHistory')" @click="openFileHistory(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-history" :title="t('documentIntelligence.versionHistory')" @click="openFileHistory(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canEdit && isDiUploadedFile(d)" prepend-icon="mdi-file-replace-outline" :title="t('documentIntelligence.replaceFile')" @click="openReplaceDialog(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficeEditable(d)" prepend-icon="mdi-open-in-new" :title="t('documentIntelligence.openInEditor')" @click="openFileEditorInNewTab(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficePdfExportable(d)" prepend-icon="mdi-file-pdf-box" :title="t('documentIntelligence.exportPdf')" @click="downloadPdfExport(d)" />
@@ -2109,10 +2182,12 @@ watch(
       </v-card>
     </v-dialog>
 
-    <!-- Dosya yükle -->
+    <!-- Dosya yükle / yeni sürüm -->
     <v-dialog v-model="fileDialog" max-width="460">
       <v-card rounded="lg">
-        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.uploadFile') }}</v-card-title>
+        <v-card-title class="text-subtitle-1 font-weight-bold">
+          {{ replaceTarget ? t('documentIntelligence.replaceFile') : t('documentIntelligence.uploadFile') }}
+        </v-card-title>
         <v-card-text>
           <input ref="fileInputEl" type="file" class="d-none" @change="onFilePick" />
           <div
@@ -2129,13 +2204,19 @@ watch(
               <span class="text-caption text-medium-emphasis">{{ formatSize(pickedFile.size) }}</span>
             </div>
           </div>
+          <p class="text-caption text-medium-emphasis mb-3">
+            {{ t('documentIntelligence.visualUploadHint') }}
+          </p>
           <v-text-field
+            v-if="!replaceTarget"
             v-model="fileDisplayName"
             :label="t('documentIntelligence.fileNameLabel')"
             variant="outlined"
             density="comfortable"
             hide-details
+            class="mb-3"
           />
+          <DiResourceKindField v-if="!replaceTarget" v-model="fileKind" density="comfortable" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -2282,6 +2363,7 @@ watch(
       v-model="filePreviewOpen"
       :resource="filePreviewResource"
       @download="downloadFile"
+      @updated="onFilePreviewUpdated"
     />
 
     <DiResourceEditorDialog

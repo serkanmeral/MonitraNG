@@ -1,0 +1,71 @@
+{
+  "code": "onboarding",
+  "name": "Onboarding",
+  "version": "1.0.0",
+  "description": "Karşılama, yetkinlik matrisi ve göreve hazır kilometre taşı. LMS, e-imza veya HRIS değildir.",
+  "kinds": ["onboarding", "competency", "form", "procedure", "diagram"],
+  "folders": [
+    { "name": "Karşılama" },
+    { "name": "Yetkinlik" },
+    { "name": "Kontrol" },
+    { "name": "Prosedür" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Karşılama",
+      "kind": "summary",
+      "children": [
+        { "name": "Erişim ve hesap", "kind": "task" },
+        { "name": "Oryantasyon", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Yetkinlik",
+      "kind": "summary",
+      "children": [
+        { "name": "Yetkinlik matrisi", "kind": "task" },
+        { "name": "Okundu kayıtları", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Hazır",
+      "kind": "summary",
+      "children": [
+        { "name": "Gölge çalışma", "kind": "task" },
+        { "name": "Göreve hazır", "kind": "milestone" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "Karşılama",
+      "title": "Karşılama planı",
+      "kind": "onboarding",
+      "body": "# Karşılama planı\n\nİlk günler. Hesap açma ve LMS bu pakette yoktur; erişim listesi ve oryantasyon burada izlenir.\n\n- Kişi / rol\n- Sponsor / eşlikçi\n- Erişim (sistem, klasör, workspace)\n- İlk hafta kontrol noktaları\n"
+    },
+    {
+      "folder": "Yetkinlik",
+      "title": "Yetkinlik matrisi",
+      "kind": "competency",
+      "body": "# Yetkinlik matrisi\n\nRol için gereken bilgi. Kurs motoru yoktur; belge okundu ve gölge çalışma kanıt bağlanır.\n\n| Konu | Belge / WBS | Seviye (bilgi / uygular / öğretir) | Kanıt |\n| --- | --- | --- | --- |\n|  |  |  |  |\n"
+    },
+    {
+      "folder": "Kontrol",
+      "title": "Oryantasyon kontrol listesi",
+      "kind": "form",
+      "body": "# Oryantasyon kontrol listesi\n\n| Madde | Tamam | Tarih | Not |\n| --- | --- | --- | --- |\n| Hesap / erişim |  |  |  |\n| Prosedür okundu |  |  |  |\n| Workspace tanıtımı |  |  |  |\n| Gölge çalışma |  |  |  |\n"
+    },
+    {
+      "folder": "Prosedür",
+      "title": "Rol prosedürü",
+      "kind": "procedure",
+      "body": "# Rol prosedürü\n\nBu rolün günlük işi. Okundu kaydı proje Okundu sekmesine, kanıt bu belgeye bağlanır.\n\n- Amaç\n- Sorumluluk\n- Girdi / çıktı\n- Eskalasyon\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "Onboarding akışı.drawio",
+    "kind": "diagram"
+  }
+}

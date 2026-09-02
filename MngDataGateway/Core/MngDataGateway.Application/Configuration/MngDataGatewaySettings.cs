@@ -202,7 +202,7 @@ namespace MngDataGateway.Application.Configuration
         public List<string> AllowedExtensions { get; set; } = new()
         {
             ".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".rtf",
-            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg",
+            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".drawio",
             ".mp4", ".avi", ".mov", ".mkv",
             ".zip", ".rar", ".7z"
         };

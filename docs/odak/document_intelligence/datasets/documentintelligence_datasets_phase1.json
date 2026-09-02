@@ -90,6 +90,16 @@
       },
       {
         "fieldType": "text",
+        "name": "kind",
+        "title": "Kaynak turu (plan, decision, evidence, ...)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
         "name": "content",
         "title": "Markdown icerik",
         "mandatory": false,
@@ -171,7 +181,97 @@
       {
         "fieldType": "text",
         "name": "status",
-        "title": "Dokuman durumu (draft/published)",
+        "title": "Dokuman durumu (draft/inReview/published)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "submittedBy",
+        "title": "Incelemeye gonderen",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "submittedAt",
+        "title": "Incelemeye gonderme zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "approvedBy",
+        "title": "Onaylayan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "approvedAt",
+        "title": "Onay zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "reviewNote",
+        "title": "Inceleme / onay notu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "baselineVersionNumber",
+        "title": "Baseline surum no",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "baselineSetBy",
+        "title": "Baseline koyan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "baselineSetAt",
+        "title": "Baseline zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "baselineNote",
+        "title": "Baseline notu",
         "mandatory": false,
         "unique": false,
         "isArray": false,
@@ -286,6 +386,13 @@
         },
         "unique": true,
         "sparse": true
+      },
+      {
+        "name": "idx_status",
+        "fields": {
+          "status": 1
+        },
+        "unique": false
       }
     ]
   },
@@ -502,7 +609,7 @@
       {
         "fieldType": "text",
         "name": "relationType",
-        "title": "Iliski tipi (reference|attachment|evidence|output)",
+        "title": "Iliski tipi (reference|attachment|evidence|output|derivedFrom|implements|dependsOn|supersedes|conflictsWith)",
         "mandatory": true,
         "unique": false,
         "isArray": false,

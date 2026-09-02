@@ -31,11 +31,29 @@ public static class ResourceStatus
     /// <summary>Taslak: kullanıcı henüz yayınlamadı.</summary>
     public const string Draft = "draft";
 
-    /// <summary>Yayınlanmış (varsayılan).</summary>
+    /// <summary>İncelemede: onay bekliyor (F1-2, tam CCB yok).</summary>
+    public const string InReview = "inReview";
+
+    /// <summary>Yayınlanmış / onaylanmış (varsayılan).</summary>
     public const string Published = "published";
 
-    public static string Normalize(string? value) =>
-        string.Equals(value, Draft, System.StringComparison.OrdinalIgnoreCase) ? Draft : Published;
+    public static string Normalize(string? value)
+    {
+        if (string.Equals(value, Draft, System.StringComparison.OrdinalIgnoreCase))
+            return Draft;
+        if (string.Equals(value, InReview, System.StringComparison.OrdinalIgnoreCase))
+            return InReview;
+        return Published;
+    }
+
+    public static bool IsPublished(string? value) =>
+        Normalize(value) == Published;
+
+    public static bool IsWorkInProgress(string? value)
+    {
+        var n = Normalize(value);
+        return n == Draft || n == InReview;
+    }
 }
 
 /// <summary>

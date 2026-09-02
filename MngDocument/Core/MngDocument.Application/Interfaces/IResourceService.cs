@@ -55,6 +55,10 @@ public interface IResourceService
 
     Task<ResourceDto> UpdateMetadataAsync(string id, UpdateResourceMetadataRequest request, CancellationToken ct = default);
 
+    Task<ResourceDto> ChangeLifecycleAsync(string id, ChangeResourceLifecycleRequest request, CancellationToken ct = default);
+
+    Task<ResourceDto> SetBaselineAsync(string id, SetResourceBaselineRequest request, CancellationToken ct = default);
+
     Task<ResourceDto> MoveAsync(string id, MoveResourceRequest request, CancellationToken ct = default);
 
     Task DeleteAsync(string id, bool force, CancellationToken ct = default);
@@ -74,7 +78,7 @@ public interface IResourceService
 
     Task<ResourceDto> RestoreMarkdownVersionAsync(string id, int versionNumber, CancellationToken ct = default);
 
-    /// <summary>Yönetilen DOCX sürüm geçmişi (içerik hariç).</summary>
+    /// <summary>Dosya sürüm geçmişi (içerik hariç) — yönetilen Office ve yüklenen görsel/PDF.</summary>
     Task<IReadOnlyList<MarkdownVersionDto>> GetFileVersionsAsync(string id, CancellationToken ct = default);
 
     /// <summary>Belirli bir DOCX sürümünün binary içeriği.</summary>
@@ -109,6 +113,9 @@ public interface IResourceService
         CancellationToken ct = default);
 
     Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default);
+
+    /// <summary>Yüklenen dosyanın içeriğini yeni sürüm olarak değiştirir.</summary>
+    Task<ResourceDto> ReplaceFileContentAsync(string id, ReplaceFileContentRequest request, CancellationToken ct = default);
 
     Task<ResourceDto> CreateNativeDocumentAsync(CreateNativeDocumentRequest request, CancellationToken ct = default);
     Task<ResourceDto> CreateNativeSheetAsync(CreateNativeOfficeRequest request, CancellationToken ct = default);

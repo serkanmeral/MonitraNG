@@ -1,0 +1,71 @@
+{
+  "code": "eco",
+  "name": "ECO/ECN",
+  "version": "1.0.0",
+  "description": "Ürün değişikliği kaydı: talep, etki, ECO onayı, ECN bildirimi. PLM, BOM veya CAD değildir.",
+  "kinds": ["eco", "ecn", "impact", "revision", "diagram"],
+  "folders": [
+    { "name": "Talep" },
+    { "name": "Etki" },
+    { "name": "ECO" },
+    { "name": "ECN" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Talep",
+      "kind": "summary",
+      "children": [
+        { "name": "Değişiklik talebi", "kind": "task" },
+        { "name": "Etki analizi", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Onay",
+      "kind": "summary",
+      "children": [
+        { "name": "ECO", "kind": "task" },
+        { "name": "ECO onayı", "kind": "milestone" }
+      ]
+    },
+    {
+      "name": "Yaygınlaştırma",
+      "kind": "summary",
+      "children": [
+        { "name": "ECN", "kind": "task" },
+        { "name": "Uygulama kanıtı", "kind": "task" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "Talep",
+      "title": "Değişiklik talebi",
+      "kind": "eco",
+      "body": "# Değişiklik talebi\n\nNeden değişiyoruz. Parça/BOM motoru yoktur; etkilenen kayıtlar (belge, WBS, ICD) etki analizinde listelenir.\n\n- Talep no\n- Kaynak (müşteri / iç / saha)\n- Problem / fırsat\n- Önerilen değişiklik\n"
+    },
+    {
+      "folder": "Etki",
+      "title": "Etki analizi",
+      "kind": "impact",
+      "body": "# Etki analizi\n\nNe etkilenir. CAD/BOM tarama yoktur; liste elle tutulur.\n\n| Tür | Kayıt | Etki | Aksiyon |\n| --- | --- | --- | --- |\n| Belge |  |  |  |\n| WBS |  |  |  |\n| ICD |  |  |  |\n"
+    },
+    {
+      "folder": "ECO",
+      "title": "ECO kaydı",
+      "kind": "eco",
+      "body": "# ECO\n\nOnaylanan değişiklik emri. CCB motoru değildir; onay bu kayda ve WBS kilometre taşına işlenir.\n\n- ECO no\n- Durum: taslak / inceleme / onay / iptal\n- Karar\n- Etki analizi referansı\n"
+    },
+    {
+      "folder": "ECN",
+      "title": "ECN bildirimi",
+      "kind": "ecn",
+      "body": "# ECN\n\nOnay sonrası bildirim. Kim neyi hangi sürümden itibaren uygular.\n\n- ECN no / bağlı ECO\n- Yürürlük tarihi\n- Dağıtım (iç / tedarikçi / müşteri)\n- Kanıt (uygulama kaydı)\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "ECO akışı.drawio",
+    "kind": "diagram"
+  }
+}

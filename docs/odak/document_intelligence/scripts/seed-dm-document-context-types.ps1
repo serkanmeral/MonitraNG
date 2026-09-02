@@ -25,7 +25,6 @@ $token = $token.Trim()
 
 $headers = @{
     Authorization = "Bearer $token"
-    "Content-Type" = "application/json"
 }
 $dataBase = "$BaseUrl/data/api/v1/data/$dataset"
 $utf8 = [System.Text.Encoding]::UTF8

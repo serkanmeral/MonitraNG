@@ -1,0 +1,71 @@
+{
+  "code": "proposal",
+  "name": "Teklif",
+  "version": "1.0.0",
+  "description": "Şartname yanıtı: girdi şartname, uyum matrisi, teklif metni, soru listesi. Madde çıkarımı veya fiyat motoru değildir.",
+  "kinds": ["specification", "compliance", "proposal", "clarification", "diagram"],
+  "folders": [
+    { "name": "Şartname" },
+    { "name": "Yanıt" },
+    { "name": "Teklif" },
+    { "name": "Soru" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Girdi",
+      "kind": "summary",
+      "children": [
+        { "name": "Şartname", "kind": "task" },
+        { "name": "Soru listesi", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Yanıt",
+      "kind": "summary",
+      "children": [
+        { "name": "Uyum matrisi", "kind": "task" },
+        { "name": "Teklif metni", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Karar",
+      "kind": "summary",
+      "children": [
+        { "name": "Go / No-go", "kind": "milestone" },
+        { "name": "Teklif teslimi", "kind": "milestone" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "Şartname",
+      "title": "Şartname kapağı",
+      "kind": "specification",
+      "body": "# Şartname\n\nMüşteri veya ihale girdisi. Madde çıkarımı otomatik değildir; belge burada durur, yanıt matriste izlenir.\n\n- Kaynak (müşteri / ihale no)\n- Sürüm / tarih\n- Kapsam özeti\n- Bağlı WBS: Şartname\n"
+    },
+    {
+      "folder": "Yanıt",
+      "title": "Uyum matrisi",
+      "kind": "compliance",
+      "body": "# Uyum matrisi\n\nŞartname maddesi → yanıt / sapma / kanıt. NLP veya otomatik madde çıkarımı yoktur.\n\n| Madde | İstek | Yanıt (uyar / sapar / netleştir) | Kanıt / WBS |\n| --- | --- | --- | --- |\n|  |  |  |  |\n"
+    },
+    {
+      "folder": "Teklif",
+      "title": "Teklif özeti",
+      "kind": "proposal",
+      "body": "# Teklif özeti\n\nMüşteriye gidecek metnin indeksi. Fiyat/ERP bu pakette yoktur.\n\n- Kapsam / kapsam dışı\n- Teslimatlar\n- Varsayımlar\n- Uyum matrisi referansı\n- Go / No-go kararı\n"
+    },
+    {
+      "folder": "Soru",
+      "title": "Soru listesi",
+      "kind": "clarification",
+      "body": "# Soru listesi\n\nŞartnamede netleşmeyenler. Cevap gelince uyum matrisine işlenir.\n\n| # | Soru | Madde | Durum | Cevap |\n| --- | --- | --- | --- | --- |\n|  |  |  | açık |  |\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "Teklif akışı.drawio",
+    "kind": "diagram"
+  }
+}

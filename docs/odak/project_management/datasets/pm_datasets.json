@@ -1,0 +1,1785 @@
+[
+  {
+    "name": "pm_projects",
+    "description": "Teslimat Omurgasi F1-4 — proje basligi, tarihler, tek baseline meta.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "code",
+        "title": "Project code",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Description",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 4000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (draft | active | closed)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "plannedStart",
+        "title": "Planned start",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "plannedFinish",
+        "title": "Planned finish",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "actualStart",
+        "title": "Actual start",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "actualFinish",
+        "title": "Actual finish",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "baselineSetAt",
+        "title": "Baseline set at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "baselineSetBy",
+        "title": "Baseline set by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "baselineNote",
+        "title": "Baseline note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "diFolderId",
+        "title": "DI folder id (optional hub)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "workspaceId",
+        "title": "OC workspace id (F1-6)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_pm_project_code",
+        "fields": { "code": 1 },
+        "unique": true
+      },
+      {
+        "name": "idx_pm_project_status",
+        "fields": { "status": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_wbs_items",
+    "description": "Teslimat Omurgasi F1-4 — WBS agaci (summary / task / milestone), plan/gercek/baseline tarihler.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "parentId",
+        "title": "Parent WBS id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (summary | task | milestone)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsCode",
+        "title": "WBS code",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sort order among siblings",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "plannedStart",
+        "title": "Planned start",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "plannedFinish",
+        "title": "Planned finish",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "actualStart",
+        "title": "Actual start",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "actualFinish",
+        "title": "Actual finish",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "baselineStart",
+        "title": "Baseline start",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "baselineFinish",
+        "title": "Baseline finish",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "weight",
+        "title": "Rollup weight (F1-6)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "percentComplete",
+        "title": "Percent complete 0-100",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemId",
+        "title": "OC work item id (F1-6)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_wbs_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_wbs_parent",
+        "fields": { "parentId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_dependencies",
+    "description": "Teslimat Omurgasi F1-4 — WBS Finish-to-Start bagimliliklari.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "predecessorId",
+        "title": "Predecessor WBS id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "successorId",
+        "title": "Successor WBS id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "type",
+        "title": "Dependency type (FS)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 8 }
+      },
+      {
+        "fieldType": "number",
+        "name": "lagDays",
+        "title": "Lag days",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_dep_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_dep_pair",
+        "fields": { "predecessorId": 1, "successorId": 1 },
+        "unique": true
+      }
+    ]
+  },
+  {
+    "name": "pm_decisions",
+    "description": "Teslimat Omurgasi F1-8 — hafif karar kaydi ve kapsam degisikligi etkisi (WBS / is / belge).",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Title",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "body",
+        "title": "Decision text",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 8000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (general | scopeChange)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (open | accepted | superseded)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "decidedAt",
+        "title": "Decided at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "decidedBy",
+        "title": "Decided by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "text",
+        "name": "documentId",
+        "title": "DI decision document id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsIds",
+        "title": "Affected WBS ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemIds",
+        "title": "Affected work item ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceIds",
+        "title": "Affected DI resource ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_decision_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_project_packs",
+    "description": "F2-1 — projeye kurulmuş iş paketi kaydı (sürüm, tekrar kurulum).",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "packCode",
+        "title": "Pack code",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "version",
+        "title": "Installed pack version",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "appliedAt",
+        "title": "Applied at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "appliedBy",
+        "title": "Applied by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_project_pack",
+        "fields": { "projectId": 1, "packCode": 1 },
+        "unique": true
+      }
+    ]
+  },
+  {
+    "name": "pm_stage_gates",
+    "description": "F2-2 — aşama kapısı (go/no-go). İş kilidi değil; kriter + karar kaydı.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Gate name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "Bound WBS id (usually a milestone)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sort order",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (open | passed | failed | waived)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "criteria",
+        "title": "Checklist labels",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "satisfied",
+        "title": "Met checklist labels",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Decision note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 4000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "decidedAt",
+        "title": "Decided at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "decidedBy",
+        "title": "Decided by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceIds",
+        "title": "Evidence DI resource ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "decisionId",
+        "title": "Linked decision id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_gate_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_raid_items",
+    "description": "F2-3 — RAID kaydı (risk, varsayım, sorun, harici bağımlılık). Karar ayrı; Gantt FS ayrı. Monte Carlo yoktur.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (risk | assumption | issue | dependency)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Title",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "body",
+        "title": "Description",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 8000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (kind-specific)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "impact",
+        "title": "Impact (low | medium | high)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 16 }
+      },
+      {
+        "fieldType": "text",
+        "name": "likelihood",
+        "title": "Likelihood (low | medium | high)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 16 }
+      },
+      {
+        "fieldType": "text",
+        "name": "response",
+        "title": "Risk response (avoid | mitigate | transfer | accept)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "owner",
+        "title": "Owner",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Due date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsIds",
+        "title": "Affected WBS ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemIds",
+        "title": "Linked work item ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceIds",
+        "title": "Evidence DI resource ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "datetime",
+        "name": "closedAt",
+        "title": "Closed at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "closedBy",
+        "title": "Closed by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_raid_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_resource_assignments",
+    "description": "Teslimat Omurgasi F2-4 — kaba kaynak atamasi (WBS + kisi/ad + planlanan saat). Dengeleme yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "personId",
+        "title": "Keeper person id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Resource display name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "text",
+        "name": "role",
+        "title": "Role (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "number",
+        "name": "plannedHours",
+        "title": "Planned hours",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "start",
+        "title": "Assignment start (optional; else WBS)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "finish",
+        "title": "Assignment finish (optional; else WBS)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_assign_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_assign_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_budget_lines",
+    "description": "Teslimat Omurgasi F2-5 — is paketi butcesi (WBS zarfi + kalem). ERP/fatura/kur donusumu yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "Category (labor | material | subcontract | other)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Line name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "number",
+        "name": "plannedAmount",
+        "title": "Planned amount",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "actualAmount",
+        "title": "Actual amount",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "currency",
+        "title": "ISO currency (no FX)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 8 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_budget_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_budget_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_acknowledgements",
+    "description": "Teslimat Omurgasi F2-6 — okundu-anlasildi kaydi (belge + kisi). LMS, e-imza ve otomatik revizyon iptali yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceId",
+        "title": "DI resource id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Document title",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "versionLabel",
+        "title": "Revision / version label",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "personName",
+        "title": "Person display name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "text",
+        "name": "personId",
+        "title": "Keeper person id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (pending | acknowledged | waived)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Due date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note (required to waive)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "acknowledgedAt",
+        "title": "Acknowledged or waived at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "acknowledgedBy",
+        "title": "Acknowledged or waived by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_ack_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_ack_resource",
+        "fields": { "resourceId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_obligations",
+    "description": "Teslimat Omurgasi F2-7 — yukumluluk kaydi (madde → tarih → iş → kanıt). Sözleşme motoru ve otomatik madde çıkarımı yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Obligation statement",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 512 }
+      },
+      {
+        "fieldType": "text",
+        "name": "clauseRef",
+        "title": "Clause / article number",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceResourceId",
+        "title": "Source DI resource id (spec)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemId",
+        "title": "OC work item id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "evidenceResourceId",
+        "title": "Evidence DI resource id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (open | inProgress | satisfied | waived)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Due date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note (required to waive)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "closedAt",
+        "title": "Satisfied or waived at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "closedBy",
+        "title": "Satisfied or waived by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_obl_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_obl_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_audit_packs",
+    "description": "Teslimat Omurgasi F2-8 — denetim/musteri kanit paketi. ZIP, e-posta ve denetim sihirbazi yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Pack name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (audit | customer | internal)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (draft | assembled | issued | withdrawn)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Due date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceIds",
+        "title": "Evidence DI resource ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "recipient",
+        "title": "Recipient / audience",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note (required to withdraw)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "issuedAt",
+        "title": "Issued or withdrawn at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "issuedBy",
+        "title": "Issued or withdrawn by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_audit_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_audit_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_meetings",
+    "description": "Teslimat Omurgasi F2-9 — toplantı kaydı. Tutanak belge kimliği isteğe bağlı; takvim/Teams ve otomatik tutanak çıkarımı yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Meeting name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "heldAt",
+        "title": "Held at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "minutesResourceId",
+        "title": "Minutes DI resource id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "attendees",
+        "title": "Attendees",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_meet_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_meet_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_meeting_actions",
+    "description": "Teslimat Omurgasi F2-9 — toplantı aksiyonu. OC iş kimliği bağlanır; iş kopyalanmaz, otomatik oluşturulmaz.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "meetingId",
+        "title": "Meeting id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Action title",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 512 }
+      },
+      {
+        "fieldType": "text",
+        "name": "ownerName",
+        "title": "Owner name",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Due date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (open | inProgress | done | waived)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemId",
+        "title": "OC work item id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional override)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note (required to waive)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "closedAt",
+        "title": "Closed at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "closedBy",
+        "title": "Closed by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_mact_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_mact_meeting",
+        "fields": { "meetingId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_mact_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_stakeholders",
+    "description": "Teslimat Omurgasi F2-10 — dis paydas kaydi. Sinirli gorunurluk (paylasilan belge kimlikleri). Tenant, portal, e-posta ve SSO yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Stakeholder name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "organization",
+        "title": "Organization",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (customer | supplier | consultant | regulator | sponsor | other)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "email",
+        "title": "Contact email (not a login)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (invited | active | revoked)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "accessUntil",
+        "title": "Access until",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceIds",
+        "title": "Shared DI resource ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note (required to revoke)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "revokedAt",
+        "title": "Revoked at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "revokedBy",
+        "title": "Revoked by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_sh_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_sh_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_process_maps",
+    "description": "Teslimat Omurgasi F2-12 — surec haritasi kutuphanesi. Resmi surec gercegi bir draw.io / gorsel DI kaydidir. Editor yoktur.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Process map name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (procedure | workflow | org | other)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceId",
+        "title": "DI resource id (draw.io / visual)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (draft | current | superseded)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note (required to supersede)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "currentAt",
+        "title": "Marked current at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "currentBy",
+        "title": "Marked current by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "supersededAt",
+        "title": "Superseded at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "supersededBy",
+        "title": "Superseded by",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_pmap_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_pmap_wbs",
+        "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  }
+]

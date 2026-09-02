@@ -29,6 +29,10 @@ const {
 } = useDiResourcePreview({ onDownload: (r) => props.onDownload?.(r) });
 
 provide(DI_RESOURCE_PREVIEW_KEY, previewContext);
+
+function onFilePreviewUpdated(updated: DiResource) {
+  filePreviewResource.value = updated;
+}
 </script>
 
 <template>
@@ -42,6 +46,7 @@ provide(DI_RESOURCE_PREVIEW_KEY, previewContext);
       v-model="filePreviewOpen"
       :resource="filePreviewResource"
       @download="(r) => props.onDownload?.(r)"
+      @updated="onFilePreviewUpdated"
     />
     <DiResourceEditorDialog v-model="editorOpen" :resource="editorResource" />
   </div>

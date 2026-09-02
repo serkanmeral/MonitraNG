@@ -10,6 +10,7 @@ import {
   ClipboardIcon,
   FileCheckIcon,
   FileDescriptionIcon,
+  FlagIcon,
   GitBranchIcon,
   AdjustmentsIcon,
   ShieldIcon,
@@ -390,6 +391,12 @@ const horizontalItems: menu[] = [
     title: "Belge Tasarımcısı",
     icon: FileCheckIcon,
     to: "/apps/document-intelligence/designer",
+  },
+  {
+    title: "Projeler",
+    pageCode: "projectManagement.menuTitle",
+    icon: FlagIcon,
+    to: "/apps/project-management",
   },
   {
     title: "Raporlar",

@@ -8,6 +8,7 @@ import {
   diFullPermission,
   type DiBreadcrumb,
   type DiCreateFileResourceRequest,
+  type DiReplaceFileContentRequest,
   type DiCreateNativeDocumentRequest,
   type DiCreateNativeOfficeRequest,
   type DiCreateFolderRequest,
@@ -75,9 +76,14 @@ import {
   type DiUpdateCoverPageRequest,
   type DiTag,
   type DiTagListResult,
+  type DiResourceKind,
+  type DiRelationType,
+  type DiCatalogListResult,
   type DiCreateTagRequest,
   type DiUpdateTagRequest,
   type DiUpdateResourceMetadataRequest,
+  type DiChangeLifecycleRequest,
+  type DiSetBaselineRequest,
   type DiDocumentContextType,
   type DiDocumentProducerDetail,
   type DiDocumentDataSourceDetail,
@@ -151,6 +157,7 @@ function mapResource(raw: unknown): DiResource {
     description: str(o, 'description'),
     tags: strArray(o.tags),
     classificationTagId: str(o, 'classificationTagId'),
+    kind: str(o, 'kind'),
     contentType: str(o, 'contentType'),
     mimeType: str(o, 'mimeType'),
     extension: str(o, 'extension'),
@@ -158,6 +165,16 @@ function mapResource(raw: unknown): DiResource {
     currentVersionNumber: num(o, 'currentVersionNumber') ?? 0,
     hasContent: Boolean(o.hasContent),
     status: str(o, 'status') ?? 'published',
+    submittedBy: str(o, 'submittedBy'),
+    submittedAt: str(o, 'submittedAt'),
+    approvedBy: str(o, 'approvedBy'),
+    approvedAt: str(o, 'approvedAt'),
+    reviewNote: str(o, 'reviewNote'),
+    baselineVersionNumber: num(o, 'baselineVersionNumber'),
+    baselineSetBy: str(o, 'baselineSetBy'),
+    baselineSetAt: str(o, 'baselineSetAt'),
+    baselineNote: str(o, 'baselineNote'),
+    baselineDrifted: Boolean(o.baselineDrifted),
     filePath: str(o, 'filePath'),
     fileName: str(o, 'fileName'),
     origin: str(o, 'origin'),
@@ -428,6 +445,22 @@ export async function diUpdateResourceMetadata(
   return mapResource(raw);
 }
 
+export async function diChangeResourceLifecycle(
+  id: string,
+  request: DiChangeLifecycleRequest
+): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/lifecycle`, 'POST', request);
+  return mapResource(raw);
+}
+
+export async function diSetResourceBaseline(
+  id: string,
+  request: DiSetBaselineRequest = {}
+): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/baseline`, 'POST', request);
+  return mapResource(raw);
+}
+
 export async function diMove(id: string, request: DiMoveRequest): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/move`, 'PUT', request);
   return mapResource(raw);
@@ -626,6 +659,11 @@ export async function diCreateFileResource(request: DiCreateFileResourceRequest)
   return mapResource(raw);
 }
 
+export async function diReplaceFileContent(id: string, request: DiReplaceFileContentRequest): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/file-content`, 'PUT', request);
+  return mapResource(raw);
+}
+
 export async function diCreateNativeDocument(request: DiCreateNativeDocumentRequest): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/documents`, 'POST', request);
   return mapResource(raw);
@@ -749,6 +787,8 @@ function mapLinkedResource(raw: unknown): DiLinkedResource {
     linkId: str(o, 'linkId') ?? '',
     resourceId: str(o, 'resourceId') ?? '',
     relationType: str(o, 'relationType') ?? 'reference',
+    direction: str(o, 'direction'),
+    kind: str(o, 'kind'),
     resourceType: str(o, 'resourceType'),
     name: str(o, 'name'),
     title: str(o, 'title'),
@@ -789,6 +829,16 @@ export async function diGetLinkedResourcesForWorkItem(
 ): Promise<DiResourceLinkListResult<DiLinkedResource>> {
   const raw = await fetchFromDocuments(
     `${LINKS_BASE}/work-items/${encodeURIComponent(workItemId)}/linked-resources`,
+    'GET'
+  );
+  return mapLinkListResult(raw, mapLinkedResource);
+}
+
+export async function diGetRelatedResources(
+  resourceId: string
+): Promise<DiResourceLinkListResult<DiLinkedResource>> {
+  const raw = await fetchFromDocuments(
+    `${LINKS_BASE}/resources/${encodeURIComponent(resourceId)}/related-resources`,
     'GET'
   );
   return mapLinkListResult(raw, mapLinkedResource);
@@ -1764,6 +1814,70 @@ export async function diListTags(activeOnly = false, kind?: string): Promise<DiT
   const items = itemsRaw.map(mapTag);
   const total = num(o, 'total') ?? num(o, 'Total') ?? items.length;
   return { items, total };
+}
+
+function mapCatalogRow(raw: unknown): {
+  id: string;
+  code: string;
+  displayName: string;
+  description: string | null;
+  family: string | null;
+  appliesTo: string | null;
+  sortOrder: number;
+  isActive: boolean;
+} {
+  const o = asRecord(raw);
+  return {
+    id: str(o, 'id') ?? '',
+    code: str(o, 'code') ?? '',
+    displayName: str(o, 'displayName') ?? str(o, 'code') ?? '',
+    description: str(o, 'description'),
+    family: str(o, 'family'),
+    appliesTo: str(o, 'appliesTo'),
+    sortOrder: num(o, 'sortOrder') ?? 0,
+    isActive: o.isActive !== false,
+  };
+}
+
+function mapCatalogList<T>(raw: unknown, mapItem: (item: unknown) => T): DiCatalogListResult<T> {
+  const o = asRecord(raw);
+  const itemsRaw = Array.isArray(o.items) ? o.items : Array.isArray(o.Items) ? o.Items : [];
+  const items = itemsRaw.map(mapItem);
+  return { items, total: num(o, 'total') ?? num(o, 'Total') ?? items.length };
+}
+
+export async function diListResourceKinds(activeOnly = true): Promise<DiCatalogListResult<DiResourceKind>> {
+  const q = activeOnly ? '?activeOnly=true' : '';
+  const raw = await fetchFromDocuments(`${LINKS_BASE}/resource-kinds${q}`, 'GET');
+  return mapCatalogList(raw, (item) => {
+    const row = mapCatalogRow(item);
+    return {
+      id: row.id,
+      code: row.code,
+      displayName: row.displayName,
+      description: row.description,
+      family: row.family,
+      sortOrder: row.sortOrder,
+      isActive: row.isActive,
+    };
+  });
+}
+
+export async function diListRelationTypes(activeOnly = true): Promise<DiCatalogListResult<DiRelationType>> {
+  const q = activeOnly ? '?activeOnly=true' : '';
+  const raw = await fetchFromDocuments(`${LINKS_BASE}/relation-types${q}`, 'GET');
+  return mapCatalogList(raw, (item) => {
+    const row = mapCatalogRow(item);
+    return {
+      id: row.id,
+      code: row.code,
+      displayName: row.displayName,
+      description: row.description,
+      appliesTo: row.appliesTo,
+      sortOrder: row.sortOrder,
+      isActive: row.isActive,
+    };
+  });
 }
 
 export async function diCreateTag(request: DiCreateTagRequest): Promise<DiTag> {

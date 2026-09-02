@@ -4,7 +4,9 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useDiEditorSessionCleanup } from '@/composables/useDiEditorSessionCleanup';
 import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollaboraEditor.vue';
-import { diGetFileVersionPreviewSession } from '@/services/documentIntelligenceService';
+import DiDrawioViewer from '@/components/apps/document-intelligence/DiDrawioViewer.vue';
+import { diDownloadFileVersion, diGetFileVersionPreviewSession } from '@/services/documentIntelligenceService';
+import { diPreviewKind, diPreviewMime, isDiOfficeEditable } from '@/utils/diFilePreview';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
@@ -29,6 +31,12 @@ const open = computed({
 const loading = ref(false);
 const error = ref<string | null>(null);
 const editorUrl = ref<string | null>(null);
+const objectUrl = ref<string | null>(null);
+const textContent = ref<string | null>(null);
+const drawioXml = ref<string | null>(null);
+
+const isOffice = computed(() => Boolean(props.resource && isDiOfficeEditable(props.resource)));
+const kind = computed(() => (props.resource ? diPreviewKind(props.resource) : 'none'));
 
 const title = computed(() => {
   const name = props.resource?.fileName || props.resource?.name || '';
@@ -38,23 +46,50 @@ const title = computed(() => {
   return `${name} · v${vn}`;
 });
 
+function revoke() {
+  if (objectUrl.value) {
+    URL.revokeObjectURL(objectUrl.value);
+    objectUrl.value = null;
+  }
+  textContent.value = null;
+  drawioXml.value = null;
+}
+
 function reset() {
   editorUrl.value = null;
   error.value = null;
+  revoke();
 }
 
 async function loadPreview() {
   const id = props.resource?.id?.trim();
   const vn = props.versionNumber;
-  if (!id || vn == null) return;
+  if (!id || vn == null || !props.resource) return;
 
   await releaseEditorSession();
   reset();
   loading.value = true;
   try {
-    const session = await diGetFileVersionPreviewSession(id, vn);
-    editorUrl.value = session.editorUrl || null;
-    trackEditorAccessToken(session.accessToken);
+    if (isOffice.value) {
+      const session = await diGetFileVersionPreviewSession(id, vn);
+      editorUrl.value = session.editorUrl || null;
+      trackEditorAccessToken(session.accessToken);
+      return;
+    }
+
+    const { blob } = await diDownloadFileVersion(id, vn, props.resource.fileName || props.resource.name);
+    const k = kind.value;
+    if (k === 'text') {
+      textContent.value = await blob.text();
+    } else if (k === 'drawio') {
+      drawioXml.value = await blob.text();
+    } else if (k === 'image' || k === 'pdf') {
+      const mime = diPreviewMime(props.resource);
+      const typed = mime && blob.type !== mime ? new Blob([blob], { type: mime }) : blob;
+      objectUrl.value = URL.createObjectURL(typed);
+    } else {
+      error.value = t('documentIntelligence.previewUnavailable');
+    }
   } catch (e: unknown) {
     error.value = panelError(e, 'documentIntelligence.errors.preview');
   } finally {
@@ -96,11 +131,35 @@ watch(
 
       <v-card-text class="flex-grow-1 pa-0 di-version-preview-body">
         <DiCollaboraEditor
+          v-if="isOffice"
           :editor-url="editorUrl"
           :loading="loading"
           :error="error"
           :title="null"
         />
+        <div v-else class="h-100 overflow-auto">
+          <div v-if="loading" class="d-flex justify-center align-center py-12">
+            <v-progress-circular indeterminate color="primary" size="36" />
+          </div>
+          <v-alert v-else-if="error" type="error" variant="tonal" class="ma-4" density="compact">
+            {{ error }}
+          </v-alert>
+          <div v-else-if="kind === 'image'" class="d-flex justify-center pa-4">
+            <img v-if="objectUrl" :src="objectUrl" :alt="title" class="di-version-image" />
+          </div>
+          <iframe
+            v-else-if="kind === 'pdf' && objectUrl"
+            :src="objectUrl"
+            class="di-version-pdf"
+            :title="title"
+          />
+          <DiDrawioViewer
+            v-else-if="kind === 'drawio' && drawioXml != null"
+            :xml="drawioXml"
+            :title="title"
+          />
+          <pre v-else-if="kind === 'text'" class="di-version-text">{{ textContent }}</pre>
+        </div>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -125,5 +184,26 @@ watch(
   height: calc(100vh - 72px);
   max-height: none;
   min-height: 0;
+}
+
+.di-version-image {
+  max-width: 100%;
+  height: auto;
+}
+
+.di-version-pdf {
+  width: 100%;
+  height: calc(100vh - 72px);
+  border: 0;
+  display: block;
+}
+
+.di-version-text {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
 }
 </style>

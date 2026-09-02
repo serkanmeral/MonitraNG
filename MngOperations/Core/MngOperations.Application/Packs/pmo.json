@@ -1,0 +1,86 @@
+{
+  "code": "pmo",
+  "name": "PMO",
+  "version": "1.0.0",
+  "description": "Plan, tutanak, karar, durum ve teslimat listesi. Proje yöneticisi boş ağaçla başlamaz.",
+  "kinds": ["plan", "minutes", "decision", "statusReport", "deliverable", "diagram"],
+  "folders": [
+    { "name": "Plan" },
+    { "name": "Tutanak" },
+    { "name": "Karar" },
+    { "name": "Durum" },
+    { "name": "Teslimat" },
+    { "name": "Diyagram" }
+  ],
+  "wbs": [
+    {
+      "name": "Başlatma",
+      "kind": "summary",
+      "children": [
+        { "name": "Kick-off", "kind": "task" },
+        { "name": "Kapsam onayı", "kind": "milestone" }
+      ]
+    },
+    {
+      "name": "Planlama",
+      "kind": "summary",
+      "children": [
+        { "name": "Proje planı", "kind": "task" },
+        { "name": "Baseline", "kind": "milestone" }
+      ]
+    },
+    {
+      "name": "Yürütme",
+      "kind": "summary",
+      "children": [
+        { "name": "Durum raporu", "kind": "task" },
+        { "name": "Teslimatlar", "kind": "task" }
+      ]
+    },
+    {
+      "name": "Kapanış",
+      "kind": "summary",
+      "children": [
+        { "name": "Teslim ve devir", "kind": "task" },
+        { "name": "Kapanış", "kind": "milestone" }
+      ]
+    }
+  ],
+  "starters": [
+    {
+      "folder": "Plan",
+      "title": "Proje planı",
+      "kind": "plan",
+      "body": "# Proje planı\n\n- Amaç\n- Kapsam / kapsam dışı\n- Kilometre taşları\n- Teslimat listesi\n- Riskler (hafif)\n"
+    },
+    {
+      "folder": "Tutanak",
+      "title": "Kick-off tutanağı",
+      "kind": "minutes",
+      "body": "# Kick-off tutanağı\n\n- Tarih\n- Katılımcılar\n- Kararlar\n- Aksiyonlar (iş kaydına bağlanır)\n"
+    },
+    {
+      "folder": "Karar",
+      "title": "Karar kaydı",
+      "kind": "decision",
+      "body": "# Karar\n\nResmi kayıt. Proje katmanındaki hafif karar ile isteğe bağlı bağlanır.\n\n- Konu\n- Karar\n- Etki (WBS / iş / belge)\n"
+    },
+    {
+      "folder": "Durum",
+      "title": "Durum özeti",
+      "kind": "statusReport",
+      "body": "# Durum özeti\n\nSponsor için: zaman, kilometre taşı, açık iş, eksik belge.\n\nKaynak: proje Durum sekmesi.\n"
+    },
+    {
+      "folder": "Teslimat",
+      "title": "Teslimat listesi",
+      "kind": "deliverable",
+      "body": "# Teslimat listesi\n\n| Kalem | WBS | Durum | Kanıt |\n| --- | --- | --- | --- |\n|  |  |  |  |\n"
+    }
+  ],
+  "diagram": {
+    "folder": "Diyagram",
+    "title": "Teslimat omurgası.drawio",
+    "kind": "diagram"
+  }
+}

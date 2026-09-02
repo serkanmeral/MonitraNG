@@ -2,7 +2,7 @@ import type { DiResource } from '@/types/apps/documentIntelligence';
 import { DI_RESOURCE_ORIGIN } from '@/types/apps/documentIntelligence';
 
 /** İnline önizlenebilir dosya türü. `none` = sadece indir. */
-export type DiFilePreviewKind = 'image' | 'pdf' | 'text' | 'none';
+export type DiFilePreviewKind = 'image' | 'pdf' | 'text' | 'drawio' | 'none';
 
 const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'avif', 'ico'];
 const PDF_EXTS = ['pdf'];
@@ -39,11 +39,43 @@ export const DI_PREVIEW_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 export const DI_PREVIEW_TEXT_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
 function resExt(resource: DiResource): string {
-  const fromField = (resource.extension ?? '').toLowerCase().replace(/^\./, '').trim();
-  if (fromField) return fromField;
   const name = resource.fileName ?? resource.name ?? '';
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.drawio.xml') || lower.endsWith('.drawio')) return 'drawio';
+  const fromField = (resource.extension ?? '').toLowerCase().replace(/^\./, '').trim();
+  if (fromField === 'drawio' || fromField === 'drawio.xml') return 'drawio';
+  if (fromField) return fromField;
   const dot = name.lastIndexOf('.');
   return dot >= 0 ? name.slice(dot + 1).toLowerCase().trim() : '';
+}
+
+export function isDiDrawioFile(resource: Pick<DiResource, 'type' | 'extension' | 'fileName' | 'name' | 'mimeType'>): boolean {
+  if (resource.type !== 'file') return false;
+  const mime = (resource.mimeType ?? '').toLowerCase();
+  if (mime.includes('jgraph') || mime.includes('mxfile')) return true;
+  const name = `${resource.fileName ?? ''} ${resource.name ?? ''}`.toLowerCase();
+  if (name.includes('.drawio')) return true;
+  const ext = (resource.extension ?? '').toLowerCase().replace(/^\./, '').trim();
+  return ext === 'drawio' || ext === 'drawio.xml';
+}
+
+export function isDiVisualEvidence(resource: DiResource): boolean {
+  if (resource.type !== 'file') return false;
+  if (isDiDrawioFile(resource)) return true;
+  const ext = resExt(resource);
+  if (IMAGE_EXTS.includes(ext)) return true;
+  return (resource.mimeType ?? '').toLowerCase().startsWith('image/');
+}
+
+/** Dosya adı / MIME ile yükleme anında görsel kanıt mı? */
+export function isDiVisualEvidenceFile(fileName: string, mimeType?: string | null): boolean {
+  const name = (fileName ?? '').toLowerCase();
+  if (name.endsWith('.drawio') || name.endsWith('.drawio.xml') || name.includes('.drawio.')) return true;
+  const mime = (mimeType ?? '').toLowerCase();
+  if (mime.startsWith('image/') || mime.includes('jgraph') || mime.includes('mxfile')) return true;
+  const dot = name.lastIndexOf('.');
+  const ext = dot >= 0 ? name.slice(dot + 1) : '';
+  return IMAGE_EXTS.includes(ext);
 }
 
 /** Uzantı → MIME tipi. DG bazen `application/octet-stream` döndürür; iframe/img
@@ -58,6 +90,7 @@ const EXT_MIME: Record<string, string> = {
   svg: 'image/svg+xml',
   avif: 'image/avif',
   ico: 'image/x-icon',
+  drawio: 'application/vnd.jgraph.mxfile',
   pdf: 'application/pdf',
 };
 
@@ -95,6 +128,7 @@ export function isDiServerRenderedPdfPreview(resource: DiResource): boolean {
 /** Uzantıya göre önizleme türünü (boyut sınırı dikkate alınmadan) döndürür. */
 export function diPreviewKindByExt(resource: DiResource): DiFilePreviewKind {
   if (isDiUploadDocxPreviewable(resource)) return 'pdf';
+  if (isDiDrawioFile(resource)) return 'drawio';
   const ext = resExt(resource);
   if (IMAGE_EXTS.includes(ext)) return 'image';
   if (PDF_EXTS.includes(ext)) return 'pdf';

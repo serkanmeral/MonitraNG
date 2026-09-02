@@ -1,0 +1,69 @@
+{
+  "name": "dm_relation_types",
+  "description": "Document Intelligence — relation type catalog (Teslimat Omurgasi F1-1)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "code",
+      "title": "Relation code",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "displayName",
+      "title": "Display name",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 256 }
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Description",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "appliesTo",
+      "title": "Applies to (workItem | resource | both)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "number",
+      "name": "sortOrder",
+      "title": "Sort order",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Active",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_rel_code",
+      "fields": { "code": 1 },
+      "unique": true
+    }
+  ]
+}

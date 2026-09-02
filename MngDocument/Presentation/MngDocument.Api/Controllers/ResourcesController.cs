@@ -136,7 +136,7 @@ public class ResourcesController : ControllerBase
         var ext = Path.GetExtension(fileName);
         var contentType = ManagedOfficeProfiles.TryResolve(ext, null, out var profile)
             ? profile.MimeType
-            : "application/octet-stream";
+            : VisualEvidence.GuessContentType(ext, fileName, null);
         if (string.Equals(ext, ".pdf", StringComparison.OrdinalIgnoreCase))
             contentType = "application/pdf";
         return File(bytes, contentType, fileName);
@@ -170,6 +170,22 @@ public class ResourcesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateMetadata(string id, [FromBody] UpdateResourceMetadataRequest request, CancellationToken ct) =>
         Ok(await _resources.UpdateMetadataAsync(id, request, ct));
+
+    [HttpPost("{id}/lifecycle")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangeLifecycle(string id, [FromBody] ChangeResourceLifecycleRequest request, CancellationToken ct) =>
+        Ok(await _resources.ChangeLifecycleAsync(id, request, ct));
+
+    [HttpPost("{id}/baseline")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetBaseline(string id, [FromBody] SetResourceBaselineRequest request, CancellationToken ct) =>
+        Ok(await _resources.SetBaselineAsync(id, request, ct));
 
     [HttpPut("{id}/move")]
     [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
@@ -271,7 +287,7 @@ public class ResourcesController : ControllerBase
         CancellationToken ct = default) =>
         Ok(await _resourceEditor.CreateEditorSessionAsync(id, readOnly, bypassLock, postMessageOrigin, ct));
 
-    /// <summary>Yönetilen Office dosyası (DOCX/XLSX/PPTX) sürüm geçmişi (içerik hariç, en yeni önce).</summary>
+    /// <summary>Dosya sürüm geçmişi (içerik hariç, en yeni önce).</summary>
     [HttpGet("{id}/versions")]
     [ProducesResponseType(typeof(IReadOnlyList<MarkdownVersionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -288,7 +304,7 @@ public class ResourcesController : ControllerBase
         var ext = Path.GetExtension(fileName);
         var contentType = ManagedOfficeProfiles.TryResolve(ext, null, out var profile)
             ? profile.MimeType
-            : "application/octet-stream";
+            : VisualEvidence.GuessContentType(ext, fileName, null);
         return File(bytes, contentType, fileName);
     }
 
@@ -331,6 +347,17 @@ public class ResourcesController : ControllerBase
         var created = await _resources.CreateFileResourceAsync(request, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
+
+    /// <summary>Yüklenen dosyanın içeriğini yeni sürüm olarak değiştirir (görsel kanıt / upload).</summary>
+    [HttpPut("{id}/file-content")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReplaceFileContent(
+        string id,
+        [FromBody] ReplaceFileContentRequest request,
+        CancellationToken ct) =>
+        Ok(await _resources.ReplaceFileContentAsync(id, request, ct));
 
     /// <summary>Native DOCX döküman oluşturur (<c>origin=native</c>, antet uygulanır).</summary>
     [HttpPost("documents")]

@@ -1,0 +1,30 @@
+{
+  "records": [
+    { "code": "plan", "displayName": "Plan", "description": "Proje veya is plani", "family": "document", "sortOrder": 10, "isActive": true },
+    { "code": "minutes", "displayName": "Tutanak", "description": "Toplanti kaydi", "family": "record", "sortOrder": 20, "isActive": true },
+    { "code": "decision", "displayName": "Karar", "description": "Karar kaydi (ADR veya yonetim karari)", "family": "record", "sortOrder": 30, "isActive": true },
+    { "code": "deliverable", "displayName": "Teslimat", "description": "Musteriye veya asama kapisina teslim", "family": "document", "sortOrder": 40, "isActive": true },
+    { "code": "procedure", "displayName": "Prosedur", "description": "Kontrollu talimat / prosedur", "family": "document", "sortOrder": 50, "isActive": true },
+    { "code": "specification", "displayName": "Sartname", "description": "Gereksinim veya sartname", "family": "document", "sortOrder": 60, "isActive": true },
+    { "code": "evidence", "displayName": "Kanit", "description": "Kapanis veya denetim kaniti", "family": "record", "sortOrder": 70, "isActive": true },
+    { "code": "diagram", "displayName": "Diyagram", "description": "draw.io / SVG / surec veya mimari gorsel", "family": "visual", "sortOrder": 80, "isActive": true },
+    { "code": "statusReport", "displayName": "Durum raporu", "description": "Sponsor / PMO durum ozeti", "family": "document", "sortOrder": 90, "isActive": true },
+    { "code": "form", "displayName": "Form", "description": "Doldurulacak kalite veya kontrol formu", "family": "document", "sortOrder": 100, "isActive": true },
+    { "code": "record", "displayName": "Kayit", "description": "Doldurulmus form veya kalite kaydi", "family": "record", "sortOrder": 110, "isActive": true },
+    { "code": "revision", "displayName": "Revizyon", "description": "Revizyon bildirimi / degisiklik kaydi", "family": "record", "sortOrder": 120, "isActive": true },
+    { "code": "adr", "displayName": "ADR", "description": "Mimari karar kaydi (Architecture Decision Record)", "family": "record", "sortOrder": 130, "isActive": true },
+    { "code": "icd", "displayName": "ICD", "description": "Arayuz kontrol belgesi (Interface Control Document)", "family": "document", "sortOrder": 140, "isActive": true },
+    { "code": "architecture", "displayName": "Mimari", "description": "Mimari ozet / C4 kapsam notu", "family": "document", "sortOrder": 150, "isActive": true },
+    { "code": "proposal", "displayName": "Teklif", "description": "Musteriye gidecek teklif metni / ozeti", "family": "document", "sortOrder": 160, "isActive": true },
+    { "code": "compliance", "displayName": "Uyum matrisi", "description": "Sartname maddesi → yanıt / sapma / kanıt", "family": "document", "sortOrder": 170, "isActive": true },
+    { "code": "clarification", "displayName": "Soru", "description": "Sartname netlestirme sorusu", "family": "record", "sortOrder": 180, "isActive": true },
+    { "code": "eco", "displayName": "ECO", "description": "Muhendislik degisiklik emri (Engineering Change Order)", "family": "record", "sortOrder": 190, "isActive": true },
+    { "code": "ecn", "displayName": "ECN", "description": "Muhendislik degisiklik bildirimi (Engineering Change Notice)", "family": "record", "sortOrder": 200, "isActive": true },
+    { "code": "impact", "displayName": "Etki analizi", "description": "Degisikligin belge / WBS / arayuz etkisi", "family": "document", "sortOrder": 210, "isActive": true },
+    { "code": "onboarding", "displayName": "Onboarding", "description": "Karsilama / oryantasyon plani", "family": "document", "sortOrder": 220, "isActive": true },
+    { "code": "competency", "displayName": "Yetkinlik", "description": "Rol yetkinlik matrisi veya kaydi", "family": "record", "sortOrder": 230, "isActive": true },
+    { "code": "punchlist", "displayName": "Eksik listesi", "description": "Kabul oncesi acik kalem listesi", "family": "record", "sortOrder": 240, "isActive": true },
+    { "code": "acceptance", "displayName": "Kabul", "description": "Musteri kabul tutanagi", "family": "record", "sortOrder": 250, "isActive": true },
+    { "code": "closeout", "displayName": "Kapanış", "description": "Proje kapanis / devir ozeti", "family": "document", "sortOrder": 260, "isActive": true }
+  ]
+}

@@ -26,7 +26,6 @@ function Invoke-DmCatalogSeed {
 
     $headers = @{
         Authorization = "Bearer $token"
-        "Content-Type" = "application/json"
     }
     $dataBase = "$BaseUrl/data/api/v1/data/$Dataset"
     $utf8 = [System.Text.Encoding]::UTF8

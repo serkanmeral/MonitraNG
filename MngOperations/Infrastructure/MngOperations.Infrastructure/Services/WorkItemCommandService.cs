@@ -38,6 +38,7 @@ public class WorkItemCommandService : IWorkItemCommandService
     private readonly IWorkspaceAutomationService _workspaceAutomations;
     private readonly ICreateDatasetRowsActionExecutor _createDatasetRows;
     private readonly IUpdateDatasetRowsActionExecutor _updateDatasetRows;
+    private readonly Lazy<IProjectPlanningService> _planning;
     private readonly ILogger<WorkItemCommandService> _logger;
 
     private static readonly HashSet<string> PatchForbiddenKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -62,6 +63,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         IWorkspaceAutomationService workspaceAutomations,
         ICreateDatasetRowsActionExecutor createDatasetRows,
         IUpdateDatasetRowsActionExecutor updateDatasetRows,
+        Lazy<IProjectPlanningService> planning,
         ILogger<WorkItemCommandService> logger)
     {
         _requestContext = requestContext;
@@ -78,6 +80,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         _workflowClient = workflowClient;
         _workspaceAutomations = workspaceAutomations;
         _createDatasetRows = createDatasetRows;
+        _planning = planning;
         _updateDatasetRows = updateDatasetRows;
         _logger = logger;
     }
@@ -259,6 +262,8 @@ public class WorkItemCommandService : IWorkItemCommandService
             PipelineSteps.PublishRabbitMq,
             () => PublishEventAsync(domainId, "updated", workspaceId, workItemId, workItemKey, cancellationToken, throwOnFailure: true),
             snapshot);
+
+        await TryApplyWbsProgressAsync(workItemId, cancellationToken);
 
         await RunPipelineSideEffectAsync(
             pipeline,
@@ -488,6 +493,8 @@ public class WorkItemCommandService : IWorkItemCommandService
             PipelineSteps.PublishRabbitMq,
             () => PublishEventAsync(domainId, "transitioned", workspaceId, workItemId, wiKey, cancellationToken, transitionKey, throwOnFailure: true),
             snapshot);
+
+        await TryApplyWbsProgressAsync(workItemId, cancellationToken);
 
         await RunPipelineSideEffectAsync(
             pipeline,
@@ -721,6 +728,8 @@ public class WorkItemCommandService : IWorkItemCommandService
         {
             _logger.LogWarning(ex, "Publish deleted event failed for work item {WorkItemId} (non-fatal)", workItemId);
         }
+
+        await TryClearWbsLinksAsync(workItemId, cancellationToken);
 
         _logger.LogInformation("Deleted work item {WorkItemKey} ({WorkItemId}) in workspace {WorkspaceId}", workItemKey, workItemId, workspaceId);
     }
@@ -1698,6 +1707,30 @@ public class WorkItemCommandService : IWorkItemCommandService
             TransitionKey = transitionKey,
             Actor = _requestContext.Username
         }, cancellationToken, throwOnFailure);
+    }
+
+    private async Task TryApplyWbsProgressAsync(string workItemId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _planning.Value.ApplyWorkItemProgressAsync(workItemId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "WBS rollup failed for work item {WorkItemId} (non-fatal)", workItemId);
+        }
+    }
+
+    private async Task TryClearWbsLinksAsync(string workItemId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _planning.Value.ClearWorkItemLinksAsync(workItemId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "WBS unlink failed for deleted work item {WorkItemId} (non-fatal)", workItemId);
+        }
     }
 
     private async Task RunMutationRulesAsync(

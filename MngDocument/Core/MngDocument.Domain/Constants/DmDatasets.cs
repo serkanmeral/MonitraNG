@@ -15,5 +15,7 @@ public static class DmDatasets
     public const string Letterheads = "dm_letterheads";
     public const string CoverPages = "dm_cover_pages";
     public const string Tags = "dm_tags";
+    public const string ResourceKinds = "dm_resource_kinds";
+    public const string RelationTypes = "dm_relation_types";
     public const string GenerationCounters = "dm_generation_counters";
 }

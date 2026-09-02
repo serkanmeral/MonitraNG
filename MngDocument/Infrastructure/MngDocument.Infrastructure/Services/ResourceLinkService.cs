@@ -23,12 +23,18 @@ public sealed class ResourceLinkService : IResourceLinkService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IPermissionService _perms;
+    private readonly IRelationTypeCatalog _relationTypes;
 
-    public ResourceLinkService(IMngDataGatewayClient dg, IRequestContext ctx, IPermissionService perms)
+    public ResourceLinkService(
+        IMngDataGatewayClient dg,
+        IRequestContext ctx,
+        IPermissionService perms,
+        IRelationTypeCatalog relationTypes)
     {
         _dg = dg;
         _ctx = ctx;
         _perms = perms;
+        _relationTypes = relationTypes;
     }
 
     private string? Token => _ctx.BearerToken;
@@ -52,7 +58,7 @@ public sealed class ResourceLinkService : IResourceLinkService
                 "Kaynak, hedef modül/tip/id zorunludur.");
         }
 
-        if (!ResourceLinkRelationType.IsAllowed(relationType))
+        if (!await _relationTypes.IsAllowedAsync(relationType, ct))
         {
             throw DocumentException.Validation(
                 "LINK_RELATION_INVALID",
@@ -60,20 +66,36 @@ public sealed class ResourceLinkService : IResourceLinkService
                 "Geçersiz ilişki tipi.");
         }
 
-        if (!string.Equals(targetModule, ResourceLinkTargetModule.OperationCore, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(targetType, ResourceLinkTargetType.WorkItem, StringComparison.OrdinalIgnoreCase))
+        var isWorkItem = ResourceLinkRelationType.IsWorkItemTarget(targetModule, targetType);
+        var isResource = ResourceLinkRelationType.IsResourceTarget(targetModule, targetType);
+        if (!isWorkItem && !isResource)
         {
             throw DocumentException.Validation(
                 "LINK_TARGET_UNSUPPORTED",
-                "Only operationCore/workItem targets are supported in phase 2.",
-                "Faz 2 yalnızca operationCore/workItem hedeflerini destekler.");
+                "Supported targets: operationCore/workItem or documentIntelligence/resource.",
+                "Hedef operationCore/workItem veya documentIntelligence/resource olmalıdır.");
+        }
+
+        if (isResource && string.Equals(resourceId, targetId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "LINK_SELF",
+                "A resource cannot link to itself.",
+                "Kaynak kendisine bağlanamaz.");
         }
 
         var resource = await LoadResourceOrThrowAsync(resourceId, ct);
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
 
-        await EnsureWorkItemExistsAsync(targetId, ct);
+        if (isWorkItem)
+            await EnsureWorkItemExistsAsync(targetId, ct);
+        else
+        {
+            var targetResource = await LoadResourceOrThrowAsync(targetId, ct);
+            snapshot.EnsureCan(targetResource, ResourceAction.View);
+        }
+
         await EnsureLinkNotDuplicateAsync(resourceId, targetModule, targetType, targetId, relationType, ct);
 
         var payload = new Dictionary<string, object?>
@@ -231,6 +253,96 @@ public sealed class ResourceLinkService : IResourceLinkService
         {
             Items = items,
             Total = items.Count
+        };
+    }
+
+    public async Task<ResourceLinkListResult<LinkedResourceSummaryDto>> GetRelatedResourcesAsync(
+        string resourceId,
+        CancellationToken ct = default)
+    {
+        var rid = resourceId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rid))
+            throw DocumentException.NotFound();
+
+        var source = await LoadResourceOrThrowAsync(rid, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(source, ResourceAction.View);
+
+        var outgoing = await QueryLinksByResourceAsync(rid, ct);
+        var incomingPage = await _dg.QueryPageAsync(
+            DmDatasets.ResourceLinks,
+            new Dictionary<string, object?>
+            {
+                ["targetModule"] = ResourceLinkTargetModule.DocumentIntelligence,
+                ["targetType"] = ResourceLinkTargetType.Resource,
+                ["targetId"] = rid
+            },
+            ListQuery,
+            Token,
+            ct);
+
+        var items = new List<LinkedResourceSummaryDto>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var link in outgoing)
+        {
+            if (link.__dataId is null || !ResourceLinkRelationType.IsResourceTarget(link.targetModule, link.targetType))
+                continue;
+            var otherId = link.targetId?.Trim() ?? string.Empty;
+            var dto = await TryMapRelatedAsync(link.__dataId, otherId, link.relationType, "outgoing", snapshot, ct);
+            if (dto is null || !seen.Add(dto.LinkId))
+                continue;
+            items.Add(dto);
+        }
+
+        foreach (var row in incomingPage.Items)
+        {
+            var link = MapLinkRow(row);
+            if (link.__dataId is null)
+                continue;
+            var otherId = link.resourceId?.Trim() ?? string.Empty;
+            var dto = await TryMapRelatedAsync(link.__dataId, otherId, link.relationType, "incoming", snapshot, ct);
+            if (dto is null || !seen.Add(dto.LinkId))
+                continue;
+            items.Add(dto);
+        }
+
+        return new ResourceLinkListResult<LinkedResourceSummaryDto>
+        {
+            Items = items,
+            Total = items.Count
+        };
+    }
+
+    private async Task<LinkedResourceSummaryDto?> TryMapRelatedAsync(
+        string linkId,
+        string otherId,
+        string? relationType,
+        string direction,
+        PermissionSnapshot snapshot,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(otherId))
+            return null;
+        var other = await _dg.GetByIdAsync<DmResource>(DmDatasets.Resources, otherId, Token, ct);
+        if (other?.__dataId is null)
+            return null;
+        if (!PermissionSnapshot.Allows(snapshot.Resolve(other), ResourceAction.View))
+            return null;
+
+        return new LinkedResourceSummaryDto
+        {
+            LinkId = linkId,
+            ResourceId = other.__dataId,
+            RelationType = relationType ?? ResourceLinkRelationType.Reference,
+            Direction = direction,
+            Kind = other.kind,
+            ResourceType = other.type,
+            Name = other.name,
+            Title = other.title,
+            MimeType = other.mimeType,
+            Extension = other.extension,
+            Permissions = snapshot.Resolve(other)
         };
     }
 

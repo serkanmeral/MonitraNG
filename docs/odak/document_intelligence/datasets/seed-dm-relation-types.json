@@ -1,0 +1,13 @@
+{
+  "records": [
+    { "code": "reference", "displayName": "Referans", "description": "Ilgili kayit", "appliesTo": "both", "sortOrder": 10, "isActive": true },
+    { "code": "attachment", "displayName": "Ek", "description": "Ekte duran dosya", "appliesTo": "workItem", "sortOrder": 20, "isActive": true },
+    { "code": "evidence", "displayName": "Kanit", "description": "Isten kapanis kaniti", "appliesTo": "both", "sortOrder": 30, "isActive": true },
+    { "code": "output", "displayName": "Cikti", "description": "Isin urettigi belge", "appliesTo": "workItem", "sortOrder": 40, "isActive": true },
+    { "code": "derivedFrom", "displayName": "Turetilen", "description": "Bu kayit baska bir kaynaktan turetilir", "appliesTo": "resource", "sortOrder": 50, "isActive": true },
+    { "code": "implements", "displayName": "Uygular", "description": "Bu kayit bir kurali veya karari uygular", "appliesTo": "resource", "sortOrder": 60, "isActive": true },
+    { "code": "dependsOn", "displayName": "Bagimlidir", "description": "Bu kayit baska bir kaynaga bagimlidir", "appliesTo": "resource", "sortOrder": 70, "isActive": true },
+    { "code": "supersedes", "displayName": "Yerine gecer", "description": "Bu kayit onceki surumu gecersiz kilar", "appliesTo": "resource", "sortOrder": 80, "isActive": true },
+    { "code": "conflictsWith", "displayName": "Celisir", "description": "Bu kayit baska bir kayitla celisir", "appliesTo": "resource", "sortOrder": 90, "isActive": true }
+  ]
+}

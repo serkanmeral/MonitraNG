@@ -231,6 +231,18 @@ public class FileFieldValidatorTests
     }
 
     [Fact]
+    public void DetectMimeType_DrawioXml_Success()
+    {
+        var xml = "<mxfile host=\"app.diagrams.net\"><diagram name=\"x\" id=\"1\"><mxGraphModel><root><mxCell id=\"0\"/></root></mxGraphModel></diagram></mxfile>";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(xml);
+
+        var mimeType = _validator.DetectMimeType(bytes);
+
+        Assert.Equal("application/vnd.jgraph.mxfile", mimeType);
+        Assert.Equal(".drawio", _validator.GetExtensionFromMimeType(mimeType));
+    }
+
+    [Fact]
     public void DetectMimeType_Unknown_DefaultsToOctetStream()
     {
         // Arrange

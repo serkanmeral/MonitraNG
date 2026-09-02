@@ -71,14 +71,26 @@ export interface DiResource {
   tags: string[];
   /** DLP birincil sınıflandırma (dm_tags id, kind=classification). */
   classificationTagId: string | null;
+  /** Teslimat omurgası kaynak türü (dm_resource_kinds.code). */
+  kind: string | null;
   contentType: string | null;
   mimeType: string | null;
   extension: string | null;
   size: number | null;
   currentVersionNumber: number;
   hasContent: boolean;
-  /** Doküman durumu (yalnızca markdown): 'draft' | 'published'. Varsayılan 'published'. */
+  /** Doküman durumu: 'draft' | 'inReview' | 'published'. Varsayılan 'published'. */
   status: string;
+  submittedBy: string | null;
+  submittedAt: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  reviewNote: string | null;
+  baselineVersionNumber: number | null;
+  baselineSetBy: string | null;
+  baselineSetAt: string | null;
+  baselineNote: string | null;
+  baselineDrifted: boolean;
   /** Yüklenen dosyanın MinIO path'i (yalnızca type=file). İndirme için. */
   filePath: string | null;
   /** Yüklenen dosyanın orijinal adı (yalnızca type=file). */
@@ -198,6 +210,8 @@ export interface DiUpdateResourceMetadataRequest {
   description?: string | null;
   /** Boş string sınıflandırmayı kaldırır. */
   classificationTagId?: string | null;
+  /** Boş string türü kaldırır. */
+  kind?: string | null;
 }
 
 export interface DiCloneResourceRequest {
@@ -205,6 +219,16 @@ export interface DiCloneResourceRequest {
   name: string;
   /** Manual DOCX için zorunlu */
   documentNo?: string | null;
+}
+
+export interface DiChangeLifecycleRequest {
+  action: 'submit' | 'approve' | 'reject' | 'revise' | string;
+  note?: string | null;
+}
+
+export interface DiSetBaselineRequest {
+  versionNumber?: number | null;
+  note?: string | null;
 }
 
 /** dm_tags katalog kaydı. */
@@ -224,6 +248,31 @@ export interface DiTag {
 
 export interface DiTagListResult {
   items: DiTag[];
+  total: number;
+}
+
+export interface DiResourceKind {
+  id: string;
+  code: string;
+  displayName: string;
+  description: string | null;
+  family: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface DiRelationType {
+  id: string;
+  code: string;
+  displayName: string;
+  description: string | null;
+  appliesTo: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface DiCatalogListResult<T> {
+  items: T[];
   total: number;
 }
 
@@ -308,6 +357,15 @@ export interface DiCreateFileResourceRequest {
   content: string;
   /** Orijinal dosya adı (indirmede kullanılır). */
   originalFileName?: string | null;
+  kind?: string | null;
+}
+
+export interface DiReplaceFileContentRequest {
+  content: string;
+  originalFileName?: string | null;
+  mimeType?: string | null;
+  extension?: string | null;
+  changeNote?: string | null;
 }
 
 export interface DiCreateNativeDocumentRequest {
@@ -337,8 +395,24 @@ export interface DiCreateNativeOfficeRequest {
 /** Ağaç kökü için sanal düğüm kimliği (UI). */
 export const DI_ROOT_ID = '__di_root__';
 
-/** dm_resource_links.relationType değerleri (Faz 2). */
-export const DI_LINK_RELATION_TYPES = ['reference', 'attachment', 'evidence', 'output'] as const;
+/** dm_resource_links.relationType değerleri. */
+export const DI_WORK_ITEM_LINK_RELATION_TYPES = ['reference', 'attachment', 'evidence', 'output'] as const;
+export const DI_RESOURCE_DOC_LINK_RELATION_TYPES = [
+  'reference',
+  'derivedFrom',
+  'implements',
+  'dependsOn',
+  'supersedes',
+  'conflictsWith',
+] as const;
+export const DI_LINK_RELATION_TYPES = [
+  ...DI_WORK_ITEM_LINK_RELATION_TYPES,
+  'derivedFrom',
+  'implements',
+  'dependsOn',
+  'supersedes',
+  'conflictsWith',
+] as const;
 export type DiLinkRelationType = (typeof DI_LINK_RELATION_TYPES)[number];
 
 export interface DiResourceLink {
@@ -366,6 +440,8 @@ export interface DiLinkedResource {
   linkId: string;
   resourceId: string;
   relationType: DiLinkRelationType | string;
+  direction?: string | null;
+  kind?: string | null;
   resourceType: string | null;
   name: string | null;
   title: string | null;

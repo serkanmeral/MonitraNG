@@ -23,6 +23,9 @@ public class DmResource
     /// <summary>DLP birincil sınıflandırma (<c>dm_tags</c> id, <c>kind=classification</c>).</summary>
     public string? classificationTagId { get; set; }
 
+    /// <summary>Teslimat omurgası kaynak türü kodu (<c>dm_resource_kinds.code</c>).</summary>
+    public string? kind { get; set; }
+
     /// <summary>Markdown içeriği (yalnızca <c>type=markdown</c>). Dosyalarda boştur.</summary>
     public string? content { get; set; }
 
@@ -36,8 +39,20 @@ public class DmResource
 
     public int? currentVersionNumber { get; set; }
 
-    /// <summary>Doküman durumu (<c>draft</c>/<c>published</c>; yalnızca markdown). Yok = published.</summary>
+    /// <summary>Doküman durumu (<c>draft</c>/<c>inReview</c>/<c>published</c>). Yok = published.</summary>
     public string? status { get; set; }
+
+    /// <summary>İncelemeye gönderen (F1-2).</summary>
+    public string? submittedBy { get; set; }
+    public DateTime? submittedAt { get; set; }
+    public string? approvedBy { get; set; }
+    public DateTime? approvedAt { get; set; }
+    public string? reviewNote { get; set; }
+
+    public int? baselineVersionNumber { get; set; }
+    public string? baselineSetBy { get; set; }
+    public DateTime? baselineSetAt { get; set; }
+    public string? baselineNote { get; set; }
 
     /// <summary>
     /// Yetki mirası kırık mı? <c>true</c> ise bu klasör kendi ACL'ine sahip "anchor"dır;
