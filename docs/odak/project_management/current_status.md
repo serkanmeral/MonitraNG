@@ -1,71 +1,72 @@
 # Teslimat Omurgası — Oturum durumu
 
-**Son güncelleme:** 3 Eylül 2026  
-**Konu:** Teslimat omurgası (DI + Proje/`pm_*` + Operation Core) — paket kataloğu durak noktası  
+**Son güncelleme:** 15 Eylül 2026  
+**Konu:** Teslimat omurgası — izlenebilirlik zinciri + kapatma kilitleri (F4-7, F2-15, F2-16)  
 **Ortam:** Odak test `192.168.20.20` · UI kontrolü lokal `npm run dev` · UI Docker image/deploy yok · backend deploy serbest  
-**Manifest:** `docs/odak/project_management/install/manifest.json` **0.26.0**
+**Manifest:** `docs/odak/project_management/install/manifest.json` **0.35.0**
 
 **Ana referans:** [PLAN.md](./PLAN.md)
 
-> **Kaldığımız yer:** Paket omurgasının somut dilimleri bitti (**F4-2**). Marketplace ve NLP/şartname parser bilinçli sonra. AnkaraBT şartnamesi **örnek kaynak**; ihale maddeleri hayata geçirilmeyecek.
+> **Kaldığımız yer:** Omurga halkası kuruldu: plan (`reference`) → WBS → OC iş → kanıt → kapatma kilitleri (kapı / kanıt / onay). NLP / şartname parser yok.
 
 ---
 
 ## Son çalışılan konu
 
-İş paketi kataloğu kapanış dilimleri:
+**F4-7 / F2-15 / F2-16** (3 Eylül 2026 oturumu, 15 Eylül’de durum senkronu):
 
-1. **F4-1** — Paketten ince OC workspace iskeleti (proje `workspaceId` boşsa).
-2. **F4-2** — Paket sökmede boş DI klasör silme (dolu ve paylaşılan klasörler kalır).
+- **F4-7** — WBS işine DI plan/kaynak belgesi `reference` bağı. Durum: `missingReference`. API: `/wbs/{id}/references`.
+- **F2-15** — Kanıtsız kapatma engeli: `409 EVIDENCE_REQUIRED`.
+- **F2-16** — Onaysız/taslak bağlı belgeyle kapatma engeli: `409 APPROVAL_REQUIRED`.
+- WBS satırında “Kanıt yok / Plan yok” chip’leri (UI lokal).
+
+Önceki dilimler: **F4-6** (kanıt bağı), **F2-14** (kapı kilidi), F4-1…F4-5 paket/OC iş iskeleti.
 
 ---
 
 ## Tamamlanan işler (bu hat)
 
-Faz 1–3 ve paket kapanışı Odak test’te smoke ile doğrulandı (UI lokal).
-
 | Dilim | Özet |
 |--------|------|
 | F1-0 … F1-9 | Kurulum, DI tür/ilişki, görsel kanıt, `pm_*`, Gantt, WBS–OC, iz/durum, karar, PMO+kalite tohumu |
-| F2-1 … F2-13 | İç katalog: önizleme, skip/update, sökme; kapı, RAID, kapasite, bütçe, okundu, yükümlülük, denetim, toplantı, paydaş, portföy, süreç haritası |
-| F3-1 … F3-5 | Sektör rafları (aynı katalog, yeni JSON): `architecture`, `proposal`, `eco`, `onboarding`, `acceptance` |
-| **F4-1** | Paket apply / `packCode` ile create → ince OC workspace (durum, akış, tip, form, pano, profil). Sökme workspace silmez. Smoke: `scripts/tests/MngOperations/smoke-f41-pack-workspace-test.ps1` |
-| **F4-2** | Sökmede boş DI klasör silme (UI: `Mng.Ui/utils/pmJobPack.ts`). Hub / dolu klasör / diğer paketin paylaştığı ad silinmez. Smoke: `scripts/tests/MngOperations/smoke-f42-pack-folder-detach-test.ps1` |
+| F2-1 … F2-13 | İç katalog + kapı kaydı, RAID, kapasite, bütçe, okundu, yükümlülük, denetim, toplantı, paydaş, portföy, süreç |
+| **F2-14** | Kapı iş kilidi. Smoke: `smoke-f214-gate-lock-test.ps1` |
+| **F2-15** | Kanıt kapatma kilidi. Smoke: `smoke-f215-evidence-lock-test.ps1` |
+| **F2-16** | Onay kapatma kilidi. Smoke: `smoke-f216-approval-lock-test.ps1` |
+| F3-1 … F3-5 | Sektör rafları |
+| F4-1 … F4-5 | İnce workspace, boş klasör sökme, kural/SLA/pano, yaprak+özet iş |
+| **F4-6** | İş → kanıt belgesi. Smoke: `smoke-f46-pack-evidence-test.ps1` |
+| **F4-7** | İş → plan/kaynak (`reference`). Smoke: `smoke-f47-pack-reference-test.ps1` |
+| F5-1 | Paket kökeni / SHA-256. Smoke: `smoke-f51-pack-trust-test.ps1` |
 
-**Katalog (7 paket):** `pmo` · `quality` · `architecture` · `proposal` · `eco` · `onboarding` · `acceptance`
-
-Paket JSON: `MngOperations/Core/MngOperations.Application/Packs/*.json` (embedded).
+**Katalog (7, sürüm 1.1.0):** `pmo` · `quality` · `architecture` · `proposal` · `eco` · `onboarding` · `acceptance`
 
 ---
 
 ## Kararlar (hatırla)
 
-- Generic teslimat omurgası. AnkaraBT DOCX **örnek**; şartname maddelerini parse edip o ihaleyi teslim etmiyoruz.
-- Yeni mikroservis yok. Proje runtime: **MngOperations** `pm_*`. İşin tek kaynağı: OC. Belge: **MngDocument**.
-- Paket şema yazmaz; WBS + (UI) DI klasör/starter + (F4-1) ince workspace.
+- Generic teslimat omurgası. AnkaraBT DOCX **örnek**; şartname parse edilmez, NLP açılmaz.
+- Kapı kilidi: kapatma (done/closed). Başlatma serbest. Feragat kilidi açar.
+- Kanıt bağı: `dm_resource_links` (`evidence` / `output`). Plan bağı: `reference`. Otomatik paketten bağ yok; kullanıcı bağlar.
+- Kapatma sırası: kapı → kanıt zorunluluğu → bağlı belgeler yayınlanmış olmalı.
 - UI image Odak’a basılmaz; kontrol `npm run dev`.
-- Token: `docs/odak/operationcore/scripts/get-operationcore-token.ps1` / installer’da taze `-Token` (eski `$env:DI_TOKEN` 401 verebilir).
+- Token: `docs/odak/operationcore/scripts/get-operationcore-token.ps1` (`odak_admin`). Smoke: `pwsh` (PS 7+).
 
 ---
 
 ## Bilinçli ertelenen
 
-- Marketplace (üçüncü taraf, imza, ücret, izolasyon)
-- DOCX/PDF içerik araması ve genel şartname maddesi çıkarımı (NLP) — ürün kararı; AnkaraBT gerekçesi yok
-- Paketten tam OC kural / SLA / dashboard kopyası
-- Kapı iş kilidi; RAID Monte Carlo; kaynak dengeleme / CPM; bütçe ERP/FX
+- App Store / üçüncü taraf paket satışı / ücret
+- RAID Monte Carlo; kaynak dengeleme / CPM; bütçe ERP/FX
 - Okundu LMS/e-imza; yükümlülük otomatik madde; denetim ZIP; toplantı takvim/Teams
-- Paydaş tenant/portal; süreç editörü/BPMN
-- C4/Structurizr editörü
+- Paydaş tenant/portal; süreç editörü/BPMN; C4 editörü
+- Paketten otomatik plan/kanıt önerisi; sponsor durum export
 
 ---
 
-## Sonraki adımlar (yeni chat)
+## Sonraki adımlar
 
-Paket omurgasında sıradaki somut dilim yok. Yeni oturumda:
+Omurga hazır. Sonraki dilim ayrı onay (ör. paket önerisi, export, veya başka omurga halkası).
 
-1. Bu dosya + [PLAN.md](./PLAN.md) oku.
-2. Kullanıcıdan öncelik al: bilinçli ertelenenlerden hangisi, yoksa başka hat.
-3. Ortam kuralları: yalnızca Odak test `192.168.20.20`; UI lokal; backend deploy serbest.
-
-Smoke örnekleri: `scripts/tests/MngOperations/smoke-f*.ps1`. Deploy: `scripts/odak/sync-odak-source.ps1 -Paths MngOperations` sonra `scripts/odak/deploy-odak-apps.ps1 -Services mngoperations -NoCache`.
+Smoke: `scripts/tests/MngOperations/smoke-f*.ps1` (`pwsh`).  
+Deploy: `scripts/odak/sync-odak-source.ps1 -Paths MngOperations` sonra `scripts/odak/deploy-odak-apps.ps1 -Services mngoperations -NoCache`.

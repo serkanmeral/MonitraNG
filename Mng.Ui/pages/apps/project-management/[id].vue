@@ -19,6 +19,8 @@ import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import { ocListWorkspaces } from '@/services/operationCoreService';
 import {
+  pmBindWbsEvidence,
+  pmBindWbsReference,
   pmBindWbsWorkItem,
   pmCreateDependency,
   pmCreateWbs,
@@ -28,8 +30,13 @@ import {
   pmDeleteWbs,
   pmGetProject,
   pmGetProjectStatus,
+  pmListProjectDocuments,
+  pmListWbsEvidence,
+  pmListWbsReferences,
   pmSearchProjectWorkItems,
   pmSetBaseline,
+  pmUnbindWbsEvidence,
+  pmUnbindWbsReference,
   pmUnbindWbsWorkItem,
   pmUpdateProject,
   pmUpdateWbs,
@@ -43,6 +50,8 @@ import type {
   PmWbsKind,
   PmWorkItemCandidate,
   PmProjectStatusPack,
+  PmProjectDocument,
+  PmTraceDocument,
 } from '@/types/apps/projectManagement';
 import {
   ArrowLeftIcon,
@@ -109,6 +118,22 @@ const statusPack = ref<PmProjectStatusPack | null>(null);
 const statusLoading = ref(false);
 const workspaces = ref<OpWorkspace[]>([]);
 const bindDialog = ref(false);
+const evidenceDialog = ref(false);
+const evidenceTarget = ref<PmWbsItem | null>(null);
+const evidenceQuery = ref('');
+const evidenceId = ref('');
+const evidenceBound = ref<PmTraceDocument[]>([]);
+const evidenceCandidates = ref<PmProjectDocument[]>([]);
+const evidenceLoading = ref(false);
+const evidenceSaving = ref(false);
+const referenceDialog = ref(false);
+const referenceTarget = ref<PmWbsItem | null>(null);
+const referenceQuery = ref('');
+const referenceId = ref('');
+const referenceBound = ref<PmTraceDocument[]>([]);
+const referenceCandidates = ref<PmProjectDocument[]>([]);
+const referenceLoading = ref(false);
+const referenceSaving = ref(false);
 const bindTarget = ref<PmWbsItem | null>(null);
 const bindQuery = ref('');
 const bindLoading = ref(false);
@@ -178,7 +203,20 @@ const workspaceItems = computed(() => [
 ]);
 
 const editingWbs = computed(() => wbs.value.find((row) => row.id === wbsEditingId.value) ?? null);
-const percentLocked = computed(() => Boolean(editingWbs.value?.workItemId));
+const percentLocked = computed(() => {
+  const row = editingWbs.value
+  if (!row) return false
+  if (hasChildren(row.id)) return true
+  return Boolean(row.workItemId)
+})
+
+const percentHint = computed(() => {
+  const row = editingWbs.value
+  if (!row) return undefined
+  if (hasChildren(row.id)) return t('projectManagement.percentFromChildren')
+  if (row.workItemId) return t('projectManagement.percentFromWorkItem')
+  return undefined
+})
 
 function hasChildren(id: string) {
   return wbs.value.some((row) => row.parentId === id);
@@ -186,6 +224,10 @@ function hasChildren(id: string) {
 
 function workItemHref(id: string) {
   return `/apps/operation-core/work-items/${encodeURIComponent(id)}/profile`;
+}
+
+function resourceHref(id: string) {
+  return `/apps/document-intelligence/r/${encodeURIComponent(id)}`;
 }
 
 function stateChipColor(item: { workItemClosed?: boolean; workItemStateCategory?: string | null }) {
@@ -207,7 +249,7 @@ const wbsHeaders = computed(() => [
   {
     title: t('projectManagement.actions'),
     key: 'actions',
-    width: 180,
+    width: 240,
     sortable: false,
     align: 'end' as const,
   },
@@ -526,12 +568,172 @@ async function unbindWorkItem(row: PmWbsItem) {
   }
 }
 
+async function loadEvidenceCandidates() {
+  if (!detail.value || !evidenceTarget.value) return;
+  evidenceLoading.value = true;
+  try {
+    const [bound, docs] = await Promise.all([
+      pmListWbsEvidence(evidenceTarget.value.id),
+      pmListProjectDocuments(detail.value.project.id, evidenceQuery.value),
+    ]);
+    evidenceBound.value = bound;
+    const boundIds = new Set(bound.map((row) => row.resourceId));
+    evidenceCandidates.value = docs.filter((row) => !boundIds.has(row.id));
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.loadFailed');
+  } finally {
+    evidenceLoading.value = false;
+  }
+}
+
+function openBindEvidence(row: PmWbsItem) {
+  evidenceTarget.value = row;
+  evidenceQuery.value = '';
+  evidenceId.value = '';
+  evidenceBound.value = [];
+  evidenceCandidates.value = [];
+  evidenceDialog.value = true;
+  void loadEvidenceCandidates();
+}
+
+async function bindEvidenceSelected(resourceId: string) {
+  if (!evidenceTarget.value || !resourceId.trim()) return;
+  evidenceSaving.value = true;
+  try {
+    await pmBindWbsEvidence(evidenceTarget.value.id, resourceId.trim());
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('projectManagement.notify.evidenceBound'),
+      severity: 'success',
+    });
+    evidenceId.value = '';
+    await loadDetail();
+    const current = wbs.value.find((item) => item.id === evidenceTarget.value?.id);
+    if (current) evidenceTarget.value = current;
+    await loadEvidenceCandidates();
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    evidenceSaving.value = false;
+  }
+}
+
+async function unbindEvidence(resourceId: string) {
+  if (!evidenceTarget.value) return;
+  evidenceSaving.value = true;
+  try {
+    await pmUnbindWbsEvidence(evidenceTarget.value.id, resourceId);
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('projectManagement.notify.evidenceUnbound'),
+      severity: 'success',
+    });
+    await loadDetail();
+    const current = wbs.value.find((item) => item.id === evidenceTarget.value?.id);
+    if (current) evidenceTarget.value = current;
+    await loadEvidenceCandidates();
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    evidenceSaving.value = false;
+  }
+}
+
+async function loadReferenceCandidates() {
+  if (!detail.value || !referenceTarget.value) return;
+  referenceLoading.value = true;
+  try {
+    const [bound, docs] = await Promise.all([
+      pmListWbsReferences(referenceTarget.value.id),
+      pmListProjectDocuments(detail.value.project.id, referenceQuery.value),
+    ]);
+    referenceBound.value = bound;
+    const boundIds = new Set(bound.map((row) => row.resourceId));
+    referenceCandidates.value = docs.filter((row) => !boundIds.has(row.id));
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.loadFailed');
+  } finally {
+    referenceLoading.value = false;
+  }
+}
+
+function openBindReference(row: PmWbsItem) {
+  referenceTarget.value = row;
+  referenceQuery.value = '';
+  referenceId.value = '';
+  referenceBound.value = [];
+  referenceCandidates.value = [];
+  referenceDialog.value = true;
+  void loadReferenceCandidates();
+}
+
+async function bindReferenceSelected(resourceId: string) {
+  if (!referenceTarget.value || !resourceId.trim()) return;
+  referenceSaving.value = true;
+  try {
+    await pmBindWbsReference(referenceTarget.value.id, resourceId.trim());
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('projectManagement.notify.referenceBound'),
+      severity: 'success',
+    });
+    referenceId.value = '';
+    await loadDetail();
+    const current = wbs.value.find((item) => item.id === referenceTarget.value?.id);
+    if (current) referenceTarget.value = current;
+    await loadReferenceCandidates();
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    referenceSaving.value = false;
+  }
+}
+
+async function unbindReference(resourceId: string) {
+  if (!referenceTarget.value) return;
+  referenceSaving.value = true;
+  try {
+    await pmUnbindWbsReference(referenceTarget.value.id, resourceId);
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('projectManagement.notify.referenceUnbound'),
+      severity: 'success',
+    });
+    await loadDetail();
+    const current = wbs.value.find((item) => item.id === referenceTarget.value?.id);
+    if (current) referenceTarget.value = current;
+    await loadReferenceCandidates();
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    referenceSaving.value = false;
+  }
+}
+
 let bindSearchTimer: ReturnType<typeof setTimeout> | null = null;
 watch(bindQuery, () => {
   if (!bindDialog.value) return;
   if (bindSearchTimer) clearTimeout(bindSearchTimer);
   bindSearchTimer = setTimeout(() => {
     void searchBindCandidates();
+  }, 300);
+});
+
+let evidenceSearchTimer: ReturnType<typeof setTimeout> | null = null;
+watch(evidenceQuery, () => {
+  if (!evidenceDialog.value) return;
+  if (evidenceSearchTimer) clearTimeout(evidenceSearchTimer);
+  evidenceSearchTimer = setTimeout(() => {
+    void loadEvidenceCandidates();
+  }, 300);
+});
+
+let referenceSearchTimer: ReturnType<typeof setTimeout> | null = null;
+watch(referenceQuery, () => {
+  if (!referenceDialog.value) return;
+  if (referenceSearchTimer) clearTimeout(referenceSearchTimer);
+  referenceSearchTimer = setTimeout(() => {
+    void loadReferenceCandidates();
   }, 300);
 });
 
@@ -673,6 +875,51 @@ onMounted(() => {
         >
           <template #item.name="{ item }">
             <span :style="{ paddingLeft: `${depthOf(item.wbsCode) * 16}px` }">{{ item.name }}</span>
+            <v-chip
+              v-if="item.gateLocked"
+              size="x-small"
+              color="warning"
+              variant="tonal"
+              class="ml-2"
+            >
+              {{ t('projectManagement.stageGate.locked') }}
+            </v-chip>
+            <v-chip
+              v-if="item.hasEvidence"
+              size="x-small"
+              color="success"
+              variant="tonal"
+              class="ml-2"
+            >
+              {{ t('projectManagement.hasEvidence') }}
+            </v-chip>
+            <v-chip
+              v-else-if="item.workItemId"
+              size="x-small"
+              color="warning"
+              variant="tonal"
+              class="ml-2"
+            >
+              {{ t('projectManagement.missingEvidenceChip') }}
+            </v-chip>
+            <v-chip
+              v-if="item.hasReference"
+              size="x-small"
+              color="primary"
+              variant="tonal"
+              class="ml-2"
+            >
+              {{ t('projectManagement.hasReference') }}
+            </v-chip>
+            <v-chip
+              v-else-if="item.workItemId"
+              size="x-small"
+              color="warning"
+              variant="tonal"
+              class="ml-2"
+            >
+              {{ t('projectManagement.missingReferenceChip') }}
+            </v-chip>
           </template>
           <template #item.kind="{ item }">
             {{ kindLabel(item.kind) }}
@@ -726,13 +973,29 @@ onMounted(() => {
                 {{ t('projectManagement.unbindWorkItem') }}
               </v-btn>
               <v-btn
-                v-else-if="!hasChildren(item.id)"
+                v-else
                 size="small"
                 variant="text"
                 :disabled="!detail?.project.workspaceId"
                 @click="openBindWorkItem(item)"
               >
                 {{ t('projectManagement.bindWorkItem') }}
+              </v-btn>
+              <v-btn
+                v-if="item.workItemId"
+                size="small"
+                variant="text"
+                @click="openBindReference(item)"
+              >
+                {{ t('projectManagement.bindReference') }}
+              </v-btn>
+              <v-btn
+                v-if="item.workItemId"
+                size="small"
+                variant="text"
+                @click="openBindEvidence(item)"
+              >
+                {{ t('projectManagement.bindEvidence') }}
               </v-btn>
               <v-btn icon size="small" variant="text" color="error" @click="confirmDeleteWbs(item)">
                 <TrashIcon size="18" />
@@ -967,7 +1230,7 @@ onMounted(() => {
             :label="t('projectManagement.fields.percentComplete')"
             density="comfortable"
             :disabled="percentLocked"
-            :hint="percentLocked ? t('projectManagement.percentFromWorkItem') : undefined"
+            :hint="percentHint"
             persistent-hint
           />
           <div v-if="wbsEditingId && editingWbs" class="d-flex align-center ga-2 flex-wrap">
@@ -991,13 +1254,21 @@ onMounted(() => {
               {{ t('projectManagement.unbindWorkItem') }}
             </v-btn>
             <v-btn
-              v-else-if="!hasChildren(editingWbs.id)"
+              v-else
               size="small"
               variant="tonal"
               :disabled="!detail?.project.workspaceId"
               @click="openBindWorkItem(editingWbs)"
             >
               {{ t('projectManagement.bindWorkItem') }}
+            </v-btn>
+            <v-btn
+              v-if="editingWbs.workItemId"
+              size="small"
+              variant="tonal"
+              @click="openBindEvidence(editingWbs)"
+            >
+              {{ t('projectManagement.bindEvidence') }}
             </v-btn>
           </div>
         </v-card-text>
@@ -1117,6 +1388,154 @@ onMounted(() => {
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="bindDialog = false">{{ t('projectManagement.cancel') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="evidenceDialog" max-width="560">
+      <v-card rounded="lg">
+        <v-card-title>{{ t('projectManagement.bindEvidence') }}</v-card-title>
+        <v-card-text class="d-flex flex-column ga-3">
+          <div class="text-medium-emphasis text-body-2">{{ t('projectManagement.bindEvidenceHint') }}</div>
+          <div v-if="evidenceBound.length" class="d-flex flex-column ga-2">
+            <div class="text-subtitle-2">{{ t('projectManagement.boundEvidence') }}</div>
+            <v-list class="rounded-lg border" density="comfortable">
+              <v-list-item v-for="doc in evidenceBound" :key="doc.resourceId">
+                <v-list-item-title>
+                  <NuxtLink :to="resourceHref(doc.resourceId)" class="text-primary" @click.stop>
+                    {{ doc.name }}
+                  </NuxtLink>
+                </v-list-item-title>
+                <v-list-item-subtitle>{{ doc.relationType }}</v-list-item-subtitle>
+                <template #append>
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    :disabled="evidenceSaving"
+                    @click="unbindEvidence(doc.resourceId)"
+                  >
+                    {{ t('projectManagement.unbindEvidence') }}
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
+          <v-text-field
+            v-model="evidenceQuery"
+            :label="t('projectManagement.searchDocument')"
+            density="comfortable"
+            clearable
+            hide-details
+          />
+          <v-list v-if="evidenceCandidates.length" class="rounded-lg border" density="comfortable">
+            <v-list-item
+              v-for="candidate in evidenceCandidates"
+              :key="candidate.id"
+              :disabled="evidenceSaving"
+              @click="bindEvidenceSelected(candidate.id)"
+            >
+              <v-list-item-title>{{ candidate.name }}</v-list-item-title>
+              <v-list-item-subtitle>{{ candidate.kind || candidate.type || candidate.status }}</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+          <div v-else-if="!evidenceLoading" class="text-medium-emphasis text-body-2 py-2">
+            {{ t('projectManagement.emptyDocuments') }}
+          </div>
+          <div class="d-flex align-center ga-2">
+            <v-text-field
+              v-model="evidenceId"
+              :label="t('projectManagement.evidenceId')"
+              density="comfortable"
+              hide-details
+            />
+            <v-btn
+              color="primary"
+              variant="tonal"
+              :disabled="!evidenceId.trim() || evidenceSaving"
+              :loading="evidenceSaving"
+              @click="bindEvidenceSelected(evidenceId)"
+            >
+              {{ t('projectManagement.bindEvidence') }}
+            </v-btn>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="evidenceDialog = false">{{ t('projectManagement.cancel') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="referenceDialog" max-width="560">
+      <v-card rounded="lg">
+        <v-card-title>{{ t('projectManagement.bindReference') }}</v-card-title>
+        <v-card-text class="d-flex flex-column ga-3">
+          <div class="text-medium-emphasis text-body-2">{{ t('projectManagement.bindReferenceHint') }}</div>
+          <div v-if="referenceBound.length" class="d-flex flex-column ga-2">
+            <div class="text-subtitle-2">{{ t('projectManagement.boundReference') }}</div>
+            <v-list class="rounded-lg border" density="comfortable">
+              <v-list-item v-for="doc in referenceBound" :key="doc.resourceId">
+                <v-list-item-title>
+                  <NuxtLink :to="resourceHref(doc.resourceId)" class="text-primary" @click.stop>
+                    {{ doc.name }}
+                  </NuxtLink>
+                </v-list-item-title>
+                <v-list-item-subtitle>{{ doc.relationType }}</v-list-item-subtitle>
+                <template #append>
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    :disabled="referenceSaving"
+                    @click="unbindReference(doc.resourceId)"
+                  >
+                    {{ t('projectManagement.unbindReference') }}
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
+          <v-text-field
+            v-model="referenceQuery"
+            :label="t('projectManagement.searchDocument')"
+            density="comfortable"
+            clearable
+            hide-details
+          />
+          <v-list v-if="referenceCandidates.length" class="rounded-lg border" density="comfortable">
+            <v-list-item
+              v-for="candidate in referenceCandidates"
+              :key="candidate.id"
+              :disabled="referenceSaving"
+              @click="bindReferenceSelected(candidate.id)"
+            >
+              <v-list-item-title>{{ candidate.name }}</v-list-item-title>
+              <v-list-item-subtitle>{{ candidate.kind || candidate.type || candidate.status }}</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+          <div v-else-if="!referenceLoading" class="text-medium-emphasis text-body-2 py-2">
+            {{ t('projectManagement.emptyDocuments') }}
+          </div>
+          <div class="d-flex align-center ga-2">
+            <v-text-field
+              v-model="referenceId"
+              :label="t('projectManagement.referenceId')"
+              density="comfortable"
+              hide-details
+            />
+            <v-btn
+              color="primary"
+              variant="tonal"
+              :disabled="!referenceId.trim() || referenceSaving"
+              :loading="referenceSaving"
+              @click="bindReferenceSelected(referenceId)"
+            >
+              {{ t('projectManagement.bindReference') }}
+            </v-btn>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="referenceDialog = false">{{ t('projectManagement.cancel') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -1,7 +1,7 @@
 {
   "code": "acceptance",
   "name": "Kabul",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Müşteri kabul ve kapanış: teslimat listesi, eksik, kabul tutanağı, devir. E-imza veya denetim sihirbazı değildir.",
   "kinds": ["deliverable", "punchlist", "acceptance", "closeout", "evidence", "diagram"],
   "folders": [
@@ -67,5 +67,30 @@
     "folder": "Diyagram",
     "title": "Kabul akışı.drawio",
     "kind": "diagram"
+  },
+  "workspace": {
+    "rules": [
+      {
+        "name": "Kapanışta açıklama",
+        "ruleType": "validation",
+        "trigger": "WorkItemTransition",
+        "transitionKey": "resolve",
+        "applyMode": "pre",
+        "conditions": { "field": "description", "cmp": "empty" },
+        "errorMessage": "Kabul kalemi kapanmadan önce açıklama girilmelidir.",
+        "priority": 100
+      }
+    ],
+    "slaPolicies": [
+      {
+        "name": "Kabul",
+        "responseTargetMinutes": 480,
+        "resolveTargetMinutes": 2400,
+        "priority": 50
+      }
+    ],
+    "dashboards": [
+      { "name": "Kabul özet", "isDefault": true }
+    ]
   }
 }

@@ -61,6 +61,11 @@ export interface PmWbsItem {
   workItemStateCategory?: string | null;
   workItemClosed?: boolean;
   baselineDrifted: boolean;
+  gateLocked?: boolean;
+  hasEvidence?: boolean;
+  evidenceCount?: number;
+  hasReference?: boolean;
+  referenceCount?: number;
 }
 
 export interface PmDependency {
@@ -187,6 +192,7 @@ export interface PmStageGate {
   decidedBy?: string | null;
   resourceIds: string[];
   decisionId?: string | null;
+  locksWork?: boolean;
 }
 
 export interface PmCreateStageGateRequest {
@@ -654,6 +660,7 @@ export type PmTraceFlag =
   | 'unbound'
   | 'openWork'
   | 'missingEvidence'
+  | 'missingReference'
   | 'missingApproval'
   | 'openGate'
   | 'failedGate'
@@ -687,6 +694,14 @@ export interface PmTraceDocument {
   approved: boolean;
 }
 
+export interface PmProjectDocument {
+  id: string;
+  name: string;
+  kind?: string | null;
+  type?: string | null;
+  status: string;
+}
+
 export interface PmTraceRow {
   wbsId: string;
   wbsCode?: string | null;
@@ -713,6 +728,7 @@ export interface PmStatusCounts {
   unboundLeaf: number;
   openWork: number;
   missingEvidence: number;
+  missingReference?: number;
   missingApproval: number;
   openScopeChange?: number;
   openGate?: number;
@@ -777,10 +793,18 @@ export interface PmJobPack {
   name: string;
   version?: string | null;
   description?: string | null;
+  origin?: string | null;
+  publisher?: string | null;
+  contentSha256?: string | null;
+  verified?: boolean;
+  canApply?: boolean;
   kinds: string[];
   folders: string[];
   wbs: PmJobPackWbsPreview[];
   starters?: PmJobPackStarter[];
+  ruleCount?: number;
+  slaCount?: number;
+  dashboardCount?: number;
 }
 
 export interface PmProjectPackInstall {
@@ -806,6 +830,13 @@ export interface PmApplyPackResult {
   kept: number;
   workspaceCreated?: boolean;
   workspaceId?: string | null;
+  rulesCreated?: number;
+  slaCreated?: number;
+  dashboardsCreated?: number;
+  workItemsCreated?: number;
+  workItemsSkipped?: number;
+  workItemsRemoved?: number;
+  workItemsKept?: number;
 }
 
 export interface PmPackPreviewItem {
@@ -831,4 +862,14 @@ export interface PmPackPreview {
   workspaceAction?: string | null;
   workspaceId?: string | null;
   workspaceName?: string | null;
+  ruleCreateCount?: number;
+  ruleSkipCount?: number;
+  slaCreateCount?: number;
+  slaSkipCount?: number;
+  dashboardCreateCount?: number;
+  dashboardSkipCount?: number;
+  workItemCreateCount?: number;
+  workItemSkipCount?: number;
+  workItemRemoveCount?: number;
+  workItemKeepCount?: number;
 }

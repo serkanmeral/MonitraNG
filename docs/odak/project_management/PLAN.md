@@ -1,7 +1,7 @@
 # Teslimat Omurgası — Planlama
 
-**Durum:** Uygulama durak noktası — Faz 1–3 + F4-1/F4-2 bitti (manifest **0.26.0**)  
-**Tarih:** 2 Eylül 2026 (plan) · **3 Eylül 2026** (durak)  
+**Durum:** Uygulama — Faz 1–3 + F4-1…F4-6 + F2-14 + F5-1 (manifest **0.32.0**)
+**Tarih:** 2 Eylül 2026 (plan) · **3 Eylül 2026** (F2-14)
 **Ortam:** Odak test `192.168.20.20` · UI kontrolü lokal `npm run dev` · backend deploy serbest · UI Docker yok  
 **Kaynak görüşme:** [ankarabt görüşme notları](../../ankarabt/yazilim-mimarligi-di-ve-proje-yonetimi-gorusme-notlari.md)  
 **Oturum özeti:** [current_status.md](./current_status.md)
@@ -202,8 +202,11 @@ Kullanıcı içeriği doldurur; iskeleti her seferinde kurmaz. Aynı kişi birde
 | **Tohum (Faz 1 / F1-9)** | PMO ve kalite paketleri; “bu işi şu paketten başlat”; repo seed + isteğe bağlı demo | **Bitti** |
 | **İç katalog (Faz 2)** | Raftan seç, önizle, sürüm, skip/update, sök (F2-13); F2 kontrol birimleri | **Bitti** (F2-1…F2-13) |
 | **Sektör rafları (Faz 3)** | Mimari, teklif, ECO, onboarding, kabul — aynı katalog, yeni içerik | **Bitti** (F3-1…F3-5) |
-| **Paket kapanışı** | F4-1 ince OC workspace; F4-2 sökmede boş DI klasör | **Bitti** |
-| **Marketplace (bilinçli sonra)** | Üçüncü taraf, imza, ücret, izolasyon | Katalog dolmadan yok |
+| **Paket kapanışı** | F4-1 ince OC workspace; F4-2 sökmede boş DI klasör; F4-3 kural/SLA/pano; F4-4 yaprak iş; F4-5 özet üst iş; F4-6 iş→kanıt; F4-7 iş→plan (`reference`) | **Bitti** |
+| **F2-14 … F2-16** | Kapı kilidi; kanıt zorunluluğu (`EVIDENCE_REQUIRED`); onay kilidi (`APPROVAL_REQUIRED`) | **Bitti** |
+| **Şablon katalog (kullanıcının “marketplace”i)** | Raftan iş paketi; ortam WBS+DI+OC ile kurulur | **Bitti** |
+| **F5-1** | Katalog bütünlüğü (köken, özet) | **Bitti** — mağaza değil |
+| **App Store / ücret** | Satın alma, üçüncü taraf, PKI | **Yapılmayacak** (kullanıcı kastı bu değildi) |
 
 Bugünkü kırıntılar (DI pack export/import, OC demo seed) bu modelin parçasıdır; hedef onları tek paket biçiminde birleştirmektir.
 
@@ -225,7 +228,7 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 - Kritik yol motoru ve otomatik zamanlama
 - Kaynak, maliyet, portföy
 - Genel DOCX/PDF şartname maddesi çıkarımı (NLP) — ayrı ürün kararı; AnkaraBT ihalesini teslim etmek için açılmaz
-- Üçüncü taraf marketplace (imza, ücret, izolasyon)
+- App Store / satın alınır üçüncü taraf paket (imza, ücret) — kullanıcı “marketplace” ile bunu kastetmedi; şablon katalog ayrı ve bitti
 
 `docs/ankarabt/` altındaki teknik şartname ve personel nitelikleri **örnek kaynak**tır. Generic omurgayı tasarlarken kullanıldı; o şartnamenin maddeleri parse edilmez, WBS/yükümlülük olarak doldurulmaz, ihale hayata geçirilmez.
 
@@ -246,11 +249,11 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 
 ## 12. Sonraki adım
 
-**Durak (3 Eylül 2026):** Paket omurgası F4-2 ile kapandı. Manifest 0.26.0. Yeni somut dilim yok; öncelik kullanıcıdan.
+**15 Eylül 2026 (durum senkronu):** Omurga zinciri kapandı — plan (`reference`) → WBS → OC iş → kanıt → kapatma kilitleri (F2-14…F2-16). Manifest **0.35.0**. NLP/şartname parser **yapılmayacak**.
 
-Biten kademeler: F1-0…F1-9, F2-1…F2-13, F3-1…F3-5, F4-1, F4-2. Oturum notu: [current_status.md](./current_status.md).
+Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1. Oturum notu: [current_status.md](./current_status.md).
 
-Sırada (bilinçli sonra, seçilince): marketplace; genel NLP/şartname parser; paketten tam OC kural/SLA/dashboard.
+“Marketplace” netliği (3 Eylül 2026): kastedilen raftan iş paketi şablonu; satın alma vitrini değil.
 
 Tarihsel not — plan onayından sonraki ilk iş **F1-0 + F1-4 sahiplik kararı**ydı; ikisi de uygulandı.
 

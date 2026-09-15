@@ -19,17 +19,20 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IMetadataCache _metadata;
+    private readonly Lazy<IWorkItemCommandService> _workItems;
     private readonly ILogger<ProjectPlanningService> _logger;
 
     public ProjectPlanningService(
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IMetadataCache metadata,
+        Lazy<IWorkItemCommandService> workItems,
         ILogger<ProjectPlanningService> logger)
     {
         _dg = dg;
         _ctx = ctx;
         _metadata = metadata;
+        _workItems = workItems;
         _logger = logger;
     }
 
@@ -49,6 +52,8 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         var deps = await LoadDepsAsync(id, token, ct);
         var dtos = wbs.Select(ToWbsDto).OrderBy(w => w.WbsCode, StringComparer.Ordinal).ThenBy(w => w.SortOrder).ToList();
         await HydrateWorkItemsAsync(dtos, token, ct);
+        await HydrateGateLocksAsync(id, dtos, token, ct);
+        await HydrateEvidenceAsync(dtos, token, ct);
         var decisions = await LoadDecisionsAsync(id, token, ct);
         var gates = await LoadStageGatesAsync(id, token, ct);
         var raid = await LoadRaidItemsAsync(id, token, ct);
@@ -104,6 +109,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             pack = JobPackCatalog.Find(request.PackCode);
             if (pack is null)
                 throw new OperationCoreException("PACK_UNKNOWN", "Unknown job pack.", "Bilinmeyen iş paketi.", 400);
+            JobPackTrust.AssertCanApply(pack);
         }
 
         await EnsureCodeUniqueAsync(code, null, token, ct);
@@ -127,7 +133,9 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             if (pack is not null)
             {
                 await ApplyPackWbsAsync(id, pack, token, ct);
-                await EnsurePackWorkspaceAsync(id, pack, token, ct);
+                var workspace = await EnsurePackWorkspaceAsync(id, pack, token, ct);
+                await EnsurePackOcRuntimeAsync(workspace.WorkspaceId, pack, token, ct);
+                await EnsurePackOcWorkItemsAsync(id, workspace.WorkspaceId, pack, token, ct);
                 await UpsertProjectPackAsync(id, pack, token, ct);
             }
             var row = await LoadProjectOrThrowAsync(id, token, ct);
@@ -383,6 +391,13 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         if (request.Weight.HasValue) payload["weight"] = request.Weight.Value;
         if (request.PercentComplete.HasValue && string.IsNullOrWhiteSpace(existing.workItemId))
             payload["percentComplete"] = ClampPercent(request.PercentComplete);
+
+        var closing = request.ActualFinish.HasValue
+            || (request.PercentComplete.HasValue
+                && string.IsNullOrWhiteSpace(existing.workItemId)
+                && ClampPercent(request.PercentComplete) >= 99.5);
+        if (closing)
+            await AssertWbsCloseAllowedAsync(projectId, id, token, ct);
 
         if (request.ParentId is not null)
         {

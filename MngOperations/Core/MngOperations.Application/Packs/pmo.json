@@ -1,7 +1,7 @@
 {
   "code": "pmo",
   "name": "PMO",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Plan, tutanak, karar, durum ve teslimat listesi. Proje yöneticisi boş ağaçla başlamaz.",
   "kinds": ["plan", "minutes", "decision", "statusReport", "deliverable", "diagram"],
   "folders": [
@@ -82,5 +82,30 @@
     "folder": "Diyagram",
     "title": "Teslimat omurgası.drawio",
     "kind": "diagram"
+  },
+  "workspace": {
+    "rules": [
+      {
+        "name": "Kapanışta açıklama",
+        "ruleType": "validation",
+        "trigger": "WorkItemTransition",
+        "transitionKey": "resolve",
+        "applyMode": "pre",
+        "conditions": { "field": "description", "cmp": "empty" },
+        "errorMessage": "Kapatmadan önce açıklama girilmelidir.",
+        "priority": 100
+      }
+    ],
+    "slaPolicies": [
+      {
+        "name": "Teslimat",
+        "responseTargetMinutes": 480,
+        "resolveTargetMinutes": 2400,
+        "priority": 50
+      }
+    ],
+    "dashboards": [
+      { "name": "Özet pano", "isDefault": true }
+    ]
   }
 }

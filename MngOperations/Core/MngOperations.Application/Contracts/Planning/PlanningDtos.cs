@@ -43,6 +43,11 @@ public sealed class WbsItemDto
     public string? WorkItemStateCategory { get; set; }
     public bool WorkItemClosed { get; set; }
     public bool BaselineDrifted { get; set; }
+    public bool GateLocked { get; set; }
+    public bool HasEvidence { get; set; }
+    public int EvidenceCount { get; set; }
+    public bool HasReference { get; set; }
+    public int ReferenceCount { get; set; }
 }
 
 public sealed class DependencyDto
@@ -178,6 +183,26 @@ public sealed class BindWbsWorkItemRequest
     public string WorkItemId { get; set; } = string.Empty;
 }
 
+public sealed class BindWbsEvidenceRequest
+{
+    public string ResourceId { get; set; } = string.Empty;
+    public string? RelationType { get; set; }
+}
+
+public sealed class BindWbsReferenceRequest
+{
+    public string ResourceId { get; set; } = string.Empty;
+}
+
+public sealed class ProjectDocumentDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Kind { get; set; }
+    public string? Type { get; set; }
+    public string Status { get; set; } = "published";
+}
+
 public sealed class WorkItemCandidateDto
 {
     public string Id { get; set; } = string.Empty;
@@ -204,6 +229,7 @@ public static class ProjectTraceFlags
     public const string Unbound = "unbound";
     public const string OpenWork = "openWork";
     public const string MissingEvidence = "missingEvidence";
+    public const string MissingReference = "missingReference";
     public const string MissingApproval = "missingApproval";
     public const string OpenGate = "openGate";
     public const string FailedGate = "failedGate";
@@ -267,6 +293,7 @@ public sealed class ProjectStatusCountsDto
     public int UnboundLeaf { get; set; }
     public int OpenWork { get; set; }
     public int MissingEvidence { get; set; }
+    public int MissingReference { get; set; }
     public int MissingApproval { get; set; }
     public int OpenScopeChange { get; set; }
     public int OpenGate { get; set; }
@@ -347,10 +374,31 @@ public sealed class JobPackDto
     public string Name { get; set; } = string.Empty;
     public string Version { get; set; } = "1.0.0";
     public string? Description { get; set; }
+    public string Origin { get; set; } = "firstParty";
+    public string Publisher { get; set; } = "MonitraNG";
+    public string ContentSha256 { get; set; } = string.Empty;
+    public bool Verified { get; set; }
+    public bool CanApply { get; set; }
     public IReadOnlyList<string> Kinds { get; set; } = Array.Empty<string>();
     public IReadOnlyList<string> Folders { get; set; } = Array.Empty<string>();
     public IReadOnlyList<JobPackWbsPreview> Wbs { get; set; } = Array.Empty<JobPackWbsPreview>();
     public IReadOnlyList<JobPackStarterDto> Starters { get; set; } = Array.Empty<JobPackStarterDto>();
+    public int RuleCount { get; set; }
+    public int SlaCount { get; set; }
+    public int DashboardCount { get; set; }
+}
+
+public sealed class JobPackInspectDto
+{
+    public string Code { get; set; } = string.Empty;
+    public string Origin { get; set; } = "thirdParty";
+    public string Publisher { get; set; } = string.Empty;
+    public string ContentSha256 { get; set; } = string.Empty;
+    public bool FromCatalog { get; set; }
+    public bool Verified { get; set; }
+    public bool CanApply { get; set; }
+    public string? Reason { get; set; }
+    public string? ReasonTr { get; set; }
 }
 
 public sealed class JobPackStarterDto
@@ -394,6 +442,13 @@ public sealed class ApplyPackResultDto
     public int Kept { get; set; }
     public bool WorkspaceCreated { get; set; }
     public string? WorkspaceId { get; set; }
+    public int RulesCreated { get; set; }
+    public int SlaCreated { get; set; }
+    public int DashboardsCreated { get; set; }
+    public int WorkItemsCreated { get; set; }
+    public int WorkItemsSkipped { get; set; }
+    public int WorkItemsRemoved { get; set; }
+    public int WorkItemsKept { get; set; }
 }
 
 public sealed class PackPreviewItemDto
@@ -421,6 +476,16 @@ public sealed class PackPreviewDto
     public string WorkspaceAction { get; set; } = "skip";
     public string? WorkspaceId { get; set; }
     public string? WorkspaceName { get; set; }
+    public int RuleCreateCount { get; set; }
+    public int RuleSkipCount { get; set; }
+    public int SlaCreateCount { get; set; }
+    public int SlaSkipCount { get; set; }
+    public int DashboardCreateCount { get; set; }
+    public int DashboardSkipCount { get; set; }
+    public int WorkItemCreateCount { get; set; }
+    public int WorkItemSkipCount { get; set; }
+    public int WorkItemRemoveCount { get; set; }
+    public int WorkItemKeepCount { get; set; }
 }
 
 public sealed class StageGateDto
@@ -438,6 +503,7 @@ public sealed class StageGateDto
     public string? DecidedBy { get; set; }
     public IReadOnlyList<string> ResourceIds { get; set; } = Array.Empty<string>();
     public string? DecisionId { get; set; }
+    public bool LocksWork { get; set; }
 }
 
 public sealed class CreateStageGateRequest

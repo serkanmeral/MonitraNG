@@ -194,6 +194,7 @@ public sealed partial class ProjectPlanningService
                 UnboundLeaf = rows.Count(r => r.Flags.Contains(ProjectTraceFlags.Unbound)),
                 OpenWork = rows.Count(r => r.Flags.Contains(ProjectTraceFlags.OpenWork)),
                 MissingEvidence = rows.Count(r => r.Flags.Contains(ProjectTraceFlags.MissingEvidence)),
+                MissingReference = rows.Count(r => r.Flags.Contains(ProjectTraceFlags.MissingReference)),
                 MissingApproval = rows.Count(r => r.Flags.Contains(ProjectTraceFlags.MissingApproval)),
                 OpenScopeChange = decisions.Count(d =>
                     string.Equals(d.Kind, PmDecisionKind.ScopeChange, StringComparison.Ordinal)
@@ -292,6 +293,12 @@ public sealed partial class ProjectPlanningService
             && !docs.Any(d => IsEvidenceRelation(d.RelationType)))
         {
             flags.Add(ProjectTraceFlags.MissingEvidence);
+        }
+
+        if (!string.IsNullOrWhiteSpace(wbs.WorkItemId)
+            && !docs.Any(d => IsReferenceRelation(d.RelationType)))
+        {
+            flags.Add(ProjectTraceFlags.MissingReference);
         }
 
         if (docs.Any(d => !d.Approved))

@@ -277,7 +277,11 @@ public sealed partial class ProjectPlanningService
                     new Dictionary<string, object?> { ["transitionKey"] = "resolve", ["order"] = 1, ["label"] = "Kapat" }
                 },
                 ["header"] = new Dictionary<string, object?> { ["showBreadcrumb"] = true, ["showKey"] = true },
-                ["sidebar"] = new Dictionary<string, object?> { ["showSla"] = false, ["showWatchers"] = true },
+                    ["sidebar"] = new Dictionary<string, object?>
+                    {
+                        ["showSla"] = pack.Workspace?.SlaPolicies is { Count: > 0 },
+                        ["showWatchers"] = true
+                    },
                 ["panels"] = new Dictionary<string, object?>
                 {
                     ["timeline"] = new Dictionary<string, object?> { ["enabled"] = true },

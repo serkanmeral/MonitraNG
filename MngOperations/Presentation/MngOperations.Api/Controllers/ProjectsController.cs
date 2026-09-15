@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MngOperations.Application.Contracts.Planning;
 using MngOperations.Application.Interfaces;
+using MngOperations.Application.Packs;
 
 namespace MngOperations.Api.Controllers;
 
@@ -41,6 +42,13 @@ public sealed class ProjectsController : ControllerBase
     {
         var items = await _planning.ListJobPacksAsync(cancellationToken);
         return Ok(items);
+    }
+
+    [HttpPost("job-packs/inspect")]
+    [ProducesResponseType(typeof(JobPackInspectDto), StatusCodes.Status200OK)]
+    public IActionResult InspectJobPack([FromBody] JobPackDefinition? pack)
+    {
+        return Ok(JobPackTrust.Inspect(pack));
     }
 
     [HttpGet("projects/{id}/packs")]
@@ -212,6 +220,88 @@ public sealed class ProjectsController : ControllerBase
     public async Task<IActionResult> UnbindWorkItem(string id, CancellationToken cancellationToken)
     {
         var updated = await _planning.UnbindWorkItemAsync(id, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpGet("projects/{id}/documents")]
+    [ProducesResponseType(typeof(IReadOnlyList<ProjectDocumentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListProjectDocuments(
+        string id,
+        [FromQuery] string? q,
+        CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListProjectDocumentsAsync(id, q, cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpGet("wbs/{id}/evidence")]
+    [ProducesResponseType(typeof(IReadOnlyList<TraceDocumentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListWbsEvidence(string id, CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListWbsEvidenceAsync(id, cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpPost("wbs/{id}/evidence")]
+    [ProducesResponseType(typeof(WbsItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> BindEvidence(
+        string id,
+        [FromBody] BindWbsEvidenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.BindEvidenceAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("wbs/{id}/evidence/{resourceId}")]
+    [ProducesResponseType(typeof(WbsItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnbindEvidence(
+        string id,
+        string resourceId,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UnbindEvidenceAsync(id, resourceId, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpGet("wbs/{id}/references")]
+    [ProducesResponseType(typeof(IReadOnlyList<TraceDocumentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListWbsReferences(string id, CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListWbsReferencesAsync(id, cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpPost("wbs/{id}/references")]
+    [ProducesResponseType(typeof(WbsItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> BindReference(
+        string id,
+        [FromBody] BindWbsReferenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.BindReferenceAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("wbs/{id}/references/{resourceId}")]
+    [ProducesResponseType(typeof(WbsItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnbindReference(
+        string id,
+        string resourceId,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UnbindReferenceAsync(id, resourceId, cancellationToken);
         return Ok(updated);
     }
 

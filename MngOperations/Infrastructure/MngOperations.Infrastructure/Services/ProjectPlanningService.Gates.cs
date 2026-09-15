@@ -169,8 +169,111 @@ public sealed partial class ProjectPlanningService
             DecidedAt = row.decidedAt,
             DecidedBy = row.decidedBy,
             ResourceIds = row.resourceIds ?? new List<string>(),
-            DecisionId = EmptyToNull(row.decisionId)
+            DecisionId = EmptyToNull(row.decisionId),
+            LocksWork = GateLocksWork(PmStageGateStatus.Normalize(row.status), EmptyToNull(row.wbsId))
         };
+    }
+
+    public async Task AssertWorkItemCloseAllowedAsync(string workItemId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(workItemId)) return;
+        var token = RequireToken();
+        var wbs = await FindWbsByWorkItemAsync(workItemId, token, ct);
+        if (wbs is null || string.IsNullOrWhiteSpace(wbs.projectId) || string.IsNullOrWhiteSpace(wbs.__dataId))
+            return;
+        await AssertWbsCloseAllowedAsync(wbs.projectId, wbs.__dataId, token, ct);
+        await AssertEvidencePresentForCloseAsync(workItemId, wbs.__dataId, token, ct);
+        await AssertDocumentsApprovedForCloseAsync(workItemId, wbs.__dataId, token, ct);
+    }
+
+    private async Task AssertWbsCloseAllowedAsync(string projectId, string wbsId, string token, CancellationToken ct)
+    {
+        var locks = await LoadGateLocksAsync(projectId, token, ct);
+        if (!locks.TryGetValue(wbsId, out var gate))
+            return;
+        throw new OperationCoreException(
+            "GATE_LOCKED",
+            $"Stage gate '{gate.Name}' blocks closing this work.",
+            $"'{gate.Name}' kapısı açık veya reddedilmiş; iş kapatılamaz.",
+            409,
+            new Dictionary<string, object?>
+            {
+                ["gateId"] = gate.Id,
+                ["gateName"] = gate.Name,
+                ["wbsId"] = wbsId
+            });
+    }
+
+    private async Task HydrateGateLocksAsync(string projectId, IList<WbsItemDto> items, string token, CancellationToken ct)
+    {
+        if (items.Count == 0) return;
+        var locks = await LoadGateLocksAsync(projectId, token, ct);
+        foreach (var item in items)
+            item.GateLocked = locks.ContainsKey(item.Id);
+    }
+
+    private async Task<Dictionary<string, StageGateDto>> LoadGateLocksAsync(
+        string projectId,
+        string token,
+        CancellationToken ct)
+    {
+        var map = new Dictionary<string, StageGateDto>(StringComparer.Ordinal);
+        var gates = await LoadStageGatesAsync(projectId, token, ct);
+        var locking = gates.Where(g => g.LocksWork).ToList();
+        if (locking.Count == 0) return map;
+
+        var wbs = await LoadWbsAsync(projectId, token, ct);
+        var deps = await LoadDepsAsync(projectId, token, ct);
+        foreach (var gate in locking)
+        {
+            foreach (var id in ExpandGateLockSet(gate.WbsId!, wbs, deps))
+                map.TryAdd(id, gate);
+        }
+
+        return map;
+    }
+
+    private static bool GateLocksWork(string status, string? wbsId) =>
+        !string.IsNullOrWhiteSpace(wbsId)
+        && (string.Equals(status, PmStageGateStatus.Open, StringComparison.Ordinal)
+            || string.Equals(status, PmStageGateStatus.Failed, StringComparison.Ordinal));
+
+    private static HashSet<string> ExpandGateLockSet(
+        string rootId,
+        List<PmWbsRow> wbs,
+        List<PmDependencyRow> deps)
+    {
+        var locked = new HashSet<string>(StringComparer.Ordinal);
+        AddWbsSubtree(rootId, wbs, locked);
+
+        var changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach (var dep in deps)
+            {
+                var pred = dep.predecessorId;
+                var succ = dep.successorId;
+                if (string.IsNullOrWhiteSpace(pred) || string.IsNullOrWhiteSpace(succ))
+                    continue;
+                if (!locked.Contains(pred)) continue;
+                var before = locked.Count;
+                AddWbsSubtree(succ, wbs, locked);
+                if (locked.Count > before) changed = true;
+            }
+        }
+
+        return locked;
+    }
+
+    private static void AddWbsSubtree(string rootId, List<PmWbsRow> wbs, HashSet<string> locked)
+    {
+        if (!locked.Add(rootId)) return;
+        foreach (var child in wbs.Where(w => string.Equals(w.parentId, rootId, StringComparison.Ordinal)))
+        {
+            if (!string.IsNullOrWhiteSpace(child.__dataId))
+                AddWbsSubtree(child.__dataId, wbs, locked);
+        }
     }
 
     private static void AssertGateTransition(

@@ -21,6 +21,11 @@ public static class JobPackCatalog
         Name = pack.Name,
         Version = NormalizeVersion(pack.Version),
         Description = pack.Description,
+        Origin = string.IsNullOrWhiteSpace(pack.Origin) ? JobPackTrust.FirstParty : pack.Origin,
+        Publisher = string.IsNullOrWhiteSpace(pack.Publisher) ? JobPackTrust.DefaultPublisher : pack.Publisher,
+        ContentSha256 = pack.ContentSha256,
+        Verified = pack.Verified,
+        CanApply = pack.CanApply,
         Kinds = pack.Kinds,
         Folders = pack.Folders.Select(f => f.Name).ToList(),
         Wbs = pack.Wbs.Select(ToPreview).ToList(),
@@ -30,7 +35,10 @@ public static class JobPackCatalog
             Title = s.Title,
             Kind = s.Kind,
             Body = s.Body
-        }).ToList()
+        }).ToList(),
+        RuleCount = pack.Workspace?.Rules?.Count ?? 0,
+        SlaCount = pack.Workspace?.SlaPolicies?.Count ?? 0,
+        DashboardCount = pack.Workspace?.Dashboards?.Count ?? 0
     };
 
     public static string NormalizeVersion(string? version)
@@ -61,6 +69,7 @@ public static class JobPackCatalog
             if (stream is null) continue;
             var pack = JsonSerializer.Deserialize<JobPackDefinition>(stream, JobPackJson.Options);
             if (pack is null || string.IsNullOrWhiteSpace(pack.Code)) continue;
+            JobPackTrust.StampCatalog(pack);
             list.Add(pack);
         }
 

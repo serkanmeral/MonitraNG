@@ -47,6 +47,23 @@ public interface IProjectPlanningService
         string? query,
         CancellationToken ct = default);
 
+    Task<IReadOnlyList<ProjectDocumentDto>> ListProjectDocumentsAsync(
+        string projectId,
+        string? query,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<TraceDocumentDto>> ListWbsEvidenceAsync(string wbsId, CancellationToken ct = default);
+
+    Task<WbsItemDto> BindEvidenceAsync(string wbsId, BindWbsEvidenceRequest request, CancellationToken ct = default);
+
+    Task<WbsItemDto> UnbindEvidenceAsync(string wbsId, string resourceId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<TraceDocumentDto>> ListWbsReferencesAsync(string wbsId, CancellationToken ct = default);
+
+    Task<WbsItemDto> BindReferenceAsync(string wbsId, BindWbsReferenceRequest request, CancellationToken ct = default);
+
+    Task<WbsItemDto> UnbindReferenceAsync(string wbsId, string resourceId, CancellationToken ct = default);
+
     Task<ProjectDetailDto> RecalcProgressAsync(string projectId, CancellationToken ct = default);
 
     Task ApplyWorkItemProgressAsync(string workItemId, CancellationToken ct = default);
@@ -66,6 +83,8 @@ public interface IProjectPlanningService
     Task<StageGateDto> UpdateStageGateAsync(string id, UpdateStageGateRequest request, CancellationToken ct = default);
 
     Task DeleteStageGateAsync(string id, CancellationToken ct = default);
+
+    Task AssertWorkItemCloseAllowedAsync(string workItemId, CancellationToken ct = default);
 
     Task<RaidItemDto> CreateRaidItemAsync(string projectId, CreateRaidItemRequest request, CancellationToken ct = default);
 

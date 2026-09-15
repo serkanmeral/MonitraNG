@@ -1,7 +1,7 @@
 {
   "code": "proposal",
   "name": "Teklif",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Şartname yanıtı: girdi şartname, uyum matrisi, teklif metni, soru listesi. Madde çıkarımı veya fiyat motoru değildir.",
   "kinds": ["specification", "compliance", "proposal", "clarification", "diagram"],
   "folders": [
@@ -67,5 +67,30 @@
     "folder": "Diyagram",
     "title": "Teklif akışı.drawio",
     "kind": "diagram"
+  },
+  "workspace": {
+    "rules": [
+      {
+        "name": "Kapanışta açıklama",
+        "ruleType": "validation",
+        "trigger": "WorkItemTransition",
+        "transitionKey": "resolve",
+        "applyMode": "pre",
+        "conditions": { "field": "description", "cmp": "empty" },
+        "errorMessage": "Teklif kalemi kapanmadan önce açıklama girilmelidir.",
+        "priority": 100
+      }
+    ],
+    "slaPolicies": [
+      {
+        "name": "Yanıt",
+        "responseTargetMinutes": 480,
+        "resolveTargetMinutes": 2400,
+        "priority": 50
+      }
+    ],
+    "dashboards": [
+      { "name": "Teklif özet", "isDefault": true }
+    ]
   }
 }

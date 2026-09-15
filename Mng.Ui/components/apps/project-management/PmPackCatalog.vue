@@ -91,6 +91,16 @@ function remainingPacks(exceptCode: string): PmJobPack[] {
   return catalog.value.filter((pack) => codes.has(pack.code));
 }
 
+function originLabel(pack: PmJobPack) {
+  return pack.origin === 'thirdParty'
+    ? t('projectManagement.packCatalog.originThirdParty')
+    : t('projectManagement.packCatalog.originFirstParty');
+}
+
+function isTrusted(pack: PmJobPack) {
+  return pack.canApply !== false && pack.verified !== false;
+}
+
 async function load() {
   loading.value = true;
   try {
@@ -248,6 +258,29 @@ onMounted(() => {
         </v-card-title>
         <v-card-subtitle>v{{ pack.version || '1.0.0' }} · {{ pack.code }}</v-card-subtitle>
         <v-card-text>
+          <div class="d-flex flex-wrap ga-1 mb-3">
+            <v-chip size="x-small" variant="tonal">{{ originLabel(pack) }}</v-chip>
+            <v-chip
+              size="x-small"
+              :color="isTrusted(pack) ? 'success' : 'error'"
+              variant="tonal"
+              :title="pack.contentSha256 || undefined"
+            >
+              {{ isTrusted(pack)
+                ? t('projectManagement.packCatalog.verified')
+                : t('projectManagement.packCatalog.untrusted') }}
+            </v-chip>
+            <v-chip v-if="pack.publisher" size="x-small" variant="text">{{ pack.publisher }}</v-chip>
+            <v-chip v-if="pack.ruleCount" size="x-small" variant="tonal">
+              {{ pack.ruleCount }} {{ t('projectManagement.packCatalog.rules') }}
+            </v-chip>
+            <v-chip v-if="pack.slaCount" size="x-small" variant="tonal">
+              {{ pack.slaCount }} {{ t('projectManagement.packCatalog.sla') }}
+            </v-chip>
+            <v-chip v-if="pack.dashboardCount" size="x-small" variant="tonal">
+              {{ pack.dashboardCount }} {{ t('projectManagement.packCatalog.dashboards') }}
+            </v-chip>
+          </div>
           <div class="text-body-2 mb-3">{{ pack.description }}</div>
           <div class="text-caption text-medium-emphasis mb-1">{{ t('projectManagement.packCatalog.folders') }}</div>
           <div class="d-flex flex-wrap ga-1 mb-3">
@@ -269,6 +302,7 @@ onMounted(() => {
           <v-btn
             size="small"
             color="primary"
+            :disabled="!isTrusted(pack)"
             :loading="busyCode === pack.code"
             @click="apply(pack)"
           >
@@ -322,6 +356,25 @@ onMounted(() => {
                 {{ t('projectManagement.packCatalog.workspaceSkip') }}
               </v-chip>
             </div>
+            <div
+              v-if="(preview.ruleCreateCount || 0) + (preview.slaCreateCount || 0) + (preview.dashboardCreateCount || 0) > 0"
+              class="mt-2"
+            >
+              {{ t('projectManagement.packCatalog.ocRuntimeSummary', {
+                rules: preview.ruleCreateCount || 0,
+                sla: preview.slaCreateCount || 0,
+                dashboards: preview.dashboardCreateCount || 0,
+              }) }}
+            </div>
+            <div
+              v-if="(preview.workItemCreateCount || 0) + (preview.workItemSkipCount || 0) > 0"
+              class="mt-2"
+            >
+              {{ t('projectManagement.packCatalog.workItemSummary', {
+                create: preview.workItemCreateCount || 0,
+                skip: preview.workItemSkipCount || 0,
+              }) }}
+            </div>
           </div>
           <div v-if="preview && preview.items.length" class="preview-list">
             <div v-for="(row, idx) in preview.items" :key="`${row.path}-${idx}`" class="d-flex align-center py-1">
@@ -353,6 +406,15 @@ onMounted(() => {
               remove: detachPreview.removeCount,
               keep: detachPreview.keepCount,
             }) }}
+            <div
+              v-if="(detachPreview.workItemRemoveCount || 0) + (detachPreview.workItemKeepCount || 0) > 0"
+              class="mt-2"
+            >
+              {{ t('projectManagement.packCatalog.workItemDetachSummary', {
+                remove: detachPreview.workItemRemoveCount || 0,
+                keep: detachPreview.workItemKeepCount || 0,
+              }) }}
+            </div>
           </div>
           <div v-if="detachFolders && detachFolders.items.length" class="text-caption text-medium-emphasis mb-3">
             {{ t('projectManagement.packCatalog.detachFolderSummary', {

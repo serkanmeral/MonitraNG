@@ -12,6 +12,8 @@ import type {
   PmWbsItem,
   PmWorkItemCandidate,
   PmProjectStatusPack,
+  PmTraceDocument,
+  PmProjectDocument,
   PmCreateDecisionRequest,
   PmUpdateDecisionRequest,
   PmDecision,
@@ -195,6 +197,69 @@ export async function pmBindWbsWorkItem(wbsId: string, workItemId: string): Prom
 export async function pmUnbindWbsWorkItem(wbsId: string): Promise<PmWbsItem> {
   return (await fetchFromOperations(
     `/api/v1/wbs/${encodeURIComponent(wbsId)}/work-item`,
+    'DELETE',
+  )) as PmWbsItem;
+}
+
+export async function pmListProjectDocuments(
+  projectId: string,
+  query?: string | null,
+): Promise<PmProjectDocument[]> {
+  const q = query?.trim();
+  const suffix = q ? `?q=${encodeURIComponent(q)}` : '';
+  const raw = await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/documents${suffix}`,
+    'GET',
+  );
+  return asArray<PmProjectDocument>(raw);
+}
+
+export async function pmListWbsEvidence(wbsId: string): Promise<PmTraceDocument[]> {
+  const raw = await fetchFromOperations(
+    `/api/v1/wbs/${encodeURIComponent(wbsId)}/evidence`,
+    'GET',
+  );
+  return asArray<PmTraceDocument>(raw);
+}
+
+export async function pmBindWbsEvidence(
+  wbsId: string,
+  resourceId: string,
+  relationType?: string | null,
+): Promise<PmWbsItem> {
+  return (await fetchFromOperations(
+    `/api/v1/wbs/${encodeURIComponent(wbsId)}/evidence`,
+    'POST',
+    { resourceId, relationType: relationType || undefined },
+  )) as PmWbsItem;
+}
+
+export async function pmUnbindWbsEvidence(wbsId: string, resourceId: string): Promise<PmWbsItem> {
+  return (await fetchFromOperations(
+    `/api/v1/wbs/${encodeURIComponent(wbsId)}/evidence/${encodeURIComponent(resourceId)}`,
+    'DELETE',
+  )) as PmWbsItem;
+}
+
+export async function pmListWbsReferences(wbsId: string): Promise<PmTraceDocument[]> {
+  const raw = await fetchFromOperations(
+    `/api/v1/wbs/${encodeURIComponent(wbsId)}/references`,
+    'GET',
+  );
+  return asArray<PmTraceDocument>(raw);
+}
+
+export async function pmBindWbsReference(wbsId: string, resourceId: string): Promise<PmWbsItem> {
+  return (await fetchFromOperations(
+    `/api/v1/wbs/${encodeURIComponent(wbsId)}/references`,
+    'POST',
+    { resourceId },
+  )) as PmWbsItem;
+}
+
+export async function pmUnbindWbsReference(wbsId: string, resourceId: string): Promise<PmWbsItem> {
+  return (await fetchFromOperations(
+    `/api/v1/wbs/${encodeURIComponent(wbsId)}/references/${encodeURIComponent(resourceId)}`,
     'DELETE',
   )) as PmWbsItem;
 }

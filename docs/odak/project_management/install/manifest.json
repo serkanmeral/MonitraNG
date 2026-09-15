@@ -1,8 +1,8 @@
 {
   "id": "teslimat-omurgasi",
-  "version": "0.26.0",
-  "updated": "2026-09-02",
-  "description": "F1-0..F1-9 + F2-1..F2-13 + F3-1..F3-5 + F4-1 + F4-2 (sökmede boş DI klasör silme).",
+  "version": "0.35.0",
+  "updated": "2026-09-03",
+  "description": "F1-0..F4-7 + F5-1 + F2-14..F2-16 (plan bağı, kapatma kilitleri). NLP/şartname parser yok.",
   "category": {
     "file": "docs/odak/document_intelligence/datasets/documentintelligence_dataset_category.json",
     "name": "DocumentIntelligenceDatasets"

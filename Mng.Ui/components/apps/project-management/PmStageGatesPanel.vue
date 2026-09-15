@@ -242,9 +242,19 @@ function onDeleteDialog(open: boolean) {
       :items-per-page="-1"
     >
       <template #item.status="{ item }">
-        <v-chip size="small" :color="statusColor(item.status)" variant="tonal">
-          {{ statusLabel(item.status) }}
-        </v-chip>
+        <div class="d-flex align-center ga-1 flex-wrap">
+          <v-chip size="small" :color="statusColor(item.status)" variant="tonal">
+            {{ statusLabel(item.status) }}
+          </v-chip>
+          <v-chip
+            v-if="item.locksWork"
+            size="x-small"
+            color="warning"
+            variant="tonal"
+          >
+            {{ t('projectManagement.stageGate.locked') }}
+          </v-chip>
+        </div>
       </template>
       <template #item.wbs="{ item }">
         {{ wbsName(item.wbsId) || '—' }}

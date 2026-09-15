@@ -15,6 +15,8 @@ public sealed partial class ProjectPlanningService
         public int Updated { get; set; }
         public int Removed { get; set; }
         public int Kept { get; set; }
+        public int WorkItemsRemoved { get; set; }
+        public int WorkItemsKept { get; set; }
     }
 
     public async Task<ProjectPackCatalogDto> GetProjectPacksAsync(string projectId, CancellationToken ct = default)
@@ -45,9 +47,6 @@ public sealed partial class ProjectPlanningService
         var installedVersion = installed is null ? null : JobPackCatalog.NormalizeVersion(installed.version);
         var catalogVersion = JobPackCatalog.NormalizeVersion(pack.Version);
         var existing = await LoadWbsAsync(projectId, token, ct);
-        var items = intentNorm == "detach"
-            ? BuildDetachPreview(pack, existing)
-            : BuildApplyPreview(pack, existing, applyUpdates: modeNorm == "update");
         var workspace = intentNorm == "detach"
             ? new PackWorkspaceEnsureResult
             {
@@ -57,6 +56,21 @@ public sealed partial class ProjectPlanningService
                 WorkspaceName = PackWorkspaceName(project.code)
             }
             : await PreviewPackWorkspaceAsync(project, token, ct);
+        var items = intentNorm == "detach"
+            ? await BuildDetachPreviewAsync(pack, existing, token, ct)
+            : BuildApplyPreview(pack, existing, applyUpdates: modeNorm == "update");
+        var oc = intentNorm == "detach"
+            ? new PackOcRuntimeResult()
+            : await PreviewPackOcRuntimeAsync(workspace.WorkspaceId, pack, token, ct);
+        var workspaceWillExist = !string.IsNullOrWhiteSpace(workspace.WorkspaceId)
+            || string.Equals(workspace.Action, "create", StringComparison.Ordinal);
+        var workItems = PreviewPackOcWorkItems(
+            workspace.WorkspaceId,
+            workspaceWillExist,
+            pack,
+            existing,
+            intentNorm,
+            intentNorm == "detach" ? items : null);
 
         return new PackPreviewDto
         {
@@ -75,7 +89,17 @@ public sealed partial class ProjectPlanningService
             Items = items,
             WorkspaceAction = workspace.Action,
             WorkspaceId = workspace.WorkspaceId,
-            WorkspaceName = workspace.WorkspaceName
+            WorkspaceName = workspace.WorkspaceName,
+            RuleCreateCount = oc.RulesCreated,
+            RuleSkipCount = oc.RulesSkipped,
+            SlaCreateCount = oc.SlaCreated,
+            SlaSkipCount = oc.SlaSkipped,
+            DashboardCreateCount = oc.DashboardsCreated,
+            DashboardSkipCount = oc.DashboardsSkipped,
+            WorkItemCreateCount = workItems.Created,
+            WorkItemSkipCount = workItems.Skipped,
+            WorkItemRemoveCount = workItems.Removed,
+            WorkItemKeepCount = workItems.Kept
         };
     }
 
@@ -88,9 +112,12 @@ public sealed partial class ProjectPlanningService
         var token = RequireToken();
         await LoadProjectOrThrowAsync(projectId, token, ct);
         var pack = RequirePack(packCode);
+        JobPackTrust.AssertCanApply(pack);
         var applyUpdates = NormalizePackMode(mode) == "update";
         var counts = await ApplyPackWbsAsync(projectId, pack, token, ct, applyUpdates);
         var workspace = await EnsurePackWorkspaceAsync(projectId, pack, token, ct);
+        var oc = await EnsurePackOcRuntimeAsync(workspace.WorkspaceId, pack, token, ct);
+        var workItems = await EnsurePackOcWorkItemsAsync(projectId, workspace.WorkspaceId, pack, token, ct);
         await UpsertProjectPackAsync(projectId, pack, token, ct);
         return new ApplyPackResultDto
         {
@@ -100,7 +127,12 @@ public sealed partial class ProjectPlanningService
             Skipped = counts.Skipped,
             Updated = counts.Updated,
             WorkspaceCreated = workspace.Created,
-            WorkspaceId = workspace.WorkspaceId
+            WorkspaceId = workspace.WorkspaceId,
+            RulesCreated = oc.RulesCreated,
+            SlaCreated = oc.SlaCreated,
+            DashboardsCreated = oc.DashboardsCreated,
+            WorkItemsCreated = workItems.Created,
+            WorkItemsSkipped = workItems.Skipped
         };
     }
 
@@ -122,7 +154,9 @@ public sealed partial class ProjectPlanningService
             PackCode = pack.Code,
             Version = JobPackCatalog.NormalizeVersion(pack.Version),
             Removed = counts.Removed,
-            Kept = counts.Kept
+            Kept = counts.Kept,
+            WorkItemsRemoved = counts.WorkItemsRemoved,
+            WorkItemsKept = counts.WorkItemsKept
         };
     }
 
@@ -204,33 +238,39 @@ public sealed partial class ProjectPlanningService
         }
     }
 
-    private static List<PackPreviewItemDto> BuildDetachPreview(JobPackDefinition pack, List<PmWbsRow> existing)
+    private async Task<List<PackPreviewItemDto>> BuildDetachPreviewAsync(
+        JobPackDefinition pack,
+        List<PmWbsRow> existing,
+        string token,
+        CancellationToken ct)
     {
         var remaining = existing.ToList();
         var removeIds = new HashSet<string>(StringComparer.Ordinal);
-        CollectDetachRemovals(null, pack.Wbs, remaining, removeIds);
+        await CollectDetachRemovalsAsync(null, pack.Wbs, remaining, removeIds, token, ct);
 
         var items = new List<PackPreviewItemDto>();
         WalkDetachPreview(null, pack.Wbs, string.Empty, existing, removeIds, items);
         return items;
     }
 
-    private static void CollectDetachRemovals(
+    private async Task CollectDetachRemovalsAsync(
         string? parentId,
         IReadOnlyList<JobPackWbsNode> nodes,
         List<PmWbsRow> remaining,
-        HashSet<string> removeIds)
+        HashSet<string> removeIds,
+        string token,
+        CancellationToken ct)
     {
         foreach (var node in nodes)
         {
             var name = (node.Name ?? string.Empty).Trim();
             var match = FindWbsByName(remaining, parentId, name);
             if (node.Children is { Count: > 0 })
-                CollectDetachRemovals(match?.__dataId, node.Children, remaining, removeIds);
+                await CollectDetachRemovalsAsync(match?.__dataId, node.Children, remaining, removeIds, token, ct);
 
             if (match is null || string.IsNullOrWhiteSpace(match.__dataId))
                 continue;
-            if (!CanDetachWbs(match, remaining))
+            if (!await CanDetachPackWbsAsync(match, remaining, token, ct))
                 continue;
 
             removeIds.Add(match.__dataId);
@@ -394,6 +434,14 @@ public sealed partial class ProjectPlanningService
 
             if (match is null || string.IsNullOrWhiteSpace(match.__dataId))
                 continue;
+
+            if (!string.IsNullOrWhiteSpace(match.workItemId))
+            {
+                if (await TryReleaseUnusedPackWorkItemAsync(match, token, ct))
+                    counts.WorkItemsRemoved++;
+                else
+                    counts.WorkItemsKept++;
+            }
 
             if (!CanDetachWbs(match, all))
             {

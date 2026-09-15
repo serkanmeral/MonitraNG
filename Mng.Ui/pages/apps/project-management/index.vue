@@ -62,7 +62,9 @@ const breadcrumbs = computed(() => [
 
 const packItems = computed(() => [
   { title: t('projectManagement.pack.none'), value: '' },
-  ...jobPacks.value.map((row) => ({ title: row.name, value: row.code })),
+  ...jobPacks.value
+    .filter((row) => row.canApply !== false)
+    .map((row) => ({ title: row.name, value: row.code })),
 ]);
 
 const selectedPack = computed(() => jobPacks.value.find((row) => row.code === form.value.packCode) || null);

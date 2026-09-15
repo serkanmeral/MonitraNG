@@ -334,6 +334,12 @@ public class WorkItemCommandService : IWorkItemCommandService
         if (string.IsNullOrEmpty(toStateId))
             throw new OperationCoreException("TRANSITION_INVALID", "Transition has no toStateId.", "Transition toStateId içermiyor.", 400);
 
+        var targetState = await _metadataCache.GetStateAsync(toStateId, token, cancellationToken);
+        var closing = targetState.IsClosed == true
+            || string.Equals(targetState.Category, "done", StringComparison.OrdinalIgnoreCase);
+        if (closing)
+            await _planning.Value.AssertWorkItemCloseAllowedAsync(workItemId, cancellationToken);
+
         var merged = new Dictionary<string, object?>(existing, StringComparer.OrdinalIgnoreCase);
         await ApplyIncomingFieldsAsync(
             merged,

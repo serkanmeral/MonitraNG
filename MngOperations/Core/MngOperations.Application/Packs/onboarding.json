@@ -1,7 +1,7 @@
 {
   "code": "onboarding",
   "name": "Onboarding",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Karşılama, yetkinlik matrisi ve göreve hazır kilometre taşı. LMS, e-imza veya HRIS değildir.",
   "kinds": ["onboarding", "competency", "form", "procedure", "diagram"],
   "folders": [
@@ -67,5 +67,30 @@
     "folder": "Diyagram",
     "title": "Onboarding akışı.drawio",
     "kind": "diagram"
+  },
+  "workspace": {
+    "rules": [
+      {
+        "name": "Kapanışta açıklama",
+        "ruleType": "validation",
+        "trigger": "WorkItemTransition",
+        "transitionKey": "resolve",
+        "applyMode": "pre",
+        "conditions": { "field": "description", "cmp": "empty" },
+        "errorMessage": "Onboarding kalemi kapanmadan önce açıklama girilmelidir.",
+        "priority": 100
+      }
+    ],
+    "slaPolicies": [
+      {
+        "name": "Göreve hazır",
+        "responseTargetMinutes": 480,
+        "resolveTargetMinutes": 2400,
+        "priority": 50
+      }
+    ],
+    "dashboards": [
+      { "name": "Onboarding özet", "isDefault": true }
+    ]
   }
 }

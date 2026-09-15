@@ -30,6 +30,7 @@ const countCards = computed(() => {
     { flag: 'unbound' as const, value: c?.unboundLeaf ?? 0, color: 'default' },
     { flag: 'openWork' as const, value: c?.openWork ?? 0, color: 'info' },
     { flag: 'missingEvidence' as const, value: c?.missingEvidence ?? 0, color: 'info' },
+    { flag: 'missingReference' as const, value: c?.missingReference ?? 0, color: 'info' },
     { flag: 'missingApproval' as const, value: c?.missingApproval ?? 0, color: 'warning' },
     { flag: 'openScopeChange' as const, value: c?.openScopeChange ?? 0, color: 'secondary' },
     { flag: 'openGate' as const, value: c?.openGate ?? 0, color: 'info' },
@@ -91,7 +92,7 @@ function flagLabel(flag: string) {
 function flagColor(flag: string) {
   if (flag === 'delayed' || flag === 'milestoneAtRisk' || flag === 'failedGate' || flag === 'openRisk' || flag === 'overloadedResource' || flag === 'overBudget' || flag === 'overdueAck' || flag === 'overdueObligation' || flag === 'overdueAuditPack' || flag === 'overdueMeetingAction' || flag === 'overdueStakeholder') return 'error';
   if (flag === 'drifted' || flag === 'missingApproval' || flag === 'openIssue' || flag === 'pendingAck' || flag === 'unboundObligation' || flag === 'incompleteAuditPack' || flag === 'unboundMeetingAction' || flag === 'incompleteStakeholder' || flag === 'incompleteProcessMap') return 'warning';
-  if (flag === 'openWork' || flag === 'missingEvidence' || flag === 'openGate' || flag === 'openObligation' || flag === 'openAuditPack' || flag === 'openMeetingAction' || flag === 'openStakeholder' || flag === 'openProcessMap') return 'info';
+  if (flag === 'openWork' || flag === 'missingEvidence' || flag === 'missingReference' || flag === 'openGate' || flag === 'openObligation' || flag === 'openAuditPack' || flag === 'openMeetingAction' || flag === 'openStakeholder' || flag === 'openProcessMap') return 'info';
   return 'default';
 }
 

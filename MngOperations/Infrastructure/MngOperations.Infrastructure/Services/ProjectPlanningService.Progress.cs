@@ -22,8 +22,7 @@ public sealed partial class ProjectPlanningService
             throw new OperationCoreException("WS_REQUIRED", "Project has no workspace.", "Önce projeye bir OC workspace bağlayın.", 400);
 
         var siblings = await LoadWbsAsync(wbs.projectId!, token, ct);
-        if (siblings.Any(x => string.Equals(x.parentId, wbsId, StringComparison.Ordinal)))
-            throw new OperationCoreException("WI_LEAF", "Only leaf WBS items can bind a work item.", "Yalnızca yaprak WBS kalemine iş bağlanır.", 400);
+        var isLeaf = !siblings.Any(x => string.Equals(x.parentId, wbsId, StringComparison.Ordinal));
 
         var wi = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, workItemId, token, ct, expand: false);
         if (wi is null)
@@ -39,17 +38,21 @@ public sealed partial class ProjectPlanningService
             throw new OperationCoreException("WI_BOUND", "Work item is already bound to another WBS item.", "Bu iş kaydı başka bir WBS kalemine bağlı.", 409);
 
         var progress = await ResolveWorkItemProgressAsync(wi, token, ct);
-        await _dg.UpdateAsync(PmDatasets.WbsItems, wbsId, new Dictionary<string, object?>
+        var payload = new Dictionary<string, object?> { ["workItemId"] = workItemId };
+        if (isLeaf)
         {
-            ["workItemId"] = workItemId,
-            ["percentComplete"] = progress.Percent,
-            ["actualFinish"] = progress.Closed ? (object?)DateTime.UtcNow : null
-        }, token, ct);
+            payload["percentComplete"] = progress.Percent;
+            payload["actualFinish"] = progress.Closed ? (object?)DateTime.UtcNow : null;
+        }
+
+        await _dg.UpdateAsync(PmDatasets.WbsItems, wbsId, payload, token, ct);
 
         await RecalcProjectProgressAsync(wbs.projectId!, token, ct);
         var row = await LoadWbsOrThrowAsync(wbsId, token, ct);
         var dto = ToWbsDto(row);
         await HydrateWorkItemsAsync(new List<WbsItemDto> { dto }, token, ct);
+        await HydrateGateLocksAsync(wbs.projectId!, new List<WbsItemDto> { dto }, token, ct);
+        await HydrateEvidenceAsync(new List<WbsItemDto> { dto }, token, ct);
         return dto;
     }
 
@@ -195,7 +198,11 @@ public sealed partial class ProjectPlanningService
 
     private async Task ApplyLinkedPercentAsync(PmWbsRow wbs, string token, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(wbs.workItemId) || string.IsNullOrWhiteSpace(wbs.__dataId)) return;
+        if (string.IsNullOrWhiteSpace(wbs.workItemId) || string.IsNullOrWhiteSpace(wbs.__dataId) || string.IsNullOrWhiteSpace(wbs.projectId))
+            return;
+        var siblings = await LoadWbsAsync(wbs.projectId, token, ct);
+        if (HasWbsChildren(siblings, wbs.__dataId))
+            return;
         var wi = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, wbs.workItemId, token, ct, expand: false);
         if (wi is null) return;
         var progress = await ResolveWorkItemProgressAsync(wi, token, ct);
