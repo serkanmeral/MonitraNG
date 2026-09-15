@@ -182,7 +182,7 @@ public sealed partial class ProjectPlanningService
         if (wbs is null || string.IsNullOrWhiteSpace(wbs.projectId) || string.IsNullOrWhiteSpace(wbs.__dataId))
             return;
         await AssertWbsCloseAllowedAsync(wbs.projectId, wbs.__dataId, token, ct);
-        await AssertEvidencePresentForCloseAsync(workItemId, wbs.__dataId, token, ct);
+        await AssertEvidencePresentForCloseAsync(workItemId, wbs, token, ct);
         await AssertDocumentsApprovedForCloseAsync(workItemId, wbs.__dataId, token, ct);
     }
 

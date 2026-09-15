@@ -2,7 +2,9 @@ using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Planning;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Interfaces;
+using MngOperations.Application.Models;
 using MngOperations.Application.Utilities;
+using MngOperations.Domain.Constants;
 
 namespace MngOperations.Infrastructure.Services;
 
@@ -159,7 +161,7 @@ public sealed partial class ProjectPlanningService
         string token,
         CancellationToken ct)
     {
-        var docs = await LoadDocumentsByWorkItemAsync(new[] { workItemId }, token, ct);
+        var docs = await LoadDocumentsByWorkItemAsync(new[] { workItemId }, token, ct, throwOnError: true);
         var unapproved = (docs.GetValueOrDefault(workItemId) ?? []).FirstOrDefault(d => !d.Approved);
         if (unapproved is null)
             return;
@@ -180,11 +182,22 @@ public sealed partial class ProjectPlanningService
 
     private async Task AssertEvidencePresentForCloseAsync(
         string workItemId,
-        string wbsId,
+        PmWbsRow wbs,
         string token,
         CancellationToken ct)
     {
-        var docs = await LoadDocumentsByWorkItemAsync(new[] { workItemId }, token, ct);
+        var wbsId = wbs.__dataId ?? string.Empty;
+        // Summary / parent rows roll up from children; evidence is required on leaves only.
+        if (string.Equals(PmWbsKind.Normalize(wbs.kind), PmWbsKind.Summary, StringComparison.Ordinal))
+            return;
+        if (!string.IsNullOrWhiteSpace(wbs.projectId) && !string.IsNullOrWhiteSpace(wbsId))
+        {
+            var siblings = await LoadWbsAsync(wbs.projectId, token, ct);
+            if (siblings.Any(row => string.Equals(row.parentId, wbsId, StringComparison.Ordinal)))
+                return;
+        }
+
+        var docs = await LoadDocumentsByWorkItemAsync(new[] { workItemId }, token, ct, throwOnError: true);
         if ((docs.GetValueOrDefault(workItemId) ?? []).Any(d => IsEvidenceRelation(d.RelationType)))
             return;
 

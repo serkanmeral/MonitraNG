@@ -249,9 +249,9 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 
 ## 12. Sonraki adım
 
-**15 Eylül 2026 (durum senkronu):** Omurga zinciri kapandı — plan (`reference`) → WBS → OC iş → kanıt → kapatma kilitleri (F2-14…F2-16). Manifest **0.35.0**. NLP/şartname parser **yapılmayacak**.
+**15 Eylül 2026:** Manifest **0.36.0**. Portföy hafifleştirildi (liste timeout giderildi). Odak’ta 7 `SEED-*` demo proje; `SEED-PMO` Gantt için tarih/FS/baseline. NLP/şartname parser **yapılmayacak**.
 
-Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1. Oturum notu: [current_status.md](./current_status.md).
+Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed sertleştirmesi. Oturum notu: [current_status.md](./current_status.md).
 
 “Marketplace” netliği (3 Eylül 2026): kastedilen raftan iş paketi şablonu; satın alma vitrini değil.
 

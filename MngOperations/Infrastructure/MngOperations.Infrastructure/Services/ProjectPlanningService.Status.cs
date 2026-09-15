@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Planning;
+using MngOperations.Application.Exceptions;
 using MngOperations.Application.Utilities;
 using MngOperations.Domain.Constants;
 
@@ -289,19 +290,20 @@ public sealed partial class ProjectPlanningService
         if (!string.IsNullOrWhiteSpace(wbs.WorkItemId) && incomplete)
             flags.Add(ProjectTraceFlags.OpenWork);
 
-        if (!string.IsNullOrWhiteSpace(wbs.WorkItemId)
+        // Trace noise: only flag open/incomplete work for missing plan/evidence/approval.
+        if (incomplete && !string.IsNullOrWhiteSpace(wbs.WorkItemId)
             && !docs.Any(d => IsEvidenceRelation(d.RelationType)))
         {
             flags.Add(ProjectTraceFlags.MissingEvidence);
         }
 
-        if (!string.IsNullOrWhiteSpace(wbs.WorkItemId)
+        if (incomplete && !string.IsNullOrWhiteSpace(wbs.WorkItemId)
             && !docs.Any(d => IsReferenceRelation(d.RelationType)))
         {
             flags.Add(ProjectTraceFlags.MissingReference);
         }
 
-        if (docs.Any(d => !d.Approved))
+        if (incomplete && docs.Any(d => !d.Approved))
             flags.Add(ProjectTraceFlags.MissingApproval);
 
         var bound = gates.Where(g => string.Equals(g.WbsId, wbs.Id, StringComparison.Ordinal)).ToList();
@@ -374,7 +376,8 @@ public sealed partial class ProjectPlanningService
     private async Task<Dictionary<string, List<TraceDocumentDto>>> LoadDocumentsByWorkItemAsync(
         IReadOnlyList<string> workItemIds,
         string token,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool throwOnError = false)
     {
         var result = new Dictionary<string, List<TraceDocumentDto>>(StringComparer.Ordinal);
         if (workItemIds.Count == 0)
@@ -435,6 +438,7 @@ public sealed partial class ProjectPlanningService
                     : WorkItemDataHelper.GetString(resource, "title")
                       ?? WorkItemDataHelper.GetString(resource, "name")
                       ?? resourceId;
+                var relationType = WorkItemDataHelper.GetString(link, "relationType")?.Trim() ?? string.Empty;
 
                 if (!result.TryGetValue(workItemId, out var list))
                 {
@@ -447,7 +451,7 @@ public sealed partial class ProjectPlanningService
                     ResourceId = resourceId,
                     Name = name,
                     Kind = resource is null ? null : WorkItemDataHelper.GetString(resource, "kind"),
-                    RelationType = WorkItemDataHelper.GetString(link, "relationType") ?? "reference",
+                    RelationType = relationType,
                     Status = status,
                     Approved = status == "published"
                 });
@@ -455,6 +459,16 @@ public sealed partial class ProjectPlanningService
         }
         catch (Exception ex)
         {
+            if (throwOnError)
+            {
+                throw new OperationCoreException(
+                    "DOC_LOOKUP_FAILED",
+                    "Could not load linked documents for close validation.",
+                    "Bağlı belgeler yüklenemedi; iş kapatılamaz.",
+                    503,
+                    new Dictionary<string, object?> { ["workItemIds"] = workItemIds.ToList() });
+            }
+
             _logger.LogWarning(ex, "DI document lookup failed for project status pack (non-fatal)");
         }
 

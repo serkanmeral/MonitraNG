@@ -1,8 +1,8 @@
 {
   "id": "teslimat-omurgasi",
-  "version": "0.35.0",
-  "updated": "2026-09-03",
-  "description": "F1-0..F4-7 + F5-1 + F2-14..F2-16 (plan bağı, kapatma kilitleri). NLP/şartname parser yok.",
+  "version": "0.36.0",
+  "updated": "2026-09-15",
+  "description": "F1–F5 + F2-14..16; hafif portföy; demo SEED projeler; close-path sert. NLP yok.",
   "category": {
     "file": "docs/odak/document_intelligence/datasets/documentintelligence_dataset_category.json",
     "name": "DocumentIntelligenceDatasets"

@@ -138,11 +138,88 @@ function Find-WbsByName($rows, [string]$name) {
     return @($rows | Where-Object { (Get-Name $_) -eq $name } | Select-Object -First 1)[0]
 }
 
+function Invoke-Doc {
+    param(
+        [string]$Method = "GET",
+        [string]$Path,
+        [object]$Body = $null,
+        [int[]]$ExpectStatus = @(200, 201, 204)
+    )
+    $uri = "$Gateway/documents/api/v1/resources$Path"
+    $status = 0
+    $params = @{
+        Uri                  = $uri
+        Method               = $Method
+        Headers              = $script:Headers
+        TimeoutSec           = 60
+        SkipCertificateCheck = $true
+        SkipHttpErrorCheck   = $true
+        StatusCodeVariable   = "status"
+    }
+    if ($null -ne $Body) {
+        $params.ContentType = "application/json; charset=utf-8"
+        $params.Body = [System.Text.Encoding]::UTF8.GetBytes(($Body | ConvertTo-Json -Depth 8 -Compress))
+    }
+    $result = Invoke-RestMethod @params
+    $script:LastStatus = [int]$status
+    if ($ExpectStatus -notcontains $script:LastStatus) {
+        throw "HTTP $script:LastStatus $Method documents$Path"
+    }
+    return , $result
+}
+
+function Get-Items($response) {
+    if ($null -eq $response) { return @() }
+    if ($null -ne $response.items) { return @($response.items) }
+    if ($response -is [Array]) { return @($response) }
+    return @($response)
+}
+
+function Normalize-FolderName([string]$Name) {
+    if ([string]::IsNullOrWhiteSpace($Name)) { return "" }
+    $n = $Name.Trim().ToLowerInvariant()
+    $n = $n.Replace([char]0x00F6, "o").Replace([char]0x00D6, "o")
+    $n = $n.Replace([char]0x00FC, "u").Replace([char]0x00DC, "u")
+    $n = $n.Replace([char]0x00E7, "c").Replace([char]0x00C7, "c")
+    $n = $n.Replace([char]0x011F, "g").Replace([char]0x011E, "g")
+    $n = $n.Replace([char]0x0131, "i").Replace([char]0x0130, "i")
+    $n = $n.Replace([char]0x015F, "s").Replace([char]0x015E, "s")
+    return $n
+}
+
+function Find-Folder {
+    param([string]$Name, [string]$ParentId = $null)
+    if ($ParentId) {
+        $siblings = Get-Items (Invoke-Doc -Path "/children?parentId=$ParentId")
+    }
+    else {
+        $siblings = Get-Items (Invoke-Doc -Path "/children")
+    }
+    $want = Normalize-FolderName $Name
+    return $siblings | Where-Object {
+        $isFolder = [string]$_.type -eq "folder" -or [string]::IsNullOrWhiteSpace([string]$_.type)
+        $isFolder -and (Normalize-FolderName ([string]$_.name)) -eq $want
+    } | Select-Object -First 1
+}
+
+function Ensure-Folder {
+    param([string]$Name, [string]$ParentId = $null)
+    $existing = Find-Folder -Name $Name -ParentId $ParentId
+    if ($existing) { return [string]$existing.id }
+    $body = @{ name = $Name }
+    if ($ParentId) { $body.parentId = $ParentId }
+    $created = @(Invoke-Doc -Method POST -Path "/folder" -Body $body)[0]
+    return [string]$created.id
+}
+
 $token = Get-Token
 $script:Headers = @{ Authorization = "Bearer $token" }
 $script:LastStatus = 0
 $projectIds = @()
 $workspaceIds = @()
+$hubId = $null
+$kickDocId = $null
+$kapsamDocId = $null
 
 Write-Host "F2-14 smoke  code=$code  gateway=$Gateway" -ForegroundColor Cyan
 
@@ -219,6 +296,33 @@ try {
     $kick = Find-WbsByName @(Get-WbsRows $detail) "Kick-off"
     Assert-True (-not (Get-GateLocked $kick)) "Kick-off gateLocked=false"
 
+    $docsRoot = $null
+    foreach ($name in @("Dokumanlar", "Dökümanlar", "Documents")) {
+        $docsRoot = Find-Folder -Name $name
+        if ($docsRoot) { break }
+    }
+    Assert-True ($null -ne $docsRoot -and $docsRoot.id) "Dokumanlar koku"
+    $projectsId = Ensure-Folder -Name "Projeler" -ParentId ([string]$docsRoot.id)
+    $hubId = Ensure-Folder -Name $code -ParentId $projectsId
+    Invoke-Ops -Method PUT -Path "/projects/$projectId" -Body @{ diFolderId = $hubId } | Out-Null
+    $kickMd = @(Invoke-Doc -Method POST -Path "/markdown" -Body @{
+            parentId = $hubId
+            title    = "Kick-off kanit"
+            content  = "F2-14"
+            isDraft  = $false
+        })[0]
+    $kickDocId = [string]$kickMd.id
+    $kapsamMd = @(Invoke-Doc -Method POST -Path "/markdown" -Body @{
+            parentId = $hubId
+            title    = "Kapsam kanit"
+            content  = "F2-14"
+            isDraft  = $false
+        })[0]
+    $kapsamDocId = [string]$kapsamMd.id
+    Invoke-Ops -Method POST -Path "/wbs/$(Get-RowId $kick)/evidence" -Body @{ resourceId = $kickDocId } | Out-Null
+    Invoke-Ops -Method POST -Path "/wbs/$(Get-RowId $kapsam)/evidence" -Body @{ resourceId = $kapsamDocId } | Out-Null
+    Assert-True ($true) "yaprak kanit baglandi (F2-15 uyumu)"
+
     Invoke-Ops -Method POST -Path "/work-items/$kickWi/transitions/resolve" -Body @{
         fields = @{ description = "kapi smoke" }
     } | Out-Null
@@ -254,6 +358,14 @@ try {
         $projectIds = @()
         foreach ($id in $workspaceIds) { Remove-PackWorkspace $id }
         $workspaceIds = @()
+        foreach ($doc in @($kickDocId, $kapsamDocId)) {
+            if ($doc) {
+                try { Invoke-Doc -Method DELETE -Path "/$doc" -ExpectStatus @(200, 204, 404) | Out-Null } catch { }
+            }
+        }
+        if ($hubId) {
+            try { Invoke-Doc -Method DELETE -Path "/$hubId`?force=true" -ExpectStatus @(200, 204, 404) | Out-Null } catch { }
+        }
         Write-Host "  cleanup OK" -ForegroundColor Green
     }
     else {
@@ -269,6 +381,14 @@ catch {
             try { Invoke-Ops -Method DELETE -Path "/projects/$id" -ExpectStatus @(204, 200, 404) | Out-Null } catch { }
         }
         foreach ($id in $workspaceIds) { try { Remove-PackWorkspace $id } catch { } }
+        foreach ($doc in @($kickDocId, $kapsamDocId)) {
+            if ($doc) {
+                try { Invoke-Doc -Method DELETE -Path "/$doc" -ExpectStatus @(200, 204, 404) | Out-Null } catch { }
+            }
+        }
+        if ($hubId) {
+            try { Invoke-Doc -Method DELETE -Path "/$hubId`?force=true" -ExpectStatus @(200, 204, 404) | Out-Null } catch { }
+        }
     }
     throw
 }

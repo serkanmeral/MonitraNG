@@ -1,18 +1,58 @@
 using MngOperations.Application.Contracts.Planning;
+using MngOperations.Application.Models;
 using MngOperations.Domain.Constants;
 
 namespace MngOperations.Infrastructure.Services;
 
 public sealed partial class ProjectPlanningService
 {
+    /// <summary>
+    /// Lightweight portfolio for the project list. Avoids per-project full status packs
+    /// (those were timing out at the gateway with 7+ seeded projects).
+    /// </summary>
     public async Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
     {
         var projects = await ListProjectsAsync(ct);
+        var token = RequireToken();
+        var allWbs = await LoadAllWbsAsync(token, ct);
+        var wbsByProject = allWbs
+            .Where(w => !string.IsNullOrWhiteSpace(w.projectId))
+            .GroupBy(w => w.projectId!, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+
         var items = new List<PortfolioProjectDto>(projects.Count);
         foreach (var project in projects)
         {
-            var pack = await GetStatusPackAsync(project.Id, ct);
-            items.Add(ToPortfolioProject(project, pack));
+            wbsByProject.TryGetValue(project.Id, out var wbs);
+            wbs ??= [];
+            var percent = wbs.Count == 0
+                ? 0
+                : Math.Round(wbs.Average(w => w.percentComplete ?? 0), 1);
+            var drifted = project.BaselineDrifted || wbs.Any(IsDrifted);
+            var unboundLeaf = CountUnboundLeaves(wbs);
+            var flags = new List<string>();
+            if (drifted) flags.Add(ProjectTraceFlags.Drifted);
+            if (unboundLeaf > 0) flags.Add(ProjectTraceFlags.Unbound);
+
+            var closed = string.Equals(project.Status, PmProjectStatus.Closed, StringComparison.Ordinal);
+            items.Add(new PortfolioProjectDto
+            {
+                Id = project.Id,
+                Code = project.Code,
+                Name = project.Name,
+                Status = project.Status,
+                PlannedStart = project.PlannedStart,
+                PlannedFinish = project.PlannedFinish,
+                BaselineDrifted = drifted,
+                PercentComplete = percent,
+                Attention = !closed && flags.Count > 0,
+                Flags = flags,
+                Counts = new ProjectStatusCountsDto
+                {
+                    Drifted = drifted ? 1 : 0,
+                    UnboundLeaf = unboundLeaf
+                }
+            });
         }
 
         items.Sort((a, b) =>
@@ -33,6 +73,19 @@ public sealed partial class ProjectPlanningService
             Totals = SumCounts(items.Select(p => p.Counts)),
             Items = items
         };
+    }
+
+    private static int CountUnboundLeaves(IReadOnlyList<PmWbsRow> wbs)
+    {
+        if (wbs.Count == 0) return 0;
+        var parents = wbs
+            .Where(w => !string.IsNullOrWhiteSpace(w.parentId))
+            .Select(w => w.parentId!)
+            .ToHashSet(StringComparer.Ordinal);
+        return wbs.Count(w =>
+            !string.IsNullOrWhiteSpace(w.__dataId)
+            && !parents.Contains(w.__dataId!)
+            && string.IsNullOrWhiteSpace(w.workItemId));
     }
 
     private static PortfolioProjectDto ToPortfolioProject(ProjectDto project, ProjectStatusPackDto pack)
