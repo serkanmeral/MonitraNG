@@ -13,7 +13,7 @@ import {
   pmSuggestGanttScale,
   type PmGanttScale,
 } from '@/utils/pmGanttLayout';
-import { pmDateInput } from '@/services/projectManagementService';
+import { usePmDate } from '@/composables/usePmDate';
 
 const props = defineProps<{
   items: PmWbsItem[];
@@ -25,6 +25,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const { formatPmDate } = usePmDate();
 
 const ROW_H = 36;
 const HEADER_H = 44;
@@ -105,7 +106,7 @@ function diamondStyle(bar: (typeof bars.value)[number]) {
 function tooltip(bar: (typeof bars.value)[number]) {
   const item = itemById(bar.id);
   if (!item) return bar.name;
-  const planned = [pmDateInput(item.plannedStart), pmDateInput(item.plannedFinish)].filter(Boolean).join(' → ');
+  const planned = [formatPmDate(item.plannedStart), formatPmDate(item.plannedFinish)].filter(Boolean).join(' → ');
   const bits = [bar.wbsCode, bar.name, planned].filter(Boolean);
   if (item.workItemKey) bits.push(item.workItemKey);
   if (item.workItemStateName) bits.push(item.workItemStateName);

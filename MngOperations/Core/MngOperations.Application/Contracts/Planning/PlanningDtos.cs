@@ -213,6 +213,14 @@ public sealed class WorkItemCandidateDto
     public bool Closed { get; set; }
 }
 
+public sealed class WorkItemCandidatePageDto
+{
+    public IReadOnlyList<WorkItemCandidateDto> Items { get; set; } = Array.Empty<WorkItemCandidateDto>();
+    public int Total { get; set; }
+    public int Skip { get; set; }
+    public int Take { get; set; }
+}
+
 public sealed class CreateDependencyRequest
 {
     public string PredecessorId { get; set; } = string.Empty;

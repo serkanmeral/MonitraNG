@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import {
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const { formatPmDateOrDash } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
@@ -356,7 +358,7 @@ function onDeleteDialog(open: boolean) {
         {{ wbsName(item.wbsId) }}
       </template>
       <template #item.dueDate="{ item }">
-        {{ pmDateInput(item.dueDate) || '—' }}
+        {{ formatPmDateOrDash(item.dueDate) }}
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex justify-end ga-1">

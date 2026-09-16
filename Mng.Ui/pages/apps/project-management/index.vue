@@ -2,12 +2,12 @@
 import { computed, onMounted, ref } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import PmPortfolioBar from '@/components/apps/project-management/PmPortfolioBar.vue';
 import {
   pmCreateProject,
-  pmDateInput,
   pmDatePayload,
   pmDeleteProject,
   pmGetPortfolio,
@@ -27,6 +27,7 @@ import { EditIcon, FlagIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const { formatPmDateOrDash } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 const router = useRouter();
@@ -315,16 +316,16 @@ onMounted(() => {
             {{ Math.round(item.percentComplete || 0) }}%
           </template>
           <template #item.plannedStart="{ item }">
-            {{ pmDateInput(item.plannedStart) || '—' }}
+            {{ formatPmDateOrDash(item.plannedStart) }}
           </template>
           <template #item.plannedFinish="{ item }">
-            {{ pmDateInput(item.plannedFinish) || '—' }}
+            {{ formatPmDateOrDash(item.plannedFinish) }}
           </template>
           <template #item.baseline="{ item }">
             <v-chip v-if="item.baselineDrifted" size="small" color="warning" variant="tonal">
               {{ t('projectManagement.drift') }}
             </v-chip>
-            <span v-else-if="item.baselineSetAt">{{ pmDateInput(item.baselineSetAt) }}</span>
+            <span v-else-if="item.baselineSetAt">{{ formatPmDateOrDash(item.baselineSetAt) }}</span>
             <span v-else class="text-medium-emphasis">{{ t('projectManagement.noBaseline') }}</span>
           </template>
           <template #item.flags="{ item }">

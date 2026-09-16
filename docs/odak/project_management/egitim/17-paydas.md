@@ -4,16 +4,18 @@
 
 ## Ekranda ne vardır?
 
-Ad, kuruluş, tür (müşteri, tedarikçi, danışman, denetçi, sponsor, diğer), e-posta (bilgi), paylaşılan belge kimlikleri, erişim sonu, durum (davetli / etkin / geri alındı).
+Kayıt tablosu aramalı ve sayfalıdır. **Paydaş ekle** modalında paylaşılan belgeler **kütüphaneden seçilir**; kimlik yapıştırılmaz.
 
-Paylaşımsız ve süresi bitmiş kayıtlar Durum’a yansır. Geri almak not ister. Kayıt silmek belgeleri silmez; çünkü zaten giriş hesabı yoktur.
+Ad, kuruluş, tür (müşteri, tedarikçi, danışman, denetçi, sponsor, diğer), e-posta (bilgi), paylaşılan belgeler, erişim sonu, durum (davetli / etkin / geri alındı).
+
+Paylaşımsız ve süresi bitmiş kayıtlar Durum’a yansır; kapatma kilidi değildir. Geri almak not ister. Kayıt silmek belgeleri silmez; çünkü zaten giriş hesabı yoktur.
 
 ## Örnek
 
 Paydaş: `Müşteri saha müdürü`  
 Tür: Müşteri  
-Belgeler: Kapsam kararı sayfası, durum raporu PDF  
-Erişim sonu: 31 Ekim  
+Belgeler: şartname özeti, güvenlik talimatı (Kütüphane’den seçilir)  
+Erişim sonu: 31 Aralık  
 Etkinleştir.
 
 Bu kişi Monitra’ya SSO ile girmez. Siz belgelerini Kütüphane’den indirip iletirsiniz; kayıt “ne paylaştık” gerçeğidir.
@@ -26,4 +28,4 @@ Bu kişi Monitra’ya SSO ile girmez. Siz belgelerini Kütüphane’den indirip 
 
 ## Sonraki adım
 
-Paylaşılan belgeler önce Kütüphane’de yayınlanmış olsun. Resmi kabul için **Kararlar** veya **Kapılar**.
+Paylaşılan belgeler önce Kütüphane’de olsun. Resmi kabul için **Kararlar** veya **Kapılar**.

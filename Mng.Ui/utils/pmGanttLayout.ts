@@ -234,7 +234,9 @@ export function pmGanttHeaderTicks(range: PmGanttRange, scale: PmGanttScale): Ar
     const isMonthStart = utcDay === 1 || day === 0;
     ticks.push({
       day,
-      label: scale === 'week' ? pmFormatUtcDay(date).slice(5) : String(utcDay),
+      label: scale === 'week'
+        ? `${String(utcDay).padStart(2, '0')}.${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+        : String(utcDay),
       monthLabel: isMonthStart
         ? date.toLocaleString('tr-TR', { month: 'short', year: 'numeric', timeZone: 'UTC' })
         : null,

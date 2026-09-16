@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import {
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const { formatPmDateOrDash, formatPmDateRange } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
@@ -144,11 +146,11 @@ function windowLabel(row: PmResourceAssignment) {
   const start = pmDateInput(row.effectiveStart);
   const finish = pmDateInput(row.effectiveFinish);
   if (!start && !finish) return t('projectManagement.capacity.unscheduled');
-  return `${start || '—'} → ${finish || '—'}`;
+  return formatPmDateRange(row.effectiveStart, row.effectiveFinish);
 }
 
 function weekLabel(value?: string | null) {
-  return pmDateInput(value) || '—';
+  return formatPmDateOrDash(value);
 }
 
 function weekSummary(person: PmCapacityPerson) {

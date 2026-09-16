@@ -306,15 +306,17 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpGet("projects/{id}/work-items")]
-    [ProducesResponseType(typeof(IReadOnlyList<WorkItemCandidateDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(WorkItemCandidatePageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SearchWorkItems(
         string id,
         [FromQuery] string? q,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 25,
         CancellationToken cancellationToken)
     {
-        var items = await _planning.SearchWorkItemsAsync(id, q, cancellationToken);
-        return Ok(items);
+        var page = await _planning.SearchWorkItemsAsync(id, q, skip, take, cancellationToken);
+        return Ok(page);
     }
 
     [HttpPost("projects/{id}/rollup")]
@@ -333,6 +335,15 @@ public sealed class ProjectsController : ControllerBase
     {
         var pack = await _planning.GetStatusPackAsync(id, cancellationToken);
         return Ok(pack);
+    }
+
+    [HttpGet("projects/{id}/decisions")]
+    [ProducesResponseType(typeof(IReadOnlyList<DecisionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListDecisions(string id, CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListDecisionsAsync(id, cancellationToken);
+        return Ok(items);
     }
 
     [HttpPost("projects/{id}/decisions")]
@@ -403,6 +414,15 @@ public sealed class ProjectsController : ControllerBase
     {
         await _planning.DeleteStageGateAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    [HttpGet("projects/{id}/raid")]
+    [ProducesResponseType(typeof(IReadOnlyList<RaidItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListRaidItems(string id, CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListRaidItemsAsync(id, cancellationToken);
+        return Ok(items);
     }
 
     [HttpPost("projects/{id}/raid")]

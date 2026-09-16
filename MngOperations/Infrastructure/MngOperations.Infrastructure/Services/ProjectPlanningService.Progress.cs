@@ -69,43 +69,55 @@ public sealed partial class ProjectPlanningService
         return ToWbsDto(row);
     }
 
-    public async Task<IReadOnlyList<WorkItemCandidateDto>> SearchWorkItemsAsync(
+    public async Task<WorkItemCandidatePageDto> SearchWorkItemsAsync(
         string projectId,
         string? query,
+        int skip = 0,
+        int take = 25,
         CancellationToken ct = default)
     {
         var token = RequireToken();
         var project = await LoadProjectOrThrowAsync(projectId, token, ct);
         if (string.IsNullOrWhiteSpace(project.workspaceId))
-            return Array.Empty<WorkItemCandidateDto>();
+            return new WorkItemCandidatePageDto { Skip = 0, Take = take };
+
+        if (skip < 0) skip = 0;
+        if (take < 1) take = 25;
+        if (take > 100) take = 100;
+
+        var queryParts = new List<string>
+        {
+            $"skip={skip}",
+            $"limit={take}",
+            "sort=-createdAt",
+            "expand=false"
+        };
+        var q = query?.Trim();
+        if (!string.IsNullOrEmpty(q))
+            queryParts.Add($"search={Uri.EscapeDataString(q)}");
 
         var page = await _dg.QueryPageAsync(
             OcDatasets.WorkItems,
             new Dictionary<string, object?> { ["workspaceId"] = project.workspaceId },
-            "limit=80&sort=-createdAt&expand=false",
+            string.Join("&", queryParts),
             token,
             ct);
 
-        var q = query?.Trim();
-        var mapped = page.Items
-            .Select(row => (Dto: MapWorkItemCandidate(row), Row: row))
-            .ToList();
-        if (!string.IsNullOrEmpty(q))
+        var result = new List<WorkItemCandidateDto>();
+        foreach (var row in page.Items)
         {
-            mapped = mapped
-                .Where(i =>
-                    i.Dto.Key.Contains(q, StringComparison.OrdinalIgnoreCase)
-                    || i.Dto.Title.Contains(q, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            var dto = MapWorkItemCandidate(row);
+            await FillCandidateStateAsync(dto, row, token, ct);
+            result.Add(dto);
         }
 
-        var result = new List<WorkItemCandidateDto>();
-        foreach (var item in mapped.Take(20))
+        return new WorkItemCandidatePageDto
         {
-            await FillCandidateStateAsync(item.Dto, item.Row, token, ct);
-            result.Add(item.Dto);
-        }
-        return result;
+            Items = result,
+            Total = (int)Math.Min(page.Total, int.MaxValue),
+            Skip = skip,
+            Take = take
+        };
     }
 
     public async Task<ProjectDetailDto> RecalcProgressAsync(string projectId, CancellationToken ct = default)
@@ -153,46 +165,90 @@ public sealed partial class ProjectPlanningService
             .ToList();
         if (ids.Count == 0) return;
 
-        var snapshots = new Dictionary<string, WbsItemDto>(StringComparer.Ordinal);
-        foreach (var id in ids)
+        var byId = new Dictionary<string, Dictionary<string, object?>>(StringComparer.Ordinal);
+        try
         {
-            var wi = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, id, token, ct, expand: false);
-            if (wi is null) continue;
-            var snap = new WbsItemDto
+            var page = await _dg.QueryPageAsync(
+                OcDatasets.WorkItems,
+                new Dictionary<string, object?>
+                {
+                    ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ids.Cast<object?>().ToList() }
+                },
+                $"limit={Math.Max(ids.Count, 1)}&expand=false",
+                token,
+                ct);
+            foreach (var row in page.Items)
             {
-                WorkItemId = id,
-                WorkItemKey = WorkItemDataHelper.GetString(wi, "key"),
-                WorkItemTitle = WorkItemDataHelper.GetString(wi, "title"),
-                WorkItemClosed = WorkItemDataHelper.GetDateTime(wi, "closedAt") is not null
-            };
-            var stateId = WorkItemDataHelper.GetPersonRefId(wi, "stateId")
-                ?? WorkItemDataHelper.GetString(wi, "stateId");
-            if (!string.IsNullOrWhiteSpace(stateId))
+                var id = WorkItemDataHelper.GetDataId(row);
+                if (!string.IsNullOrWhiteSpace(id))
+                    byId[id] = row;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Batch work-item hydrate failed; falling back to GetById");
+        }
+
+        var missing = ids.Where(id => !byId.ContainsKey(id)).ToList();
+        if (missing.Count > 0)
+        {
+            var extras = await Task.WhenAll(missing.Select(async id =>
+            {
+                var wi = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+                    OcDatasets.WorkItems, id, token, ct, expand: false);
+                return (id, wi);
+            }));
+            foreach (var (id, wi) in extras)
+            {
+                if (wi is not null)
+                    byId[id] = wi;
+            }
+        }
+
+        var stateIds = byId.Values
+            .Select(wi => WorkItemDataHelper.GetPersonRefId(wi, "stateId")
+                ?? WorkItemDataHelper.GetString(wi, "stateId"))
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var states = new Dictionary<string, StateRecord>(StringComparer.Ordinal);
+        if (stateIds.Count > 0)
+        {
+            var loaded = await Task.WhenAll(stateIds.Select(async id =>
             {
                 try
                 {
-                    var state = await _metadata.GetStateAsync(stateId, token, ct);
-                    snap.WorkItemStateName = state.Name;
-                    snap.WorkItemStateCategory = state.Category;
-                    snap.WorkItemClosed = state.IsClosed == true || snap.WorkItemClosed;
+                    var state = await _metadata.GetStateAsync(id, token, ct);
+                    return (Id: id, State: (StateRecord?)state);
                 }
                 catch (OperationCoreException)
                 {
-                    // State catalog miss must not hide the WBS row.
+                    return (Id: id, State: (StateRecord?)null);
                 }
+            }));
+            foreach (var row in loaded)
+            {
+                if (row.State is not null)
+                    states[row.Id] = row.State;
             }
-            snapshots[id] = snap;
         }
 
         foreach (var item in items)
         {
-            if (string.IsNullOrWhiteSpace(item.WorkItemId) || !snapshots.TryGetValue(item.WorkItemId, out var snap))
+            if (string.IsNullOrWhiteSpace(item.WorkItemId) || !byId.TryGetValue(item.WorkItemId, out var wi))
                 continue;
-            item.WorkItemKey = snap.WorkItemKey;
-            item.WorkItemTitle = snap.WorkItemTitle;
-            item.WorkItemStateName = snap.WorkItemStateName;
-            item.WorkItemStateCategory = snap.WorkItemStateCategory;
-            item.WorkItemClosed = snap.WorkItemClosed;
+            item.WorkItemKey = WorkItemDataHelper.GetString(wi, "key");
+            item.WorkItemTitle = WorkItemDataHelper.GetString(wi, "title");
+            item.WorkItemClosed = WorkItemDataHelper.GetDateTime(wi, "closedAt") is not null;
+            var stateId = WorkItemDataHelper.GetPersonRefId(wi, "stateId")
+                ?? WorkItemDataHelper.GetString(wi, "stateId");
+            if (string.IsNullOrWhiteSpace(stateId) || !states.TryGetValue(stateId, out var state))
+                continue;
+            item.WorkItemStateName = state.Name;
+            item.WorkItemStateCategory = state.Category;
+            item.WorkItemClosed = state.MarksWorkClosed || item.WorkItemClosed;
         }
     }
 
@@ -280,10 +336,8 @@ public sealed partial class ProjectPlanningService
             try
             {
                 var state = await _metadata.GetStateAsync(stateId, token, ct);
-                if (state.IsClosed == true)
-                    return (100, true);
-                if (string.Equals(state.Category, "done", StringComparison.OrdinalIgnoreCase))
-                    return (100, false);
+                if (state.MarksWorkClosed)
+                    return (100, state.IsClosed == true);
                 if (string.Equals(state.Category, "in_progress", StringComparison.OrdinalIgnoreCase))
                     return (50, false);
             }
@@ -324,7 +378,7 @@ public sealed partial class ProjectPlanningService
             var state = await _metadata.GetStateAsync(stateId, token, ct);
             item.StateName = state.Name;
             item.StateCategory = state.Category;
-            item.Closed = state.IsClosed == true || item.Closed;
+            item.Closed = state.MarksWorkClosed || item.Closed;
         }
         catch (OperationCoreException)
         {

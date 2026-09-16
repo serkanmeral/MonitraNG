@@ -157,6 +157,13 @@ export interface PmWorkItemCandidate {
   closed: boolean;
 }
 
+export interface PmWorkItemCandidatePage {
+  items: PmWorkItemCandidate[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
 export type PmDecisionKind = 'general' | 'scopeChange';
 export type PmDecisionStatus = 'open' | 'accepted' | 'superseded';
 

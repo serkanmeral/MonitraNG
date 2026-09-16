@@ -7,6 +7,13 @@ namespace MngOperations.Infrastructure.Services;
 
 public sealed partial class ProjectPlanningService
 {
+    public async Task<IReadOnlyList<RaidItemDto>> ListRaidItemsAsync(string projectId, CancellationToken ct = default)
+    {
+        var token = RequireToken();
+        await LoadProjectOrThrowAsync(projectId, token, ct);
+        return await LoadRaidItemsAsync(projectId, token, ct);
+    }
+
     public async Task<RaidItemDto> CreateRaidItemAsync(string projectId, CreateRaidItemRequest request, CancellationToken ct = default)
     {
         var token = RequireToken();

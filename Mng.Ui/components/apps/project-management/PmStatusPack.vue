@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { pmDateInput } from '@/services/projectManagementService';
+import { usePmDate } from '@/composables/usePmDate';
 import type { PmProjectStatusPack, PmTraceFlag } from '@/types/apps/projectManagement';
 import { diLifecycleChipColor } from '@/utils/diPageResource';
 
@@ -13,6 +13,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const { formatPmDate } = usePmDate();
 const activeFlag = ref<StatusFilter>('all');
 const pendingAcks = computed(() => (props.pack?.acknowledgements?.items ?? []).filter((item) => item.pending));
 const openObligations = computed(() => (props.pack?.obligations?.items ?? []).filter((item) => item.open));
@@ -285,7 +286,7 @@ function toggleFlag(flag: Exclude<StatusFilter, 'all'>) {
           <div>{{ item.wbsName }}</div>
           <div class="text-caption text-medium-emphasis">
             {{ item.percentComplete ?? 0 }}%
-            <span v-if="item.plannedFinish"> · {{ pmDateInput(item.plannedFinish) }}</span>
+            <span v-if="item.plannedFinish"> · {{ formatPmDate(item.plannedFinish) }}</span>
           </div>
         </div>
       </template>

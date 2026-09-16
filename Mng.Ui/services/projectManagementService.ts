@@ -11,6 +11,7 @@ import type {
   PmUpdateWbsRequest,
   PmWbsItem,
   PmWorkItemCandidate,
+  PmWorkItemCandidatePage,
   PmProjectStatusPack,
   PmTraceDocument,
   PmProjectDocument,
@@ -283,14 +284,30 @@ export async function pmUnbindWbsReference(wbsId: string, resourceId: string): P
 export async function pmSearchProjectWorkItems(
   projectId: string,
   query?: string | null,
-): Promise<PmWorkItemCandidate[]> {
+  page?: { skip?: number; take?: number },
+): Promise<PmWorkItemCandidatePage> {
+  const params = new URLSearchParams();
   const q = query?.trim();
-  const suffix = q ? `?q=${encodeURIComponent(q)}` : '';
+  if (q) params.set('q', q);
+  if (typeof page?.skip === 'number' && page.skip >= 0) params.set('skip', String(page.skip));
+  if (typeof page?.take === 'number' && page.take > 0) params.set('take', String(page.take));
+  const suffix = params.size ? `?${params.toString()}` : '';
   const raw = await fetchFromOperations(
     `/api/v1/projects/${encodeURIComponent(projectId)}/work-items${suffix}`,
     'GET',
   );
-  return asArray<PmWorkItemCandidate>(raw);
+  if (Array.isArray(raw)) {
+    const items = raw as PmWorkItemCandidate[];
+    return { items, total: items.length, skip: page?.skip ?? 0, take: page?.take ?? items.length };
+  }
+  const obj = (raw ?? {}) as Partial<PmWorkItemCandidatePage> & { Items?: PmWorkItemCandidate[]; Total?: number };
+  const items = obj.items ?? obj.Items ?? [];
+  return {
+    items,
+    total: obj.total ?? obj.Total ?? items.length,
+    skip: obj.skip ?? page?.skip ?? 0,
+    take: obj.take ?? page?.take ?? items.length,
+  };
 }
 
 export async function pmRecalcProgress(projectId: string): Promise<PmProjectDetail> {
@@ -641,6 +658,20 @@ export async function pmDeleteProcessMap(id: string): Promise<void> {
 export function pmDateInput(value?: string | null): string {
   if (!value) return '';
   return String(value).slice(0, 10);
+}
+
+export function pmFormatDate(value?: string | null, locale = 'tr'): string {
+  const iso = pmDateInput(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return iso;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (Number.isNaN(date.getTime())) return iso;
+  const tag = locale.toLowerCase().startsWith('en') ? 'en-GB' : 'tr-TR';
+  return new Intl.DateTimeFormat(tag, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
 }
 
 export function pmDatePayload(value?: string | null): string | null {

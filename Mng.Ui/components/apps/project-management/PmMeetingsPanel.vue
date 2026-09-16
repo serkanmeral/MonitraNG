@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import {
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const { formatPmDate, formatPmDateOrDash } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
@@ -349,7 +351,7 @@ async function executeDeleteAction() {
             <div>
               <div class="font-weight-medium">{{ meeting.name }}</div>
               <div class="text-caption text-medium-emphasis">
-                {{ pmDateInput(meeting.heldAt) || t('projectManagement.meeting.noDate') }}
+                {{ formatPmDate(meeting.heldAt) || t('projectManagement.meeting.noDate') }}
                 · {{ wbsName(meeting.wbsId) }}
               </div>
             </div>
@@ -404,7 +406,7 @@ async function executeDeleteAction() {
                   </v-chip>
                 </td>
                 <td>{{ action.ownerName || '—' }}</td>
-                <td>{{ pmDateInput(action.dueDate) || '—' }}</td>
+                <td>{{ formatPmDateOrDash(action.dueDate) }}</td>
                 <td class="text-right">
                   <v-btn
                     v-if="action.open"

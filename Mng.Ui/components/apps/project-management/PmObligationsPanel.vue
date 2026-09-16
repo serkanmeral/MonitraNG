@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
+import PmPickWorkItemDialog from '@/components/apps/project-management/PmPickWorkItemDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
+import { diGetById } from '@/services/documentIntelligenceService';
+import { ocGetWorkItemProfile } from '@/services/operationCoreService';
 import {
   pmCreateObligation,
   pmDateInput,
@@ -10,11 +15,15 @@ import {
   pmDeleteObligation,
   pmUpdateObligation,
 } from '@/services/projectManagementService';
-import type { PmObligation, PmObligationStatus, PmWbsItem } from '@/types/apps/projectManagement';
+import type { DiResource } from '@/types/apps/documentIntelligence';
+import type { PmObligation, PmObligationStatus, PmWbsItem, PmWorkItemCandidate } from '@/types/apps/projectManagement';
+import { diPageResourceLabel } from '@/utils/diPageResource';
 import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
   projectId: string;
+  projectCode: string;
+  hubFolderId?: string | null;
   items: PmObligation[];
   wbs: PmWbsItem[];
   loading?: boolean;
@@ -22,38 +31,59 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   changed: [];
+  hubReady: [id: string];
 }>();
 
 const { t } = useAppI18n();
+const { formatPmDateOrDash } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
 const statusFilter = ref<'all' | 'open' | 'overdue' | 'unbound'>('all');
 const dialog = ref(false);
+const pickOpen = ref(false);
+const pickTarget = ref<'source' | 'evidence'>('source');
+const workPickOpen = ref(false);
 const saving = ref(false);
 const editingId = ref<string | null>(null);
 const deleteTarget = ref<PmObligation | null>(null);
 const deleting = ref(false);
 const closingId = ref<string | null>(null);
 
+const STATUS_META: Record<PmObligationStatus, { icon: string; color: string }> = {
+  open: { icon: 'mdi-circle-outline', color: 'info' },
+  inProgress: { icon: 'mdi-progress-clock', color: 'primary' },
+  satisfied: { icon: 'mdi-check-circle-outline', color: 'success' },
+  waived: { icon: 'mdi-minus-circle-outline', color: 'warning' },
+};
+
 const form = ref({
   title: '',
   clauseRef: '',
   sourceResourceId: '',
+  sourceTitle: '',
   workItemId: '',
+  workItemKey: '',
+  workItemTitle: '',
   evidenceResourceId: '',
+  evidenceTitle: '',
   wbsId: '',
   status: 'open' as PmObligationStatus,
   dueDate: '',
   note: '',
 });
 
-const statusItems = computed(() => [
-  { title: t('projectManagement.obligation.status.open'), value: 'open' },
-  { title: t('projectManagement.obligation.status.inProgress'), value: 'inProgress' },
-  { title: t('projectManagement.obligation.status.satisfied'), value: 'satisfied' },
-  { title: t('projectManagement.obligation.status.waived'), value: 'waived' },
-]);
+const statusChoices = computed(() =>
+  (['open', 'inProgress', 'satisfied', 'waived'] as PmObligationStatus[]).map((value) => ({
+    value,
+    title: t(`projectManagement.obligation.status.${value}`),
+    hint: t(`projectManagement.obligation.dialog.statusHint.${value}`),
+    icon: STATUS_META[value].icon,
+    color: STATUS_META[value].color,
+  })),
+);
+
+const statusMeta = computed(() => STATUS_META[form.value.status] || STATUS_META.open);
 
 const wbsItems = computed(() => [
   { title: t('projectManagement.obligation.projectLevel'), value: '' },
@@ -91,6 +121,12 @@ const canSave = computed(() => {
   return true;
 });
 
+const formOverdue = computed(() => {
+  if (form.value.status === 'satisfied' || form.value.status === 'waived') return false;
+  if (!form.value.dueDate) return false;
+  return form.value.dueDate < new Date().toISOString().slice(0, 10);
+});
+
 function wbsName(id?: string | null) {
   if (!id) return t('projectManagement.obligation.projectLevel');
   const row = props.wbs.find((item) => item.id === id);
@@ -120,36 +156,131 @@ function workItemHref(id: string) {
   return `/apps/operation-core/work-items/${encodeURIComponent(id)}/profile`;
 }
 
-function openCreate() {
-  editingId.value = null;
-  form.value = {
+function workItemLabel(id?: string | null, key?: string | null, title?: string | null) {
+  if (key && title) return `${key} · ${title}`;
+  if (title) return title;
+  if (key) return key;
+  if (!id) return '';
+  return id.slice(0, 8);
+}
+
+function emptyForm() {
+  return {
     title: '',
     clauseRef: '',
     sourceResourceId: '',
+    sourceTitle: '',
     workItemId: '',
+    workItemKey: '',
+    workItemTitle: '',
     evidenceResourceId: '',
+    evidenceTitle: '',
     wbsId: '',
-    status: 'open',
+    status: 'open' as PmObligationStatus,
     dueDate: '',
     note: '',
   };
+}
+
+async function resolveDocumentLabel(id: string) {
+  if (!id) return '';
+  try {
+    const resource = await diGetById(id);
+    return diPageResourceLabel(resource) || id;
+  } catch {
+    return id;
+  }
+}
+
+async function resolveWorkItemLabel(id: string) {
+  if (!id) return { key: '', title: '' };
+  try {
+    const profile = await ocGetWorkItemProfile(id);
+    return {
+      key: profile.workItem?.key || '',
+      title: profile.workItem?.title || '',
+    };
+  } catch {
+    return { key: '', title: '' };
+  }
+}
+
+function openCreate() {
+  editingId.value = null;
+  form.value = emptyForm();
   dialog.value = true;
 }
 
-function openEdit(row: PmObligation) {
+async function openEdit(row: PmObligation) {
   editingId.value = row.id;
   form.value = {
     title: row.title,
     clauseRef: row.clauseRef || '',
     sourceResourceId: row.sourceResourceId || '',
+    sourceTitle: row.sourceResourceId || '',
     workItemId: row.workItemId || '',
+    workItemKey: '',
+    workItemTitle: row.workItemId || '',
     evidenceResourceId: row.evidenceResourceId || '',
+    evidenceTitle: row.evidenceResourceId || '',
     wbsId: row.wbsId || '',
     status: (row.status as PmObligationStatus) || 'open',
     dueDate: pmDateInput(row.dueDate),
     note: row.note || '',
   };
   dialog.value = true;
+  const [sourceTitle, evidenceTitle, work] = await Promise.all([
+    resolveDocumentLabel(row.sourceResourceId || ''),
+    resolveDocumentLabel(row.evidenceResourceId || ''),
+    resolveWorkItemLabel(row.workItemId || ''),
+  ]);
+  if (editingId.value !== row.id) return;
+  form.value.sourceTitle = sourceTitle;
+  form.value.evidenceTitle = evidenceTitle;
+  form.value.workItemKey = work.key;
+  form.value.workItemTitle = work.title;
+}
+
+function selectStatus(status: PmObligationStatus) {
+  form.value.status = status;
+}
+
+function openPicker(target: 'source' | 'evidence') {
+  pickTarget.value = target;
+  pickOpen.value = true;
+}
+
+function pickDocument(resource: DiResource) {
+  const label = diPageResourceLabel(resource) || resource.id;
+  if (pickTarget.value === 'evidence') {
+    form.value.evidenceResourceId = resource.id;
+    form.value.evidenceTitle = label;
+    return;
+  }
+  form.value.sourceResourceId = resource.id;
+  form.value.sourceTitle = label;
+}
+
+function pickWorkItem(row: PmWorkItemCandidate) {
+  form.value.workItemId = row.id;
+  form.value.workItemKey = row.key || '';
+  form.value.workItemTitle = row.title || '';
+}
+
+function clearSource() {
+  form.value.sourceResourceId = '';
+  form.value.sourceTitle = '';
+}
+
+function clearEvidence() {
+  form.value.evidenceResourceId = '';
+  form.value.evidenceTitle = '';
+}
+
+function clearWorkItem() {
+  form.value.workItemId = '';
+  form.value.workItemKey = '';
+  form.value.workItemTitle = '';
 }
 
 function payload() {
@@ -305,7 +436,7 @@ function onDeleteDialog(open: boolean) {
         <span v-else class="text-medium-emphasis">—</span>
       </template>
       <template #item.dueDate="{ item }">
-        {{ pmDateInput(item.dueDate) || '—' }}
+        {{ formatPmDateOrDash(item.dueDate) }}
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex justify-end ga-1">
@@ -330,38 +461,202 @@ function onDeleteDialog(open: boolean) {
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="560">
+    <v-dialog v-model="dialog" max-width="720" scrollable>
       <v-card rounded="lg">
-        <v-card-title>
-          {{ editingId ? t('projectManagement.obligation.edit') : t('projectManagement.obligation.new') }}
+        <v-card-title class="d-flex align-start ga-3 px-6 py-4">
+          <v-avatar :color="statusMeta.color" variant="tonal" rounded="lg">
+            <v-icon :icon="editingId ? 'mdi-pencil-outline' : statusMeta.icon" />
+          </v-avatar>
+          <div class="flex-grow-1">
+            <div>{{ editingId ? t('projectManagement.obligation.edit') : t('projectManagement.obligation.new') }}</div>
+            <div class="text-body-2 text-medium-emphasis font-weight-regular mt-1">
+              {{
+                editingId
+                  ? t('projectManagement.obligation.dialog.subtitleEdit')
+                  : t('projectManagement.obligation.dialog.subtitleNew')
+              }}
+            </div>
+          </div>
         </v-card-title>
-        <v-card-text class="d-flex flex-column ga-3">
-          <v-text-field v-model="form.clauseRef" :label="t('projectManagement.obligation.clause')" density="comfortable" />
-          <v-textarea v-model="form.title" :label="t('projectManagement.obligation.statement')" density="comfortable" rows="2" auto-grow />
-          <v-text-field v-model="form.sourceResourceId" :label="t('projectManagement.obligation.sourceId')" density="comfortable" />
-          <v-text-field v-model="form.workItemId" :label="t('projectManagement.obligation.workItemId')" density="comfortable" />
-          <v-text-field v-model="form.evidenceResourceId" :label="t('projectManagement.obligation.evidenceId')" density="comfortable" />
-          <v-select
-            v-model="form.wbsId"
-            :items="wbsItems"
-            :label="t('projectManagement.fields.wbsCode')"
-            density="comfortable"
-          />
-          <v-select
-            v-model="form.status"
-            :items="statusItems"
-            :label="t('projectManagement.fields.status')"
-            density="comfortable"
-          />
-          <v-text-field
-            v-model="form.dueDate"
-            type="date"
-            :label="t('projectManagement.obligation.dueDate')"
-            density="comfortable"
-          />
-          <v-textarea v-model="form.note" :label="t('projectManagement.obligation.note')" density="comfortable" rows="2" auto-grow />
+        <v-divider />
+        <v-card-text class="d-flex flex-column ga-5 px-6 py-5">
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.obligation.dialog.sectionClause') }}</div>
+            <v-text-field
+              v-model="form.clauseRef"
+              :label="t('projectManagement.obligation.clause')"
+              density="comfortable"
+              prepend-inner-icon="mdi-pound"
+              hide-details="auto"
+              class="mb-3"
+            />
+            <v-textarea
+              v-model="form.title"
+              :label="t('projectManagement.obligation.statement')"
+              density="comfortable"
+              rows="2"
+              auto-grow
+            />
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.obligation.dialog.sectionDocuments') }}</div>
+            <p class="text-caption text-medium-emphasis mb-3">
+              {{ t('projectManagement.obligation.dialog.sectionDocumentsHint') }}
+            </p>
+
+            <div class="text-body-2 font-weight-medium mb-1">{{ t('projectManagement.obligation.source') }}</div>
+            <p class="text-caption text-medium-emphasis mb-2">{{ t('projectManagement.obligation.sourceHint') }}</p>
+            <div v-if="form.sourceResourceId" class="d-flex align-center ga-2 flex-wrap mb-2">
+              <NuxtLink :to="resourceHref(form.sourceResourceId)" class="text-decoration-none" @click.stop>
+                <v-chip size="small" color="primary" variant="tonal">
+                  {{ form.sourceTitle || form.sourceResourceId }}
+                </v-chip>
+              </NuxtLink>
+              <v-btn size="small" variant="text" @click="clearSource">
+                {{ t('projectManagement.decision.clearDocument') }}
+              </v-btn>
+            </div>
+            <div v-else class="text-caption text-medium-emphasis mb-2">
+              {{ t('projectManagement.obligation.noSource') }}
+            </div>
+            <v-btn variant="tonal" class="text-none mb-4" @click="openPicker('source')">
+              {{ t('projectManagement.pickDocument.open') }}
+            </v-btn>
+
+            <div class="text-body-2 font-weight-medium mb-1">{{ t('projectManagement.obligation.evidence') }}</div>
+            <p class="text-caption text-medium-emphasis mb-2">{{ t('projectManagement.obligation.evidenceHint') }}</p>
+            <div v-if="form.evidenceResourceId" class="d-flex align-center ga-2 flex-wrap mb-2">
+              <NuxtLink :to="resourceHref(form.evidenceResourceId)" class="text-decoration-none" @click.stop>
+                <v-chip size="small" color="success" variant="tonal">
+                  {{ form.evidenceTitle || form.evidenceResourceId }}
+                </v-chip>
+              </NuxtLink>
+              <v-btn size="small" variant="text" @click="clearEvidence">
+                {{ t('projectManagement.decision.clearDocument') }}
+              </v-btn>
+            </div>
+            <div v-else class="text-caption text-medium-emphasis mb-2">
+              {{ t('projectManagement.obligation.noEvidence') }}
+            </div>
+            <v-btn variant="tonal" class="text-none" @click="openPicker('evidence')">
+              {{ t('projectManagement.pickDocument.open') }}
+            </v-btn>
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.obligation.dialog.sectionWhere') }}</div>
+            <v-select
+              v-model="form.wbsId"
+              :items="wbsItems"
+              :label="t('projectManagement.fields.wbsCode')"
+              :hint="t('projectManagement.obligation.dialog.wbsHint')"
+              persistent-hint
+              density="comfortable"
+              class="mb-3"
+            />
+            <div class="text-body-2 font-weight-medium mb-1">{{ t('projectManagement.fields.workItem') }}</div>
+            <p class="text-caption text-medium-emphasis mb-2">{{ t('projectManagement.obligation.dialog.workItemHint') }}</p>
+            <div v-if="form.workItemId" class="d-flex align-center ga-2 flex-wrap mb-2">
+              <NuxtLink :to="workItemHref(form.workItemId)" class="text-decoration-none" @click.stop>
+                <v-chip size="small" color="primary" variant="tonal">
+                  {{ workItemLabel(form.workItemId, form.workItemKey, form.workItemTitle) }}
+                </v-chip>
+              </NuxtLink>
+              <v-btn size="small" variant="text" @click="clearWorkItem">
+                {{ t('projectManagement.obligation.clearWorkItem') }}
+              </v-btn>
+            </div>
+            <div v-else class="text-caption text-medium-emphasis mb-2">
+              {{ t('projectManagement.obligation.noWorkItem') }}
+            </div>
+            <v-btn variant="tonal" class="text-none" @click="workPickOpen = true">
+              {{ t('projectManagement.pickWorkItem.open') }}
+            </v-btn>
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-2">{{ t('projectManagement.obligation.dialog.sectionStatus') }}</div>
+            <div class="pm-obligation-status-grid">
+              <v-card
+                v-for="choice in statusChoices"
+                :key="choice.value"
+                :variant="form.status === choice.value ? 'tonal' : 'outlined'"
+                :color="form.status === choice.value ? choice.color : undefined"
+                rounded="lg"
+                class="pm-obligation-status-card pa-3"
+                role="button"
+                @click="selectStatus(choice.value)"
+              >
+                <div class="d-flex align-start ga-3">
+                  <v-icon :icon="choice.icon" size="22" />
+                  <div>
+                    <div class="font-weight-medium">{{ choice.title }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ choice.hint }}</div>
+                  </div>
+                </div>
+              </v-card>
+            </div>
+            <v-text-field
+              v-model="form.dueDate"
+              type="date"
+              :label="t('projectManagement.obligation.dueDate')"
+              density="comfortable"
+              hide-details="auto"
+              class="mt-3"
+              prepend-inner-icon="mdi-calendar"
+            />
+            <v-alert
+              v-if="form.status === 'satisfied' && !form.evidenceResourceId"
+              class="mt-3"
+              color="warning"
+              variant="tonal"
+              density="compact"
+              icon="mdi-alert"
+            >
+              {{ t('projectManagement.obligation.dialog.satisfiedNeedsEvidence') }}
+            </v-alert>
+            <v-alert
+              v-else-if="form.status === 'waived' && !form.note.trim()"
+              class="mt-3"
+              color="warning"
+              variant="tonal"
+              density="compact"
+              icon="mdi-alert"
+            >
+              {{ t('projectManagement.obligation.dialog.waiveNeedsNote') }}
+            </v-alert>
+            <v-alert
+              v-else-if="form.status === 'open' || form.status === 'inProgress'"
+              class="mt-3"
+              :color="formOverdue ? 'warning' : 'primary'"
+              variant="tonal"
+              density="compact"
+              :icon="formOverdue ? 'mdi-alert' : 'mdi-information-outline'"
+            >
+              {{
+                formOverdue
+                  ? t('projectManagement.obligation.dialog.overdueNow')
+                  : t('projectManagement.obligation.dialog.notOverdue')
+              }}
+            </v-alert>
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.obligation.dialog.sectionNote') }}</div>
+            <v-textarea
+              v-model="form.note"
+              :label="t('projectManagement.obligation.note')"
+              :hint="t('projectManagement.obligation.dialog.noteHint')"
+              persistent-hint
+              density="comfortable"
+              rows="2"
+              auto-grow
+            />
+          </section>
         </v-card-text>
-        <v-card-actions>
+        <v-divider />
+        <v-card-actions class="px-6 py-3">
           <v-spacer />
           <v-btn variant="text" @click="dialog = false">{{ t('projectManagement.cancel') }}</v-btn>
           <v-btn color="primary" :loading="saving" :disabled="!canSave" @click="save">
@@ -370,6 +665,17 @@ function onDeleteDialog(open: boolean) {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <PmPickDocumentDialog
+      v-model="pickOpen"
+      :project-id="projectId"
+      :project-code="projectCode"
+      :hub-folder-id="hubFolderId"
+      @pick="pickDocument"
+      @hub-ready="emit('hubReady', $event)"
+    />
+
+    <PmPickWorkItemDialog v-model="workPickOpen" :project-id="projectId" @pick="pickWorkItem" />
 
     <v-dialog :model-value="Boolean(deleteTarget)" max-width="440" @update:model-value="onDeleteDialog">
       <v-card rounded="lg">
@@ -384,3 +690,25 @@ function onDeleteDialog(open: boolean) {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.border {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.pm-obligation-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pm-obligation-status-card {
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .pm-obligation-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

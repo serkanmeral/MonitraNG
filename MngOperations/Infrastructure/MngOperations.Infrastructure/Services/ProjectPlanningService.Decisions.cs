@@ -8,6 +8,13 @@ namespace MngOperations.Infrastructure.Services;
 
 public sealed partial class ProjectPlanningService
 {
+    public async Task<IReadOnlyList<DecisionDto>> ListDecisionsAsync(string projectId, CancellationToken ct = default)
+    {
+        var token = RequireToken();
+        await LoadProjectOrThrowAsync(projectId, token, ct);
+        return await LoadDecisionsAsync(projectId, token, ct);
+    }
+
     public async Task<DecisionDto> CreateDecisionAsync(string projectId, CreateDecisionRequest request, CancellationToken ct = default)
     {
         var token = RequireToken();

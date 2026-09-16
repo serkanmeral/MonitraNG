@@ -1,8 +1,8 @@
 # Teslimat Omurgası — Planlama
 
-**Durum:** Uygulama — Faz 1–3 + F4-1…F4-6 + F2-14 + F5-1 (manifest **0.32.0**)
-**Tarih:** 2 Eylül 2026 (plan) · **3 Eylül 2026** (F2-14)
-**Ortam:** Odak test `192.168.20.20` · UI kontrolü lokal `npm run dev` · backend deploy serbest · UI Docker yok  
+**Durum:** Faz 1–3 omurga ayakta. Kontrol sekmeleri (RAID → Paydaş) TEST’te turlandı. **Toplantı** ve **Süreç** ayrı UX yoluna bırakıldı (16 Eylül 2026). Manifest **0.36.0**.
+**Tarih:** 2 Eylül 2026 (plan) · **16 Eylül 2026** (Kontrol/Paydaş durak)
+**Ortam:** Odak test `192.168.20.20` · prod `192.168.20.8` bu hatta dokunulmaz
 **Kaynak görüşme:** [ankarabt görüşme notları](../../ankarabt/yazilim-mimarligi-di-ve-proje-yonetimi-gorusme-notlari.md)  
 **Oturum özeti:** [current_status.md](./current_status.md)
 

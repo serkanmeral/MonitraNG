@@ -207,9 +207,32 @@ public sealed partial class ProjectPlanningService
     private async Task HydrateGateLocksAsync(string projectId, IList<WbsItemDto> items, string token, CancellationToken ct)
     {
         if (items.Count == 0) return;
-        var locks = await LoadGateLocksAsync(projectId, token, ct);
+        var gates = await LoadStageGatesAsync(projectId, token, ct);
+        var locking = gates.Where(g => g.LocksWork).ToList();
+        if (locking.Count == 0) return;
+
+        var wbs = await LoadWbsAsync(projectId, token, ct);
+        var deps = await LoadDepsAsync(projectId, token, ct);
+        ApplyGateLocks(items, locking, wbs, deps);
+    }
+
+    private static void ApplyGateLocks(
+        IList<WbsItemDto> items,
+        IReadOnlyList<StageGateDto> lockingGates,
+        List<PmWbsRow> wbs,
+        List<PmDependencyRow> deps)
+    {
+        if (items.Count == 0 || lockingGates.Count == 0) return;
+        var locked = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var gate in lockingGates)
+        {
+            if (string.IsNullOrWhiteSpace(gate.WbsId)) continue;
+            foreach (var id in ExpandGateLockSet(gate.WbsId, wbs, deps))
+                locked.Add(id);
+        }
+
         foreach (var item in items)
-            item.GateLocked = locks.ContainsKey(item.Id);
+            item.GateLocked = locked.Contains(item.Id);
     }
 
     private async Task<Dictionary<string, StageGateDto>> LoadGateLocksAsync(

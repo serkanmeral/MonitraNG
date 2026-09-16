@@ -14,8 +14,10 @@ public sealed partial class ProjectPlanningService
 
     public async Task<ProjectStatusPackDto> GetStatusPackAsync(string projectId, CancellationToken ct = default)
     {
-        var detail = await GetProjectAsync(projectId, ct);
         var token = RequireToken();
+        var core = await LoadProjectCoreAsync(projectId, token, ct);
+        var extras = await LoadProjectExtrasAsync(projectId, core.Wbs, token, ct);
+        var detail = ToDetailDto(core, extras);
         var today = DateTime.UtcNow.Date;
         var childIds = detail.Wbs
             .Where(w => !string.IsNullOrWhiteSpace(w.ParentId))

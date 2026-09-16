@@ -14,10 +14,12 @@ import PmGanttChart from '@/components/apps/project-management/PmGanttChart.vue'
 import PmObligationsPanel from '@/components/apps/project-management/PmObligationsPanel.vue';
 import PmPackCatalog from '@/components/apps/project-management/PmPackCatalog.vue';
 import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
+import PmPickWorkItemDialog from '@/components/apps/project-management/PmPickWorkItemDialog.vue';
 import PmRaidPanel from '@/components/apps/project-management/PmRaidPanel.vue';
 import PmStageGatesPanel from '@/components/apps/project-management/PmStageGatesPanel.vue';
 import PmStatusPack from '@/components/apps/project-management/PmStatusPack.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePmDate } from '@/composables/usePmDate';
 import { useDisplay } from 'vuetify';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
@@ -46,7 +48,6 @@ import {
   pmListProjectRaid,
   pmListWbsEvidence,
   pmListWbsReferences,
-  pmSearchProjectWorkItems,
   pmSetBaseline,
   pmUnbindWbsEvidence,
   pmUnbindWbsReference,
@@ -78,6 +79,7 @@ import {
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const { formatPmDateOrDash, formatPmDateRange } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 const route = useRoute();
@@ -168,10 +170,7 @@ const referenceLoading = ref(false);
 const referenceSaving = ref(false);
 const referencePickOpen = ref(false);
 const bindTarget = ref<PmWbsItem | null>(null);
-const bindQuery = ref('');
-const bindLoading = ref(false);
 const bindSaving = ref(false);
-const bindCandidates = ref<PmWorkItemCandidate[]>([]);
 
 const breadcrumbs = computed(() => [
   { text: t('breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
@@ -232,10 +231,7 @@ const headerStatusLabel = computed(() => {
 });
 
 const headerDates = computed(() => {
-  const start = pmDateInput(detail.value?.project.plannedStart);
-  const finish = pmDateInput(detail.value?.project.plannedFinish);
-  if (!start && !finish) return '';
-  return `${start || '—'} → ${finish || '—'}`;
+  return formatPmDateRange(detail.value?.project.plannedStart, detail.value?.project.plannedFinish);
 });
 
 const kindItems = computed(() => [
@@ -854,24 +850,9 @@ async function loadWorkspaces() {
   }
 }
 
-async function searchBindCandidates() {
-  if (!detail.value) return;
-  bindLoading.value = true;
-  try {
-    bindCandidates.value = await pmSearchProjectWorkItems(detail.value.project.id, bindQuery.value);
-  } catch (error) {
-    panelError(error, 'projectManagement.errors.loadFailed');
-  } finally {
-    bindLoading.value = false;
-  }
-}
-
 function openBindWorkItem(row: PmWbsItem) {
   bindTarget.value = row;
-  bindQuery.value = '';
-  bindCandidates.value = [];
   bindDialog.value = true;
-  void searchBindCandidates();
 }
 
 async function bindSelected(candidate: PmWorkItemCandidate) {
@@ -1029,15 +1010,6 @@ async function unbindReference(resourceId: string) {
   }
 }
 
-let bindSearchTimer: ReturnType<typeof setTimeout> | null = null;
-watch(bindQuery, () => {
-  if (!bindDialog.value) return;
-  if (bindSearchTimer) clearTimeout(bindSearchTimer);
-  bindSearchTimer = setTimeout(() => {
-    void searchBindCandidates();
-  }, 300);
-});
-
 function onEvidencePicked(resource: DiResource) {
   void bindEvidenceSelected(resource.id);
 }
@@ -1155,7 +1127,7 @@ watch(viewTab, (tab) => {
           </div>
           <div class="text-medium-emphasis text-body-2">
             <span v-if="detail?.project.baselineSetAt">
-              {{ t('projectManagement.baselineAt') }}: {{ pmDateInput(detail.project.baselineSetAt) }}
+              {{ t('projectManagement.baselineAt') }}: {{ formatPmDateOrDash(detail.project.baselineSetAt) }}
               <span v-if="detail.project.baselineSetBy"> ({{ detail.project.baselineSetBy }})</span>
             </span>
             <span v-else>{{ t('projectManagement.noBaseline') }}</span>
@@ -1344,10 +1316,10 @@ watch(viewTab, (tab) => {
             {{ item.weight ?? 1 }}
           </template>
           <template #item.plannedStart="{ item }">
-            {{ pmDateInput(item.plannedStart) || '—' }}
+            {{ formatPmDateOrDash(item.plannedStart) }}
           </template>
           <template #item.plannedFinish="{ item }">
-            {{ pmDateInput(item.plannedFinish) || '—' }}
+            {{ formatPmDateOrDash(item.plannedFinish) }}
           </template>
           <template #item.percentComplete="{ item }">
             {{ item.percentComplete ?? 0 }}%
@@ -1502,20 +1474,26 @@ watch(viewTab, (tab) => {
       <v-card-text v-else-if="viewTab === 'obligations'" class="px-6 py-4">
         <PmObligationsPanel
           :project-id="projectId"
+          :project-code="detail?.project.code || ''"
+          :hub-folder-id="detail?.project.diFolderId"
           :items="obligations"
           :wbs="wbs"
           :loading="loading || tabLoading"
           @changed="onPanelChanged"
+          @hub-ready="onLibraryHubReady"
         />
       </v-card-text>
 
       <v-card-text v-else-if="viewTab === 'audit'" class="px-6 py-4">
         <PmAuditPacksPanel
           :project-id="projectId"
+          :project-code="detail?.project.code || ''"
+          :hub-folder-id="detail?.project.diFolderId"
           :items="auditPacks"
           :wbs="wbs"
           :loading="loading || tabLoading"
           @changed="onPanelChanged"
+          @hub-ready="onLibraryHubReady"
         />
       </v-card-text>
 
@@ -1532,10 +1510,13 @@ watch(viewTab, (tab) => {
       <v-card-text v-else-if="viewTab === 'stakeholders'" class="px-6 py-4">
         <PmStakeholdersPanel
           :project-id="projectId"
+          :project-code="detail?.project.code || ''"
+          :hub-folder-id="detail?.project.diFolderId"
           :items="stakeholders"
           :wbs="wbs"
           :loading="loading || tabLoading"
           @changed="onPanelChanged"
+          @hub-ready="onLibraryHubReady"
         />
       </v-card-text>
 
@@ -1857,42 +1838,14 @@ watch(viewTab, (tab) => {
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="bindDialog" max-width="560">
-      <v-card rounded="lg">
-        <v-card-title>{{ t('projectManagement.bindWorkItem') }}</v-card-title>
-        <v-card-text class="d-flex flex-column ga-3">
-          <div class="text-medium-emphasis text-body-2">{{ t('projectManagement.bindHint') }}</div>
-          <v-text-field
-            v-model="bindQuery"
-            :label="t('projectManagement.searchWorkItem')"
-            density="comfortable"
-            clearable
-            hide-details
-          />
-          <v-list v-if="bindCandidates.length" class="rounded-lg border" density="comfortable">
-            <v-list-item
-              v-for="candidate in bindCandidates"
-              :key="candidate.id"
-              :disabled="bindSaving"
-              @click="bindSelected(candidate)"
-            >
-              <v-list-item-title>{{ candidate.key }} · {{ candidate.title }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ candidate.stateName || (candidate.closed ? t('projectManagement.status.closed') : '—') }}
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-          <div v-else-if="!bindLoading" class="text-medium-emphasis text-body-2 py-2">
-            {{ t('projectManagement.emptyWorkItems') }}
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="bindDialog = false">{{ t('projectManagement.cancel') }}</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
+    <PmPickWorkItemDialog
+      v-model="bindDialog"
+      :project-id="projectId"
+      :title="t('projectManagement.bindWorkItem')"
+      :hint="t('projectManagement.bindHint')"
+      :confirm-label="t('projectManagement.bindWorkItem')"
+      @pick="bindSelected"
+    />
     <v-dialog v-model="evidenceDialog" max-width="560">
       <v-card rounded="lg">
         <v-card-title>{{ t('projectManagement.bindEvidence') }}</v-card-title>

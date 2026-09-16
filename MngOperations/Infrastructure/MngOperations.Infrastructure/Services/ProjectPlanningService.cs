@@ -47,43 +47,8 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
     public async Task<ProjectDetailDto> GetProjectAsync(string id, CancellationToken ct = default)
     {
         var token = RequireToken();
-        var project = await LoadProjectOrThrowAsync(id, token, ct);
-        var wbs = await LoadWbsAsync(id, token, ct);
-        var deps = await LoadDepsAsync(id, token, ct);
-        var dtos = wbs.Select(ToWbsDto).OrderBy(w => w.WbsCode, StringComparer.Ordinal).ThenBy(w => w.SortOrder).ToList();
-        await HydrateWorkItemsAsync(dtos, token, ct);
-        await HydrateGateLocksAsync(id, dtos, token, ct);
-        await HydrateEvidenceAsync(dtos, token, ct);
-        var decisions = await LoadDecisionsAsync(id, token, ct);
-        var gates = await LoadStageGatesAsync(id, token, ct);
-        var raid = await LoadRaidItemsAsync(id, token, ct);
-        var assignments = await LoadAssignmentDtosAsync(id, dtos, token, ct);
-        var budgetLines = await LoadBudgetLineDtosAsync(id, token, ct);
-        var acknowledgements = await LoadAcknowledgementDtosAsync(id, token, ct);
-        var obligations = await LoadObligationDtosAsync(id, token, ct);
-        var auditPacks = await LoadAuditPackDtosAsync(id, token, ct);
-        var meetings = await LoadMeetingDtosAsync(id, token, ct);
-        var stakeholders = await LoadStakeholderDtosAsync(id, token, ct);
-        var processMaps = await LoadProcessMapDtosAsync(id, token, ct);
-        return new ProjectDetailDto
-        {
-            Project = ToProjectDto(project, wbs),
-            Wbs = dtos,
-            Dependencies = deps.Select(ToDepDto).ToList(),
-            Decisions = decisions,
-            StageGates = gates,
-            RaidItems = raid,
-            Assignments = assignments,
-            Capacity = BuildCapacity(assignments),
-            BudgetLines = budgetLines,
-            Budget = BuildBudget(budgetLines),
-            Acknowledgements = acknowledgements,
-            Obligations = obligations,
-            AuditPacks = auditPacks,
-            Meetings = meetings,
-            Stakeholders = stakeholders,
-            ProcessMaps = processMaps
-        };
+        var core = await LoadProjectCoreAsync(id, token, ct);
+        return ToDetailDto(core);
     }
 
     public Task<IReadOnlyList<JobPackDto>> ListJobPacksAsync(CancellationToken ct = default)
@@ -583,6 +548,123 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         if (row is null)
             throw new OperationCoreException("NOT_FOUND", "Dependency not found.", "Bağımlılık bulunamadı.", 404);
         await _dg.DeleteAsync(PmDatasets.Dependencies, id, token, ct);
+    }
+
+    private sealed class ProjectCoreLoad
+    {
+        public required PmProjectRow Project { get; init; }
+        public required List<PmWbsRow> WbsRows { get; init; }
+        public required List<WbsItemDto> Wbs { get; init; }
+        public required List<PmDependencyRow> Deps { get; init; }
+        public required List<StageGateDto> Gates { get; init; }
+    }
+
+    private sealed class ProjectExtrasLoad
+    {
+        public List<DecisionDto> Decisions { get; init; } = [];
+        public List<RaidItemDto> Raid { get; init; } = [];
+        public List<ResourceAssignmentDto> Assignments { get; init; } = [];
+        public List<BudgetLineDto> BudgetLines { get; init; } = [];
+        public List<AcknowledgementDto> Acknowledgements { get; init; } = [];
+        public List<ObligationDto> Obligations { get; init; } = [];
+        public List<AuditPackDto> AuditPacks { get; init; } = [];
+        public List<MeetingDto> Meetings { get; init; } = [];
+        public List<StakeholderDto> Stakeholders { get; init; } = [];
+        public List<ProcessMapDto> ProcessMaps { get; init; } = [];
+    }
+
+    private async Task<ProjectCoreLoad> LoadProjectCoreAsync(string id, string token, CancellationToken ct)
+    {
+        var project = await LoadProjectOrThrowAsync(id, token, ct);
+        var wbsTask = LoadWbsAsync(id, token, ct);
+        var depsTask = LoadDepsAsync(id, token, ct);
+        var gatesTask = LoadStageGatesAsync(id, token, ct);
+        await Task.WhenAll(wbsTask, depsTask, gatesTask);
+
+        var wbs = await wbsTask;
+        var deps = await depsTask;
+        var gates = await gatesTask;
+        var dtos = wbs.Select(ToWbsDto).OrderBy(w => w.WbsCode, StringComparer.Ordinal).ThenBy(w => w.SortOrder).ToList();
+        ApplyGateLocks(dtos, gates.Where(g => g.LocksWork).ToList(), wbs, deps);
+        await Task.WhenAll(
+            HydrateWorkItemsAsync(dtos, token, ct),
+            HydrateEvidenceAsync(dtos, token, ct));
+
+        return new ProjectCoreLoad
+        {
+            Project = project,
+            WbsRows = wbs,
+            Wbs = dtos,
+            Deps = deps,
+            Gates = gates
+        };
+    }
+
+    private async Task<ProjectExtrasLoad> LoadProjectExtrasAsync(
+        string projectId,
+        IReadOnlyList<WbsItemDto> wbs,
+        string token,
+        CancellationToken ct)
+    {
+        var decisionsTask = LoadDecisionsAsync(projectId, token, ct);
+        var raidTask = LoadRaidItemsAsync(projectId, token, ct);
+        var assignmentsTask = LoadAssignmentDtosAsync(projectId, wbs, token, ct);
+        var budgetTask = LoadBudgetLineDtosAsync(projectId, token, ct);
+        var acksTask = LoadAcknowledgementDtosAsync(projectId, token, ct);
+        var obligationsTask = LoadObligationDtosAsync(projectId, token, ct);
+        var auditTask = LoadAuditPackDtosAsync(projectId, token, ct);
+        var meetingsTask = LoadMeetingDtosAsync(projectId, token, ct);
+        var stakeholdersTask = LoadStakeholderDtosAsync(projectId, token, ct);
+        var processMapsTask = LoadProcessMapDtosAsync(projectId, token, ct);
+        await Task.WhenAll(
+            decisionsTask,
+            raidTask,
+            assignmentsTask,
+            budgetTask,
+            acksTask,
+            obligationsTask,
+            auditTask,
+            meetingsTask,
+            stakeholdersTask,
+            processMapsTask);
+
+        return new ProjectExtrasLoad
+        {
+            Decisions = await decisionsTask,
+            Raid = await raidTask,
+            Assignments = await assignmentsTask,
+            BudgetLines = await budgetTask,
+            Acknowledgements = await acksTask,
+            Obligations = await obligationsTask,
+            AuditPacks = await auditTask,
+            Meetings = await meetingsTask,
+            Stakeholders = await stakeholdersTask,
+            ProcessMaps = await processMapsTask
+        };
+    }
+
+    private ProjectDetailDto ToDetailDto(ProjectCoreLoad core, ProjectExtrasLoad? extras = null)
+    {
+        extras ??= new ProjectExtrasLoad();
+        return new ProjectDetailDto
+        {
+            Project = ToProjectDto(core.Project, core.WbsRows),
+            Wbs = core.Wbs,
+            Dependencies = core.Deps.Select(ToDepDto).ToList(),
+            Decisions = extras.Decisions,
+            StageGates = core.Gates,
+            RaidItems = extras.Raid,
+            Assignments = extras.Assignments,
+            Capacity = BuildCapacity(extras.Assignments),
+            BudgetLines = extras.BudgetLines,
+            Budget = BuildBudget(extras.BudgetLines),
+            Acknowledgements = extras.Acknowledgements,
+            Obligations = extras.Obligations,
+            AuditPacks = extras.AuditPacks,
+            Meetings = extras.Meetings,
+            Stakeholders = extras.Stakeholders,
+            ProcessMaps = extras.ProcessMaps
+        };
     }
 
     private async Task<PmProjectRow> LoadProjectOrThrowAsync(string id, string token, CancellationToken ct)

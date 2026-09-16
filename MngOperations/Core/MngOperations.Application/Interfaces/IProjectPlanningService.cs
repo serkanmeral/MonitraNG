@@ -42,9 +42,11 @@ public interface IProjectPlanningService
 
     Task<WbsItemDto> UnbindWorkItemAsync(string wbsId, CancellationToken ct = default);
 
-    Task<IReadOnlyList<WorkItemCandidateDto>> SearchWorkItemsAsync(
+    Task<WorkItemCandidatePageDto> SearchWorkItemsAsync(
         string projectId,
         string? query,
+        int skip = 0,
+        int take = 25,
         CancellationToken ct = default);
 
     Task<IReadOnlyList<ProjectDocumentDto>> ListProjectDocumentsAsync(
@@ -72,6 +74,8 @@ public interface IProjectPlanningService
 
     Task<ProjectStatusPackDto> GetStatusPackAsync(string projectId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<DecisionDto>> ListDecisionsAsync(string projectId, CancellationToken ct = default);
+
     Task<DecisionDto> CreateDecisionAsync(string projectId, CreateDecisionRequest request, CancellationToken ct = default);
 
     Task<DecisionDto> UpdateDecisionAsync(string id, UpdateDecisionRequest request, CancellationToken ct = default);
@@ -85,6 +89,8 @@ public interface IProjectPlanningService
     Task DeleteStageGateAsync(string id, CancellationToken ct = default);
 
     Task AssertWorkItemCloseAllowedAsync(string workItemId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<RaidItemDto>> ListRaidItemsAsync(string projectId, CancellationToken ct = default);
 
     Task<RaidItemDto> CreateRaidItemAsync(string projectId, CreateRaidItemRequest request, CancellationToken ct = default);
 

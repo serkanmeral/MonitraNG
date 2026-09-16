@@ -208,6 +208,15 @@ public sealed class StateRecord : DgRecord
 
     [JsonPropertyName("isInitial")]
     public bool? IsInitial { get; set; }
+
+    /// <summary>
+    /// True when transitioning into this state should run close locks / closedAt.
+    /// Accepts isClosed flag or category done/closed (pack flows often use category=closed without isClosed).
+    /// </summary>
+    public bool MarksWorkClosed =>
+        IsClosed == true
+        || string.Equals(Category, "done", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Category, "closed", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class SlaPolicyRecord : DgRecord
