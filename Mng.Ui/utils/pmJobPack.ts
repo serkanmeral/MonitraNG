@@ -2,6 +2,7 @@ import {
   diCreateFolder,
   diCreateMarkdown,
   diDelete,
+  diGetById,
   diGetChildren,
   diGetTreeRoots,
   diUpdateResourceMetadata,
@@ -10,8 +11,8 @@ import { pmUpdateProject } from '@/services/projectManagementService';
 import type { DiResource, DiTreeNode } from '@/types/apps/documentIntelligence';
 import type { PmJobPack } from '@/types/apps/projectManagement';
 
-const DOCS_FOLDER_NAMES = ['Dökümanlar', 'Dokumanlar', 'Documents'];
-const PROJECTS_FOLDER = 'Projeler';
+export const DOCS_FOLDER_NAMES = ['Dökümanlar', 'Dokumanlar', 'Documents'];
+export const PROJECTS_FOLDER = 'Projeler';
 
 export type PmPackFolderAction = 'remove' | 'keep' | 'skip';
 
@@ -38,7 +39,15 @@ function folderName(node: { name?: string | null }): string {
 }
 
 function packFolderNames(pack: PmJobPack): string[] {
-  return (pack.folders || []).map((name) => String(name || '').trim()).filter(Boolean);
+  return (pack.folders || [])
+    .map((entry) => {
+      if (typeof entry === 'string') return entry.trim();
+      if (entry && typeof entry === 'object' && 'name' in entry) {
+        return String((entry as { name?: unknown }).name || '').trim();
+      }
+      return '';
+    })
+    .filter(Boolean);
 }
 
 function claimedFolderNames(packs: PmJobPack[]): Set<string> {
@@ -51,7 +60,9 @@ function claimedFolderNames(packs: PmJobPack[]): Set<string> {
   return claimed;
 }
 
-async function findChildFolder(parentId: string | null, names: string[]): Promise<DiTreeNode | DiResource | null> {
+const folderEnsureLocks = new Map<string, Promise<string>>();
+
+export async function findChildFolder(parentId: string | null, names: string[]): Promise<DiTreeNode | DiResource | null> {
   const wanted = names.map((n) => n.toLocaleLowerCase('tr'));
   if (!parentId) {
     const roots = await diGetTreeRoots();
@@ -65,20 +76,89 @@ async function findChildFolder(parentId: string | null, names: string[]): Promis
   );
 }
 
-async function ensureFolder(parentId: string | null, name: string): Promise<string> {
-  const existing = await findChildFolder(parentId, [name]);
-  if (existing?.id) return existing.id;
-  const created = await diCreateFolder({ name, parentId: parentId || undefined });
-  return created.id;
+export async function ensureFolder(parentId: string | null, name: string, tags?: string[]): Promise<string> {
+  const trimmed = name.trim();
+  const key = `${parentId || ''}::${trimmed.toLocaleLowerCase('tr')}`;
+  const pending = folderEnsureLocks.get(key);
+  if (pending) return pending;
+
+  let task: Promise<string>;
+  task = (async () => {
+    const existing = await findChildFolder(parentId, [trimmed]);
+    if (existing?.id) return existing.id;
+    try {
+      const created = await diCreateFolder({
+        name: trimmed,
+        parentId: parentId || undefined,
+        tags: tags?.length ? tags : undefined,
+      });
+      return created.id;
+    } catch (error) {
+      const raced = await findChildFolder(parentId, [trimmed]);
+      if (raced?.id) return raced.id;
+      throw error;
+    }
+  })().finally(() => {
+    if (folderEnsureLocks.get(key) === task) folderEnsureLocks.delete(key);
+  });
+
+  folderEnsureLocks.set(key, task);
+  return task;
 }
 
-async function findProjectHub(projectCode: string): Promise<string | null> {
+export async function collapseEmptyDuplicateFolders(parentId: string): Promise<void> {
+  const listing = await diGetChildren(parentId);
+  const groups = new Map<string, DiResource[]>();
+  for (const row of listing.items || []) {
+    if (row.type !== 'folder') continue;
+    const key = folderName(row).toLocaleLowerCase('tr');
+    if (!key) continue;
+    const group = groups.get(key) ?? [];
+    group.push(row);
+    groups.set(key, group);
+  }
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue;
+    const ranked = [...group].sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    for (const extra of ranked.slice(1)) {
+      const inner = await diGetChildren(extra.id);
+      if (!isFolderEmpty(inner)) continue;
+      await diDelete(extra.id, false);
+    }
+  }
+}
+
+export async function findProjectHub(projectCode: string): Promise<string | null> {
   const docs = await findChildFolder(null, DOCS_FOLDER_NAMES);
   if (!docs?.id) return null;
   const projects = await findChildFolder(docs.id, [PROJECTS_FOLDER]);
   if (!projects?.id) return null;
   const hub = await findChildFolder(projects.id, [projectCode]);
   return hub?.id || null;
+}
+
+export async function ensureProjectDocumentHub(
+  projectCode: string,
+  existingHubId?: string | null,
+): Promise<string | null> {
+  const code = projectCode.trim();
+  if (!code) return null;
+  const existing = existingHubId?.trim();
+  if (existing) {
+    try {
+      const resource = await diGetById(existing);
+      if (resource?.id && resource.type === 'folder') return resource.id;
+    } catch {
+      // stale hub id — recreate under Dökümanlar/Projeler
+    }
+  }
+  const found = await findProjectHub(code);
+  if (found) return found;
+  const docs = await findChildFolder(null, DOCS_FOLDER_NAMES);
+  if (!docs?.id) return null;
+  const projectsId = await ensureFolder(docs.id, PROJECTS_FOLDER);
+  return ensureFolder(projectsId, code);
 }
 
 function isFolderEmpty(listing: { items?: unknown[]; total?: number | null }): boolean {
@@ -88,11 +168,8 @@ function isFolderEmpty(listing: { items?: unknown[]; total?: number | null }): b
 }
 
 export async function applyJobPackDocuments(projectId: string, projectCode: string, pack: PmJobPack): Promise<string | null> {
-  const docs = await findChildFolder(null, DOCS_FOLDER_NAMES);
-  if (!docs?.id) return null;
-
-  const projectsId = await ensureFolder(docs.id, PROJECTS_FOLDER);
-  const hubId = await ensureFolder(projectsId, projectCode);
+  const hubId = await ensureProjectDocumentHub(projectCode);
+  if (!hubId) return null;
   const folderIds = new Map<string, string>();
   for (const name of packFolderNames(pack)) {
     folderIds.set(name, await ensureFolder(hubId, name));
@@ -117,6 +194,7 @@ export async function applyJobPackDocuments(projectId: string, projectCode: stri
     }
   }
 
+  await collapseEmptyDuplicateFolders(hubId);
   await pmUpdateProject(projectId, { diFolderId: hubId });
   return hubId;
 }

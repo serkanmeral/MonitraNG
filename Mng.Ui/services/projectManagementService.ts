@@ -127,6 +127,22 @@ export async function pmGetProject(id: string): Promise<PmProjectDetail> {
   )) as PmProjectDetail;
 }
 
+export async function pmListProjectDecisions(projectId: string): Promise<PmDecision[]> {
+  const raw = await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/decisions`,
+    'GET',
+  );
+  return asArray<PmDecision>(raw);
+}
+
+export async function pmListProjectRaid(projectId: string): Promise<PmRaidItem[]> {
+  const raw = await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/raid`,
+    'GET',
+  );
+  return asArray<PmRaidItem>(raw);
+}
+
 export async function pmCreateProject(body: PmCreateProjectRequest): Promise<PmProject> {
   return (await fetchFromOperations('/api/v1/projects', 'POST', body)) as PmProject;
 }

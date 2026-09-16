@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
@@ -40,6 +40,22 @@ const editingId = ref<string | null>(null);
 const deleteTarget = ref<PmResourceAssignment | null>(null);
 const deleting = ref(false);
 
+const peopleSearch = ref('');
+const peopleFilter = ref<'all' | 'overloaded' | 'ok'>('all');
+const peoplePage = ref(1);
+const peopleItemsPerPage = ref(25);
+const assignmentSearch = ref('');
+const assignmentPage = ref(1);
+const assignmentItemsPerPage = ref(25);
+const expandedPeople = ref<string[]>([]);
+
+const pageSizeOptions = [
+  { value: 10, title: '10' },
+  { value: 25, title: '25' },
+  { value: 50, title: '50' },
+  { value: 100, title: '100' },
+];
+
 const form = ref({
   wbsId: '',
   name: '',
@@ -47,6 +63,12 @@ const form = ref({
   plannedHours: 8,
   start: '',
   finish: '',
+});
+
+const wbsById = computed(() => {
+  const map = new Map<string, PmWbsItem>();
+  for (const row of props.wbs) map.set(row.id, row);
+  return map;
 });
 
 const wbsItems = computed(() =>
@@ -58,8 +80,49 @@ const wbsItems = computed(() =>
 
 const people = computed(() => props.capacity?.people ?? []);
 const weeklyHours = computed(() => props.capacity?.weeklyCapacityHours ?? 40);
+const overloadedCount = computed(() => people.value.filter((row) => row.overloaded).length);
 
-const headers = computed(() => [
+const filteredPeople = computed(() => {
+  const query = peopleSearch.value.trim().toLowerCase();
+  return people.value.filter((row) => {
+    if (peopleFilter.value === 'overloaded' && !row.overloaded) return false;
+    if (peopleFilter.value === 'ok' && row.overloaded) return false;
+    if (!query) return true;
+    return (row.name || '').toLowerCase().includes(query);
+  });
+});
+
+const filteredAssignments = computed(() => {
+  const query = assignmentSearch.value.trim().toLowerCase();
+  if (!query) return props.assignments;
+  return props.assignments.filter((row) => {
+    const wbs = wbsById.value.get(row.wbsId);
+    const haystack = [row.name, row.role, wbs?.wbsCode, wbs?.name, String(row.plannedHours)]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(query);
+  });
+});
+
+watch([peopleSearch, peopleFilter], () => {
+  peoplePage.value = 1;
+  expandedPeople.value = [];
+});
+
+watch(assignmentSearch, () => {
+  assignmentPage.value = 1;
+});
+
+const peopleHeaders = computed(() => [
+  { title: t('projectManagement.capacity.resource'), key: 'name', minWidth: 160 },
+  { title: t('projectManagement.fields.status'), key: 'status', width: 130 },
+  { title: t('projectManagement.capacity.hours'), key: 'totalHours', width: 110 },
+  { title: t('projectManagement.capacity.unscheduled'), key: 'unscheduledHours', width: 130 },
+  { title: t('projectManagement.capacity.weeks'), key: 'weeks', minWidth: 170 },
+]);
+
+const assignmentHeaders = computed(() => [
   { title: t('projectManagement.capacity.resource'), key: 'name', minWidth: 140 },
   { title: t('projectManagement.fields.wbsCode'), key: 'wbs', minWidth: 160 },
   { title: t('projectManagement.capacity.hours'), key: 'plannedHours', width: 100 },
@@ -71,7 +134,7 @@ const canSave = computed(() => Boolean(form.value.name.trim() && form.value.wbsI
 
 function wbsName(id?: string | null) {
   if (!id) return '';
-  const row = props.wbs.find((item) => item.id === id);
+  const row = wbsById.value.get(id);
   if (!row) return id;
   return `${row.wbsCode || '—'} ${row.name}`;
 }
@@ -82,6 +145,21 @@ function windowLabel(row: PmResourceAssignment) {
   const finish = pmDateInput(row.effectiveFinish);
   if (!start && !finish) return t('projectManagement.capacity.unscheduled');
   return `${start || '—'} → ${finish || '—'}`;
+}
+
+function weekLabel(value?: string | null) {
+  return pmDateInput(value) || '—';
+}
+
+function weekSummary(person: PmCapacityPerson) {
+  const weeks = person.weeks?.length ?? 0;
+  const over = person.weeks?.filter((week) => week.overloaded).length ?? 0;
+  if (weeks === 0 && person.unscheduledHours) {
+    return t('projectManagement.capacity.unscheduledHours', { hours: person.unscheduledHours });
+  }
+  if (over > 0) return t('projectManagement.capacity.weekOverloadedSummary', { weeks, over });
+  if (weeks > 0) return t('projectManagement.capacity.weekSummary', { weeks });
+  return '—';
 }
 
 function openCreate() {
@@ -161,19 +239,11 @@ async function executeDelete() {
 function onDeleteDialog(open: boolean) {
   if (!open) deleteTarget.value = null;
 }
-
-function weekLabel(value?: string | null) {
-  return pmDateInput(value) || '—';
-}
-
-function personLoad(person: PmCapacityPerson) {
-  return `${person.totalHours} / ${weeklyHours.value}${t('projectManagement.capacity.hoursUnit')}`;
-}
 </script>
 
 <template>
   <div>
-    <div class="d-flex align-center justify-space-between mb-3">
+    <div class="d-flex align-center justify-space-between mb-3 ga-3 flex-wrap">
       <div class="text-body-2 text-medium-emphasis">{{ t('projectManagement.capacity.hint') }}</div>
       <v-btn color="primary" :disabled="!wbs.length" @click="openCreate">
         <PlusIcon size="18" class="mr-1" />
@@ -181,51 +251,126 @@ function personLoad(person: PmCapacityPerson) {
       </v-btn>
     </div>
 
-    <div v-if="people.length" class="d-flex flex-column ga-3 mb-4">
-      <div
-        v-for="person in people"
-        :key="person.key"
-        class="rounded-lg border pa-3"
-      >
-        <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
-          <div class="d-flex align-center ga-2">
-            <span class="text-subtitle-2">{{ person.name }}</span>
-            <v-chip
-              size="x-small"
-              :color="person.overloaded ? 'error' : 'success'"
-              variant="tonal"
-            >
-              {{ person.overloaded ? t('projectManagement.capacity.overloaded') : t('projectManagement.capacity.ok') }}
-            </v-chip>
-          </div>
-          <span class="text-caption text-medium-emphasis">{{ personLoad(person) }}</span>
-        </div>
-        <div v-if="person.weeks.length" class="d-flex flex-wrap ga-1">
-          <v-chip
-            v-for="week in person.weeks"
-            :key="week.weekStart"
-            size="x-small"
-            :color="week.overloaded ? 'error' : 'default'"
-            variant="tonal"
-          >
-            {{ weekLabel(week.weekStart) }} · {{ week.hours }}h
-          </v-chip>
-        </div>
-        <div v-if="person.unscheduledHours" class="text-caption text-medium-emphasis mt-2">
-          {{ t('projectManagement.capacity.unscheduledHours', { hours: person.unscheduledHours }) }}
+    <div v-if="people.length" class="mb-5">
+      <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-3">
+        <div class="text-subtitle-2">{{ t('projectManagement.capacity.peopleTitle') }}</div>
+        <div class="text-caption text-medium-emphasis">
+          {{
+            t('projectManagement.capacity.summaryLine', {
+              overloaded: overloadedCount,
+              people: people.length,
+              assignments: assignments.length,
+            })
+          }}
         </div>
       </div>
+
+      <div class="d-flex flex-wrap ga-2 mb-3 align-center">
+        <v-text-field
+          v-model="peopleSearch"
+          :label="t('projectManagement.capacity.search')"
+          density="comfortable"
+          hide-details
+          clearable
+          style="max-width: 280px"
+        />
+        <v-chip :variant="peopleFilter === 'all' ? 'flat' : 'tonal'" @click="peopleFilter = 'all'">
+          {{ t('projectManagement.capacity.filterAll') }}
+        </v-chip>
+        <v-chip
+          :variant="peopleFilter === 'overloaded' ? 'flat' : 'tonal'"
+          :color="peopleFilter === 'overloaded' ? 'error' : undefined"
+          @click="peopleFilter = 'overloaded'"
+        >
+          {{ t('projectManagement.capacity.overloaded') }}
+        </v-chip>
+        <v-chip
+          :variant="peopleFilter === 'ok' ? 'flat' : 'tonal'"
+          :color="peopleFilter === 'ok' ? 'success' : undefined"
+          @click="peopleFilter = 'ok'"
+        >
+          {{ t('projectManagement.capacity.ok') }}
+        </v-chip>
+      </div>
+
+      <v-data-table
+        v-model:page="peoplePage"
+        v-model:items-per-page="peopleItemsPerPage"
+        v-model:expanded="expandedPeople"
+        :headers="peopleHeaders"
+        :items="filteredPeople"
+        :loading="loading"
+        item-value="key"
+        show-expand
+        density="comfortable"
+        class="rounded-lg border"
+        :items-per-page-options="pageSizeOptions"
+      >
+        <template #item.status="{ item }">
+          <v-chip size="small" :color="item.overloaded ? 'error' : 'success'" variant="tonal">
+            {{ item.overloaded ? t('projectManagement.capacity.overloaded') : t('projectManagement.capacity.ok') }}
+          </v-chip>
+        </template>
+        <template #item.totalHours="{ item }">
+          {{ item.totalHours }} / {{ weeklyHours }}{{ t('projectManagement.capacity.hoursUnit') }}
+        </template>
+        <template #item.unscheduledHours="{ item }">
+          {{ item.unscheduledHours ? item.unscheduledHours : '—' }}
+        </template>
+        <template #item.weeks="{ item }">
+          {{ weekSummary(item) }}
+        </template>
+        <template #expanded-row="{ columns, item }">
+          <tr>
+            <td :colspan="columns.length" class="py-3">
+              <div v-if="item.weeks.length" class="d-flex flex-wrap ga-1">
+                <v-chip
+                  v-for="week in item.weeks"
+                  :key="week.weekStart"
+                  size="x-small"
+                  :color="week.overloaded ? 'error' : 'default'"
+                  variant="tonal"
+                >
+                  {{ weekLabel(week.weekStart) }} · {{ week.hours }}h
+                </v-chip>
+              </div>
+              <div v-if="item.unscheduledHours" class="text-caption text-medium-emphasis mt-2">
+                {{ t('projectManagement.capacity.unscheduledHours', { hours: item.unscheduledHours }) }}
+              </div>
+              <div v-if="!item.weeks.length && !item.unscheduledHours" class="text-caption text-medium-emphasis">
+                —
+              </div>
+            </td>
+          </tr>
+        </template>
+        <template #no-data>
+          <div class="text-center py-8 text-medium-emphasis">{{ t('projectManagement.capacity.emptyPeople') }}</div>
+        </template>
+      </v-data-table>
+    </div>
+
+    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-3">
+      <div class="text-subtitle-2">{{ t('projectManagement.capacity.assignmentsTitle') }}</div>
+      <v-text-field
+        v-model="assignmentSearch"
+        :label="t('projectManagement.capacity.assignmentSearch')"
+        density="comfortable"
+        hide-details
+        clearable
+        style="max-width: 280px"
+      />
     </div>
 
     <v-data-table
-      :headers="headers"
-      :items="assignments"
+      v-model:page="assignmentPage"
+      v-model:items-per-page="assignmentItemsPerPage"
+      :headers="assignmentHeaders"
+      :items="filteredAssignments"
       :loading="loading"
       item-value="id"
       density="comfortable"
       class="rounded-lg border"
-      hide-default-footer
-      :items-per-page="-1"
+      :items-per-page-options="pageSizeOptions"
     >
       <template #item.wbs="{ item }">
         {{ wbsName(item.wbsId) || '—' }}

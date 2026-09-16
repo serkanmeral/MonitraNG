@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { diGetBootstrap, diGetRecent, diSearch } from '@/services/documentIntelligenceService';
+import { diGetBootstrap, diGetRecent, diGetTreeChildren, diSearch } from '@/services/documentIntelligenceService';
 import {
   DI_RESOURCE_TYPE,
   type DiResource,
@@ -17,8 +17,22 @@ const props = withDefaults(
     /** Yalnızca markdown seçilebilir (varsayılan: markdown + dosya). */
     markdownOnly?: boolean;
     excludeResourceIds?: string[];
+    /** Verilirse ağaç ve arama bu klasörün altında kalır. */
+    rootFolderId?: string | null;
+    title?: string | null;
+    hint?: string | null;
+    confirmLabel?: string | null;
+    rootLabel?: string | null;
   }>(),
-  { markdownOnly: false, excludeResourceIds: () => [] }
+  {
+    markdownOnly: false,
+    excludeResourceIds: () => [],
+    rootFolderId: null,
+    title: null,
+    hint: null,
+    confirmLabel: null,
+    rootLabel: null,
+  }
 );
 
 const emit = defineEmits<{
@@ -55,8 +69,31 @@ const excludedSet = computed(() => {
   return ids;
 });
 
+const dialogTitle = computed(
+  () => props.title || t('documentIntelligence.internalLink.pickTitle'),
+);
+const dialogHint = computed(
+  () => props.hint || t('documentIntelligence.internalLink.pickHint'),
+);
+const dialogConfirm = computed(
+  () => props.confirmLabel || t('documentIntelligence.internalLink.pickConfirm'),
+);
+const treeRootLabel = computed(
+  () => props.rootLabel || t('documentIntelligence.allDocuments'),
+);
+
+const scopedRootId = computed(() => props.rootFolderId?.trim() || '');
+
+function isUnderRoot(r: DiResource): boolean {
+  const root = scopedRootId.value;
+  if (!root) return true;
+  if (r.id === root) return false;
+  return r.parentId === root || (r.ancestorIds || []).includes(root);
+}
+
 function isPickable(r: DiResource): boolean {
   if (excludedSet.value.has(r.id.trim().toLowerCase())) return false;
+  if (!isUnderRoot(r)) return false;
   if (props.markdownOnly) return r.type === DI_RESOURCE_TYPE.markdown;
   return r.type === DI_RESOURCE_TYPE.markdown || r.type === DI_RESOURCE_TYPE.file;
 }
@@ -77,7 +114,15 @@ function resourceLabel(r: DiResource): string {
   return diPageResourceLabel(r);
 }
 
+function activeFolderId(folderId: string | null): string | null {
+  return folderId || scopedRootId.value || null;
+}
+
 async function loadRecent() {
+  if (scopedRootId.value) {
+    recentPages.value = [];
+    return;
+  }
   try {
     const res = await diGetRecent(8);
     recentPages.value = res.items.filter(isPickable);
@@ -95,7 +140,7 @@ async function runSearch() {
   searchLoading.value = true;
   errorLocal.value = null;
   try {
-    const res = await diSearch(q, 0, 30);
+    const res = await diSearch(q, 0, scopedRootId.value ? 80 : 30);
     searchResults.value = res.items.filter(isPickable);
     selectedResourceId.value = null;
   } catch (e: unknown) {
@@ -106,15 +151,27 @@ async function runSearch() {
   }
 }
 
+async function loadFolderChildren(parentId: string): Promise<DiTreeNode[]> {
+  return diGetTreeChildren(parentId);
+}
+
 async function loadTree() {
   treeLoading.value = true;
   childrenLoading.value = true;
   errorLocal.value = null;
   try {
-    const boot = await diGetBootstrap(null);
-    tree.value = boot.tree;
+    const root = scopedRootId.value || null;
+    const [boot, treeNodes] = await Promise.all([
+      diGetBootstrap(root),
+      root ? diGetTreeChildren(root) : Promise.resolve([] as DiTreeNode[]),
+    ]);
+    tree.value = root
+      ? treeNodes
+      : boot.treeRoots.length
+        ? boot.treeRoots
+        : boot.tree;
     children.value = boot.children.items;
-    selectedFolderId.value = null;
+    selectedFolderId.value = root;
     selectedResourceId.value = null;
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'documentIntelligence.internalLink.loadTreeError');
@@ -132,7 +189,7 @@ async function selectFolder(folderId: string | null) {
   childrenLoading.value = true;
   errorLocal.value = null;
   try {
-    const boot = await diGetBootstrap(folderId);
+    const boot = await diGetBootstrap(activeFolderId(folderId));
     children.value = boot.children.items;
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'documentIntelligence.internalLink.loadTreeError');
@@ -177,10 +234,10 @@ watch(open, (v) => {
   <v-dialog v-model="open" max-width="720" scrollable>
     <v-card rounded="lg">
       <v-card-title class="text-h6 font-weight-bold">
-        {{ t('documentIntelligence.internalLink.pickTitle') }}
+        {{ dialogTitle }}
       </v-card-title>
       <v-card-subtitle class="text-wrap pb-2">
-        {{ t('documentIntelligence.internalLink.pickHint') }}
+        {{ dialogHint }}
       </v-card-subtitle>
       <v-divider />
       <v-card-text class="pa-4">
@@ -245,9 +302,10 @@ watch(open, (v) => {
             <v-progress-linear v-if="treeLoading" indeterminate color="primary" class="mb-2" />
             <DiResourceTree
               :nodes="tree"
-              :selected-id="selectedFolderId"
-              :root-label="t('documentIntelligence.allDocuments')"
+              :selected-id="selectedFolderId === scopedRootId ? null : selectedFolderId"
+              :root-label="treeRootLabel"
               :empty-label="t('documentIntelligence.noFolders')"
+              :load-children="loadFolderChildren"
               @select="selectFolder"
             />
           </div>
@@ -291,7 +349,7 @@ watch(open, (v) => {
           :disabled="!selectedResource"
           @click="confirmPick"
         >
-          {{ t('documentIntelligence.internalLink.pickConfirm') }}
+          {{ dialogConfirm }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
+import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
-import { diSearch } from '@/services/documentIntelligenceService';
+import {
+  diCreateMarkdown,
+  diGetMarkdownContent,
+  diUpdateMarkdown,
+} from '@/services/documentIntelligenceService';
 import {
   pmCreateDecision,
   pmDeleteDecision,
@@ -16,10 +22,16 @@ import type {
   PmDecisionStatus,
   PmWbsItem,
 } from '@/types/apps/projectManagement';
+import { diPageResourceLabel } from '@/utils/diPageResource';
+import { ensureProjectDecisionsFolder, PM_LIBRARY_DECISIONS_FOLDER, resolvePmLibraryAutoTags } from '@/utils/pmProjectLibrary';
 import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
+
+type DocSource = 'write' | 'existing';
 
 const props = defineProps<{
   projectId: string;
+  projectCode: string;
+  hubFolderId?: string | null;
   decisions: PmDecision[];
   wbs: PmWbsItem[];
   loading?: boolean;
@@ -27,6 +39,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   changed: [];
+  hubReady: [id: string];
 }>();
 
 const { t } = useAppI18n();
@@ -38,9 +51,11 @@ const saving = ref(false);
 const editingId = ref<string | null>(null);
 const deleteTarget = ref<PmDecision | null>(null);
 const deleting = ref(false);
-const docQuery = ref('');
-const docHits = ref<DiResource[]>([]);
-const docSearching = ref(false);
+const loadingContent = ref(false);
+const docSource = ref<DocSource>('write');
+const canSyncMarkdown = ref(false);
+const markdownVersion = ref(0);
+const pickOpen = ref(false);
 
 const form = ref({
   title: '',
@@ -65,6 +80,11 @@ const statusItems = computed(() => [
   { title: t('projectManagement.decision.status.superseded'), value: 'superseded' },
 ]);
 
+const sourceItems = computed(() => [
+  { title: t('projectManagement.decision.sourceWrite'), value: 'write' as const },
+  { title: t('projectManagement.decision.sourceExisting'), value: 'existing' as const },
+]);
+
 const wbsItems = computed(() =>
   props.wbs.map((row) => ({
     title: `${row.wbsCode || '—'} ${row.name}`,
@@ -80,6 +100,12 @@ const workItemItems = computed(() =>
       value: row.workItemId as string,
     })),
 );
+
+const canSave = computed(() => {
+  if (!form.value.title.trim() || !props.projectCode.trim()) return false;
+  if (docSource.value === 'existing') return Boolean(form.value.documentId);
+  return form.value.body.trim().length > 0;
+});
 
 const headers = computed(() => [
   { title: t('projectManagement.fields.name'), key: 'title', minWidth: 200 },
@@ -124,12 +150,20 @@ function impactText(row: PmDecision) {
   (row.workItemIds || []).forEach((id) => bits.push(workItemLabel(id)));
   if (row.documentName) bits.push(row.documentName);
   else if (row.documentId) bits.push(row.documentId.slice(0, 8));
-  (row.resourceIds || []).forEach((id) => bits.push(id.slice(0, 8)));
   return bits;
 }
 
-function openCreate() {
-  editingId.value = null;
+function resourceHref(id: string) {
+  return `/apps/document-intelligence/r/${encodeURIComponent(id)}`;
+}
+
+function excerpt(text: string): string | null {
+  const value = text.trim();
+  if (!value) return null;
+  return value.length > 400 ? `${value.slice(0, 397)}...` : value;
+}
+
+function resetForm() {
   form.value = {
     title: '',
     body: '',
@@ -141,12 +175,33 @@ function openCreate() {
     documentName: '',
     resourceIds: [],
   };
-  docQuery.value = '';
-  docHits.value = [];
+  docSource.value = 'write';
+  canSyncMarkdown.value = false;
+  markdownVersion.value = 0;
+}
+
+function openCreate() {
+  editingId.value = null;
+  resetForm();
   dialog.value = true;
 }
 
-function openEdit(row: PmDecision) {
+async function loadOfficialMarkdown(documentId: string): Promise<boolean> {
+  try {
+    const md = await diGetMarkdownContent(documentId);
+    form.value.body = md.content || '';
+    if (md.title) form.value.documentName = md.title;
+    canSyncMarkdown.value = true;
+    markdownVersion.value = md.currentVersionNumber || 0;
+    return true;
+  } catch {
+    canSyncMarkdown.value = false;
+    markdownVersion.value = 0;
+    return false;
+  }
+}
+
+async function openEdit(row: PmDecision) {
   editingId.value = row.id;
   form.value = {
     title: row.title,
@@ -159,59 +214,86 @@ function openEdit(row: PmDecision) {
     documentName: row.documentName || '',
     resourceIds: [...(row.resourceIds || [])],
   };
-  docQuery.value = '';
-  docHits.value = [];
+  canSyncMarkdown.value = false;
+  markdownVersion.value = 0;
+  docSource.value = 'write';
   dialog.value = true;
-}
 
-async function searchDocs() {
-  const q = docQuery.value.trim();
-  if (!q) {
-    docHits.value = [];
-    return;
-  }
-  docSearching.value = true;
+  if (!row.documentId) return;
+  loadingContent.value = true;
   try {
-    const result = await diSearch(q, 0, 12);
-    docHits.value = (result.items || []).filter((item) => item.type !== 'folder');
-  } catch (error) {
-    panelError(error, 'projectManagement.errors.loadFailed');
+    const loaded = await loadOfficialMarkdown(row.documentId);
+    if (!loaded) docSource.value = 'existing';
   } finally {
-    docSearching.value = false;
+    loadingContent.value = false;
   }
 }
 
-function pickDocument(resource: DiResource, asOfficial: boolean) {
-  if (asOfficial) {
-    form.value.documentId = resource.id;
-    form.value.documentName = resource.title || resource.name;
-  } else if (!form.value.resourceIds.includes(resource.id)) {
-    form.value.resourceIds = [...form.value.resourceIds, resource.id];
-  }
-  docHits.value = [];
-  docQuery.value = '';
+function pickExisting(resource: DiResource) {
+  form.value.documentId = resource.id;
+  form.value.documentName = diPageResourceLabel(resource);
+  canSyncMarkdown.value = false;
 }
 
 function clearOfficialDocument() {
   form.value.documentId = '';
   form.value.documentName = '';
+  canSyncMarkdown.value = false;
+  markdownVersion.value = 0;
+}
+
+async function ensureOfficialPage(title: string, content: string): Promise<{ id: string; name: string }> {
+  if (canSyncMarkdown.value && form.value.documentId) {
+    const updated = await diUpdateMarkdown(form.value.documentId, {
+      title,
+      content,
+      expectedVersionNumber: markdownVersion.value,
+      isDraft: false,
+    });
+    return { id: updated.id, name: diPageResourceLabel(updated) || title };
+  }
+
+  const { hubId, folderId } = await ensureProjectDecisionsFolder(
+    props.projectId,
+    props.projectCode,
+    props.hubFolderId,
+  );
+  if (hubId && hubId !== (props.hubFolderId || '').trim()) emit('hubReady', hubId);
+  const created = await diCreateMarkdown({
+    parentId: folderId,
+    title,
+    content,
+    isDraft: false,
+    tags: await resolvePmLibraryAutoTags([PM_LIBRARY_DECISIONS_FOLDER]),
+  });
+  return { id: created.id, name: diPageResourceLabel(created) || title };
 }
 
 async function save() {
+  if (!canSave.value) return;
   saving.value = true;
   try {
-    const body = {
-      title: form.value.title.trim(),
-      body: form.value.body.trim() || null,
+    const title = form.value.title.trim();
+    const content = form.value.body;
+    let documentId = form.value.documentId || null;
+
+    if (docSource.value === 'write') {
+      const page = await ensureOfficialPage(title, content);
+      documentId = page.id;
+    }
+
+    const payload = {
+      title,
+      body: excerpt(content) || excerpt(form.value.body),
       kind: form.value.kind,
       status: form.value.status,
-      documentId: form.value.documentId || null,
+      documentId,
       wbsIds: form.value.wbsIds,
       workItemIds: form.value.workItemIds,
       resourceIds: form.value.resourceIds,
     };
-    if (editingId.value) await pmUpdateDecision(editingId.value, body);
-    else await pmCreateDecision(props.projectId, body);
+    if (editingId.value) await pmUpdateDecision(editingId.value, payload);
+    else await pmCreateDecision(props.projectId, payload);
     dialog.value = false;
     toast.push({
       title: t('projectManagement.notify.successTitle'),
@@ -299,14 +381,13 @@ function onDeleteDialog(open: boolean) {
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="640">
+    <v-dialog v-model="dialog" max-width="880" scrollable>
       <v-card rounded="lg">
         <v-card-title>
           {{ editingId ? t('projectManagement.decision.edit') : t('projectManagement.decision.new') }}
         </v-card-title>
         <v-card-text class="d-flex flex-column ga-3">
           <v-text-field v-model="form.title" :label="t('projectManagement.fields.name')" density="comfortable" />
-          <v-textarea v-model="form.body" :label="t('projectManagement.decision.body')" density="comfortable" rows="3" auto-grow />
           <div class="d-flex ga-3">
             <v-select v-model="form.kind" :items="kindItems" :label="t('projectManagement.fields.kind')" density="comfortable" />
             <v-select v-model="form.status" :items="statusItems" :label="t('projectManagement.fields.status')" density="comfortable" />
@@ -330,55 +411,43 @@ function onDeleteDialog(open: boolean) {
             closable-chips
             :disabled="!workItemItems.length"
           />
-          <div>
-            <div v-if="form.documentId" class="d-flex align-center ga-2 mb-2">
+
+          <v-btn-toggle v-model="docSource" mandatory density="compact" color="primary" divided>
+            <v-btn v-for="item in sourceItems" :key="item.value" :value="item.value" class="text-none" size="small">
+              {{ item.title }}
+            </v-btn>
+          </v-btn-toggle>
+
+          <template v-if="docSource === 'write'">
+            <v-progress-linear v-if="loadingContent" indeterminate color="primary" />
+            <DiMarkdownEditor v-model="form.body" compact />
+            <div class="text-caption text-medium-emphasis">
+              {{ t('projectManagement.decision.writeHint') }}
+            </div>
+          </template>
+
+          <template v-else>
+            <div v-if="form.documentId" class="d-flex align-center ga-2">
               <NuxtLink :to="resourceHref(form.documentId)" class="text-decoration-none" @click.stop>
                 <v-chip size="small" color="primary" variant="tonal">
                   {{ form.documentName || form.documentId }}
                 </v-chip>
               </NuxtLink>
-              <v-btn size="small" variant="text" @click="clearOfficialDocument">{{ t('projectManagement.decision.clearDocument') }}</v-btn>
+              <v-btn size="small" variant="text" @click="clearOfficialDocument">
+                {{ t('projectManagement.decision.clearDocument') }}
+              </v-btn>
             </div>
-            <v-text-field
-              v-model="docQuery"
-              :label="t('projectManagement.decision.searchDocument')"
-              density="comfortable"
-              :loading="docSearching"
-              hide-details
-              @keyup.enter="searchDocs"
-            />
-            <v-list v-if="docHits.length" class="rounded-lg border mt-2" density="compact">
-              <v-list-item v-for="hit in docHits" :key="hit.id">
-                <v-list-item-title>{{ hit.title || hit.name }}</v-list-item-title>
-                <template #append>
-                  <v-btn size="x-small" variant="text" @click="pickDocument(hit, true)">
-                    {{ t('projectManagement.decision.asRecord') }}
-                  </v-btn>
-                  <v-btn size="x-small" variant="text" @click="pickDocument(hit, false)">
-                    {{ t('projectManagement.decision.asImpact') }}
-                  </v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
-            <div v-if="form.resourceIds.length" class="d-flex flex-wrap ga-1 mt-2">
-              <v-chip
-                v-for="id in form.resourceIds"
-                :key="id"
-                size="small"
-                variant="tonal"
-                closable
-                @click:close="form.resourceIds = form.resourceIds.filter((item) => item !== id)"
-              >
-                {{ id.slice(0, 8) }}
-              </v-chip>
-            </div>
-          </div>
+            <v-btn variant="tonal" class="text-none align-self-start" @click="pickOpen = true">
+              {{ t('projectManagement.pickDocument.open') }}
+            </v-btn>
+          </template>
+
           <div class="text-caption text-medium-emphasis">{{ t('projectManagement.decision.scopeHint') }}</div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="dialog = false">{{ t('projectManagement.cancel') }}</v-btn>
-          <v-btn color="primary" :loading="saving" :disabled="!form.title.trim()" @click="save">
+          <v-btn color="primary" :loading="saving" :disabled="!canSave" @click="save">
             {{ t('projectManagement.save') }}
           </v-btn>
         </v-card-actions>
@@ -396,6 +465,15 @@ function onDeleteDialog(open: boolean) {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <PmPickDocumentDialog
+      v-model="pickOpen"
+      :project-id="projectId"
+      :project-code="projectCode"
+      :hub-folder-id="hubFolderId"
+      @pick="pickExisting"
+      @hub-ready="emit('hubReady', $event)"
+    />
   </div>
 </template>
 

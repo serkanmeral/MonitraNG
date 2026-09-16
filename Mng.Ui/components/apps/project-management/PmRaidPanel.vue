@@ -55,12 +55,40 @@ const form = ref({
   wbsIds: [] as string[],
 });
 
-const kindItems = computed(() => [
-  { title: t('projectManagement.raid.kind.risk'), value: 'risk' },
-  { title: t('projectManagement.raid.kind.assumption'), value: 'assumption' },
-  { title: t('projectManagement.raid.kind.issue'), value: 'issue' },
-  { title: t('projectManagement.raid.kind.dependency'), value: 'dependency' },
-]);
+const KIND_META: Record<PmRaidKind, { icon: string; color: string }> = {
+  risk: { icon: 'mdi-alert-outline', color: 'warning' },
+  assumption: { icon: 'mdi-lightbulb-outline', color: 'info' },
+  issue: { icon: 'mdi-alert-octagon-outline', color: 'error' },
+  dependency: { icon: 'mdi-link-variant', color: 'primary' },
+};
+
+const RAID_LEVEL_SCORE: Record<PmRaidLevel, number> = { low: 1, medium: 2, high: 3 };
+const CLOSED_STATUSES = new Set<PmRaidStatus>(['closed', 'validated', 'invalid', 'resolved']);
+
+const kindChoices = computed(() =>
+  (['risk', 'assumption', 'issue', 'dependency'] as PmRaidKind[]).map((value) => ({
+    value,
+    title: t(`projectManagement.raid.kind.${value}`),
+    hint: t(`projectManagement.raid.dialog.kindHint.${value}`),
+    icon: KIND_META[value].icon,
+    color: KIND_META[value].color,
+  })),
+);
+
+const kindMeta = computed(() => KIND_META[form.value.kind] || KIND_META.risk);
+
+const formScore = computed(
+  () => RAID_LEVEL_SCORE[form.value.likelihood] * RAID_LEVEL_SCORE[form.value.impact],
+);
+
+const formElevated = computed(
+  () => form.value.kind === 'risk' && (form.value.impact === 'high' || formScore.value >= 6),
+);
+
+const statusHint = computed(() => {
+  if (CLOSED_STATUSES.has(form.value.status)) return t('projectManagement.raid.dialog.closedNoCount');
+  return t(`projectManagement.raid.dialog.kindHint.${form.value.kind}`);
+});
 
 const levelItems = computed(() => [
   { title: t('projectManagement.raid.level.low'), value: 'low' },
@@ -119,13 +147,18 @@ const filtered = computed(() => {
 });
 
 const headers = computed(() => [
-  { title: t('projectManagement.fields.kind'), key: 'kind', width: 130 },
+  { title: t('projectManagement.fields.kind'), key: 'kind', width: 160 },
   { title: t('projectManagement.fields.name'), key: 'title', minWidth: 200 },
   { title: t('projectManagement.fields.status'), key: 'status', width: 130 },
   { title: t('projectManagement.raid.impact'), key: 'impact', width: 110 },
   { title: t('projectManagement.raid.owner'), key: 'owner', width: 120 },
   { title: t('projectManagement.actions'), key: 'actions', width: 120, sortable: false, align: 'end' as const },
 ]);
+
+function kindVisual(kind?: string | null) {
+  const key = (kind || 'risk') as PmRaidKind;
+  return KIND_META[key] || KIND_META.risk;
+}
 
 function kindLabel(kind?: string | null) {
   const key = `projectManagement.raid.kind.${kind || 'risk'}`;
@@ -158,7 +191,9 @@ function impactColor(row: PmRaidItem) {
   return 'default';
 }
 
-function onKindChange() {
+function selectKind(kind: PmRaidKind) {
+  if (form.value.kind === kind) return;
+  form.value.kind = kind;
   form.value.status = 'open';
 }
 
@@ -267,11 +302,13 @@ function onDeleteDialog(open: boolean) {
         {{ t('projectManagement.raid.filterAll') }}
       </v-chip>
       <v-chip
-        v-for="item in kindItems"
+        v-for="item in kindChoices"
         :key="item.value"
         :variant="kindFilter === item.value ? 'flat' : 'tonal'"
+        :color="kindFilter === item.value ? item.color : undefined"
         @click="kindFilter = item.value"
       >
+        <v-icon start :icon="item.icon" size="16" />
         {{ item.title }}
       </v-chip>
     </div>
@@ -287,7 +324,10 @@ function onDeleteDialog(open: boolean) {
       :items-per-page="-1"
     >
       <template #item.kind="{ item }">
-        {{ kindLabel(item.kind) }}
+        <v-chip size="small" :color="kindVisual(item.kind).color" variant="tonal">
+          <v-icon start :icon="kindVisual(item.kind).icon" size="16" />
+          {{ kindLabel(item.kind) }}
+        </v-chip>
       </template>
       <template #item.title="{ item }">
         <div>{{ item.title }}</div>
@@ -321,44 +361,173 @@ function onDeleteDialog(open: boolean) {
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="640">
+    <v-dialog v-model="dialog" max-width="720" scrollable>
       <v-card rounded="lg">
-        <v-card-title>
-          {{ editingId ? t('projectManagement.raid.edit') : t('projectManagement.raid.new') }}
+        <v-card-title class="d-flex align-start ga-3 px-6 py-4">
+          <v-avatar :color="kindMeta.color" variant="tonal" rounded="lg">
+            <v-icon :icon="editingId ? 'mdi-pencil-outline' : kindMeta.icon" />
+          </v-avatar>
+          <div class="flex-grow-1">
+            <div>{{ editingId ? t('projectManagement.raid.edit') : t('projectManagement.raid.new') }}</div>
+            <div class="text-body-2 text-medium-emphasis font-weight-regular mt-1">
+              {{ editingId ? t('projectManagement.raid.dialog.subtitleEdit') : t('projectManagement.raid.dialog.subtitleNew') }}
+            </div>
+          </div>
         </v-card-title>
-        <v-card-text class="d-flex flex-column ga-3">
-          <v-select
-            v-model="form.kind"
-            :items="kindItems"
-            :label="t('projectManagement.fields.kind')"
-            density="comfortable"
-            @update:model-value="onKindChange"
-          />
-          <v-text-field v-model="form.title" :label="t('projectManagement.fields.name')" density="comfortable" />
-          <v-textarea v-model="form.body" :label="t('projectManagement.raid.body')" density="comfortable" rows="3" auto-grow />
-          <div class="d-flex ga-3">
-            <v-select v-model="form.status" :items="statusItems" :label="t('projectManagement.fields.status')" density="comfortable" />
-            <v-select v-model="form.impact" :items="levelItems" :label="t('projectManagement.raid.impact')" density="comfortable" />
-          </div>
-          <div v-if="form.kind === 'risk'" class="d-flex ga-3">
-            <v-select v-model="form.likelihood" :items="levelItems" :label="t('projectManagement.raid.likelihood')" density="comfortable" />
-            <v-select v-model="form.response" :items="responseItems" :label="t('projectManagement.raid.responseLabel')" density="comfortable" />
-          </div>
-          <div class="d-flex ga-3">
-            <v-text-field v-model="form.owner" :label="t('projectManagement.raid.owner')" density="comfortable" />
-            <v-text-field v-model="form.dueDate" type="date" :label="t('projectManagement.raid.dueDate')" density="comfortable" />
-          </div>
-          <v-select
-            v-model="form.wbsIds"
-            :items="wbsItems"
-            :label="t('projectManagement.raid.affectedWbs')"
-            density="comfortable"
-            multiple
-            chips
-            closable-chips
-          />
+        <v-divider />
+        <v-card-text class="d-flex flex-column ga-5 px-6 py-5">
+          <section>
+            <div class="text-subtitle-2 mb-2">{{ t('projectManagement.raid.dialog.sectionKind') }}</div>
+            <div class="pm-raid-kind-grid">
+              <v-card
+                v-for="choice in kindChoices"
+                :key="choice.value"
+                :variant="form.kind === choice.value ? 'tonal' : 'outlined'"
+                :color="form.kind === choice.value ? choice.color : undefined"
+                rounded="lg"
+                class="pm-raid-kind-card pa-3"
+                role="button"
+                @click="selectKind(choice.value)"
+              >
+                <div class="d-flex align-start ga-3">
+                  <v-icon :icon="choice.icon" size="22" />
+                  <div>
+                    <div class="font-weight-medium">{{ choice.title }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ choice.hint }}</div>
+                  </div>
+                </div>
+              </v-card>
+            </div>
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.raid.dialog.sectionIdentity') }}</div>
+            <v-text-field
+              v-model="form.title"
+              :label="t('projectManagement.fields.name')"
+              :placeholder="t(`projectManagement.raid.dialog.titleHint.${form.kind}`)"
+              density="comfortable"
+              hide-details="auto"
+              class="mb-3"
+              prepend-inner-icon="mdi-format-title"
+            />
+            <v-textarea
+              v-model="form.body"
+              :label="t('projectManagement.raid.body')"
+              density="comfortable"
+              rows="3"
+              hide-details="auto"
+              auto-grow
+            />
+          </section>
+
+          <section v-if="form.kind === 'risk'">
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.raid.dialog.sectionAssess') }}</div>
+            <p class="text-caption text-medium-emphasis mb-3">{{ t('projectManagement.raid.dialog.sectionAssessHint') }}</p>
+            <div class="d-flex ga-3 flex-wrap">
+              <v-select
+                v-model="form.likelihood"
+                :items="levelItems"
+                :label="t('projectManagement.raid.likelihood')"
+                density="comfortable"
+                hide-details
+                class="flex-grow-1"
+              />
+              <v-select
+                v-model="form.impact"
+                :items="levelItems"
+                :label="t('projectManagement.raid.impact')"
+                density="comfortable"
+                hide-details
+                class="flex-grow-1"
+              />
+            </div>
+            <v-alert
+              class="mt-3"
+              :color="formElevated ? 'warning' : 'primary'"
+              variant="tonal"
+              density="compact"
+              :icon="formElevated ? 'mdi-alert' : 'mdi-information-outline'"
+            >
+              <div class="d-flex align-center ga-2 flex-wrap">
+                <span class="font-weight-medium">{{ t('projectManagement.raid.dialog.score', { score: formScore }) }}</span>
+                <v-chip size="x-small" :color="formElevated ? 'warning' : 'default'" variant="flat">
+                  {{ formElevated ? t('projectManagement.raid.dialog.elevated') : t('projectManagement.raid.dialog.notElevated') }}
+                </v-chip>
+              </div>
+            </v-alert>
+            <v-select
+              v-model="form.response"
+              :items="responseItems"
+              :label="t('projectManagement.raid.responseLabel')"
+              :hint="t('projectManagement.raid.dialog.responseHint')"
+              persistent-hint
+              density="comfortable"
+              class="mt-3"
+            />
+          </section>
+
+          <section v-else>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.raid.impact') }}</div>
+            <v-select
+              v-model="form.impact"
+              :items="levelItems"
+              :label="t('projectManagement.raid.impact')"
+              density="comfortable"
+              hide-details="auto"
+            />
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.fields.status') }}</div>
+            <v-select
+              v-model="form.status"
+              :items="statusItems"
+              :label="t('projectManagement.fields.status')"
+              :hint="statusHint"
+              persistent-hint
+              density="comfortable"
+            />
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.raid.dialog.sectionOwner') }}</div>
+            <div class="d-flex ga-3">
+              <v-text-field
+                v-model="form.owner"
+                :label="t('projectManagement.raid.owner')"
+                density="comfortable"
+                hide-details
+                prepend-inner-icon="mdi-account-outline"
+              />
+              <v-text-field
+                v-model="form.dueDate"
+                type="date"
+                :label="t('projectManagement.raid.dueDate')"
+                density="comfortable"
+                hide-details
+                prepend-inner-icon="mdi-calendar"
+              />
+            </div>
+          </section>
+
+          <section>
+            <div class="text-subtitle-2 mb-1">{{ t('projectManagement.raid.dialog.sectionWbs') }}</div>
+            <v-select
+              v-model="form.wbsIds"
+              :items="wbsItems"
+              :label="t('projectManagement.raid.affectedWbs')"
+              :hint="t('projectManagement.raid.dialog.wbsHint')"
+              persistent-hint
+              density="comfortable"
+              multiple
+              chips
+              closable-chips
+            />
+          </section>
         </v-card-text>
-        <v-card-actions>
+        <v-divider />
+        <v-card-actions class="px-6 py-3">
           <v-spacer />
           <v-btn variant="text" @click="dialog = false">{{ t('projectManagement.cancel') }}</v-btn>
           <v-btn color="primary" :loading="saving" :disabled="!form.title.trim()" @click="save">
@@ -385,5 +554,26 @@ function onDeleteDialog(open: boolean) {
 <style scoped>
 .border {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.pm-raid-kind-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pm-raid-kind-card {
+  cursor: pointer;
+  height: 100%;
+}
+
+.pm-raid-kind-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.4);
+}
+
+@media (max-width: 600px) {
+  .pm-raid-kind-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

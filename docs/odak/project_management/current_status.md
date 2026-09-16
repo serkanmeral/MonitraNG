@@ -1,52 +1,67 @@
 # Teslimat Omurgası — Oturum durumu
 
-**Son güncelleme:** 15 Eylül 2026  
-**Konu:** Portföy timeout düzeltmesi, paket demo seed’leri, SEED-PMO Gantt zenginleştirme; doküman + commit + UI deploy  
-**Ortam:** Odak test `192.168.20.20` · backend + UI deploy serbest  
+**Son güncelleme:** 16 Eylül 2026  
+**Konu:** TEST’te Kontrol sekmeleri UX (RAID, Kaynak, Bütçe, Okundu) + Eğitim DI  
+**Ortam:** Odak **test** `192.168.20.20` (prod `192.168.20.8` bu oturumda dokunulmadı)  
 **Manifest:** `docs/odak/project_management/install/manifest.json` **0.36.0**
 
 **Ana referans:** [PLAN.md](./PLAN.md)
 
-> **Kaldığımız yer:** Omurga hazır. Liste portföyü hızlı. 7 paket için `SEED-*` demo projeler var; `SEED-PMO` Gantt tarih/FS/baseline ile zengin. Adım adım UI doğrulama devam eder.
+> **Kaldığımız yer:** TEST SEED-PMO üzerinde RAID / Kaynak / Bütçe / Okundu canlı örnekler duruyor. UI kart→tablo + seçicili Okundu modalı yerelde hazır; TEST Docker görüntüsüne deploy kullanıcı talebiyle.
 
 ---
 
-## Son çalışılan konu (15 Eylül 2026)
+## Son çalışılan konu (16 Eylül 2026 — TEST)
 
-1. **0.35.1 sertleştirme** — kapatma yolunda DI fail-closed (`DOC_LOOKUP_FAILED`); kanıt kilidi yaprak-only; status bayrakları yalnız açık işlerde; boş `relationType` varsayılan `reference` değil.
-2. **Portföy timeout** — `GET /projects/portfolio` her proje için ağır status paketi çekiyordu → gateway 503. Hafif portföy (WBS yüzde / sapma / bağsız yaprak) ile ~1–2 sn.
-3. **Demo seed** — her iş paketi için bir proje: `SEED-PMO` … `SEED-ACCEPTANCE` (`seed-pack-demo-projects.ps1`).
-4. **SEED-PMO Gantt** — tarihler, FS zinciri, ilerleme, baseline (`enrich-seed-pmo.ps1`).
-5. Smoke F214 kanıt bağı ile uyumlu hale getirildi.
+1. **RAID** — ekleme modalı tür kartları, canlı skor, WBS ipucu. Kart listesi değil.
+2. **Kaynak** — kişi kartları kalktı; sayfalı özet + atama tablosu. Hafta çipleri satır açılınca.
+3. **Bütçe** — paket kartları aynı tablo düzenine alındı. Kalem modalı kategori kartları + canlı kalan. Karışık kurda üst toplam yok.
+4. **Okundu** — süreç defter (portal/e-posta yok). Belge `PmPickDocumentDialog` ile Kütüphane’den seçilir. Kişi iç veya kurum dışı ad. Damgayı PM basar.
+5. **Eğitim DI** — genel DI kökü `Eğitim` → `Project` sayfaları güncellendi (RAID, Kaynak, Bütçe, Okundu, Paydaş). Kaynak metin: `docs/odak/project_management/egitim/`.
+6. **SEED-PMO** (test): `027bdf17-6741-4001-835f-9c1412c42f21` — RAID, kaynak, bütçe, okundu demo kayıtları.
 
 ---
 
-## Tamamlanan işler (bu hat)
+## TEST doğrulama özeti (SEED-PMO)
+
+| Sekme | Seed / ölçüm |
+|--------|----------------|
+| RAID | 6 kayıt; Durum openRisk/openIssue/assumption/dependency |
+| Kaynak | Ahmet aşırı yük (7 Eyl 60s); Can tarihsiz 50s; Durum overloadedResource 2.1/3.2/3.3 |
+| Bütçe | Saha kablolama 95k/80k TRY aşım; 3.2 overBudget |
+| Okundu | Wiki `Guvenlik talimati (DEMO)`; pendingAck=4 overdueAck=1; 1.1 bayrak |
+
+Eğitim klasörleri: Eğitim `8ae95f2d-a99d-426b-ad70-5f59d6d8ec6d`, Project `397ecda1-e2fa-400f-b627-0e8a83a5894c`.
+
+---
+
+## Tamamlanan işler (hat)
 
 | Dilim | Özet |
 |--------|------|
-| F1-0 … F1-9 | Kurulum, DI tür/ilişki, görsel kanıt, `pm_*`, Gantt, WBS–OC, iz/durum, karar, PMO+kalite tohumu |
-| F2-1 … F2-13 | İç katalog + kapı, RAID, kapasite, bütçe, okundu, yükümlülük, denetim, toplantı, paydaş, portföy, süreç |
-| **F2-14 … F2-16** | Kapı / kanıt / onay kapatma kilitleri |
-| F3-1 … F3-5 | Sektör rafları |
-| F4-1 … F4-7 | Paket OC iskeleti + yaprak/özet iş + kanıt + plan (`reference`) bağı |
-| F5-1 | Paket kökeni / SHA-256 |
-| **0.35.1 / 0.36.0** | Close-path sertleştirme + hafif portföy + demo seed’ler |
+| F1–F5 + F2-14..16 | Teslimat omurgası (test’te tamam) |
+| **0.36.0 + prod parity** | Schema/menü/SEED + MarksWorkClosed (prod, 15 Eyl) |
+| **Kontrol UX (16 Eyl, test)** | RAID/Kaynak/Bütçe tabloları + Okundu seçici |
 
-**Katalog (7, sürüm 1.1.0):** `pmo` · `quality` · `architecture` · `proposal` · `eco` · `onboarding` · `acceptance`
-
-**Odak demo projeler:** `SEED-ACCEPTANCE`, `SEED-ARCHITECTURE`, `SEED-ECO`, `SEED-ONBOARDING`, `SEED-PMO` (Gantt zengin), `SEED-PROPOSAL`, `SEED-QUALITY`
+**Katalog (7, 1.1.0):** `pmo` · `quality` · `architecture` · `proposal` · `eco` · `onboarding` · `acceptance`
 
 ---
 
-## Kararlar (hatırla)
+## Kararlar
 
-- Generic teslimat omurgası. AnkaraBT DOCX **örnek**; NLP / şartname parser yok.
-- Kapatma sırası: kapı → kanıt (yaprak) → bağlı belgeler yayınlı.
-- Kanıt: `evidence`/`output`; plan: `reference`. Paketten otomatik bağ yok.
-- Portföy listesi hafif; detaylı durum proje **Durum** sekmesinde.
-- Token: `docs/odak/operationcore/scripts/get-operationcore-token.ps1`. Smoke: `pwsh`.
-- Dataset’ler: `pm_*` (DG / `GET …/data/pm_projects`).
+- Generic teslimat omurgası; NLP yok.
+- RAID / Kaynak / Bütçe / Okundu kapatma kilidi değildir; Durum uyarısıdır.
+- Okundu damgası portal değildir; dış kişi ada yazılır.
+- Eğitim kaydı genel DI’dadır (proje kütüphanesi değil).
+
+---
+
+## Sonraki adımlar
+
+1. TEST UI deploy (bu talep).
+2. Yükümlülük / Denetim / Toplantı / Paydaş sekmeleri aynı UX turu.
+3. F2-16 lifecycle 404 (DI) ve F1-9 create 500 — ayrı bakış.
+4. MarksWorkClosed test parity — hâlâ yerelde uncommitted backend.
 
 ---
 
@@ -54,23 +69,7 @@
 
 | Script | Amaç |
 |--------|------|
-| `docs/odak/project_management/scripts/seed-pack-demo-projects.ps1` | Her paket için `SEED-*` proje |
-| `docs/odak/project_management/scripts/enrich-seed-pmo.ps1` | PMO Gantt tarih/FS/baseline |
-| `scripts/tests/MngOperations/smoke-f*.ps1` | Dilim smoke’ları |
-
-Deploy: `sync-odak-source.ps1` → `deploy-odak-apps.ps1 -Services mngoperations,mngui -NoCache`
-
----
-
-## Bilinçli ertelenen
-
-- App Store / üçüncü taraf paket / ücret
-- RAID Monte Carlo; CPM / kaynak dengeleme; bütçe ERP
-- Paketten otomatik plan/kanıt önerisi; sponsor export
-- Portföyde tam attention bayrakları (kapı/risk vb. — şimdilik hafif)
-
----
-
-## Sonraki adımlar
-
-Adım adım UI doğrulama (Gantt, plan/kanıt bağlama, kapatma kilitleri). Sonraki dilim ayrı onay.
+| `scripts/odak/sync-odak-source.ps1` / `deploy-odak-apps.ps1` | TEST sync/deploy (`192.168.20.20`) |
+| `docs/odak/project_management/scripts/install-teslimat-omurgasi.ps1` | Schema + seed |
+| `.tmp-di-egitim-project/publish.ps1` | Eğitim sayfalarını TEST DI’ya yükle |
+| `scripts/tests/MngOperations/smoke-f*.ps1` | Smoke (varsayılan test gateway) |

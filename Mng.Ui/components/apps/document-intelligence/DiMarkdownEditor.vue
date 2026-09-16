@@ -24,8 +24,17 @@ const props = withDefaults(
     /** Görsel yükleme hedef klasörü (markdown parentId). */
     uploadParentId?: string | null;
     canUpload?: boolean;
+    /** Diyalog içi: daha kısa gövde. */
+    compact?: boolean;
   }>(),
-  { modelValue: '', showPreview: true, currentResourceId: null, uploadParentId: null, canUpload: false }
+  {
+    modelValue: '',
+    showPreview: true,
+    currentResourceId: null,
+    uploadParentId: null,
+    canUpload: false,
+    compact: false,
+  }
 );
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
@@ -315,7 +324,7 @@ defineExpose({
 
 <template>
   <Teleport to="body" :disabled="!fullscreen">
-    <div :class="['di-md-editor', { 'di-md-editor--fullscreen': fullscreen }]">
+    <div :class="['di-md-editor', { 'di-md-editor--fullscreen': fullscreen, 'di-md-editor--compact': compact && !fullscreen }]">
       <div class="di-md-editor__toolbar d-flex flex-wrap align-center ga-1 px-2 py-1 border-b">
         <v-btn size="x-small" variant="text" :title="t('documentIntelligence.editor.bold')" @click="surround('**')">
           <strong>B</strong>
@@ -522,6 +531,10 @@ defineExpose({
 .di-md-editor__body {
   flex: 1 1 auto;
   min-height: 320px;
+}
+.di-md-editor--compact .di-md-editor__body {
+  min-height: 200px;
+  max-height: 340px;
 }
 .di-md-editor--fullscreen .di-md-editor__body {
   min-height: 0;
