@@ -192,6 +192,14 @@ services:
       - --o:home_mode.enable=true
       - "--o:net.content_security_policy=frame-ancestors localhost:* 127.0.0.1:* 192.168.20.20:* 192.168.20.8:* mng.odaksavunma.com:* mngdocument:*;"
 
+  drawio:
+    ports:
+      - "8088:8080"
+    environment:
+      DRAWIO_USE_HTTP: "1"
+      DRAWIO_SERVER_URL: http://192.168.20.20:8088/
+      DRAWIO_BASE_URL: http://192.168.20.20:8088
+
   mngadmin:
     ports:
       - "5080:5080"
@@ -209,6 +217,7 @@ services:
       args:
         GATEWAY_URL: ${GATEWAY_URL:-http://192.168.20.20:5040}
         HUB_URL: ${HUB_URL:-http://192.168.20.20:5020}
+        DRAWIO_PUBLIC_URL: ${DRAWIO_PUBLIC_URL:-http://192.168.20.20:8088}
 
   mngdomainui:
     ports:

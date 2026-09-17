@@ -27,6 +27,7 @@ const emit = defineEmits<{
   permissions: [];
   'new-folder': [];
   'new-page': [];
+  'new-drawing': [];
   'new-native-document': [];
   'new-native-sheet': [];
   'new-native-presentation': [];
@@ -40,6 +41,7 @@ const newMenuOpen = ref(false);
 type NewMenuAction =
   | 'new-folder'
   | 'new-page'
+  | 'new-drawing'
   | 'new-native-document'
   | 'new-native-sheet'
   | 'new-native-presentation'
@@ -53,6 +55,9 @@ function onNewMenuAction(action: NewMenuAction) {
       break;
     case 'new-page':
       emit('new-page');
+      break;
+    case 'new-drawing':
+      emit('new-drawing');
       break;
     case 'new-native-document':
       emit('new-native-document');
@@ -175,6 +180,12 @@ function onNewMenuAction(action: NewMenuAction) {
             :title="t('documentIntelligence.newPage')"
             rounded="lg"
             @click="onNewMenuAction('new-page')"
+          />
+          <v-list-item
+            prepend-icon="mdi-vector-polyline"
+            :title="t('documentIntelligence.newDrawing')"
+            rounded="lg"
+            @click="onNewMenuAction('new-drawing')"
           />
           <v-list-item
             prepend-icon="mdi-file-document-plus-outline"

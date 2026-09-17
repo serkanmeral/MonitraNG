@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { getDiDrawioEmbedOrigin, getDiDrawioViewerSrc, isDiDrawioEmbedOrigin } from '@/utils/diDrawio';
 
 const props = defineProps<{
   xml: string;
@@ -13,8 +14,7 @@ const failed = ref(false);
 let initTimer: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
 
-const embedSrc =
-  'https://embed.diagrams.net/?embed=1&ui=min&spin=1&proto=json&chrome=0&lightbox=1&nav=1&layers=1&modified=0&saveAndExit=0&noSaveBtn=1&noExitBtn=1';
+const embedSrc = getDiDrawioViewerSrc();
 
 function clearTimer() {
   if (initTimer) {
@@ -24,10 +24,13 @@ function clearTimer() {
 }
 
 function sendLoad(win: Window) {
-  win.postMessage(JSON.stringify({ action: 'load', autosave: 0, xml: props.xml }), '*');
+  const origin = getDiDrawioEmbedOrigin();
+  if (!origin) return;
+  win.postMessage(JSON.stringify({ action: 'load', autosave: 0, xml: props.xml }), origin);
 }
 
 function onMessage(event: MessageEvent) {
+  if (!isDiDrawioEmbedOrigin(event.origin)) return;
   if (typeof event.data !== 'string' || !event.data.length) return;
   let msg: { event?: string } | null = null;
   try {

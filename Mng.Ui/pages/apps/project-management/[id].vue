@@ -149,6 +149,7 @@ type PmViewTab =
   | 'status';
 
 const viewTab = ref<PmViewTab>('gantt');
+const libraryFocusId = ref<string | null>(null);
 const { mdAndUp } = useDisplay();
 const statusPack = ref<PmProjectStatusPack | null>(null);
 const statusLoading = ref(false);
@@ -633,6 +634,11 @@ async function ensureTabData(tab: string, force = false) {
 function onLibraryHubReady(id: string) {
   if (!detail.value?.project || detail.value.project.diFolderId === id) return;
   detail.value.project = { ...detail.value.project, diFolderId: id };
+}
+
+function onProcessOpenInLibrary(resourceId: string) {
+  libraryFocusId.value = resourceId;
+  viewTab.value = 'library';
 }
 
 async function onLibraryBound() {
@@ -1520,10 +1526,14 @@ watch(viewTab, (tab) => {
       <v-card-text v-else-if="viewTab === 'processMaps'" class="px-6 py-4">
         <PmProcessMapsPanel
           :project-id="projectId"
+          :project-code="detail?.project.code || ''"
+          :hub-folder-id="detail?.project.diFolderId"
           :items="processMaps"
           :wbs="wbs"
           :loading="loading || tabLoading"
           @changed="onPanelChanged"
+          @hub-ready="onLibraryHubReady"
+          @open-in-library="onProcessOpenInLibrary"
         />
       </v-card-text>
 
@@ -1550,9 +1560,11 @@ watch(viewTab, (tab) => {
           :project-id="projectId"
           :project-code="detail?.project.code || ''"
           :hub-folder-id="detail?.project.diFolderId"
+          :focus-resource-id="libraryFocusId"
           :wbs="wbs"
           @hub-ready="onLibraryHubReady"
           @bound="onLibraryBound"
+          @focused="libraryFocusId = null"
         />
       </v-card-text>
 

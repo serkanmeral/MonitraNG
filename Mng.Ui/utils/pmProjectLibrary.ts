@@ -7,6 +7,7 @@ export const PM_LIBRARY_MISSING_ROOT = 'PM_LIBRARY_MISSING_ROOT';
 export const PM_LIBRARY_DEFAULT_FOLDERS = ['Wiki', 'Kararlar', 'Toplantı notları', 'Yüklemeler'] as const;
 export const PM_LIBRARY_DECISIONS_FOLDER = 'Kararlar';
 export const PM_LIBRARY_MEETINGS_FOLDER = 'Toplantı notları';
+export const PM_LIBRARY_UPLOADS_FOLDER = 'Yüklemeler';
 export const PM_LIBRARY_DECISION_PICK_FOLDERS = ['Kararlar', 'Wiki'] as const;
 
 export type PmLibraryTagSpec = {
@@ -119,6 +120,16 @@ export async function ensureProjectMeetingsFolder(
 ): Promise<{ hubId: string; folderId: string }> {
   const hubId = await ensureProjectLibrary(projectId, projectCode, existingHubId);
   const folderId = await ensureFolder(hubId, PM_LIBRARY_MEETINGS_FOLDER);
+  return { hubId, folderId };
+}
+
+export async function ensureProjectUploadsFolder(
+  projectId: string,
+  projectCode: string,
+  existingHubId?: string | null,
+): Promise<{ hubId: string; folderId: string }> {
+  const hubId = await ensureProjectLibrary(projectId, projectCode, existingHubId);
+  const folderId = await ensureFolder(hubId, PM_LIBRARY_UPLOADS_FOLDER);
   return { hubId, folderId };
 }
 

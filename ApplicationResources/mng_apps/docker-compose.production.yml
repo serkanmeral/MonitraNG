@@ -825,6 +825,33 @@ services:
           cpus: '1.0'
           memory: 2048M
 
+  # diagrams.net editor (embed). Host 8080 is Keycloak; browser hits :8088.
+  drawio:
+    image: jgraph/drawio:31.4.1
+    container_name: drawio
+    ports:
+      - "${DRAWIO_HOST_PORT:-8088}:8080"
+    environment:
+      DRAWIO_USE_HTTP: "1"
+      DRAWIO_SERVER_URL: ${DRAWIO_PUBLIC_URL:-http://192.168.20.20:8088}/
+      DRAWIO_BASE_URL: ${DRAWIO_PUBLIC_URL:-http://192.168.20.20:8088}
+      DRAWIO_CONFIG: '{"enableAi":false}'
+      DRAWIO_CSP_HEADER: "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self';"
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
   mngadmin:
     build:
       context: ../../MngAdmin
@@ -925,6 +952,7 @@ services:
         # Build-time: Hub aynı origin üzerinden gitsin (app.monitrang.com/hub) — CORS gerektirmez
         GATEWAY_URL: ${GATEWAY_URL:-https://app.monitrang.com}
         HUB_URL: ${HUB_URL:-}
+        DRAWIO_PUBLIC_URL: ${DRAWIO_PUBLIC_URL:-}
     image: mngui:${VERSION:-latest}
     container_name: mngui
     # Port mapping removed - Access via Nginx reverse proxy only

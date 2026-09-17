@@ -99,6 +99,12 @@ export default defineNuxtConfig({
       telegramBotUsername: (process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME && process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME.trim())
         ? process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME.trim().replace(/^@/, '')
         : 'MonitraNGBot',
+      // Self-hosted diagrams.net origin (no trailing slash). Empty → Odak host :8088.
+      drawioEmbedOrigin: (
+        process.env.DRAWIO_PUBLIC_URL ||
+        process.env.NUXT_PUBLIC_DRAWIO_EMBED_ORIGIN ||
+        `http://${ODAK_HOST}:8088`
+      ).trim().replace(/\/$/, ''),
     },
     // Server-side only (private)
     serverAdminUrl: adminUrl,

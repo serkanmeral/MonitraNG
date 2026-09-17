@@ -7,6 +7,7 @@ import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLi
 import DiRelatedResourcesPanel from '@/components/apps/document-intelligence/DiRelatedResourcesPanel.vue';
 import DiLifecycleBar from '@/components/apps/document-intelligence/DiLifecycleBar.vue';
 import DiDrawioViewer from '@/components/apps/document-intelligence/DiDrawioViewer.vue';
+import DiDrawioEditorDialog from '@/components/apps/document-intelligence/DiDrawioEditorDialog.vue';
 import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/DiFileVersionHistoryDialog.vue';
 import {
   diFetchFileBlob,
@@ -26,12 +27,14 @@ const MAX_FILE_MB = 20;
 const props = defineProps<{
   modelValue: boolean;
   resource: DiResource | null;
+  showOpenInLibrary?: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   download: [resource: DiResource];
   updated: [resource: DiResource];
+  openInLibrary: [resource: DiResource];
 }>();
 
 const { t } = useAppI18n();
@@ -51,6 +54,7 @@ const objectUrl = ref<string | null>(null);
 const textContent = ref<string | null>(null);
 const drawioXml = ref<string | null>(null);
 const historyOpen = ref(false);
+const editorOpen = ref(false);
 const replaceInputEl = ref<HTMLInputElement | null>(null);
 
 const kind = computed(() => (current.value ? diPreviewKind(current.value) : 'none'));
@@ -58,6 +62,7 @@ const fileLabel = computed(() => current.value?.fileName || current.value?.name 
 const canReplace = computed(
   () => Boolean(current.value && isDiUploadedFile(current.value) && current.value.permissions.canEdit),
 );
+const canEditDrawio = computed(() => canReplace.value && kind.value === 'drawio');
 
 function revoke() {
   if (objectUrl.value) {
@@ -109,6 +114,7 @@ watch(
       revoke();
       error.value = null;
       historyOpen.value = false;
+      editorOpen.value = false;
     }
   },
 );
@@ -192,6 +198,16 @@ async function onReplacePick(event: Event) {
           {{ fileLabel }}
         </span>
         <v-btn
+          v-if="showOpenInLibrary && current"
+          variant="text"
+          size="small"
+          class="text-none"
+          prepend-icon="mdi-folder-open-outline"
+          @click="emit('openInLibrary', current)"
+        >
+          {{ t('documentIntelligence.openInLibrary') }}
+        </v-btn>
+        <v-btn
           v-if="current"
           variant="text"
           size="small"
@@ -200,6 +216,16 @@ async function onReplacePick(event: Event) {
           @click="historyOpen = true"
         >
           {{ t('documentIntelligence.versionHistory') }}
+        </v-btn>
+        <v-btn
+          v-if="canEditDrawio"
+          variant="text"
+          size="small"
+          class="text-none"
+          prepend-icon="mdi-vector-polyline-edit"
+          @click="editorOpen = true"
+        >
+          {{ t('documentIntelligence.editDrawio') }}
         </v-btn>
         <v-btn
           v-if="canReplace"
@@ -290,6 +316,13 @@ async function onReplacePick(event: Event) {
     :resource="current"
     :can-restore="current?.permissions.canEdit ?? false"
     @restored="applyUpdated"
+  />
+
+  <DiDrawioEditorDialog
+    v-model="editorOpen"
+    :resource-id="current?.id || null"
+    :title="fileLabel"
+    @saved="applyUpdated"
   />
 </template>
 

@@ -505,6 +505,8 @@ services:
     build:
       context: ../../Mng.Ui
       dockerfile: Dockerfile
+      args:
+        DRAWIO_PUBLIC_URL: ${DRAWIO_PUBLIC_URL:-http://localhost:8088}
     image: localhost:5000/mngui:1.0.0
     container_name: mngui
     ports:
@@ -998,6 +1000,32 @@ services:
         limits:
           cpus: '1.0'
           memory: 2048M
+
+  drawio:
+    image: jgraph/drawio:31.4.1
+    container_name: drawio
+    ports:
+      - "8088:8080"
+    environment:
+      DRAWIO_USE_HTTP: "1"
+      DRAWIO_SERVER_URL: http://localhost:8088/
+      DRAWIO_BASE_URL: http://localhost:8088
+      DRAWIO_CONFIG: '{"enableAi":false}'
+      DRAWIO_CSP_HEADER: "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self';"
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   ollama:
     image: ollama/ollama:latest

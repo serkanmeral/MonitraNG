@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import DiDrawioEditorDialog from '@/components/apps/document-intelligence/DiDrawioEditorDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligence/DiGenerateFromTemplateDialog.vue';
 import DiLifecycleBar from '@/components/apps/document-intelligence/DiLifecycleBar.vue';
@@ -46,8 +47,9 @@ import type {
   DiTreeNode,
 } from '@/types/apps/documentIntelligence';
 import { diFullPermission } from '@/types/apps/documentIntelligence';
-import { isDiManagedDocument, isDiOfficeEditable, isDiPreviewable, isDiPresentation, isDiSheet } from '@/utils/diFilePreview';
+import { isDiDrawioFile, isDiManagedDocument, isDiOfficeEditable, isDiPreviewable, isDiPresentation, isDiSheet } from '@/utils/diFilePreview';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
+import { diCreateBlankDrawio } from '@/utils/diDrawio';
 import { buildDiFolderUrl } from '@/utils/diResourceLink';
 import type { PmWbsItem } from '@/types/apps/projectManagement';
 import {
@@ -63,12 +65,14 @@ const props = defineProps<{
   projectId: string;
   projectCode: string;
   hubFolderId?: string | null;
+  focusResourceId?: string | null;
   wbs?: PmWbsItem[];
 }>();
 
 const emit = defineEmits<{
   'hub-ready': [id: string];
   bound: [];
+  focused: [];
 }>();
 
 const MAX_FILE_MB = 20;
@@ -97,6 +101,11 @@ const tagColorTick = ref(0);
 const busy = ref(false);
 const folderDialog = ref(false);
 const pageDialog = ref(false);
+const drawingDialog = ref(false);
+const drawingName = ref('');
+const drawingEditorOpen = ref(false);
+const drawingEditorId = ref<string | null>(null);
+const drawingEditorTitle = ref('');
 const nativeDocDialog = ref(false);
 const nativeSheetDialog = ref(false);
 const nativePresentationDialog = ref(false);
@@ -175,6 +184,7 @@ const diHref = computed(() => buildDiFolderUrl(selectedFolderId.value || hubId.v
 function resourceIcon(resource: DiResource): string {
   if (resource.type === 'folder') return 'mdi-folder-outline';
   if (resource.type === 'markdown') return diPageResourceIcon(resource);
+  if (isDiDrawioFile(resource)) return 'mdi-vector-polyline';
   const mime = resource.mimeType || '';
   const ext = (resource.extension || '').toLowerCase();
   if (mime.startsWith('image/')) return 'mdi-file-image-outline';
@@ -369,6 +379,7 @@ async function boot() {
         })
         .catch(() => undefined),
     ]);
+    await focusResource(props.focusResourceId);
   } catch (error) {
     if (token !== bootToken) return;
     hubId.value = null;
@@ -397,6 +408,11 @@ function openFolderDialog() {
 function openPageDialog() {
   pageTitle.value = '';
   pageDialog.value = true;
+}
+
+function openDrawingDialog() {
+  drawingName.value = '';
+  drawingDialog.value = true;
 }
 
 function openNativeDocDialog() {
@@ -465,6 +481,19 @@ async function openCreatedResource(id: string, options?: { edit?: boolean }) {
   }
 }
 
+async function focusResource(id?: string | null) {
+  if (!id) return;
+  emit('focused');
+  try {
+    const resource = await diGetById(id);
+    const folderId = resource.type === 'folder' ? resource.id : resource.parentId;
+    if (folderId) await selectFolder(folderId);
+    if (resource.type !== 'folder') await openResource(resource);
+  } catch (error) {
+    panelError(error, 'documentIntelligence.errors.docLoad');
+  }
+}
+
 async function submitFolder() {
   const name = folderName.value.trim();
   const parentId = selectedFolderId.value;
@@ -479,6 +508,27 @@ async function submitFolder() {
       severity: 'success',
     });
     await refreshAll();
+  } catch (error) {
+    panelError(error, 'documentIntelligence.errors.create');
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function submitDrawing() {
+  const title = drawingName.value.trim();
+  const parentId = selectedFolderId.value;
+  if (!title || !parentId) return;
+  busy.value = true;
+  try {
+    const created = await diCreateBlankDrawio(parentId, title, { tags: await currentAutoTags() });
+    drawingDialog.value = false;
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.drawingCreated'),
+      severity: 'success',
+    });
+    await openCreatedResource(created.id, { edit: true });
   } catch (error) {
     panelError(error, 'documentIntelligence.errors.create');
   } finally {
@@ -687,6 +737,12 @@ async function openResource(resource: DiResource, options?: { edit?: boolean }) 
     return;
   }
   if (resource.type === 'file') {
+    if (options?.edit && isDiDrawioFile(resource)) {
+      drawingEditorId.value = resource.id;
+      drawingEditorTitle.value = resource.name;
+      drawingEditorOpen.value = true;
+      return;
+    }
     if (isDiOfficeEditable(resource)) {
       fileEditorResource.value = resource;
       fileEditorOpen.value = true;
@@ -865,6 +921,14 @@ watch(
     void boot();
   },
   { immediate: true },
+);
+
+watch(
+  () => props.focusResourceId,
+  (id) => {
+    if (!id || booting.value || !hubId.value) return;
+    void focusResource(id);
+  },
 );
 </script>
 
@@ -1051,6 +1115,12 @@ watch(
                 @click="openPageDialog"
               />
               <v-list-item
+                prepend-icon="mdi-vector-polyline"
+                :title="t('documentIntelligence.newDrawing')"
+                rounded="lg"
+                @click="openDrawingDialog"
+              />
+              <v-list-item
                 prepend-icon="mdi-file-document-plus-outline"
                 :title="t('documentIntelligence.generateFromTemplate.menu')"
                 rounded="lg"
@@ -1232,6 +1302,30 @@ watch(
           <v-spacer />
           <v-btn variant="text" class="text-none" @click="pageDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
           <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!pageTitle.trim()" @click="submitPage">
+            {{ t('documentIntelligence.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="drawingDialog" max-width="420">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newDrawing') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="drawingName"
+            :label="t('documentIntelligence.drawingNameLabel')"
+            variant="outlined"
+            density="comfortable"
+            autofocus
+            hide-details
+            @keydown.enter="submitDrawing"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="drawingDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!drawingName.trim()" @click="submitDrawing">
             {{ t('documentIntelligence.create') }}
           </v-btn>
         </v-card-actions>
@@ -1445,6 +1539,12 @@ watch(
       :resource="filePreviewResource"
       @download="downloadFile"
       @updated="onPreviewUpdated"
+    />
+    <DiDrawioEditorDialog
+      v-model="drawingEditorOpen"
+      :resource-id="drawingEditorId"
+      :title="drawingEditorTitle"
+      @saved="refreshAll"
     />
   </div>
   </DiResourcePreviewProvider>

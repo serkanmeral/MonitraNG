@@ -14,6 +14,7 @@ import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdown
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
+import DiDrawioEditorDialog from '@/components/apps/document-intelligence/DiDrawioEditorDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
 import DiRelatedResourcesPanel from '@/components/apps/document-intelligence/DiRelatedResourcesPanel.vue';
@@ -38,6 +39,7 @@ import {
   parseFolderIdQuery,
   parseLegacyResourceIdQuery,
 } from '@/utils/diResourceLink';
+import { diCreateBlankDrawio } from '@/utils/diDrawio';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useDiEditorLockGate } from '@/composables/useDiEditorLockGate';
@@ -204,6 +206,11 @@ const folderName = ref('');
 const docDialog = ref(false);
 const docTitle = ref('');
 const docTemplate = ref<DiPageTemplateId>('blank');
+const drawingDialog = ref(false);
+const drawingName = ref('');
+const drawingEditorOpen = ref(false);
+const drawingEditorId = ref<string | null>(null);
+const drawingEditorTitle = ref('');
 const nativeDocDialog = ref(false);
 const nativeSheetDialog = ref(false);
 const nativePresentationDialog = ref(false);
@@ -776,6 +783,31 @@ function openDocDialog() {
   docTitle.value = '';
   docTemplate.value = 'blank';
   docDialog.value = true;
+}
+
+function openDrawingDialog() {
+  drawingName.value = '';
+  drawingDialog.value = true;
+}
+
+async function submitDrawing() {
+  const title = drawingName.value.trim();
+  const parentId = selectedFolderId.value;
+  if (!title || !parentId) return;
+  busy.value = true;
+  try {
+    const created = await diCreateBlankDrawio(parentId, title);
+    drawingDialog.value = false;
+    notify(t('documentIntelligence.drawingCreated'), 'success');
+    await refreshListing();
+    drawingEditorId.value = created.id;
+    drawingEditorTitle.value = created.name;
+    drawingEditorOpen.value = true;
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.errors.create');
+  } finally {
+    busy.value = false;
+  }
 }
 
 async function submitDoc(asDraft = false) {
@@ -1491,6 +1523,7 @@ watch(
             @permissions="onToolbarPermissions"
             @new-folder="openFolderDialog"
             @new-page="openDocDialog"
+            @new-drawing="openDrawingDialog"
             @new-native-document="openNativeDocDialog"
             @new-native-sheet="openNativeSheetDialog"
             @new-native-presentation="openNativePresentationDialog"
@@ -2001,6 +2034,31 @@ watch(
       </v-card>
     </v-dialog>
 
+    <!-- Yeni çizim -->
+    <v-dialog v-model="drawingDialog" max-width="420">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newDrawing') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="drawingName"
+            :label="t('documentIntelligence.drawingNameLabel')"
+            variant="outlined"
+            density="comfortable"
+            autofocus
+            hide-details
+            @keydown.enter="submitDrawing"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="drawingDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!drawingName.trim() || !selectedFolderId" @click="submitDrawing">
+            {{ t('documentIntelligence.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Yeni döküman (native DOCX) -->
     <v-dialog v-model="nativeDocDialog" max-width="520">
       <v-card rounded="lg">
@@ -2364,6 +2422,13 @@ watch(
       :resource="filePreviewResource"
       @download="downloadFile"
       @updated="onFilePreviewUpdated"
+    />
+
+    <DiDrawioEditorDialog
+      v-model="drawingEditorOpen"
+      :resource-id="drawingEditorId"
+      :title="drawingEditorTitle"
+      @saved="refreshListing"
     />
 
     <DiResourceEditorDialog

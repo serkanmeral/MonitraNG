@@ -16,8 +16,10 @@ COPY . .
 # Boş HUB_URL = Gateway üzerinden /hub kullan (GATEWAY_URL/hub/ws). Aynı origin için GATEWAY_URL=https://app.monitrang.com yapın.
 ARG GATEWAY_URL=
 ARG HUB_URL=
+ARG DRAWIO_PUBLIC_URL=
 ENV GATEWAY_URL=$GATEWAY_URL
 ENV HUB_URL=$HUB_URL
+ENV DRAWIO_PUBLIC_URL=$DRAWIO_PUBLIC_URL
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Build the application (SPA için generate kullanıyoruz)
