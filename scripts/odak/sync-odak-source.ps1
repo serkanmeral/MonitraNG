@@ -76,7 +76,7 @@ echo Extracted to $RemoteMonitraRoot
 ls -la '$RemoteMonitraRoot/ApplicationResources/mng_apps/docker-compose.production.yml' 2>/dev/null || true
 "@
 
-    $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
+    $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey -ConnectionTimeout 30
     $r = Invoke-SSHCommand -SessionId $session.SessionId -Command $remoteExtract -TimeOut 120
     $r.Output | ForEach-Object { Write-Host $_ }
     if ($r.ExitStatus -ne 0) { throw "Remote extract failed: $($r.Error)" }
@@ -90,7 +90,7 @@ if ($IncludeMngCommon) {
     & tar -cf $CommonTar --exclude=data/.npm --exclude=data/*.db docker-compose.yml $commonComposeOdak .env.odak.prod.example .env.odak.example env.example mongo-init mongo-express mosquitto nginx scalar-config opensearch 2>$null
     Pop-Location
     Send-OdakRemoteFile -ComputerName $Server -Credential $cred -LocalPath $CommonTar -RemoteDestination "/home/odak/" -AcceptKey
-    $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
+    $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey -ConnectionTimeout 30
     $commonExtract = ConvertTo-UnixShell "mkdir -p '$RemoteMngCommon' && tar -xf /home/odak/mng_common_odak_sync.tar -C '$RemoteMngCommon' && ls -la '$RemoteMngCommon/docker-compose.odak.prod.yml' 2>/dev/null || ls -la '$RemoteMngCommon/docker-compose.odak.yml' 2>/dev/null || true"
     $cr = Invoke-SSHCommand -SessionId $session.SessionId -Command $commonExtract -TimeOut 120
     $cr.Output | ForEach-Object { Write-Host $_ }

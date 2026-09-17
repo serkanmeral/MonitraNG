@@ -1,33 +1,36 @@
 # Toplantı
 
-**Toplantı**, tutanaktan aksiyon çıkarma yeridir. İş Operation Core’da yaşar; burada yalnızca bağlanır. Takvim, Teams ve otomatik madde çıkarımı yoktur.
-
-> Bu sekmenin ekran turu (seçici, modal, tablo) Yükümlülük / Denetim / Paydaş ile aynı yoldan **gitmeyecek**. Kavram aynı kalır; UX sonraki oturumda ayrı tasarlanır.
+**Toplantı**, projenin olay takvimidir. Olay → gündem → tutanak (Kütüphane sayfası + Tutanaklar sicili) → aksiyon → OC işi. Outlook, Teams, ICS ve otomatik madde çıkarımı yoktur.
 
 ## Ekranda ne vardır?
 
-Toplantı: tarih, katılımcılar, tutanak belgesi, not.
+Üç görünüm: **Takvim**, **Liste**, **Tutanaklar**. Kart listesi yoktur.
 
-Aksiyon: metin, sorumlu, son tarih, bağlı iş, durum (açık / işleniyor / bitti / feragat).
+Takvim: ay / hafta / gün. Görünen aralıktaki olaylar (seri ve anlık karışık).
 
-Toplantıyı silmek tutanak belgesini ve OC işlerini silmez. Aksiyonu silmek OC işini silmez.
+Liste iki sicil. Üstte **haftalık seriler**: satır bir seridir; tıklayınca o serinin örnekleri sayfalı açılır. Altta **anlık toplantılar** (serisiz veya kopmuş): arama, tarih penceresi (varsayılan son 30 gün ve gelecek), sayfalama.
+
+**Tutanaklar** sonucun sicilidir, dosya deposu değildir. **Kayıtlı:** tutanak sayfası olan toplantılar. **Eksik:** yapılmış veya geçmiş, iptal edilmemiş, tutanağı olmayanlar. Arama, tarih, seri süzgeci. Satır, düzenleme diyaloğunu **Tutanak** sekmesinde açar. “Tutanak yaz” Eksik kuyruğuna geçer. Sayfa Kütüphane → Toplantı notları’nda durur.
+
+Olay penceresi sekmeli: **Olay** (ad, zaman, yer, katılımcı, durum) · **Gündem** · **Tutanak** · **Aksiyonlar** (kayıt olduktan sonra). Gündem toplantıdan önce, tutanak sonra yazılır. Kaydet bütün sekmeleri birden basar. Kimlik yapıştırılmaz; yazılır veya kütüphaneden seçilir.
+
+**Her hafta tekrarla:** gün, saat, süre, bitiş tarihi. Örnekler takvime yazılır (en fazla 26). Bir haftayı iptal etmek seriyi bozmaz. Seri gündem metnini kopyalar; tutanak sayfasını kopyalamaz.
+
+Aksiyon: metin, sorumlu, son tarih, bağlı iş, durum. Aksiyonu **Bitti** işaretlemek OC’de işi kapatmaz.
 
 ## Örnek
 
-Toplantı: `Haftalık PMO 16 Eylül`  
-Tutanak: Kütüphane’de toplantı notu  
-Aksiyon: “Kapsam kapısı kriterlerini işaretle” → WBS işine bağla, son tarih 18 Eylül
+Seri: her Pazartesi 09:00–10:00, “Haftalık PMO”, bitiş 16 Aralık.
 
-Aksiyonu **Bitti** işaretlemek OC’de işi kapatmaz. İşi kapatmak OC geçişidir; kapı ve kanıt kilitleri orada çalışır.
-
-Durum’da açık / geciken / işsiz toplantı aksiyonu bu kayıtlardan gelir.
+16 Eylül örneğini takvimden veya Listeden açın. Tutanak sekmesine yazın veya kütüphaneden seçin, aksiyon ekleyin, işe bağlayın. Tutanaklar → Kayıtlı’da bu satır durur. 23 Eylül’ü iptal edin; seri durur.
 
 ## Ne değildir?
 
-- Takvim daveti değildir
-- Kararlar sekmesi değildir (karar metnini oraya yazın)
-- Tutanak deposu değildir (dosya Kütüphane’dedir)
+- Dış takvim / davet değildir
+- Kararlar sekmesi değildir
+- Tutanak dosya deposu değildir (sayfa Kütüphane’dedir)
+- Tutanaktan otomatik aksiyon çıkarmaz
 
 ## Sonraki adım
 
-Tutanak Kütüphane’de, resmi karar **Kararlar**’da, kilit **Kapılar**’da. UX ayrıca ele alınacak.
+Resmi karar **Kararlar**’da, kilit **Kapılar**’da.

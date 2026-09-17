@@ -92,6 +92,7 @@ export interface PmProjectDetail {
   obligations?: PmObligation[];
   auditPacks?: PmAuditPack[];
   meetings?: PmMeeting[];
+  meetingSeries?: PmMeetingSeries[];
   stakeholders?: PmStakeholder[];
   processMaps?: PmProcessMap[];
 }
@@ -493,6 +494,7 @@ export interface PmProjectAuditPacks {
 }
 
 export type PmMeetingActionStatus = 'open' | 'inProgress' | 'done' | 'waived';
+export type PmMeetingStatus = 'scheduled' | 'held' | 'cancelled';
 
 export interface PmMeetingAction {
   id: string;
@@ -517,25 +519,78 @@ export interface PmMeeting {
   projectId: string;
   name: string;
   heldAt?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  status: PmMeetingStatus | string;
   minutesResourceId?: string | null;
+  agendaResourceId?: string | null;
   wbsId?: string | null;
   attendees?: string | null;
   note?: string | null;
+  location?: string | null;
+  meetingUrl?: string | null;
+  agenda?: string | null;
+  seriesId?: string | null;
+  occurrenceDate?: string | null;
+  detached?: boolean;
   actionCount: number;
   openActionCount: number;
   actions: PmMeetingAction[];
 }
 
+export interface PmMeetingSeries {
+  id: string;
+  projectId: string;
+  name: string;
+  wbsId?: string | null;
+  weekday: number;
+  startTime: string;
+  durationMinutes: number;
+  anchorStart: string;
+  until: string;
+  location?: string | null;
+  meetingUrl?: string | null;
+  attendees?: string | null;
+  agenda?: string | null;
+  note?: string | null;
+  occurrenceCount: number;
+  openActionCount?: number;
+}
+
 export interface PmCreateMeetingRequest {
   name: string;
   heldAt?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  status?: string | null;
   minutesResourceId?: string | null;
+  agendaResourceId?: string | null;
   wbsId?: string | null;
   attendees?: string | null;
   note?: string | null;
+  location?: string | null;
+  meetingUrl?: string | null;
+  agenda?: string | null;
 }
 
-export type PmUpdateMeetingRequest = Partial<PmCreateMeetingRequest>;
+export type PmUpdateMeetingRequest = Partial<PmCreateMeetingRequest> & { detached?: boolean | null };
+
+export interface PmCreateMeetingSeriesRequest {
+  name: string;
+  wbsId?: string | null;
+  weekday: number;
+  startTime?: string | null;
+  durationMinutes?: number;
+  firstStart: string;
+  until: string;
+  location?: string | null;
+  meetingUrl?: string | null;
+  attendees?: string | null;
+  agenda?: string | null;
+  note?: string | null;
+}
+
+export type PmUpdateMeetingSeriesRequest = Partial<Omit<PmCreateMeetingSeriesRequest, 'firstStart'>>;
 
 export interface PmCreateMeetingActionRequest {
   title: string;
@@ -549,11 +604,27 @@ export interface PmCreateMeetingActionRequest {
 
 export type PmUpdateMeetingActionRequest = Partial<PmCreateMeetingActionRequest>;
 
+export interface PmMeetingListQuery {
+  kind?: 'all' | 'adhoc' | 'series';
+  seriesId?: string | null;
+  from?: string | null;
+  to?: string | null;
+  q?: string | null;
+  skip?: number;
+  take?: number;
+  includeSeries?: boolean;
+  minutes?: 'any' | 'present' | 'missing' | null;
+}
+
 export interface PmProjectMeetings {
   openActionCount: number;
   overdueActionCount: number;
   unboundActionCount: number;
+  total?: number;
+  skip?: number;
+  take?: number;
   items: PmMeeting[];
+  series?: PmMeetingSeries[];
 }
 
 export interface PmProjectMeetingActions {

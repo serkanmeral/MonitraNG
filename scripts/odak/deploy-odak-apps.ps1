@@ -68,7 +68,7 @@ curl -s -o /dev/null -w 'ui=%{http_code} ' http://127.0.0.1:3000/ || true
 curl -s -o /dev/null -w 'oc_live=%{http_code}\n' http://127.0.0.1:3000/api/operations/v1/health/live || true
 "@
 
-$session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
+$session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey -ConnectionTimeout 30
 Write-Host "Deploy başlıyor (build uzun sürebilir)..."
 $r = Invoke-SSHCommand -SessionId $session.SessionId -Command $remote -TimeOut 3600
 $r.Output | ForEach-Object { Write-Host $_ }

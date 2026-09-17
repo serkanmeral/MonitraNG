@@ -138,13 +138,19 @@ public interface IProjectPlanningService
 
     Task DeleteAuditPackAsync(string id, CancellationToken ct = default);
 
-    Task<ProjectMeetingsDto> GetMeetingsAsync(string projectId, CancellationToken ct = default);
+    Task<ProjectMeetingsDto> GetMeetingsAsync(string projectId, MeetingListQuery? query = null, CancellationToken ct = default);
 
     Task<MeetingDto> CreateMeetingAsync(string projectId, CreateMeetingRequest request, CancellationToken ct = default);
 
     Task<MeetingDto> UpdateMeetingAsync(string id, UpdateMeetingRequest request, CancellationToken ct = default);
 
     Task DeleteMeetingAsync(string id, CancellationToken ct = default);
+
+    Task<MeetingSeriesDto> CreateMeetingSeriesAsync(string projectId, CreateMeetingSeriesRequest request, CancellationToken ct = default);
+
+    Task<MeetingSeriesDto> UpdateMeetingSeriesAsync(string id, UpdateMeetingSeriesRequest request, CancellationToken ct = default);
+
+    Task DeleteMeetingSeriesAsync(string id, CancellationToken ct = default);
 
     Task<MeetingActionDto> CreateMeetingActionAsync(string meetingId, CreateMeetingActionRequest request, CancellationToken ct = default);
 

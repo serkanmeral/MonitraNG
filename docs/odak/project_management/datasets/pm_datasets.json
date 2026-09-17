@@ -1334,7 +1334,7 @@
   },
   {
     "name": "pm_meetings",
-    "description": "Teslimat Omurgasi F2-9 — toplantı kaydı. Tutanak belge kimliği isteğe bağlı; takvim/Teams ve otomatik tutanak çıkarımı yok.",
+    "description": "Teslimat Omurgasi — proje toplantı olayı. Takvim yüzü; tutanak isteğe bağlı. Dış takvim/Teams yok.",
     "forceSchema": true,
     "logging": "self",
     "publish_mode": "none",
@@ -1400,6 +1400,92 @@
         "unique": false,
         "isArray": false,
         "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "startAt",
+        "title": "Start at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "endAt",
+        "title": "End at",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (scheduled | held | cancelled)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "location",
+        "title": "Location",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "meetingUrl",
+        "title": "Meeting URL",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 512 }
+      },
+      {
+        "fieldType": "text",
+        "name": "agenda",
+        "title": "Agenda excerpt",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 4000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "agendaResourceId",
+        "title": "Agenda DI resource id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "seriesId",
+        "title": "Meeting series id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "occurrenceDate",
+        "title": "Series occurrence date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "detached",
+        "title": "Detached from series (0/1)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
       }
     ],
     "indexList": [
@@ -1411,6 +1497,140 @@
       {
         "name": "idx_meet_wbs",
         "fields": { "wbsId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_meet_series",
+        "fields": { "seriesId": 1, "occurrenceDate": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_meeting_series",
+    "description": "Teslimat Omurgasi — haftalık toplantı serisi şablonu. Dış takvim yok; örnekler pm_meetings satırıdır.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Series name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "number",
+        "name": "weekday",
+        "title": "ISO weekday (1=Mon … 7=Sun)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "startTime",
+        "title": "Local start time HH:mm",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 8 }
+      },
+      {
+        "fieldType": "number",
+        "name": "durationMinutes",
+        "title": "Duration minutes",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "anchorStart",
+        "title": "First occurrence UTC",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "until",
+        "title": "Inclusive until date",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "location",
+        "title": "Location",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "meetingUrl",
+        "title": "Meeting URL",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 512 }
+      },
+      {
+        "fieldType": "text",
+        "name": "attendees",
+        "title": "Attendees",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "agenda",
+        "title": "Agenda",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 4000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_mser_project",
+        "fields": { "projectId": 1 },
         "unique": false
       }
     ]

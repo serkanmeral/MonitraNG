@@ -119,6 +119,7 @@ public sealed class ProjectDetailDto
     public IReadOnlyList<ObligationDto> Obligations { get; set; } = Array.Empty<ObligationDto>();
     public IReadOnlyList<AuditPackDto> AuditPacks { get; set; } = Array.Empty<AuditPackDto>();
     public IReadOnlyList<MeetingDto> Meetings { get; set; } = Array.Empty<MeetingDto>();
+    public IReadOnlyList<MeetingSeriesDto> MeetingSeries { get; set; } = Array.Empty<MeetingSeriesDto>();
     public IReadOnlyList<StakeholderDto> Stakeholders { get; set; } = Array.Empty<StakeholderDto>();
     public IReadOnlyList<ProcessMapDto> ProcessMaps { get; set; } = Array.Empty<ProcessMapDto>();
 }
@@ -884,10 +885,20 @@ public sealed class MeetingDto
     public string ProjectId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public DateTime? HeldAt { get; set; }
+    public DateTime? StartAt { get; set; }
+    public DateTime? EndAt { get; set; }
+    public string Status { get; set; } = "scheduled";
     public string? MinutesResourceId { get; set; }
+    public string? AgendaResourceId { get; set; }
     public string? WbsId { get; set; }
     public string? Attendees { get; set; }
     public string? Note { get; set; }
+    public string? Location { get; set; }
+    public string? MeetingUrl { get; set; }
+    public string? Agenda { get; set; }
+    public string? SeriesId { get; set; }
+    public DateTime? OccurrenceDate { get; set; }
+    public bool Detached { get; set; }
     public int ActionCount { get; set; }
     public int OpenActionCount { get; set; }
     public IReadOnlyList<MeetingActionDto> Actions { get; set; } = Array.Empty<MeetingActionDto>();
@@ -897,19 +908,85 @@ public sealed class CreateMeetingRequest
 {
     public string Name { get; set; } = string.Empty;
     public DateTime? HeldAt { get; set; }
+    public DateTime? StartAt { get; set; }
+    public DateTime? EndAt { get; set; }
+    public string? Status { get; set; }
     public string? MinutesResourceId { get; set; }
+    public string? AgendaResourceId { get; set; }
     public string? WbsId { get; set; }
     public string? Attendees { get; set; }
     public string? Note { get; set; }
+    public string? Location { get; set; }
+    public string? MeetingUrl { get; set; }
+    public string? Agenda { get; set; }
 }
 
 public sealed class UpdateMeetingRequest
 {
     public string? Name { get; set; }
     public DateTime? HeldAt { get; set; }
+    public DateTime? StartAt { get; set; }
+    public DateTime? EndAt { get; set; }
+    public string? Status { get; set; }
     public string? MinutesResourceId { get; set; }
+    public string? AgendaResourceId { get; set; }
     public string? WbsId { get; set; }
     public string? Attendees { get; set; }
+    public string? Note { get; set; }
+    public string? Location { get; set; }
+    public string? MeetingUrl { get; set; }
+    public string? Agenda { get; set; }
+    public bool? Detached { get; set; }
+}
+
+public sealed class MeetingSeriesDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? WbsId { get; set; }
+    public int Weekday { get; set; }
+    public string StartTime { get; set; } = "09:00";
+    public int DurationMinutes { get; set; } = 60;
+    public DateTime AnchorStart { get; set; }
+    public DateTime Until { get; set; }
+    public string? Location { get; set; }
+    public string? MeetingUrl { get; set; }
+    public string? Attendees { get; set; }
+    public string? Agenda { get; set; }
+    public string? Note { get; set; }
+    public int OccurrenceCount { get; set; }
+    public int OpenActionCount { get; set; }
+}
+
+public sealed class CreateMeetingSeriesRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? WbsId { get; set; }
+    public int Weekday { get; set; } = 1;
+    public string? StartTime { get; set; }
+    public int DurationMinutes { get; set; } = 60;
+    public DateTime FirstStart { get; set; }
+    public DateTime Until { get; set; }
+    public string? Location { get; set; }
+    public string? MeetingUrl { get; set; }
+    public string? Attendees { get; set; }
+    public string? Agenda { get; set; }
+    public string? Note { get; set; }
+}
+
+public sealed class UpdateMeetingSeriesRequest
+{
+    public string? Name { get; set; }
+    public string? WbsId { get; set; }
+    public int? Weekday { get; set; }
+    public string? StartTime { get; set; }
+    public int? DurationMinutes { get; set; }
+    public DateTime? Until { get; set; }
+    public string? Location { get; set; }
+    public string? MeetingUrl { get; set; }
+    public string? Attendees { get; set; }
+    public string? Agenda { get; set; }
     public string? Note { get; set; }
 }
 
@@ -954,12 +1031,29 @@ public sealed class UpdateMeetingActionRequest
     public string? Note { get; set; }
 }
 
+public sealed class MeetingListQuery
+{
+    public string? Kind { get; set; }
+    public string? SeriesId { get; set; }
+    public DateTime? From { get; set; }
+    public DateTime? To { get; set; }
+    public string? Q { get; set; }
+    public int Skip { get; set; }
+    public int? Take { get; set; }
+    public bool IncludeSeries { get; set; } = true;
+    public string? Minutes { get; set; }
+}
+
 public sealed class ProjectMeetingsDto
 {
     public int OpenActionCount { get; set; }
     public int OverdueActionCount { get; set; }
     public int UnboundActionCount { get; set; }
+    public int Total { get; set; }
+    public int Skip { get; set; }
+    public int Take { get; set; }
     public IReadOnlyList<MeetingDto> Items { get; set; } = Array.Empty<MeetingDto>();
+    public IReadOnlyList<MeetingSeriesDto> Series { get; set; } = Array.Empty<MeetingSeriesDto>();
 }
 
 public sealed class ProjectMeetingActionsDto

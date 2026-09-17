@@ -15,6 +15,7 @@ public static class PmDatasets
     public const string Obligations = "pm_obligations";
     public const string AuditPacks = "pm_audit_packs";
     public const string Meetings = "pm_meetings";
+    public const string MeetingSeries = "pm_meeting_series";
     public const string MeetingActions = "pm_meeting_actions";
     public const string Stakeholders = "pm_stakeholders";
     public const string ProcessMaps = "pm_process_maps";
@@ -369,6 +370,21 @@ public static class PmMeetingActionStatus
     public static bool IsClosed(string status) =>
         string.Equals(status, Done, StringComparison.OrdinalIgnoreCase)
         || string.Equals(status, Waived, StringComparison.OrdinalIgnoreCase);
+}
+
+public static class PmMeetingStatus
+{
+    public const string Scheduled = "scheduled";
+    public const string Held = "held";
+    public const string Cancelled = "cancelled";
+
+    public static string Normalize(string? status)
+    {
+        var s = status?.Trim();
+        if (string.Equals(s, Held, StringComparison.OrdinalIgnoreCase)) return Held;
+        if (string.Equals(s, Cancelled, StringComparison.OrdinalIgnoreCase)) return Cancelled;
+        return Scheduled;
+    }
 }
 
 public static class PmStakeholderKind

@@ -313,7 +313,7 @@ public sealed class ProjectsController : ControllerBase
         [FromQuery] string? q,
         [FromQuery] int skip = 0,
         [FromQuery] int take = 25,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         var page = await _planning.SearchWorkItemsAsync(id, q, skip, take, cancellationToken);
         return Ok(page);
@@ -693,9 +693,34 @@ public sealed class ProjectsController : ControllerBase
     [HttpGet("projects/{id}/meetings")]
     [ProducesResponseType(typeof(ProjectMeetingsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMeetings(string id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetMeetings(
+        string id,
+        [FromQuery] string? kind = null,
+        [FromQuery] string? seriesId = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        [FromQuery] string? q = null,
+        [FromQuery] int skip = 0,
+        [FromQuery] int? take = null,
+        [FromQuery] bool includeSeries = true,
+        [FromQuery] string? minutes = null,
+        CancellationToken cancellationToken = default)
     {
-        var pack = await _planning.GetMeetingsAsync(id, cancellationToken);
+        var pack = await _planning.GetMeetingsAsync(
+            id,
+            new MeetingListQuery
+            {
+                Kind = kind,
+                SeriesId = seriesId,
+                From = from,
+                To = to,
+                Q = q,
+                Skip = skip,
+                Take = take,
+                IncludeSeries = includeSeries,
+                Minutes = minutes
+            },
+            cancellationToken);
         return Ok(pack);
     }
 
@@ -711,6 +736,41 @@ public sealed class ProjectsController : ControllerBase
     {
         var created = await _planning.CreateMeetingAsync(id, request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPost("projects/{id}/meeting-series")]
+    [ProducesResponseType(typeof(MeetingSeriesDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateMeetingSeries(
+        string id,
+        [FromBody] CreateMeetingSeriesRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _planning.CreateMeetingSeriesAsync(id, request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPut("meeting-series/{id}")]
+    [ProducesResponseType(typeof(MeetingSeriesDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMeetingSeries(
+        string id,
+        [FromBody] UpdateMeetingSeriesRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UpdateMeetingSeriesAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("meeting-series/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteMeetingSeries(string id, CancellationToken cancellationToken)
+    {
+        await _planning.DeleteMeetingSeriesAsync(id, cancellationToken);
+        return NoContent();
     }
 
     [HttpPut("meetings/{id}")]

@@ -239,6 +239,12 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             if (!string.IsNullOrWhiteSpace(meeting.__dataId))
                 await _dg.DeleteAsync(PmDatasets.Meetings, meeting.__dataId, token, ct);
         }
+        var series = await LoadSeriesRowsAsync(id, token, ct);
+        foreach (var row in series)
+        {
+            if (!string.IsNullOrWhiteSpace(row.__dataId))
+                await _dg.DeleteAsync(PmDatasets.MeetingSeries, row.__dataId, token, ct);
+        }
         foreach (var stakeholder in stakeholders)
         {
             if (!string.IsNullOrWhiteSpace(stakeholder.__dataId))
@@ -569,6 +575,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         public List<ObligationDto> Obligations { get; init; } = [];
         public List<AuditPackDto> AuditPacks { get; init; } = [];
         public List<MeetingDto> Meetings { get; init; } = [];
+        public List<MeetingSeriesDto> MeetingSeries { get; init; } = [];
         public List<StakeholderDto> Stakeholders { get; init; } = [];
         public List<ProcessMapDto> ProcessMaps { get; init; } = [];
     }
@@ -614,6 +621,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         var obligationsTask = LoadObligationDtosAsync(projectId, token, ct);
         var auditTask = LoadAuditPackDtosAsync(projectId, token, ct);
         var meetingsTask = LoadMeetingDtosAsync(projectId, token, ct);
+        var seriesTask = LoadSeriesDtosAsync(projectId, token, ct);
         var stakeholdersTask = LoadStakeholderDtosAsync(projectId, token, ct);
         var processMapsTask = LoadProcessMapDtosAsync(projectId, token, ct);
         await Task.WhenAll(
@@ -625,6 +633,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             obligationsTask,
             auditTask,
             meetingsTask,
+            seriesTask,
             stakeholdersTask,
             processMapsTask);
 
@@ -638,6 +647,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             Obligations = await obligationsTask,
             AuditPacks = await auditTask,
             Meetings = await meetingsTask,
+            MeetingSeries = await seriesTask,
             Stakeholders = await stakeholdersTask,
             ProcessMaps = await processMapsTask
         };
@@ -662,6 +672,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             Obligations = extras.Obligations,
             AuditPacks = extras.AuditPacks,
             Meetings = extras.Meetings,
+            MeetingSeries = extras.MeetingSeries,
             Stakeholders = extras.Stakeholders,
             ProcessMaps = extras.ProcessMaps
         };

@@ -193,9 +193,37 @@ public sealed class PmMeetingRow
     public string? projectId { get; set; }
     public string? name { get; set; }
     public DateTime? heldAt { get; set; }
+    public DateTime? startAt { get; set; }
+    public DateTime? endAt { get; set; }
+    public string? status { get; set; }
     public string? minutesResourceId { get; set; }
+    public string? agendaResourceId { get; set; }
     public string? wbsId { get; set; }
     public string? attendees { get; set; }
+    public string? note { get; set; }
+    public string? location { get; set; }
+    public string? meetingUrl { get; set; }
+    public string? agenda { get; set; }
+    public string? seriesId { get; set; }
+    public DateTime? occurrenceDate { get; set; }
+    public double? detached { get; set; }
+}
+
+public sealed class PmMeetingSeriesRow
+{
+    public string? __dataId { get; set; }
+    public string? projectId { get; set; }
+    public string? name { get; set; }
+    public string? wbsId { get; set; }
+    public double? weekday { get; set; }
+    public string? startTime { get; set; }
+    public double? durationMinutes { get; set; }
+    public DateTime? anchorStart { get; set; }
+    public DateTime? until { get; set; }
+    public string? location { get; set; }
+    public string? meetingUrl { get; set; }
+    public string? attendees { get; set; }
+    public string? agenda { get; set; }
     public string? note { get; set; }
 }
 

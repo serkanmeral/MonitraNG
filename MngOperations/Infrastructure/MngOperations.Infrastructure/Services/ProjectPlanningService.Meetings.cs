@@ -7,12 +7,44 @@ namespace MngOperations.Infrastructure.Services;
 
 public sealed partial class ProjectPlanningService
 {
-    public async Task<ProjectMeetingsDto> GetMeetingsAsync(string projectId, CancellationToken ct = default)
+    private const string MeetingScanQuery = "limit=2000&expand=false";
+
+    public async Task<ProjectMeetingsDto> GetMeetingsAsync(
+        string projectId,
+        MeetingListQuery? query = null,
+        CancellationToken ct = default)
     {
         var token = RequireToken();
         await LoadProjectOrThrowAsync(projectId, token, ct);
-        var items = await LoadMeetingDtosAsync(projectId, token, ct);
-        return BuildMeetings(items);
+        query ??= new MeetingListQuery();
+        var meetings = await LoadMeetingRowsAsync(projectId, token, ct, MeetingScanQuery);
+        var actionRows = await LoadMeetingActionRowsAsync(projectId, token, ct, MeetingScanQuery);
+        var actionDtos = actionRows.Select(ToMeetingActionDto).ToList();
+        var byMeeting = actionDtos
+            .GroupBy(a => a.MeetingId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.Open).ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase).ToList(), StringComparer.Ordinal);
+
+        var all = meetings
+            .Select(row => ToMeetingDto(row, byMeeting.GetValueOrDefault(row.__dataId ?? string.Empty) ?? new List<MeetingActionDto>()))
+            .ToList();
+        var filtered = FilterMeetings(all, query).ToList();
+        var skip = Math.Max(0, query.Skip);
+        var take = query.Take is null
+            ? filtered.Count
+            : query.Take.Value <= 0
+                ? 0
+                : Math.Clamp(query.Take.Value, 1, 200);
+        var page = take == 0 ? Array.Empty<MeetingDto>() : filtered.Skip(skip).Take(take).ToArray();
+
+        var pack = BuildMeetings(all);
+        pack.Items = page;
+        pack.Total = filtered.Count;
+        pack.Skip = skip;
+        pack.Take = take;
+        pack.Series = query.IncludeSeries
+            ? await LoadSeriesDtosAsync(projectId, meetings, actionDtos, token, ct)
+            : Array.Empty<MeetingSeriesDto>();
+        return pack;
     }
 
     public async Task<MeetingDto> CreateMeetingAsync(
@@ -29,17 +61,35 @@ public sealed partial class ProjectPlanningService
             "MINUTES_LENGTH",
             "Minutes document id is too long.",
             "Tutanak belge kimliği çok uzun.");
-        await AssertMeetingUniqueAsync(projectId, name, excludeId: null, token, ct);
+        var agendaId = NormalizeOptionalId(
+            request.AgendaResourceId,
+            "AGENDA_LENGTH",
+            "Agenda document id is too long.",
+            "Gündem belge kimliği çok uzun.");
+        var start = request.StartAt ?? request.HeldAt;
+        var end = request.EndAt ?? start?.AddMinutes(60);
+        var status = string.IsNullOrWhiteSpace(request.Status)
+            ? InferMeetingStatus(start)
+            : PmMeetingStatus.Normalize(request.Status);
+        await AssertMeetingSlotUniqueAsync(projectId, name, start, excludeId: null, token, ct);
 
         var payload = new Dictionary<string, object?>
         {
             ["projectId"] = projectId,
             ["name"] = name,
-            ["heldAt"] = request.HeldAt,
+            ["heldAt"] = start,
+            ["startAt"] = start,
+            ["endAt"] = end,
+            ["status"] = status,
             ["minutesResourceId"] = minutesId,
+            ["agendaResourceId"] = agendaId,
             ["wbsId"] = wbsId,
             ["attendees"] = EmptyToNull(request.Attendees),
-            ["note"] = EmptyToNull(request.Note)
+            ["note"] = EmptyToNull(request.Note),
+            ["location"] = EmptyToNull(request.Location),
+            ["meetingUrl"] = EmptyToNull(request.MeetingUrl),
+            ["agenda"] = EmptyToNull(request.Agenda),
+            ["detached"] = 0
         };
 
         var created = await _dg.CreateAsync(PmDatasets.Meetings, payload, token, ct);
@@ -65,15 +115,38 @@ public sealed partial class ProjectPlanningService
                 "Minutes document id is too long.",
                 "Tutanak belge kimliği çok uzun.")
             : EmptyToNull(existing.minutesResourceId);
-        await AssertMeetingUniqueAsync(projectId, name, id, token, ct);
+        var agendaId = request.AgendaResourceId is not null
+            ? NormalizeOptionalId(
+                request.AgendaResourceId,
+                "AGENDA_LENGTH",
+                "Agenda document id is too long.",
+                "Gündem belge kimliği çok uzun.")
+            : EmptyToNull(existing.agendaResourceId);
+        var start = request.StartAt ?? request.HeldAt ?? existing.startAt ?? existing.heldAt;
+        var end = request.EndAt ?? existing.endAt ?? start?.AddMinutes(60);
+        await AssertMeetingSlotUniqueAsync(projectId, name, start, id, token, ct);
 
         var payload = new Dictionary<string, object?>();
         if (request.Name is not null) payload["name"] = name;
-        if (request.HeldAt.HasValue) payload["heldAt"] = request.HeldAt;
+        if (request.StartAt.HasValue || request.HeldAt.HasValue)
+        {
+            payload["startAt"] = start;
+            payload["heldAt"] = start;
+        }
+        if (request.EndAt.HasValue || request.StartAt.HasValue || request.HeldAt.HasValue) payload["endAt"] = end;
+        if (request.Status is not null) payload["status"] = PmMeetingStatus.Normalize(request.Status);
         if (request.MinutesResourceId is not null) payload["minutesResourceId"] = minutesId;
+        if (request.AgendaResourceId is not null) payload["agendaResourceId"] = agendaId;
         if (request.WbsId is not null) payload["wbsId"] = wbsId;
         if (request.Attendees is not null) payload["attendees"] = EmptyToNull(request.Attendees);
         if (request.Note is not null) payload["note"] = EmptyToNull(request.Note);
+        if (request.Location is not null) payload["location"] = EmptyToNull(request.Location);
+        if (request.MeetingUrl is not null) payload["meetingUrl"] = EmptyToNull(request.MeetingUrl);
+        if (request.Agenda is not null) payload["agenda"] = EmptyToNull(request.Agenda);
+        if (request.Detached.HasValue)
+        {
+            payload["detached"] = request.Detached.Value ? 1 : 0;
+        }
 
         if (payload.Count > 0)
             await _dg.UpdateAsync(PmDatasets.Meetings, id, payload, token, ct);
@@ -211,29 +284,36 @@ public sealed partial class ProjectPlanningService
 
         return meetings
             .Select(row => ToMeetingDto(row, byMeeting.GetValueOrDefault(row.__dataId ?? string.Empty) ?? new List<MeetingActionDto>()))
-            .OrderByDescending(m => m.OpenActionCount)
-            .ThenByDescending(m => m.HeldAt)
+            .OrderBy(m => m.StartAt ?? m.HeldAt)
             .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
-    private async Task<List<PmMeetingRow>> LoadMeetingRowsAsync(string projectId, string token, CancellationToken ct)
+    private async Task<List<PmMeetingRow>> LoadMeetingRowsAsync(
+        string projectId,
+        string token,
+        CancellationToken ct,
+        string? query = null)
     {
         var page = await _dg.QueryPageAsync(
             PmDatasets.Meetings,
             new Dictionary<string, object?> { ["projectId"] = projectId },
-            ListQuery,
+            query ?? ListQuery,
             token,
             ct);
         return page.Items.Select(Map<PmMeetingRow>).ToList();
     }
 
-    private async Task<List<PmMeetingActionRow>> LoadMeetingActionRowsAsync(string projectId, string token, CancellationToken ct)
+    private async Task<List<PmMeetingActionRow>> LoadMeetingActionRowsAsync(
+        string projectId,
+        string token,
+        CancellationToken ct,
+        string? query = null)
     {
         var page = await _dg.QueryPageAsync(
             PmDatasets.MeetingActions,
             new Dictionary<string, object?> { ["projectId"] = projectId },
-            ListQuery,
+            query ?? ListQuery,
             token,
             ct);
         return page.Items.Select(Map<PmMeetingActionRow>).ToList();
@@ -273,24 +353,32 @@ public sealed partial class ProjectPlanningService
         return ToMeetingActionDto(row);
     }
 
-    private async Task AssertMeetingUniqueAsync(
+    private async Task AssertMeetingSlotUniqueAsync(
         string projectId,
         string name,
+        DateTime? startAt,
         string? excludeId,
         string token,
         CancellationToken ct)
     {
+        if (!startAt.HasValue) return;
         var rows = await LoadMeetingRowsAsync(projectId, token, ct);
         foreach (var row in rows)
         {
             if (!string.IsNullOrWhiteSpace(excludeId) && string.Equals(row.__dataId, excludeId, StringComparison.Ordinal))
                 continue;
-            if (string.Equals((row.name ?? string.Empty).Trim(), name, StringComparison.OrdinalIgnoreCase))
+            var existingStart = row.startAt ?? row.heldAt;
+            if (!existingStart.HasValue) continue;
+            if (!string.Equals((row.name ?? string.Empty).Trim(), name, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (existingStart.Value.ToUniversalTime() == startAt.Value.ToUniversalTime())
+            {
                 throw new OperationCoreException(
                     "MEETING_EXISTS",
-                    "This meeting already exists on the project.",
-                    "Bu toplantı bu projede zaten var.",
+                    "This meeting already exists on the project at that time.",
+                    "Bu toplantı bu saatte zaten var.",
                     409);
+            }
         }
     }
 
@@ -320,20 +408,87 @@ public sealed partial class ProjectPlanningService
 
     private static MeetingDto ToMeetingDto(PmMeetingRow row, IReadOnlyList<MeetingActionDto> actions)
     {
+        var start = row.startAt ?? row.heldAt;
+        var end = row.endAt ?? start?.AddMinutes(60);
+        var status = string.IsNullOrWhiteSpace(row.status)
+            ? InferMeetingStatus(start)
+            : PmMeetingStatus.Normalize(row.status);
         return new MeetingDto
         {
             Id = row.__dataId ?? string.Empty,
             ProjectId = row.projectId ?? string.Empty,
             Name = (row.name ?? string.Empty).Trim(),
-            HeldAt = row.heldAt,
+            HeldAt = start,
+            StartAt = start,
+            EndAt = end,
+            Status = status,
             MinutesResourceId = EmptyToNull(row.minutesResourceId),
+            AgendaResourceId = EmptyToNull(row.agendaResourceId),
             WbsId = EmptyToNull(row.wbsId),
             Attendees = EmptyToNull(row.attendees),
             Note = EmptyToNull(row.note),
+            Location = EmptyToNull(row.location),
+            MeetingUrl = EmptyToNull(row.meetingUrl),
+            Agenda = EmptyToNull(row.agenda),
+            SeriesId = EmptyToNull(row.seriesId),
+            OccurrenceDate = row.occurrenceDate,
+            Detached = row.detached is >= 1,
             ActionCount = actions.Count,
             OpenActionCount = actions.Count(a => a.Open),
             Actions = actions
         };
+    }
+
+    private static IEnumerable<MeetingDto> FilterMeetings(IEnumerable<MeetingDto> items, MeetingListQuery query)
+    {
+        var kind = (query.Kind ?? "all").Trim().ToLowerInvariant();
+        var seriesId = (query.SeriesId ?? string.Empty).Trim();
+        var q = (query.Q ?? string.Empty).Trim();
+        IEnumerable<MeetingDto> rows = items;
+        if (!string.IsNullOrWhiteSpace(seriesId))
+            rows = rows.Where(m => string.Equals(m.SeriesId, seriesId, StringComparison.Ordinal) && !m.Detached);
+        else if (kind == "adhoc")
+            rows = rows.Where(m => string.IsNullOrWhiteSpace(m.SeriesId) || m.Detached);
+        else if (kind is "series" or "occurrence")
+            rows = rows.Where(m => !string.IsNullOrWhiteSpace(m.SeriesId) && !m.Detached);
+
+        if (query.From.HasValue)
+        {
+            var from = query.From.Value.ToUniversalTime();
+            rows = rows.Where(m => (m.StartAt ?? m.HeldAt)?.ToUniversalTime() >= from);
+        }
+        if (query.To.HasValue)
+        {
+            var to = query.To.Value.ToUniversalTime();
+            if (to.TimeOfDay == TimeSpan.Zero) to = to.AddDays(1);
+            rows = rows.Where(m => (m.StartAt ?? m.HeldAt)?.ToUniversalTime() < to);
+        }
+        if (!string.IsNullOrWhiteSpace(q))
+            rows = rows.Where(m => m.Name.Contains(q, StringComparison.OrdinalIgnoreCase));
+
+        var minutes = (query.Minutes ?? "any").Trim().ToLowerInvariant();
+        if (minutes is "present" or "yes" or "true")
+            rows = rows.Where(m => !string.IsNullOrWhiteSpace(m.MinutesResourceId));
+        else if (minutes is "missing" or "none" or "false")
+        {
+            var now = DateTime.UtcNow;
+            rows = rows.Where(m =>
+                string.IsNullOrWhiteSpace(m.MinutesResourceId)
+                && !string.Equals(m.Status, PmMeetingStatus.Cancelled, StringComparison.OrdinalIgnoreCase)
+                && (
+                    string.Equals(m.Status, PmMeetingStatus.Held, StringComparison.OrdinalIgnoreCase)
+                    || (m.StartAt ?? m.HeldAt)?.ToUniversalTime() <= now));
+        }
+
+        return rows
+            .OrderByDescending(m => m.StartAt ?? m.HeldAt)
+            .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string InferMeetingStatus(DateTime? start)
+    {
+        if (start is null) return PmMeetingStatus.Scheduled;
+        return start.Value.ToUniversalTime() < DateTime.UtcNow ? PmMeetingStatus.Held : PmMeetingStatus.Scheduled;
     }
 
     private static MeetingActionDto ToMeetingActionDto(PmMeetingActionRow row)
@@ -370,6 +525,7 @@ public sealed partial class ProjectPlanningService
             OpenActionCount = actions.Count(a => a.Open),
             OverdueActionCount = actions.Count(a => a.Overdue),
             UnboundActionCount = actions.Count(a => a.Unbound),
+            Total = items.Count,
             Items = items
         };
     }

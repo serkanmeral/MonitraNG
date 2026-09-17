@@ -50,11 +50,15 @@ import type {
   PmProjectAuditPacks,
   PmMeeting,
   PmMeetingAction,
+  PmMeetingSeries,
   PmCreateMeetingRequest,
   PmUpdateMeetingRequest,
+  PmCreateMeetingSeriesRequest,
+  PmUpdateMeetingSeriesRequest,
   PmCreateMeetingActionRequest,
   PmUpdateMeetingActionRequest,
   PmProjectMeetings,
+  PmMeetingListQuery,
   PmStakeholder,
   PmCreateStakeholderRequest,
   PmUpdateStakeholderRequest,
@@ -546,9 +550,23 @@ export async function pmDeleteAuditPack(id: string): Promise<void> {
   await fetchFromOperations(`/api/v1/audit-packs/${encodeURIComponent(id)}`, 'DELETE');
 }
 
-export async function pmGetProjectMeetings(projectId: string): Promise<PmProjectMeetings> {
+export async function pmGetProjectMeetings(
+  projectId: string,
+  query: PmMeetingListQuery = {},
+): Promise<PmProjectMeetings> {
+  const params = new URLSearchParams();
+  if (query.kind) params.set('kind', query.kind);
+  if (query.seriesId) params.set('seriesId', query.seriesId);
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.q) params.set('q', query.q);
+  if (query.skip != null) params.set('skip', String(query.skip));
+  if (query.take != null) params.set('take', String(query.take));
+  if (query.includeSeries === false) params.set('includeSeries', 'false');
+  if (query.minutes && query.minutes !== 'any') params.set('minutes', query.minutes);
+  const qs = params.toString();
   return (await fetchFromOperations(
-    `/api/v1/projects/${encodeURIComponent(projectId)}/meetings`,
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meetings${qs ? `?${qs}` : ''}`,
     'GET',
   )) as PmProjectMeetings;
 }
@@ -567,6 +585,25 @@ export async function pmUpdateMeeting(id: string, body: PmUpdateMeetingRequest):
 
 export async function pmDeleteMeeting(id: string): Promise<void> {
   await fetchFromOperations(`/api/v1/meetings/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export async function pmCreateMeetingSeries(
+  projectId: string,
+  body: PmCreateMeetingSeriesRequest,
+): Promise<PmMeetingSeries> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meeting-series`,
+    'POST',
+    body,
+  )) as PmMeetingSeries;
+}
+
+export async function pmUpdateMeetingSeries(id: string, body: PmUpdateMeetingSeriesRequest): Promise<PmMeetingSeries> {
+  return (await fetchFromOperations(`/api/v1/meeting-series/${encodeURIComponent(id)}`, 'PUT', body)) as PmMeetingSeries;
+}
+
+export async function pmDeleteMeetingSeries(id: string): Promise<void> {
+  await fetchFromOperations(`/api/v1/meeting-series/${encodeURIComponent(id)}`, 'DELETE');
 }
 
 export async function pmCreateMeetingAction(
@@ -671,6 +708,36 @@ export function pmFormatDate(value?: string | null, locale = 'tr'): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+  }).format(date);
+}
+
+export function pmDateTimeInput(value?: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function pmDateTimePayload(value?: string | null): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+export function pmFormatDateTime(value?: string | null, locale = 'tr'): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return pmFormatDate(value, locale);
+  const tag = locale.toLowerCase().startsWith('en') ? 'en-GB' : 'tr-TR';
+  return new Intl.DateTimeFormat(tag, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(date);
 }
 

@@ -1,12 +1,30 @@
 # Teslimat Omurgası — Planlama
 
-**Durum:** Faz 1–3 omurga ayakta. Kontrol sekmeleri (RAID → Paydaş) TEST’te turlandı. **Toplantı** ve **Süreç** ayrı UX yoluna bırakıldı (16 Eylül 2026). Manifest **0.36.0**.
-**Tarih:** 2 Eylül 2026 (plan) · **16 Eylül 2026** (Kontrol/Paydaş durak)
+**Durum:** Faz 1–3 omurga ayakta. Kontrol sekmeleri (RAID → Paydaş) durakta. **Toplantı** takvim + iki sicil + tutanak listesi (dış takvim yok). **Süreç** hâlâ ayrı yol. Manifest **0.38.0**.
+**Tarih:** 2 Eylül 2026 (plan) · **17 Eylül 2026** (tutanak sicili)
 **Ortam:** Odak test `192.168.20.20` · prod `192.168.20.8` bu hatta dokunulmaz
 **Kaynak görüşme:** [ankarabt görüşme notları](../../ankarabt/yazilim-mimarligi-di-ve-proje-yonetimi-gorusme-notlari.md)  
 **Oturum özeti:** [current_status.md](./current_status.md)
 
 AnkaraBT şartnamesi **örnek kaynak**tır. Generic omurga kurulur; o ihalenin maddeleri hayata geçirilmez.
+
+### Toplantı (17 Eylül 2026 — kilit)
+
+Kapsam **proje**. Haftalık seri var. Dış takvim / Outlook / ICS **yok**. NLP yok.
+
+Üç görünüm: **Takvim** (karışık, görünen aralık) · **Liste** (kart yok) · **Tutanaklar**.
+
+Liste iki sicil: üstte haftalık seriler (satır = seri; tıklayınca sayfalı örnekler), altta anlık (serisiz veya kopmuş; arama + tarih + skip/take). Varsayılan anlık pencere: son 30 gün + gelecek.
+
+Tutanak toplantının **sonucudur**. Aynı `pm_meetings.minutesResourceId`; yeni dataset yok. Tutanaklar sicili: **Kayıtlı** / **Eksik** (yapılmış veya geçmiş, iptal değil). Arama, tarih, seri. Dosya Kütüphane → Toplantı notları’nda kalır. Toplantısız tutanak yok. Kararlar ayrıdır.
+
+Olay diyaloğu sekmeli: Olay | Gündem | Tutanak | Aksiyonlar (kayıttan sonra). Kaydet tüm sekmeleri basar. Gündem toplantıdan önce, tutanak sonra.
+
+API: `GET .../meetings?kind=&seriesId=&from=&to=&q=&skip=&take=&includeSeries=&minutes=present|missing`. Tarama tavanı 2000 satır (v1).
+
+Mevcut `pm_meetings` + `pm_meeting_actions` + `pm_meeting_series`. Örnekler `seriesId` taşır. Seri gündem **metnini** kopyalar, `agendaResourceId` kopyalamaz. “Bitti” OC kapatmaz. Durum sekmesi hâlâ aksiyon sayar (tam tarama; bu kilit dışı).
+
+v1’de yok: bu-ve-sonrası, RSVP, oda, NLP, toplantısız tutanak.
 
 ---
 

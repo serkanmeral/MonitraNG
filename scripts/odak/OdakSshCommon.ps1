@@ -253,8 +253,9 @@ function Send-OdakRemoteFile {
     $escapedRemote = $remoteFullPath.Replace("'", "'\\''")
     try {
         $sshArgs = @{
-            ComputerName = $ComputerName
-            Credential   = $Credential
+            ComputerName      = $ComputerName
+            Credential        = $Credential
+            ConnectionTimeout = 30
         }
         if ($AcceptKey) { $sshArgs.AcceptKey = $true }
         $session = New-SSHSession @sshArgs
@@ -266,10 +267,11 @@ function Send-OdakRemoteFile {
 
     try {
         $scpArgs = @{
-            ComputerName = $ComputerName
-            Credential   = $Credential
-            Path         = $LocalPath
-            Destination  = $RemoteDestination
+            ComputerName      = $ComputerName
+            Credential        = $Credential
+            Path              = $LocalPath
+            Destination       = $RemoteDestination
+            ConnectionTimeout = 30
         }
         if ($AcceptKey) { $scpArgs.AcceptKey = $true }
         Set-SCPItem @scpArgs
@@ -280,8 +282,9 @@ function Send-OdakRemoteFile {
     }
 
     $sftpArgs = @{
-        ComputerName = $ComputerName
-        Credential   = $Credential
+        ComputerName      = $ComputerName
+        Credential        = $Credential
+        ConnectionTimeout = 30
     }
     if ($AcceptKey) { $sftpArgs.AcceptKey = $true }
     $sftp = New-SFTPSession @sftpArgs

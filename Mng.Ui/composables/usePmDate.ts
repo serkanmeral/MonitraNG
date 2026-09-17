@@ -1,5 +1,4 @@
-import { useAppI18n } from '@/composables/useAppI18n';
-import { pmFormatDate } from '@/services/projectManagementService';
+import { pmFormatDate, pmFormatDateTime } from '@/services/projectManagementService';
 
 export function usePmDate() {
   const { locale } = useAppI18n();
@@ -8,8 +7,16 @@ export function usePmDate() {
     return pmFormatDate(value, locale());
   }
 
+  function formatPmDateTime(value?: string | null): string {
+    return pmFormatDateTime(value, locale());
+  }
+
   function formatPmDateOrDash(value?: string | null): string {
     return formatPmDate(value) || '—';
+  }
+
+  function formatPmDateTimeOrDash(value?: string | null): string {
+    return formatPmDateTime(value) || '—';
   }
 
   function formatPmDateRange(start?: string | null, finish?: string | null): string {
@@ -19,5 +26,5 @@ export function usePmDate() {
     return `${from || '—'} → ${to || '—'}`;
   }
 
-  return { formatPmDate, formatPmDateOrDash, formatPmDateRange };
+  return { formatPmDate, formatPmDateTime, formatPmDateOrDash, formatPmDateTimeOrDash, formatPmDateRange };
 }

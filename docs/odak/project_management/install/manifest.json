@@ -1,8 +1,8 @@
 {
   "id": "teslimat-omurgasi",
-  "version": "0.36.0",
-  "updated": "2026-09-15",
-  "description": "F1–F5 + F2-14..16; hafif portföy; demo SEED projeler; close-path sert. NLP yok.",
+  "version": "0.38.0",
+  "updated": "2026-09-17",
+  "description": "F1–F5 + F2-14..16; proje toplantı takvimi, iki sicil, tutanak listesi, gündem/tutanak belgesi. NLP yok. Dış takvim yok.",
   "category": {
     "file": "docs/odak/document_intelligence/datasets/documentintelligence_dataset_category.json",
     "name": "DocumentIntelligenceDatasets"
@@ -64,6 +64,7 @@
       "pm_obligations",
       "pm_audit_packs",
       "pm_meetings",
+      "pm_meeting_series",
       "pm_meeting_actions",
       "pm_stakeholders",
       "pm_process_maps"
@@ -81,7 +82,8 @@
       "pm_acknowledgements": ["projectId", "resourceId", "title", "personName", "status"],
       "pm_obligations": ["projectId", "title", "clauseRef", "status", "dueDate"],
       "pm_audit_packs": ["projectId", "name", "kind", "status", "resourceIds"],
-      "pm_meetings": ["projectId", "name", "heldAt", "minutesResourceId", "wbsId"],
+      "pm_meetings": ["projectId", "name", "startAt", "endAt", "status", "seriesId", "heldAt", "agendaResourceId", "minutesResourceId", "wbsId"],
+      "pm_meeting_series": ["projectId", "name", "weekday", "startTime", "durationMinutes", "until"],
       "pm_meeting_actions": ["projectId", "meetingId", "title", "status", "workItemId"],
       "pm_stakeholders": ["projectId", "name", "kind", "status", "resourceIds"],
       "pm_process_maps": ["projectId", "name", "kind", "status", "resourceId"]

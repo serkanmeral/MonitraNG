@@ -39,7 +39,6 @@ import {
   pmGetProjectAuditPacks,
   pmGetProjectBudget,
   pmGetProjectCapacity,
-  pmGetProjectMeetings,
   pmGetProjectObligations,
   pmGetProjectProcessMaps,
   pmGetProjectStakeholders,
@@ -277,7 +276,6 @@ const budget = computed(() => detail.value?.budget ?? null);
 const acknowledgements = computed(() => detail.value?.acknowledgements ?? []);
 const obligations = computed(() => detail.value?.obligations ?? []);
 const auditPacks = computed(() => detail.value?.auditPacks ?? []);
-const meetings = computed(() => detail.value?.meetings ?? []);
 const stakeholders = computed(() => detail.value?.stakeholders ?? []);
 const processMaps = computed(() => detail.value?.processMaps ?? []);
 
@@ -578,7 +576,7 @@ async function ensureTabData(tab: string, force = false) {
   if (!projectId.value || !detail.value) return;
   if (!force && tabLoaded.value.has(tab)) return;
 
-  const coreTabs = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates', 'packs', 'library']);
+  const coreTabs = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates', 'packs', 'library', 'meetings']);
   if (coreTabs.has(tab)) {
     markTabLoaded(tab);
     return;
@@ -614,9 +612,6 @@ async function ensureTabData(tab: string, force = false) {
         break;
       case 'audit':
         mergeDetail({ auditPacks: (await pmGetProjectAuditPacks(projectId.value)).items ?? [] });
-        break;
-      case 'meetings':
-        mergeDetail({ meetings: (await pmGetProjectMeetings(projectId.value)).items ?? [] });
         break;
       case 'stakeholders':
         mergeDetail({ stakeholders: (await pmGetProjectStakeholders(projectId.value)).items ?? [] });
@@ -1500,10 +1495,12 @@ watch(viewTab, (tab) => {
       <v-card-text v-else-if="viewTab === 'meetings'" class="px-6 py-4">
         <PmMeetingsPanel
           :project-id="projectId"
-          :items="meetings"
+          :project-code="detail?.project.code || ''"
+          :hub-folder-id="detail?.project.diFolderId"
           :wbs="wbs"
           :loading="loading || tabLoading"
           @changed="onPanelChanged"
+          @hub-ready="onLibraryHubReady"
         />
       </v-card-text>
 
