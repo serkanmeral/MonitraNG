@@ -6,7 +6,7 @@
 
 Üç görünüm: **Takvim**, **Liste**, **Tutanaklar**. Kart listesi yoktur.
 
-Takvim: ay / hafta / gün. Görünen aralıktaki olaylar (seri ve anlık karışık).
+Takvim: ay / hafta / gün (hafta Pazartesi başlar). Görünen aralıktaki olaylar (seri ve anlık karışık). Ay/gün adları uygulama dilini izler (Türkçe arayüzde Türkçe). Olay penceresindeki native tarih kutusu tarayıcı/işletim sistemi dilini izler; bu takvim locale’inden ayrıdır.
 
 Liste iki sicil. Üstte **haftalık seriler**: satır bir seridir; tıklayınca o serinin örnekleri sayfalı açılır. Altta **anlık toplantılar** (serisiz veya kopmuş): arama, tarih penceresi (varsayılan son 30 gün ve gelecek), sayfalama.
 

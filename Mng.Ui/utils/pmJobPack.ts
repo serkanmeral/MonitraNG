@@ -167,22 +167,52 @@ function isFolderEmpty(listing: { items?: unknown[]; total?: number | null }): b
   return (listing.total ?? 0) <= 0;
 }
 
-export async function applyJobPackDocuments(projectId: string, projectCode: string, pack: PmJobPack): Promise<string | null> {
+export type PmPackDocProgressPhase = 'hub' | 'folder' | 'starter' | 'finish';
+
+export interface PmPackDocProgress {
+  phase: PmPackDocProgressPhase;
+  status: 'start' | 'done' | 'skip';
+  name?: string;
+}
+
+export async function applyJobPackDocuments(
+  projectId: string,
+  projectCode: string,
+  pack: PmJobPack,
+  onProgress?: (event: PmPackDocProgress) => void,
+): Promise<string | null> {
+  const emit = (event: PmPackDocProgress) => onProgress?.(event);
+
+  emit({ phase: 'hub', status: 'start' });
   const hubId = await ensureProjectDocumentHub(projectCode);
-  if (!hubId) return null;
+  if (!hubId) {
+    emit({ phase: 'hub', status: 'skip' });
+    return null;
+  }
+  emit({ phase: 'hub', status: 'done' });
+
   const folderIds = new Map<string, string>();
   for (const name of packFolderNames(pack)) {
+    emit({ phase: 'folder', status: 'start', name });
     folderIds.set(name, await ensureFolder(hubId, name));
+    emit({ phase: 'folder', status: 'done', name });
   }
 
   for (const starter of pack.starters || []) {
+    emit({ phase: 'starter', status: 'start', name: starter.title });
     const parent = folderIds.get(starter.folder);
-    if (!parent) continue;
+    if (!parent) {
+      emit({ phase: 'starter', status: 'skip', name: starter.title });
+      continue;
+    }
     const listing = await diGetChildren(parent);
     const exists = (listing.items || []).some(
       (row) => row.type === 'markdown' && (row.title === starter.title || row.name === starter.title),
     );
-    if (exists) continue;
+    if (exists) {
+      emit({ phase: 'starter', status: 'skip', name: starter.title });
+      continue;
+    }
     const created = await diCreateMarkdown({
       parentId: parent,
       title: starter.title,
@@ -192,10 +222,13 @@ export async function applyJobPackDocuments(projectId: string, projectCode: stri
     if (starter.kind && created.id) {
       await diUpdateResourceMetadata(created.id, { kind: starter.kind });
     }
+    emit({ phase: 'starter', status: 'done', name: starter.title });
   }
 
+  emit({ phase: 'finish', status: 'start' });
   await collapseEmptyDuplicateFolders(hubId);
   await pmUpdateProject(projectId, { diFolderId: hubId });
+  emit({ phase: 'finish', status: 'done' });
   return hubId;
 }
 

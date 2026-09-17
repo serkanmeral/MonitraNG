@@ -77,7 +77,7 @@ Satılabilir ilk ürün. Gantt ve draw.io **bu fazın parçasıdır**.
 1. **Proje katmanı (ince)** — proje, WBS, görev, kilometre taşı, FS bağımlılığı, Gantt, planlanan/gerçekleşen tarih, bir baseline, sapma.
 2. **OC bağı** — WBS kalemi → workspace / work item / etiket / sorgu. İlerleme adet değil; ağırlık veya efor ile yuvarlanır.
 3. **DI kontrollü kayıt** — proje çalışma alanı; türler (plan, tutanak, karar, teslimat, prosedür, şartname, kanıt); şablon; sürüm; onay/yayın; basit baseline.
-4. **Görsel kanıt** — draw.io / SVG / PNG / PDF yükle, önizle, sürümle, WBS veya belgeye bağla. Mermaid sayfada kalır. Editör yazılmaz.
+4. **Görsel kanıt** — draw.io / SVG / PNG / PDF yükle, önizle, sürümle, WBS veya belgeye bağla. Mermaid sayfada kalır. Kendi çizim motoru yazılmaz; resmi süreç çizimi self-host `jgraph/drawio` iframe’idir.
 5. **Karar ve değişiklik (hafif)** — genel karar kaydı. Kapsam değişikliği hangi belge / WBS / işi etkiler.
 6. **İzlenebilirlik (hafif)** — `belge → WBS → OC işi → kanıt`. “Planı var, işi açık, belgesi onaysız” görünsün.
 7. **Durum paketi** — geciken iş, kritik kilometre taşı, eksik onay, baseline sapması. Sponsor görünümü: zaman + kapsam + belge. Maliyet yok.
@@ -170,7 +170,7 @@ Sıra bilinçli: önce kurulum disiplini, sonra nesneler, sonra Gantt ve bağ, s
 | **F1-0** | Kurulum iskeleti | Manifest, tek bootstrap, create-or-merge şema, doğrulama | **İskelet hazır (0.1.0)** — `install-teslimat-omurgasi.ps1` |
 | **F1-1** | DI tür ve ilişki | Belge türleri, ilişki tipleri (`derivedFrom`, `implements`, `dependsOn`, `supersedes`, `conflictsWith`, kanıt/plan bağları) | **Devam** — katalog + kaynak-kaynak link |
 | **F1-2** | Onay ve baseline (ince) | Taslak → inceleme → onay/yayın; belge ve proje için basit baseline | Tam CCB yok |
-| **F1-3** | Görsel kanıt | draw.io ve görsel uzantılar: yükle, önizle, sürüm, bağla | Editör yok |
+| **F1-3** | Görsel kanıt | draw.io ve görsel uzantılar: yükle, önizle, sürüm, bağla | **Bitti** — kendi editör yok; self-host draw.io |
 | **F1-4** | Proje nesneleri | Proje, WBS, görev, kilometre taşı, FS, tarihler, bir baseline | Runtime: **MngOperations** (`pm_*`); yeni servis yok |
 | **F1-5** | Gantt UI | Zaman ekseni, bağımlılık, sapma, kilometre taşı | Planlamanın yüzü |
 | **F1-6** | OC bağ ve ilerleme | WBS → OC; olay ile rollup; Gantt’ta iş durumu | Görev kopyalanmaz |
@@ -189,7 +189,7 @@ Faz 1 kırılımının uygulama durumu (3 Eylül 2026): **F1-0 … F1-9 bitti** 
 - Metadata-first: tür ve ilişki kodda `if (architect)` ile şişmez.
 - OC work item yürütmenin tek kaynağıdır.
 - Gantt gösterimdir; kaynak dengeleme ve tam CPM Faz 1’de yoktur (FS + tarihler yeter).
-- draw.io dosyası birinci sınıf DI kaynağıdır (`type=file` + tür/metadata); özel çizim motoru yoktur.
+- draw.io dosyası birinci sınıf DI kaynağıdır (`type=file` + tür/metadata); özel çizim motoru yoktur. Çizim self-host `jgraph/drawio` (8088) iframe’idir.
 - UI doğrulaması lokal `npm run dev`; backend test sunucusuna deploy edilebilir; UI image ancak talep ile.
 - Her şema/seed değişikliği F1-0 manifest’ine yazılır.
 - İş paketi şema değil yapı kurar; tekrar kurulum idempotent olur (atla / güncelle / önizle).
@@ -228,7 +228,15 @@ Kullanıcı içeriği doldurur; iskeleti her seferinde kurmaz. Aynı kişi birde
 
 Bugünkü kırıntılar (DI pack export/import, OC demo seed) bu modelin parçasıdır; hedef onları tek paket biçiminde birleştirmektir.
 
-### 9.3 Kurallar
+### 9.3 TEST doğrulama (17 Eylül 2026)
+
+Raftaki yedi paket Odak TEST’te UI **Kur** ile basıldı; API tekrar kur = atla. SEED-PMO (`027bdf17-…`) dokunulmadı. Kalite lab’inde PMO ikinci paket olarak eklendi ve söküldü; Kalite WBS/işleri kaldı.
+
+Kurulum UX: backend tek POST; DI klasör/starter için kalıcı ilerleme listesi (sahte yüzde yok). Eğitim: [egitim/08-paketler.md](./egitim/08-paketler.md).
+
+Bilinen ürün boşluğu: paket JSON `diagram` alanı basılmaz; Diyagram klasörü boş kalır. OC iş anahtarı proje kodunun 12 karakterine kesilir.
+
+### 9.4 Kurallar
 
 - Paket **şema değil, içerik + yapı** basar. Yeni dataset alanı paketle gelmez; F1-0 çekirdeğine girer.
 - Kurulum önizlemeli ve idempotent’tir; ortam paket mezarlığı olmaz.
@@ -258,7 +266,7 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 2. WBS–OC bağının ilk sürümü: tek work item mi, yoksa etiket/sorgu da mi?
 3. İlerleme formülü: efor, süre, manuel ağırlık — hangisi varsayılan?
 4. Proje çalışma alanı DI klasörü mü, yoksa ayrı “project hub” mu?
-5. draw.io önizleme: sunucu tarafı render mi, tarayıcı/iframe mi?
+5. draw.io önizleme: **tarayıcı iframe** (self-host 8088). Sunucu tarafı PNG render yok.
 6. Yetki modeli: DI klasör yetkisi + OC workspace yetkisi + proje rolü nasıl katmanlanır?
 7. İş paketi kimliği: paket bir kez ortama mı kurulur, yoksa her yeni proje örneklenir mi?
 8. Paket sürümü yükseltince mevcut proje yapıları nasıl evrilir?
@@ -267,9 +275,11 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 
 ## 12. Sonraki adım
 
-**15 Eylül 2026:** Manifest **0.36.0**. Portföy hafifleştirildi (liste timeout giderildi). Odak’ta 7 `SEED-*` demo proje; `SEED-PMO` Gantt için tarih/FS/baseline. NLP/şartname parser **yapılmayacak**.
+**17 Eylül 2026:** Manifest **0.38.0**. Süreç sicili + self-host draw.io TEST’te. Yedi iş paketi UI turu bitti. NLP/şartname parser **yapılmayacak**.
 
-Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed sertleştirmesi. Oturum notu: [current_status.md](./current_status.md).
+Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed + paket lab turu. Oturum notu: [current_status.md](./current_status.md).
+
+Sıradaki ürün boşluğu (açık talepte): paket `diagram` starter’ını basmak. Prod süreç/editör duman testi kullanıcıda.
 
 “Marketplace” netliği (3 Eylül 2026): kastedilen raftan iş paketi şablonu; satın alma vitrini değil.
 

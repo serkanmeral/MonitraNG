@@ -1,28 +1,33 @@
 # Süreç
 
-**Süreç haritası**, resmi süreç gerçeğinin bir draw.io / görsel belge olduğunun kaydıdır. Bu sekmede editör, BPMN motoru ve otomatik senkron yoktur.
-
-> Bu sekmenin ekran turu (seçici, modal, tablo) Yükümlülük / Denetim / Paydaş ile aynı yoldan **gitmeyecek**. Kavram aynı kalır; UX sonraki oturumda ayrı tasarlanır.
+**Süreç haritası**, resmi süreç gerçeğinin bir draw.io belgesi olduğunun kaydıdır. Çizmek resmi yapmak değildir. Bu sekmede BPMN motoru ve otomatik senkron yoktur.
 
 ## Ekranda ne vardır?
 
-Ad, tür (prosedür, iş akışı, organizasyon, diğer), DI belge (draw.io), durum (taslak / resmi / yürürlükten kalktı), not.
+Filtreli tablo: **Tümü**, **Taslak**, **Belgesiz**, **Resmi**.
 
-**Resmi yap** bir haritayı yürürlükteki süreç yapar. Yürürlükten kaldırmak not ister. Taslak ve belgesiz kayıtlar Durum’a yansır.
+**Süreç haritası ekle** modalında: ad, tür (prosedür, iş akışı, organizasyon, diğer), belge, WBS (boş = proje düzeyi), durum (taslak / resmi / yürürlükten kalktı), not. Kimlik yapıştırılmaz.
+
+Belge iki yoldan gelir: **kütüphaneden seç** veya **Çiz** (boş draw.io, proje kütüphanesine yazılır). Kütüphane menüsündeki **Yeni çizim** de aynı dosyayı üretir; süreç kaydı ayrıca açılır.
+
+Belge adına tıklayınca yerinde önizleme. Önizlemeden **Diyagramı düzenle**, **Kütüphanede aç**, sürüm geçmişi. Listede belgesiz satırda **Çiz**, belge bağlıysa **Diyagramı düzenle**. Editör draw.io’dur; kaydetmek DI’da yeni sürüm üretir.
+
+**Resmi yap** belge bağlı taslağı yürürlükteki süreç yapar. Resmi yapmak için belge gerekir. Yürürlükten kaldırmak not ister. Taslak ve belgesiz kayıtlar Durum’a yansır.
 
 Kayıt silmek draw.io dosyasını silmez.
 
 ## Örnek
 
-Kütüphane’ye `Saha kabul akışı.drawio` yükleyin. Süreç sekmesinde kayıt açın, belgeyi bağlayın, **Resmi yap**.
+**Süreç haritası ekle** → ad `Saha kabul akışı`, tür İş akışı → **Çiz**. Diyagramı kaydedin. Listede **Resmi yap**.
 
-Akış değişince yeni sürüm yükleyin (DI dosya sürümü) veya yeni kayıt açıp eskisini yürürlükten kaldırın. Bu sekme BPMN çalıştırmaz; OC geçişleri hâlâ OC kurallarıdır.
+Akış değişince **Diyagramı düzenle** (yeni sürüm) veya yeni kayıt açıp eskisini yürürlükten kaldırın. Bu sekme BPMN çalıştırmaz; OC geçişleri hâlâ OC kurallarıdır.
 
 ## Ne değildir?
 
-- Draw.io editörü değildir (dosya Kütüphane / DI’dadır)
+- BPMN / iş akışı motoru değildir
 - Gantt değildir
 - Kapı listesi değildir; resmi süreci kapı kriterine referans verebilirsiniz
+- Kayıt silmek çizimi silmez
 
 ## Bu eğitim setini bitirmek
 

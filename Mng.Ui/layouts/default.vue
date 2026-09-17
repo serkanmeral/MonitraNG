@@ -2,7 +2,6 @@
 import { useCustomizerStore } from '@/stores/customizer';
 import { useLocaleStore } from '@/stores/locale';
 import { computed, watch } from 'vue';
-import { pl, zhHans } from 'vuetify/locale'
 import ChatbotWidget from '@/components/apps/chatbot/ChatbotWidget.vue'
 import AppGlobalToast from '@/components/shared/AppGlobalToast.vue'
 
@@ -18,6 +17,7 @@ const isPageWrapperFullHeight = computed(
 
 // RTL support: Use locale store's isRTL instead of customizer.setRTLLayout
 const isRTL = computed(() => localeStore.isRTL);
+const vuetifyLocale = computed(() => (localeStore.locale === 'zh' ? 'zhHans' : localeStore.locale));
 
 // Sync customizer.setRTLLayout with locale store (for backward compatibility)
 watch(() => localeStore.locale, (newLocale) => {
@@ -53,7 +53,7 @@ if (process.client) {
 
 <template>
     <!-----RTL LAYOUT------->
-    <v-locale-provider v-if="isRTL" rtl>
+    <v-locale-provider v-if="isRTL" rtl :locale="vuetifyLocale">
         <v-app
             :theme="customizer.actTheme"
             :class="[
@@ -89,7 +89,7 @@ if (process.client) {
 
 
     <!-----LTR LAYOUT------->
-    <v-locale-provider v-else>
+    <v-locale-provider v-else :locale="vuetifyLocale">
         <v-app
             :theme="customizer.actTheme"
             :class="[

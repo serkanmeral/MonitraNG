@@ -22,6 +22,7 @@ import { createI18n } from "vue-i18n";
 import messages from "@/utils/locales/messages";
 //ScrollTop
 import VueScrollTo from "vue-scrollto";
+import { ar, en, fr, tr, zhHans } from "vuetify/locale";
 
 import {
   BLUE_THEME,
@@ -96,6 +97,11 @@ export default defineNuxtPlugin((nuxtApp) => {
         style: "text-transform: capitalize; letter-spacing:0",
         rounded: "md",
       },
+    },
+    locale: {
+      locale: "tr",
+      fallback: "en",
+      messages: { tr, en, fr, ar, zhHans },
     },
   });
 

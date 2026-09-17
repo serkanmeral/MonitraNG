@@ -4,6 +4,7 @@ import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import trLocale from '@fullcalendar/core/locales/tr';
 import type { CalendarOptions, DateSelectArg, DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core';
 import PmMeetingDocField from '@/components/apps/project-management/PmMeetingDocField.vue';
 import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
@@ -12,6 +13,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
+import { useLocaleStore } from '@/stores/locale';
 import {
   diCreateMarkdown,
   diGetById,
@@ -81,11 +83,16 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useAppI18n();
+const localeStore = useLocaleStore();
 const { formatPmDateOrDash, formatPmDateTime } = usePmDate();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
 const calendarPlugins = [dayGridPlugin, timeGridPlugin, interactionPlugin];
+const isEnglishUi = computed(() => {
+  const code = (localeStore.locale || locale() || 'tr').toLowerCase();
+  return code.startsWith('en');
+});
 
 const surface = ref<MeetingSurface>('calendar');
 const pickTarget = ref<MeetingDocKind>('minutes');
@@ -336,17 +343,12 @@ const calendarEvents = computed<EventInput[]>(() =>
 
 const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: calendarPlugins,
+  locale: isEnglishUi.value ? 'en' : trLocale,
   initialView: 'timeGridWeek',
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
     right: 'dayGridMonth,timeGridWeek,timeGridDay',
-  },
-  buttonText: {
-    today: locale().toLowerCase().startsWith('en') ? 'Today' : 'Bugün',
-    month: locale().toLowerCase().startsWith('en') ? 'Month' : 'Ay',
-    week: locale().toLowerCase().startsWith('en') ? 'Week' : 'Hafta',
-    day: locale().toLowerCase().startsWith('en') ? 'Day' : 'Gün',
   },
   firstDay: 1,
   height: 680,
