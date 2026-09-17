@@ -1,7 +1,7 @@
 {
   "code": "architecture",
   "name": "Mimari",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "C4 görünürlük, ADR ve ICD. Mimari çalışma alanı; çizim editörü veya PLM değildir.",
   "kinds": ["adr", "icd", "architecture", "diagram"],
   "folders": [
@@ -80,14 +80,6 @@
         "conditions": { "field": "description", "cmp": "empty" },
         "errorMessage": "ADR/ICD işi kapanmadan önce açıklama girilmelidir.",
         "priority": 100
-      }
-    ],
-    "slaPolicies": [
-      {
-        "name": "Karar kapanış",
-        "responseTargetMinutes": 480,
-        "resolveTargetMinutes": 2400,
-        "priority": 50
       }
     ],
     "dashboards": [

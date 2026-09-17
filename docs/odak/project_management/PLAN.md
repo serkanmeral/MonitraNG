@@ -220,7 +220,7 @@ Kullanıcı içeriği doldurur; iskeleti her seferinde kurmaz. Aynı kişi birde
 | **Tohum (Faz 1 / F1-9)** | PMO ve kalite paketleri; “bu işi şu paketten başlat”; repo seed + isteğe bağlı demo | **Bitti** |
 | **İç katalog (Faz 2)** | Raftan seç, önizle, sürüm, skip/update, sök (F2-13); F2 kontrol birimleri | **Bitti** (F2-1…F2-13) |
 | **Sektör rafları (Faz 3)** | Mimari, teklif, ECO, onboarding, kabul — aynı katalog, yeni içerik | **Bitti** (F3-1…F3-5) |
-| **Paket kapanışı** | F4-1 ince OC workspace; F4-2 sökmede boş DI klasör; F4-3 kural/SLA/pano; F4-4 yaprak iş; F4-5 özet üst iş; F4-6 iş→kanıt; F4-7 iş→plan (`reference`) | **Bitti** |
+| **Paket kapanışı** | F4-1 ince OC workspace; F4-2 sökmede boş DI klasör; F4-3 kural/pano (SLA v1.1.1’de paket basmaz); F4-4 yaprak iş; F4-5 özet üst iş; F4-6 iş→kanıt; F4-7 iş→plan (`reference`) | **Bitti** |
 | **F2-14 … F2-16** | Kapı kilidi; kanıt zorunluluğu (`EVIDENCE_REQUIRED`); onay kilidi (`APPROVAL_REQUIRED`) | **Bitti** |
 | **Şablon katalog (kullanıcının “marketplace”i)** | Raftan iş paketi; ortam WBS+DI+OC ile kurulur | **Bitti** |
 | **F5-1** | Katalog bütünlüğü (köken, özet) | **Bitti** — mağaza değil |

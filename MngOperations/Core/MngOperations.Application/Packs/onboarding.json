@@ -1,7 +1,7 @@
 {
   "code": "onboarding",
   "name": "Onboarding",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Karşılama, yetkinlik matrisi ve göreve hazır kilometre taşı. LMS, e-imza veya HRIS değildir.",
   "kinds": ["onboarding", "competency", "form", "procedure", "diagram"],
   "folders": [
@@ -79,14 +79,6 @@
         "conditions": { "field": "description", "cmp": "empty" },
         "errorMessage": "Onboarding kalemi kapanmadan önce açıklama girilmelidir.",
         "priority": 100
-      }
-    ],
-    "slaPolicies": [
-      {
-        "name": "Göreve hazır",
-        "responseTargetMinutes": 480,
-        "resolveTargetMinutes": 2400,
-        "priority": 50
       }
     ],
     "dashboards": [

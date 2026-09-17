@@ -1,7 +1,7 @@
 {
   "code": "pmo",
   "name": "PMO",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Plan, tutanak, karar, durum ve teslimat listesi. Proje yöneticisi boş ağaçla başlamaz.",
   "kinds": ["plan", "minutes", "decision", "statusReport", "deliverable", "diagram"],
   "folders": [
@@ -94,14 +94,6 @@
         "conditions": { "field": "description", "cmp": "empty" },
         "errorMessage": "Kapatmadan önce açıklama girilmelidir.",
         "priority": 100
-      }
-    ],
-    "slaPolicies": [
-      {
-        "name": "Teslimat",
-        "responseTargetMinutes": 480,
-        "resolveTargetMinutes": 2400,
-        "priority": 50
       }
     ],
     "dashboards": [

@@ -109,9 +109,9 @@ try {
     $pmo = @($catalog) | Where-Object { $_.code -eq "pmo" } | Select-Object -First 1
     Assert-True ($null -ne $pmo) "pmo katalogda"
     Assert-True ([int]$pmo.ruleCount -ge 1) "pmo ruleCount=$($pmo.ruleCount)"
-    Assert-True ([int]$pmo.slaCount -ge 1) "pmo slaCount=$($pmo.slaCount)"
+    Assert-True ([int]$pmo.slaCount -eq 0) "pmo slaCount=$($pmo.slaCount)"
     Assert-True ([int]$pmo.dashboardCount -ge 1) "pmo dashboardCount=$($pmo.dashboardCount)"
-    Assert-True ([string]$pmo.version -eq "1.1.0") "pmo version=1.1.0"
+    Assert-True ([string]$pmo.version -eq "1.1.1") "pmo version=1.1.1"
 
     $created = @(Invoke-Ops -Method POST -Path "/projects" -Body @{
             code     = $code
@@ -130,7 +130,7 @@ try {
     $sla = @(Get-DgItems -Collection "op_sla_policies" -Filter "workspaceId:eq:$wsId")
     $dash = @(Get-DgItems -Collection "op_dashboards" -Filter "workspaceId:eq:$wsId")
     Assert-True ($rules.Count -ge 1) "op_rules=$($rules.Count)"
-    Assert-True ($sla.Count -ge 1) "op_sla_policies=$($sla.Count)"
+    Assert-True ($sla.Count -eq 0) "op_sla_policies=$($sla.Count)"
     Assert-True ($dash.Count -ge 1) "op_dashboards=$($dash.Count)"
     Assert-True (($rules | Where-Object { [string]$_.name -like "PMO *" }).Count -ge 1) "PMO kural adi"
 

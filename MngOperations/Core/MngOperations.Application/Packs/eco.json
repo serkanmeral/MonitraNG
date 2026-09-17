@@ -1,7 +1,7 @@
 {
   "code": "eco",
   "name": "ECO/ECN",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Ürün değişikliği kaydı: talep, etki, ECO onayı, ECN bildirimi. PLM, BOM veya CAD değildir.",
   "kinds": ["eco", "ecn", "impact", "revision", "diagram"],
   "folders": [
@@ -79,14 +79,6 @@
         "conditions": { "field": "description", "cmp": "empty" },
         "errorMessage": "ECO kapanmadan önce açıklama girilmelidir.",
         "priority": 100
-      }
-    ],
-    "slaPolicies": [
-      {
-        "name": "Değişiklik kapanış",
-        "responseTargetMinutes": 480,
-        "resolveTargetMinutes": 2400,
-        "priority": 50
       }
     ],
     "dashboards": [

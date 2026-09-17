@@ -56,6 +56,16 @@ function Invoke-Ops {
     return , $result
 }
 
+function Get-DgById {
+    param([string]$Collection, [string]$Id)
+    if ([string]::IsNullOrWhiteSpace($Id)) { return $null }
+    $uri = "$Gateway/data/api/v1/data/$Collection/$Id"
+    $status = 0
+    $result = Invoke-RestMethod -Uri $uri -Headers $script:Headers -SkipCertificateCheck -SkipHttpErrorCheck -StatusCodeVariable status -TimeoutSec 60
+    if ([int]$status -ge 400) { return $null }
+    return $result
+}
+
 function Get-DgItems {
     param([string]$Collection, [string]$Filter)
     $uri = "$Gateway/data/api/v1/data/$Collection`?limit=50"
@@ -123,6 +133,35 @@ try {
     $wsId = [string]$applied.workspaceId
     Assert-True ($wsId) "apply workspaceId=$wsId"
     $workspaceIds += $wsId
+
+    $wsRow = Get-DgById -Collection "op_workspaces" -Id $wsId
+    Assert-True ($null -ne $wsRow) "workspace kaydi okundu"
+    Assert-True ($wsRow.workspaceType -eq "project") "workspaceType=project"
+    $boards = @(Get-DgItems -Collection "op_boards" -Filter "workspaceId:eq:$wsId")
+    Assert-True ($boards.Count -ge 1) "board olustu"
+    $board = $boards[0]
+    $visible = @($board.visibleFields)
+    Assert-True ($visible -contains "stateId") "board visibleFields stateId"
+    Assert-True ($visible -contains "key") "board visibleFields key"
+    Assert-True ($visible -notcontains "sla") "board visibleFields sla yok"
+    $listCols = @()
+    if ($board.config -and $board.config.listColumns) { $listCols = @($board.config.listColumns) }
+    Assert-True ($listCols.Count -ge 6) "board listColumns=$($listCols.Count)"
+    $listKeys = @($listCols | ForEach-Object { $_.key })
+    Assert-True ($listKeys -contains "stateId") "listColumns stateId"
+    Assert-True ($listKeys -notcontains "sla") "listColumns sla yok"
+    Assert-True ($listKeys -contains "lastStateChangeAt") "listColumns lastStateChangeAt"
+    Assert-True ([string]$board.config.defaultSort.field -eq "lastStateChangeAt") "defaultSort lastStateChangeAt"
+    $enabledStates = @($wsRow.enabledStateIds)
+    $stateNames = @()
+    foreach ($sid in $enabledStates) {
+        $st = Get-DgById -Collection "op_states" -Id $sid
+        if ($st -and $st.name) { $stateNames += [string]$st.name }
+    }
+    Assert-True ($stateNames -contains "PM Açık" -or $stateNames -contains "PM Open") "PM açık durumu"
+    Assert-True ($stateNames -contains "PM Devam" -or $stateNames -contains "PM In Progress") "PM devam durumu"
+    Assert-True ($stateNames -contains "PM Bitti" -or $stateNames -contains "PM Done") "PM bitti durumu"
+    Assert-True ($stateNames -notcontains "OC Demo Open") "helpdesk/demo durumuna dusmedi"
 
     $detail = @(Invoke-Ops -Path "/projects/$emptyId")[0]
     $linked = [string]$detail.project.workspaceId

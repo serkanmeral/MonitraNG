@@ -8,7 +8,7 @@ Boş bir projeyi elle WBS’lemek yerine “PMO / kabul / kalite” gibi bilinen
 
 ## Rafta ne vardır?
 
-Aynı motor, farklı içerik. Hepsi v1.1.0 (TEST, 17 Eylül 2026):
+Aynı motor, farklı içerik. Hepsi v1.1.1 (TEST, 17 Eylül 2026):
 
 | Paket | Ne iskeleti |
 |---|---|
@@ -41,8 +41,10 @@ Yeni proje oluştururken paket seçilirse aynı liste açılır. **Sök** onayı
 
 - WBS kalemleri
 - Kütüphane altında paket klasörleri, başlangıç sayfaları ve varsa boş draw.io (ör. `Onboarding akışı.drawio`)
-- Workspace yoksa ince OC iskeleti: kural, SLA, pano
+- Workspace yoksa ince OC iskeleti: PM durumları, kural, pano
 - Özet üst iş ve yaprak iş kayıtları
+
+**SLA basılmaz.** Proje işi ticket kuyruğu değildir. OC’deki 8 saat / 40 saat sayacı helpdesk ve zimmet workspace’lerindedir. Proje süresi WBS / Gantt tarihleridir; iş açıldığı anda SLA başlamaz. Workspace tanımlarından sonradan politika eklenebilir; paket bunu yapmaz.
 
 App Store gibi rastgele uygulama yüklemez.
 
@@ -54,7 +56,7 @@ Wiki, Kararlar, Yüklemeler ve Toplantı notları paket raftan gelmez; proje kü
 
 ## Sökme neyi siler, neyi bırakır?
 
-- Workspace, kural, SLA, pano **silinmez**
+- Workspace, kural, pano **silinmez**
 - Kullanılmamış (açık, ilerlemesiz) iş kayıtları silinebilir
 - İlerleme varsa WBS ve iş kalır
 - Boş WBS kalemleri ve boş DI klasörleri silinir
@@ -78,6 +80,7 @@ Yanlış paketi kurduysanız sökme önizlemesine bakın. Dolu Kararlar klasör�
 - Otomatik kanıt bağlama yapmaz
 - Mevcut WBS’i sessizce ezmez (önizlemede atla)
 - Diyagram editörü veya resmi süreç kaydı değildir
+- OC SLA politikası basmaz (helpdesk / zimmet kuyruğu değildir)
 
 ## Sonraki adım
 

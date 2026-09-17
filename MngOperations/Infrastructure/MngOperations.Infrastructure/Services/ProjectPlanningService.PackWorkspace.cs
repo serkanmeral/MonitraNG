@@ -9,9 +9,45 @@ namespace MngOperations.Infrastructure.Services;
 
 public sealed partial class ProjectPlanningService
 {
-    private const string PackStateOpenName = "PM Open";
-    private const string PackStateProgressName = "PM In Progress";
-    private const string PackStateDoneName = "PM Done";
+    private const string PackStateOpenName = "PM Açık";
+    private const string PackStateProgressName = "PM Devam";
+    private const string PackStateDoneName = "PM Bitti";
+    private static readonly string[] PackStateOpenAliases = ["PM Açık", "PM Open"];
+    private static readonly string[] PackStateProgressAliases = ["PM Devam", "PM In Progress"];
+    private static readonly string[] PackStateDoneAliases = ["PM Bitti", "PM Done"];
+    private static readonly string[] PackBoardVisibleFields =
+    [
+        "key", "title", "stateId", "assignee", "priorityId", "lastStateChangeAt"
+    ];
+
+    private static readonly object[] PackBoardListColumns =
+    [
+        ListCol("key", "No", sortable: true, filterable: false),
+        ListCol("title", "Başlık", sortable: true, filterable: true),
+        ListCol("stateId", "Durum", sortable: true, filterable: true),
+        ListCol("assignee", "Atanan", sortable: false, filterable: true),
+        ListCol("priorityId", "Öncelik", sortable: true, filterable: true),
+        ListCol("lastStateChangeAt", "Son değişim", sortable: true, filterable: true, format: "date")
+    ];
+
+    private static Dictionary<string, object?> ListCol(
+        string key,
+        string label,
+        bool sortable,
+        bool filterable,
+        string? format = null)
+    {
+        var row = new Dictionary<string, object?>
+        {
+            ["key"] = key,
+            ["label"] = label,
+            ["sortable"] = sortable,
+            ["filterable"] = filterable
+        };
+        if (!string.IsNullOrWhiteSpace(format))
+            row["format"] = format;
+        return row;
+    }
 
     private sealed class PackWorkspaceEnsureResult
     {
@@ -139,7 +175,7 @@ public sealed partial class ProjectPlanningService
                 new Dictionary<string, object?>
                 {
                     ["name"] = name,
-                    ["workspaceType"] = "team",
+                    ["workspaceType"] = "project",
                     ["description"] = $"Pack workspace for {project.code} ({pack.Code}).",
                     ["workItemKeyPrefix"] = PackWorkspacePrefix(project.code),
                     ["workItemKeyFormat"] = "{prefix}-{seq:D4}",
@@ -171,7 +207,7 @@ public sealed partial class ProjectPlanningService
                         ["transitionKey"] = "start_progress",
                         ["fromStateId"] = openId,
                         ["toStateId"] = progressId,
-                        ["label"] = "Baslat",
+                        ["label"] = "Başlat",
                         ["order"] = 0
                     },
                     new Dictionary<string, object?>
@@ -187,7 +223,7 @@ public sealed partial class ProjectPlanningService
                         ["transitionKey"] = "reopen",
                         ["fromStateId"] = doneId,
                         ["toStateId"] = openId,
-                        ["label"] = "Yeniden ac",
+                        ["label"] = "Yeniden aç",
                         ["order"] = 2
                     }
                 }
@@ -252,16 +288,25 @@ public sealed partial class ProjectPlanningService
                 ["name"] = $"{project.code} Board",
                 ["workspaceId"] = workspaceId,
                 ["viewType"] = "list",
+                ["isDefault"] = true,
                 ["defaultStateFlowId"] = flowId,
                 ["defaultFormId"] = formId,
-                ["visibleFields"] = new[] { "title", "assignee", "priorityId", "key" },
+                ["defaultTypeId"] = typeId,
+                ["defaultStateId"] = openId,
+                ["visibleFields"] = PackBoardVisibleFields,
                 ["config"] = new Dictionary<string, object?>
                 {
                     ["columns"] = new object[]
                     {
-                        new Dictionary<string, object?> { ["stateId"] = openId, ["title"] = "Acik", ["queryKey"] = "wi_board_column" },
+                        new Dictionary<string, object?> { ["stateId"] = openId, ["title"] = "Açık", ["queryKey"] = "wi_board_column" },
                         new Dictionary<string, object?> { ["stateId"] = progressId, ["title"] = "Devam", ["queryKey"] = "wi_board_column" },
-                        new Dictionary<string, object?> { ["stateId"] = doneId, ["title"] = "Tamam", ["queryKey"] = "wi_board_column" }
+                        new Dictionary<string, object?> { ["stateId"] = doneId, ["title"] = "Bitti", ["queryKey"] = "wi_board_column" }
+                    },
+                    ["listColumns"] = PackBoardListColumns,
+                    ["defaultSort"] = new Dictionary<string, object?>
+                    {
+                        ["field"] = "lastStateChangeAt",
+                        ["direction"] = "desc"
                     }
                 }
             },
@@ -288,8 +333,9 @@ public sealed partial class ProjectPlanningService
                 },
                 ["actions"] = new object[]
                 {
-                    new Dictionary<string, object?> { ["transitionKey"] = "start_progress", ["order"] = 0, ["label"] = "Baslat" },
-                    new Dictionary<string, object?> { ["transitionKey"] = "resolve", ["order"] = 1, ["label"] = "Kapat" }
+                    new Dictionary<string, object?> { ["transitionKey"] = "start_progress", ["order"] = 0, ["label"] = "Başlat" },
+                    new Dictionary<string, object?> { ["transitionKey"] = "resolve", ["order"] = 1, ["label"] = "Kapat" },
+                    new Dictionary<string, object?> { ["transitionKey"] = "reopen", ["order"] = 2, ["label"] = "Yeniden aç" }
                 },
                 ["header"] = new Dictionary<string, object?> { ["showBreadcrumb"] = true, ["showKey"] = true },
                     ["sidebar"] = new Dictionary<string, object?>
@@ -353,60 +399,72 @@ public sealed partial class ProjectPlanningService
         string token,
         CancellationToken ct)
     {
-        var openId = await FindFirstIdAsync(
-            OcDatasets.States, new Dictionary<string, object?> { ["category"] = "open" }, token, ct)
-            ?? await FindFirstIdAsync(
-                OcDatasets.States, new Dictionary<string, object?> { ["name"] = PackStateOpenName }, token, ct)
-            ?? await CreateNamedAsync(
-                OcDatasets.States,
-                new Dictionary<string, object?> { ["name"] = PackStateOpenName },
-                new Dictionary<string, object?>
-                {
-                    ["name"] = PackStateOpenName,
-                    ["category"] = "open",
-                    ["isInitial"] = true,
-                    ["isStart"] = true,
-                    ["color"] = "#4CAF50"
-                },
-                token,
-                ct);
+        var openId = await EnsurePackStateAsync(
+            PackStateOpenAliases,
+            PackStateOpenName,
+            new Dictionary<string, object?>
+            {
+                ["name"] = PackStateOpenName,
+                ["category"] = "open",
+                ["isInitial"] = true,
+                ["isStart"] = true,
+                ["color"] = "#4CAF50"
+            },
+            token,
+            ct);
 
-        var progressId = await FindFirstIdAsync(
-            OcDatasets.States, new Dictionary<string, object?> { ["category"] = "in_progress" }, token, ct)
-            ?? await FindFirstIdAsync(
-                OcDatasets.States, new Dictionary<string, object?> { ["name"] = PackStateProgressName }, token, ct)
-            ?? await CreateNamedAsync(
-                OcDatasets.States,
-                new Dictionary<string, object?> { ["name"] = PackStateProgressName },
-                new Dictionary<string, object?>
-                {
-                    ["name"] = PackStateProgressName,
-                    ["category"] = "in_progress",
-                    ["color"] = "#2196F3"
-                },
-                token,
-                ct);
+        var progressId = await EnsurePackStateAsync(
+            PackStateProgressAliases,
+            PackStateProgressName,
+            new Dictionary<string, object?>
+            {
+                ["name"] = PackStateProgressName,
+                ["category"] = "in_progress",
+                ["color"] = "#2196F3"
+            },
+            token,
+            ct);
 
-        var doneId = await FindFirstIdAsync(
-            OcDatasets.States, new Dictionary<string, object?> { ["category"] = "closed" }, token, ct)
-            ?? await FindFirstIdAsync(
-                OcDatasets.States, new Dictionary<string, object?> { ["isClosed"] = true }, token, ct)
-            ?? await FindFirstIdAsync(
-                OcDatasets.States, new Dictionary<string, object?> { ["name"] = PackStateDoneName }, token, ct)
-            ?? await CreateNamedAsync(
-                OcDatasets.States,
-                new Dictionary<string, object?> { ["name"] = PackStateDoneName },
-                new Dictionary<string, object?>
-                {
-                    ["name"] = PackStateDoneName,
-                    ["category"] = "closed",
-                    ["isClosed"] = true,
-                    ["color"] = "#9E9E9E"
-                },
-                token,
-                ct);
+        var doneId = await EnsurePackStateAsync(
+            PackStateDoneAliases,
+            PackStateDoneName,
+            new Dictionary<string, object?>
+            {
+                ["name"] = PackStateDoneName,
+                ["category"] = "closed",
+                ["isClosed"] = true,
+                ["color"] = "#9E9E9E"
+            },
+            token,
+            ct);
 
         return (openId, progressId, doneId);
+    }
+
+    private async Task<string> EnsurePackStateAsync(
+        IReadOnlyList<string> aliases,
+        string createName,
+        Dictionary<string, object?> payload,
+        string token,
+        CancellationToken ct)
+    {
+        foreach (var alias in aliases)
+        {
+            var existing = await FindFirstIdAsync(
+                OcDatasets.States,
+                new Dictionary<string, object?> { ["name"] = alias },
+                token,
+                ct);
+            if (!string.IsNullOrWhiteSpace(existing))
+                return existing;
+        }
+
+        return await CreateNamedAsync(
+            OcDatasets.States,
+            new Dictionary<string, object?> { ["name"] = createName },
+            payload,
+            token,
+            ct);
     }
 
     private async Task<string?> FindFirstIdAsync(

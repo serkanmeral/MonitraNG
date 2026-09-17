@@ -1,7 +1,7 @@
 {
   "code": "quality",
   "name": "Kalite",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "İnce doküman kontrolü: prosedür, form, kayıt, revizyon. Denetim sihirbazı değildir.",
   "kinds": ["procedure", "form", "record", "revision", "diagram"],
   "folders": [
@@ -79,14 +79,6 @@
         "conditions": { "field": "description", "cmp": "empty" },
         "errorMessage": "Kayıt kapanmadan önce açıklama girilmelidir.",
         "priority": 100
-      }
-    ],
-    "slaPolicies": [
-      {
-        "name": "Kayıt kapanış",
-        "responseTargetMinutes": 480,
-        "resolveTargetMinutes": 2400,
-        "priority": 50
       }
     ],
     "dashboards": [
