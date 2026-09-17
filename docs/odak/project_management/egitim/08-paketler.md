@@ -84,4 +84,4 @@ Yanlış paketi kurduysanız sökme önizlemesine bakın. Dolu Kararlar klasör�
 
 ## Sonraki adım
 
-Kurulumdan sonra **WBS** ve **Kütüphane**. İşi yürütmek için **Durum**.
+Kurulumdan sonra **Gantt** / **WBS** ve **Kütüphane**. Kompozisyon **Dashboard**; satır satır tarama **Durum**.

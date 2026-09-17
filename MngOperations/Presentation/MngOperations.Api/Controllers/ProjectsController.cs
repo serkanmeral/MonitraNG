@@ -118,6 +118,15 @@ public sealed class ProjectsController : ControllerBase
         return Ok(detail);
     }
 
+    [HttpGet("projects/{id}/wbs")]
+    [ProducesResponseType(typeof(IReadOnlyList<WbsItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetWbs(string id, CancellationToken cancellationToken)
+    {
+        var items = await _planning.GetProjectWbsAsync(id, cancellationToken);
+        return Ok(items);
+    }
+
     [HttpPut("projects/{id}")]
     [ProducesResponseType(typeof(ProjectDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -335,6 +344,15 @@ public sealed class ProjectsController : ControllerBase
     {
         var pack = await _planning.GetStatusPackAsync(id, cancellationToken);
         return Ok(pack);
+    }
+
+    [HttpGet("projects/{id}/pulse")]
+    [ProducesResponseType(typeof(ProjectPulseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPulse(string id, CancellationToken cancellationToken)
+    {
+        var pulse = await _planning.GetProjectPulseAsync(id, cancellationToken);
+        return Ok(pulse);
     }
 
     [HttpGet("projects/{id}/decisions")]

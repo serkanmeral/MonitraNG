@@ -13,6 +13,7 @@ import type {
   PmWorkItemCandidate,
   PmWorkItemCandidatePage,
   PmProjectStatusPack,
+  PmProjectPulse,
   PmTraceDocument,
   PmProjectDocument,
   PmCreateDecisionRequest,
@@ -130,6 +131,14 @@ export async function pmGetProject(id: string): Promise<PmProjectDetail> {
     `/api/v1/projects/${encodeURIComponent(id)}`,
     'GET',
   )) as PmProjectDetail;
+}
+
+export async function pmGetProjectWbs(projectId: string): Promise<PmWbsItem[]> {
+  const raw = await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/wbs`,
+    'GET',
+  );
+  return asArray<PmWbsItem>(raw);
 }
 
 export async function pmListProjectDecisions(projectId: string): Promise<PmDecision[]> {
@@ -326,6 +335,13 @@ export async function pmGetProjectStatus(projectId: string): Promise<PmProjectSt
     `/api/v1/projects/${encodeURIComponent(projectId)}/status`,
     'GET',
   )) as PmProjectStatusPack;
+}
+
+export async function pmGetProjectPulse(projectId: string): Promise<PmProjectPulse> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/pulse`,
+    'GET',
+  )) as PmProjectPulse;
 }
 
 export async function pmCreateDecision(

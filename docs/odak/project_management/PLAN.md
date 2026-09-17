@@ -1,7 +1,7 @@
 # Teslimat Omurgası — Planlama
 
-**Durum:** Faz 1–3 omurga ayakta. Kontrol sekmeleri (RAID → Paydaş) durakta. **Toplantı** takvim + iki sicil + tutanak listesi (dış takvim yok). **Süreç** hâlâ ayrı yol. Manifest **0.38.0**.
-**Tarih:** 2 Eylül 2026 (plan) · **17 Eylül 2026** (tutanak sicili)
+**Durum:** Faz 1–3 omurga ayakta. Proje **Dashboard** (chart) Durum’dan ayrı; açılış Gantt. Kontrol sekmeleri (RAID → Paydaş) durakta. **Toplantı** takvim + iki sicil + tutanak listesi (dış takvim yok). **Süreç** hâlâ ayrı yol. Manifest **0.38.0**.
+**Tarih:** 2 Eylül 2026 (plan) · **17 Eylül 2026** (Dashboard + pulse)
 **Ortam:** Odak test `192.168.20.20` · prod `192.168.20.8` bu hatta dokunulmaz
 **Kaynak görüşme:** [ankarabt görüşme notları](../../ankarabt/yazilim-mimarligi-di-ve-proje-yonetimi-gorusme-notlari.md)  
 **Oturum özeti:** [current_status.md](./current_status.md)
@@ -80,7 +80,7 @@ Satılabilir ilk ürün. Gantt ve draw.io **bu fazın parçasıdır**.
 4. **Görsel kanıt** — draw.io / SVG / PNG / PDF yükle, önizle, sürümle, WBS veya belgeye bağla. Mermaid sayfada kalır. Kendi çizim motoru yazılmaz; resmi süreç çizimi self-host `jgraph/drawio` iframe’idir.
 5. **Karar ve değişiklik (hafif)** — genel karar kaydı. Kapsam değişikliği hangi belge / WBS / işi etkiler.
 6. **İzlenebilirlik (hafif)** — `belge → WBS → OC işi → kanıt`. “Planı var, işi açık, belgesi onaysız” görünsün.
-7. **Durum paketi** — geciken iş, kritik kilometre taşı, eksik onay, baseline sapması. Sponsor görünümü: zaman + kapsam + belge. Maliyet yok.
+7. **Durum paketi** — geciken iş, kritik kilometre taşı, eksik onay, baseline sapması. Satır satır tarama. Sponsor **Dashboard** (chart kompozisyon) Durum’dan ayrıdır; açılış Gantt’dır.
 8. **İki iş paketi (katalog tohumu)** — PMO (plan, tutanak, karar, durum, teslimat listesi) ve kalite ince (prosedür, form, kayıt, revizyon). Kullanıcı “bu işi şu paketten başlat” diyebilsin; App Store değil, kurulan yapı.
 
 **Bu fazda yok:** kaynak dengeleme, bütçe, aşama kapısı motoru, tam RAID, tedarikçi portalı, portföy, okundu-anlaşıldı, yükümlülük motoru, denetim sihirbazı, üçüncü taraf marketplace.
@@ -137,10 +137,10 @@ Yapmayacağız; “henüz yok” değil, rakip olmayacağız.
 
 | Rol | Birincil araç |
 |-----|----------------|
-| Proje yöneticisi / PMO | Gantt, WBS, sapma, durum paketi, belge eksiği |
+| Proje yöneticisi / PMO | Gantt, WBS, Dashboard, sapma, durum paketi, belge eksiği |
 | İş paketi sahibi | Bağlı OC işleri, teslimat / kanıt |
 | Kalite | Tür, revizyon, onay, kayıt |
-| Sponsor | Okuma: zaman, kilometre taşı, açık risk/eksik belge |
+| Sponsor | Dashboard (sağlık, %, kapı, RAID, bütçe); ayrıntı Durum |
 | (Sonraki paket) yazılım mimarı | Aynı omurga + mimari türler ve diyagramlar |
 
 ---
@@ -238,7 +238,15 @@ Yeni workspace `workItemKeyPrefix` = proje kodu (tire korunur, en fazla 64). Esk
 
 Kalan boşluk: paket `diagram` **boş tuval** (örnek XML yok); paket sürüm evrimi (soru 8); kütüphane krom klasörleri paket malı değil.
 
-### 9.4 Kurallar
+### 9.4 Proje Dashboard ve ilk boya (17 Eylül 2026 akşam)
+
+- Açılış **Gantt**. Dashboard Plan’da Durum’un üstünde; ApexCharts (WBS donut, kapı, RAID, bütçe). Liste değil.
+- `GET /projects/{id}/pulse` — belge hydrate yok. Durum paketi kanıt taramasını tutar.
+- `GetProject` iskelet; `GET .../wbs` arka plan. Liste tüm WBS’i çekmez.
+- Proje sekmeleri masaüstünde **sol**.
+- DI kök Gezgin `?folderId` olmadan bootstrap eder.
+
+### 9.5 Kurallar
 
 - Paket **şema değil, içerik + yapı** basar. Yeni dataset alanı paketle gelmez; F1-0 çekirdeğine girer.
 - Kurulum önizlemeli ve idempotent’tir; ortam paket mezarlığı olmaz.
@@ -277,11 +285,11 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 
 ## 12. Sonraki adım
 
-**17 Eylül 2026 (gece):** Manifest **0.38.0**. Süreç sicili + self-host draw.io TEST’te. Yedi iş paketi UI turu bitti. Paket boş draw.io basar; kur/sök/yeni proje ilerleme penceresi var. NLP/şartname parser **yapılmayacak**.
+**17 Eylül 2026 (akşam):** Manifest **0.38.0**. Proje Dashboard chart yüzeyi + pulse uç + Gantt açılış + sol sekme + iskelet ilk boya TEST `mngoperations`’ta. NLP/şartname parser **yapılmayacak**.
 
-Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed + paket lab turu. Oturum notu: [current_status.md](./current_status.md).
+Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed + paket lab turu + proje Dashboard. Oturum notu: [current_status.md](./current_status.md).
 
-Sıradaki (açık talepte): örnek draw.io şablonu; eski lab önek migrasyonu; paket sürüm evrimi. Prod süreç/editör duman testi kullanıcıda.
+Sıradaki (açık talepte): örnek draw.io şablonu; eski lab önek migrasyonu; paket sürüm evrimi; Durum DG maliyeti. Prod süreç/editör duman testi kullanıcıda.
 
 “Marketplace” netliği (3 Eylül 2026): kastedilen raftan iş paketi şablonu; satın alma vitrini değil.
 

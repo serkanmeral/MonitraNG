@@ -20,6 +20,8 @@ public interface IProjectPlanningService
 
     Task<ProjectDetailDto> GetProjectAsync(string id, CancellationToken ct = default);
 
+    Task<IReadOnlyList<WbsItemDto>> GetProjectWbsAsync(string id, CancellationToken ct = default);
+
     Task<ProjectDto> CreateProjectAsync(CreateProjectRequest request, CancellationToken ct = default);
 
     Task<ProjectDto> UpdateProjectAsync(string id, UpdateProjectRequest request, CancellationToken ct = default);
@@ -73,6 +75,8 @@ public interface IProjectPlanningService
     Task ClearWorkItemLinksAsync(string workItemId, CancellationToken ct = default);
 
     Task<ProjectStatusPackDto> GetStatusPackAsync(string projectId, CancellationToken ct = default);
+
+    Task<ProjectPulseDto> GetProjectPulseAsync(string projectId, CancellationToken ct = default);
 
     Task<IReadOnlyList<DecisionDto>> ListDecisionsAsync(string projectId, CancellationToken ct = default);
 

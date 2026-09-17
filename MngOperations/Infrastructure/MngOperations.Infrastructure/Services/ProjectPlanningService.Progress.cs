@@ -298,6 +298,7 @@ public sealed partial class ProjectPlanningService
             return weight <= 0 ? 0 : Math.Round(sum / weight, 1);
         }
 
+        var pending = new List<(string Id, double Percent)>();
         foreach (var item in items)
         {
             if (string.IsNullOrWhiteSpace(item.__dataId)) continue;
@@ -305,10 +306,18 @@ public sealed partial class ProjectPlanningService
             var next = ClampPercent(Compute(item.__dataId));
             var current = item.percentComplete ?? 0;
             if (Math.Abs(current - next) < 0.05) continue;
-            await _dg.UpdateAsync(PmDatasets.WbsItems, item.__dataId, new Dictionary<string, object?>
-            {
-                ["percentComplete"] = next
-            }, token, ct);
+            pending.Add((item.__dataId, next));
+        }
+
+        if (pending.Count > 0)
+        {
+            await Task.WhenAll(pending.Select(row =>
+                _dg.UpdateAsync(
+                    PmDatasets.WbsItems,
+                    row.Id,
+                    new Dictionary<string, object?> { ["percentComplete"] = row.Percent },
+                    token,
+                    ct)));
         }
     }
 

@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import PmAcksPanel from '@/components/apps/project-management/PmAcksPanel.vue';
 import PmAuditPacksPanel from '@/components/apps/project-management/PmAuditPacksPanel.vue';
-import PmMeetingsPanel from '@/components/apps/project-management/PmMeetingsPanel.vue';
 import PmStakeholdersPanel from '@/components/apps/project-management/PmStakeholdersPanel.vue';
-import PmProcessMapsPanel from '@/components/apps/project-management/PmProcessMapsPanel.vue';
 import PmBudgetPanel from '@/components/apps/project-management/PmBudgetPanel.vue';
 import PmCapacityPanel from '@/components/apps/project-management/PmCapacityPanel.vue';
 import PmDecisionsPanel from '@/components/apps/project-management/PmDecisionsPanel.vue';
-import PmDiLibrary from '@/components/apps/project-management/PmDiLibrary.vue';
 import PmGanttChart from '@/components/apps/project-management/PmGanttChart.vue';
 import PmObligationsPanel from '@/components/apps/project-management/PmObligationsPanel.vue';
-import PmPackCatalog from '@/components/apps/project-management/PmPackCatalog.vue';
 import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
 import PmPickWorkItemDialog from '@/components/apps/project-management/PmPickWorkItemDialog.vue';
 import PmRaidPanel from '@/components/apps/project-management/PmRaidPanel.vue';
@@ -35,6 +31,7 @@ import {
   pmDeleteDependency,
   pmDeleteWbs,
   pmGetProject,
+  pmGetProjectWbs,
   pmGetProjectAcks,
   pmGetProjectAuditPacks,
   pmGetProjectBudget,
@@ -43,6 +40,7 @@ import {
   pmGetProjectProcessMaps,
   pmGetProjectStakeholders,
   pmGetProjectStatus,
+  pmGetProjectPulse,
   pmListProjectDecisions,
   pmListProjectRaid,
   pmListWbsEvidence,
@@ -63,6 +61,7 @@ import type {
   PmWbsKind,
   PmWorkItemCandidate,
   PmProjectStatusPack,
+  PmProjectPulse,
   PmTraceDocument,
 } from '@/types/apps/projectManagement';
 import type { DiResource } from '@/types/apps/documentIntelligence';
@@ -74,6 +73,22 @@ import {
   RefreshIcon,
   TrashIcon,
 } from 'vue-tabler-icons';
+
+const PmMeetingsPanel = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmMeetingsPanel.vue'),
+);
+const PmDiLibrary = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmDiLibrary.vue'),
+);
+const PmProcessMapsPanel = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmProcessMapsPanel.vue'),
+);
+const PmPackCatalog = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmPackCatalog.vue'),
+);
+const PmProjectDashboard = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmProjectDashboard.vue'),
+);
 
 definePageMeta({ layout: 'default' });
 
@@ -146,6 +161,7 @@ type PmViewTab =
   | 'gates'
   | 'packs'
   | 'library'
+  | 'dashboard'
   | 'status';
 
 const viewTab = ref<PmViewTab>('gantt');
@@ -153,6 +169,8 @@ const libraryFocusId = ref<string | null>(null);
 const { mdAndUp } = useDisplay();
 const statusPack = ref<PmProjectStatusPack | null>(null);
 const statusLoading = ref(false);
+const dashboardPulse = ref<PmProjectPulse | null>(null);
+const dashboardLoading = ref(false);
 const tabLoaded = ref(new Set<string>());
 const tabLoading = ref(false);
 const workspaces = ref<OpWorkspace[]>([]);
@@ -192,6 +210,7 @@ const navGroups = computed(() => [
       { value: 'gantt' as const, title: t('projectManagement.gantt.title'), icon: 'mdi-chart-gantt' },
       { value: 'wbs' as const, title: t('projectManagement.wbsTitle'), icon: 'mdi-file-tree-outline' },
       { value: 'deps' as const, title: t('projectManagement.depsTitle'), icon: 'mdi-source-fork' },
+      { value: 'dashboard' as const, title: t('projectManagement.dashboard.title'), icon: 'mdi-view-dashboard-outline' },
       { value: 'status' as const, title: t('projectManagement.statusPack.title'), icon: 'mdi-flag-outline' },
     ],
   },
@@ -539,9 +558,32 @@ function markTabLoaded(tab: string) {
   tabLoaded.value = next;
 }
 
+function openProjectTab(tab: string) {
+  viewTab.value = tab as PmViewTab;
+}
+
 function resetTabCache() {
   tabLoaded.value = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates']);
   statusPack.value = null;
+  dashboardPulse.value = null;
+}
+
+async function enrichWbs() {
+  if (!projectId.value || !detail.value) return;
+  try {
+    const rows = await pmGetProjectWbs(projectId.value);
+    if (!detail.value || detail.value.project.id !== projectId.value) return;
+    const previous = new Map((detail.value.wbs || []).map((row) => [row.id, row]));
+    detail.value = {
+      ...detail.value,
+      wbs: rows.map((row) => ({
+        ...row,
+        gateLocked: row.gateLocked || previous.get(row.id)?.gateLocked,
+      })),
+    };
+  } catch {
+    /* Skeleton WBS from GET /projects/{id} is enough for Gantt. */
+  }
 }
 
 async function loadDetail() {
@@ -552,6 +594,7 @@ async function loadDetail() {
     detail.value = next;
     applyProjectForm(next.project);
     resetTabCache();
+    void enrichWbs();
     await ensureTabData(viewTab.value, true);
   } catch (error) {
     panelError(error, 'projectManagement.errors.loadFailed');
@@ -573,6 +616,19 @@ async function loadStatusPack() {
   }
 }
 
+async function loadDashboardPulse() {
+  if (!projectId.value) return;
+  dashboardLoading.value = true;
+  try {
+    dashboardPulse.value = await pmGetProjectPulse(projectId.value);
+  } catch (error) {
+    dashboardPulse.value = null;
+    panelError(error, 'projectManagement.errors.loadFailed');
+  } finally {
+    dashboardLoading.value = false;
+  }
+}
+
 async function ensureTabData(tab: string, force = false) {
   if (!projectId.value || !detail.value) return;
   if (!force && tabLoaded.value.has(tab)) return;
@@ -586,6 +642,9 @@ async function ensureTabData(tab: string, force = false) {
   tabLoading.value = true;
   try {
     switch (tab) {
+      case 'dashboard':
+        await loadDashboardPulse();
+        break;
       case 'status':
         await loadStatusPack();
         break;
@@ -828,6 +887,7 @@ async function applyBaseline() {
     detail.value = await pmSetBaseline(detail.value.project.id, baselineNote.value.trim() || null);
     applyProjectForm(detail.value.project);
     resetTabCache();
+    void enrichWbs();
     await ensureTabData(viewTab.value, true);
     baselineDialog.value = false;
     baselineNote.value = '';
@@ -1020,11 +1080,11 @@ function onReferencePicked(resource: DiResource) {
 }
 
 onMounted(() => {
-  void loadWorkspaces();
   void loadDetail();
 });
 
 watch(viewTab, (tab) => {
+  if (tab === 'overview') void loadWorkspaces();
   void ensureTabData(tab);
 });
 </script>
@@ -1064,7 +1124,7 @@ watch(viewTab, (tab) => {
         </v-btn>
       </v-card-title>
       <v-divider />
-      <div class="d-flex flex-column flex-md-row-reverse">
+      <div class="d-flex flex-column flex-md-row">
         <v-tabs
           v-model="viewTab"
           :direction="mdAndUp ? 'vertical' : 'horizontal'"
@@ -1565,6 +1625,14 @@ watch(viewTab, (tab) => {
           @hub-ready="onLibraryHubReady"
           @bound="onLibraryBound"
           @focused="libraryFocusId = null"
+        />
+      </v-card-text>
+
+      <v-card-text v-else-if="viewTab === 'dashboard'" class="px-6 py-4">
+        <PmProjectDashboard
+          :pulse="dashboardPulse"
+          :loading="dashboardLoading || tabLoading || loading"
+          @navigate="openProjectTab"
         />
       </v-card-text>
 

@@ -1396,8 +1396,7 @@ onMounted(async () => {
 async function syncBrowseRouteContext(options?: { initial?: boolean; forceRefresh?: boolean }) {
   if (route.path !== DI_HOME_PATH) return;
 
-  const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
-  if (folderId === undefined) return;
+  const folderId = readFolderIdFromRoute();
 
   const needsRefresh = options?.forceRefresh || route.query.refresh === '1';
   const folderChanged = selectedFolderId.value !== folderId;

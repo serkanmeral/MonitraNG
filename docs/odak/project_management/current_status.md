@@ -1,83 +1,69 @@
 # Teslimat Omurgası — Oturum durumu
 
-**Son güncelleme:** 17 Eylül 2026 (gece)  
-**Konu:** Paket diyagram dosyası + kur/sök/yeni proje ilerleme + OC öneki  
-**Ortam:** TEST `192.168.20.20` (`mngoperations` no-cache). UI local `npm run dev`; **mngui image yok.** Prod `192.168.20.8` draw.io kuruldu; **prod UI kontrolü hâlâ kullanıcıda.**  
+**Son güncelleme:** 17 Eylül 2026 (akşam)  
+**Konu:** Proje Dashboard (chart) + Gantt açılış + sol sekme + pulse + ilk boya + DI Gezgin kök yükleme  
+**Ortam:** TEST `192.168.20.20` (`mngoperations` no-cache). UI local `npm run dev`; **mngui image yok.**  
 **Manifest:** `docs/odak/project_management/install/manifest.json` **0.38.0** (şema değişmedi)  
 **Git:** `origin` = GitHub `https://github.com/serkanmeral/MonitraNG.git` — `main`
 
 **Ana referans:** [PLAN.md](./PLAN.md)
 
-> **Kaldığımız yer:** Yedi paket UI turu bitti. Diyagram boşluğu, sök/yeni proje ilerleme penceresi ve yeni workspace öneki kapandı (Onboarding’de `Onboarding akışı.drawio` doğrulandı). **SEED-PMO dokunulmadı.** Sonraki: prod süreç duman testi veya kalan boşluklar (örnek akış şablonu, eski lab önekleri).
+> **Kaldığımız yer:** Proje Dashboard grafik duvarı (ApexCharts) Durum’dan ayrı. Açılış **Gantt**. Sekmeler solda. `GET /projects/{id}/pulse` belgesiz; Durum hâlâ tam tarama. DI Gezgin kök klasörleri `?folderId` olmadan bootstrap eder. **SEED-PMO WBS/WS dokunulmadı** (paket kurulum satırı 1.1.1 damgalı).
 
 ---
 
-## Süreç + draw.io — kilit (duruyor)
+## Proje yüzeyi — kilit (bu oturum)
 
-- Süreç sekmesi **sicil**; BPMN / OC motoru yok. Çizmek ≠ Resmi yap.
-- Resmi gerçek: DI draw.io dosyası + sicil (`pm_process_maps`).
-- Kendi editör yok: `jgraph/drawio:31.4.1`, host **8088**.
-- TEST iframe `192.168.20.20:8088`. Prod HTTP `:8088` 200; UI origin pişmiş.
-- Eğitim `18-surec.md` güncellendi ve TEST DI Eğitim→Project→Süreç’e yayınlandı.
+- **Açılış:** Gantt (iskelet WBS; iş/kanıt hydrate arka planda).
+- **Dashboard:** Plan grubunda Durum’un üstünde. Kart + donut/bar; aksiyon listesi yok. Grafik ilgili sekmeye gider.
+- **Durum:** satır satır tarama (kanıt/plan/onay). Dashboard’un kopyası değil.
+- **Pulse:** `GET /projects/{id}/pulse` — extras var, `LoadDocumentsByWorkItem` yok. WBS kovaları (yaprak), kapı, açık RAID, bütçe plan/gerçek.
+- **Sekmeler:** masaüstünde sol dikey (OC workspace tanımları ile aynı); dar ekranda üstte yatay.
+- **Liste/detay boya:** `ListProjects` WBS taramaz; `GetProject` hydrate:false; `GET .../wbs` zenginleştirir; Durum hâlâ ~7 sn (DG extras).
 
----
+## DI Gezgin
 
-## Paket — kilit
+Kök `/apps/document-intelligence` (`folderId` yok) artık bootstrap atlar. Yenile butonu gerekmez.
 
-Aynı motor, farklı JSON. Paket şema değil; WBS + DI klasör/starter/diyagram + ince OC.
+## Paket / SLA (önceki kilit, duruyor)
 
-| Proje | Id | Paket | Not |
-|---|---|---|---|
-| Ornek — PMO | `027bdf17-6741-4001-835f-9c1412c42f21` | `pmo` | **SEED-PMO — silinmedi / dokunulmadı** |
-| Kalite deneme | `cf6fb7cd-f3f9-4d62-9cec-75d07e341063` | `quality` | PMO eklendi sonra söküldü; Kalite kaldı |
-| LAB-ACCEPTANCE | `86bc7d24-1a00-496c-9264-8c4541bd8266` | `acceptance` | |
-| LAB-PROPOSAL | `542e1059-beac-4133-873f-8d1ed88c0295` | `proposal` | |
-| LAB-ARCHITECTURE | `b156bccf-7b6a-44ce-9b52-c0ffbc7b0ca2` | `architecture` | |
-| LAB-ECO | `87a0f4b3-3b74-49b3-92c8-bd9da8452cd2` | `eco` | ECO = Engineering Change Order; ECN = Engineering Change Notice |
-| LAB-ONBOARDING | `eee8251f-89ff-47bb-9210-754b71043572` | `onboarding` | Eksikleri tamamla → `Onboarding akışı.drawio` |
+Paketler **v1.1.1**, `slaPolicies` yok. TEST’te üç PMO kurulum satırı 1.1.1 (ApplyPack yok). SEED-PMO eski OC SLA politikası durabilir.
 
-Silinen eski demo’lar (SEED-PMO hariç): F51 smoke, SEED-ACCEPTANCE/ARCHITECTURE/ECO/ONBOARDING/PROPOSAL/QUALITY, TST1.
-
-**Birlikte kur / sök (Kalite):** PMO WBS 4–7 eklendi; sök 4–7 ve WI 0010–0021’i aldı. Kalite kaldı. Dolu klasörler ve paylaşılan Diyagram silinmedi.
-
-**İlerleme:** Backend tek POST (WBS/workspace/OC). DI adımları kalıcı listede (`PmPackApplyProgressDialog.vue`): klasör, sayfa, diyagram. Aynı pencere **Paketler sekmesi**, **yeni proje + paket** ve **sök** için. Sahte yüzde yok.
-
-**Diyagram:** `applyJobPackDocuments` boş draw.io basar (`diCreateBlankDrawio`). Varsa atlar. Örnek akış XML’i yok.
-
-**OC öneki (yeni workspace):** proje kodu, tire korunur, en fazla 64 (`LAB-ONBOARDING-0001`). Eski lab’ler kesik önekte kaldı (`LABONBOARDIN-0001`).
-
-**Takvim dili:** FullCalendar `tr` + Vuetify `locale: tr`. Native `type="date"` OS dilini izler.
+| Proje | Id | Not |
+|---|---|---|
+| Ornek — PMO | `027bdf17-6741-4001-835f-9c1412c42f21` | SEED-PMO — WBS/WS dokunulmadı |
+| LAB-WSDEFAULT | `e33659a5-ba4f-405c-bfb1-8922148607c2` | |
+| TST-PRJ | `587f5b2d-0708-4b9c-8e66-6152f0affaeb` | |
 
 ---
 
-## Tamamlanan
+## Tamamlanan (bu oturum)
 
-- Toplantı sicilleri — `73f031f4`
-- Self-host draw.io + süreç çizim — `b48d21c2`
-- Paket kurulum ilerleme + takvim TR — `c0b4d80f`
-- Yedi paket UI turu + Kalite üzerinde PMO kur/sök
-- Paket `diagram` dosyası, sök/yeni proje ilerleme, yeni workspace öneki (kod local + TEST OC; commit yok)
+- Dashboard chart yüzeyi + pulse DTO/uç
+- Gantt varsayılan; sekmeler sol
+- Liste / detay / rollup ilk boya
+- DI Tüm kaynaklar ilk yükleme
+- TEST `mngoperations` yenilendi (`oc_live=200`); pulse SEED-PMO chart serileri doğrulandı
 
 ---
 
 ## Kalan ürün boşlukları
 
 1. Paket diyagramı **boş tuval**; örnek akış şablonu yok.
-2. Eski lab workspace önekleri migrate edilmedi (`LABONBOARDIN-…`).
-3. Wiki / Kararlar / Yüklemeler / Toplantı notları paket JSON’dan değil; `pmProjectLibrary` kromu.
-4. Paket sürüm yükseltince mevcut proje yapısı nasıl evrilir (PLAN soru 8).
-5. **Prod UI kontrolü:** süreç → yerinde önizleme → Edit diagram; iframe `192.168.20.8:8088`, CDN değil.
-6. Native tarih kutusu OS dili (bilinçli).
-
-Eğitim 00–07 ve 09 repo `egitim/` altında yok (yalnız `.tmp-di-egitim-project`). `08-paketler.md` TEST DI’ya son haliyle basılmadı.
+2. Eski lab workspace önekleri migrate edilmedi.
+3. Wiki / Kararlar / Yüklemeler / Toplantı notları paket JSON’dan değil.
+4. Paket sürüm yükseltince mevcut proje yapısı (PLAN soru 8).
+5. **Prod UI kontrolü:** süreç iframe.
+6. Durum sekmesi DG extras (~7 sn).
+7. Eğitim 00–07 ve 09 repo `egitim/` altında yok. Dashboard cümlesi 08/18’e işlendi; DI Eğitim yeniden yayın yok.
 
 ---
 
 ## Devam eden / sonraki chat
 
 1. Prod süreç/editör duman testi (kullanıcı).
-2. İstenirse örnek draw.io şablonu / eski önek migrasyonu / paket sürüm evrimi.
-3. İstenirse eğitim 00–07 repo + DI yeniden yayın.
+2. İstenirse örnek draw.io şablonu / önek migrasyonu / paket sürüm evrimi.
+3. İstenirse Durum DG maliyeti.
 4. Odak Sipariş uncommitted — bu hatta karışmaz.
 
 ---
@@ -86,4 +72,4 @@ Eğitim 00–07 ve 09 repo `egitim/` altında yok (yalnız `.tmp-di-egitim-proje
 
 - Token TEST: `docs/odak/operationcore/scripts/load-operationcore-token.ps1` (odak / odak_admin).
 - UI deploy kullanıcı talebi olmadan yok.
-- Eğitim paket sayfası: [egitim/08-paketler.md](./egitim/08-paketler.md).
+- Sahte burndown yok (tarihsel snapshot yok).

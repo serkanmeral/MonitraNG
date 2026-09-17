@@ -186,6 +186,24 @@ public sealed partial class ProjectPlanningService
         };
     }
 
+    private static void ApplyAssignmentSchedule(
+        IList<ResourceAssignmentDto> assignments,
+        IReadOnlyList<WbsItemDto> wbs)
+    {
+        if (assignments.Count == 0 || wbs.Count == 0) return;
+        var byId = wbs.ToDictionary(w => w.Id, StringComparer.Ordinal);
+        foreach (var item in assignments)
+        {
+            if (!byId.TryGetValue(item.WbsId, out var row)) continue;
+            var start = item.Start ?? row.PlannedStart;
+            var finish = item.Finish ?? row.PlannedFinish;
+            NormalizeRange(ref start, ref finish);
+            item.EffectiveStart = start;
+            item.EffectiveFinish = finish;
+            item.Unscheduled = start is null || finish is null;
+        }
+    }
+
     internal static ProjectCapacityDto BuildCapacity(IReadOnlyList<ResourceAssignmentDto> assignments)
     {
         var groups = new Dictionary<string, PersonAcc>(StringComparer.Ordinal);

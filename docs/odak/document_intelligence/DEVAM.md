@@ -241,7 +241,7 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 - `PermissionService`: HTTP isteği başına snapshot önbelleği; snapshot sorgularında `showHistory=false`; mutasyonlarda `InvalidateSnapshotCache()`.
 - `GET /resources/bootstrap?folderId=` → ağaç + içerik (+ isteğe bağlı breadcrumb/seçili klasör), tek snapshot.
 - `GET /resources/browse?folderId=` → gezinme paketi (ağaç hariç), tek snapshot.
-- UI: `onMounted` → `diGetBootstrap`; `selectFolder` → `diGetBrowseContext`; yenileme → `refreshWorkspace` / `refreshListing`.
+- UI: `onMounted` → `diGetBootstrap`; `folderId` yoksa kök (`null`), bootstrap atlanmaz. `selectFolder` → `diGetBrowseContext`; yenileme → `refreshWorkspace` / `refreshListing`.
 
 **Diagnostic:** `docs/odak/diagnostic/scripts/diagnostic-document-intelligence-pages.ps1` (bootstrap vs eski paralel karşılaştırma).
 

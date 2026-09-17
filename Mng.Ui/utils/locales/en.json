@@ -4053,6 +4053,49 @@
     "title": "Projects",
     "detailTitle": "Project",
     "overview": "Overview",
+    "dashboard": {
+      "title": "Dashboard",
+      "hint": "Project composition. Charts open the matching tab; row-by-row tracing lives on Status.",
+      "health": {
+        "ok": "On track",
+        "watch": "Watch",
+        "alert": "Act"
+      },
+      "healthLabel": "Health",
+      "progress": "Progress",
+      "nextGate": "Next gate",
+      "noOpenGate": "No open gate",
+      "noFinishDate": "No planned finish date",
+      "daysLeft": "{n} days left",
+      "overdueDays": "{n} days overdue",
+      "dueToday": "Due today",
+      "clickStatus": "Open Status for detail",
+      "packsInstalled": "{n} packs installed",
+      "actionsTitle": "Look at today",
+      "actionsEmpty": "Nothing urgent.",
+      "milestonesTitle": "Upcoming milestones",
+      "milestonesEmpty": "No milestones in the next four weeks.",
+      "decisionsTitle": "Open decisions",
+      "decisionsEmpty": "No open decisions.",
+      "openStatus": "Status detail",
+      "wbsTitle": "WBS mix",
+      "gatesTitle": "Gates",
+      "raidTitle": "Open RAID",
+      "budgetTitle": "Budget",
+      "chartEmpty": "No data for this chart.",
+      "budgetEmpty": "No budget lines.",
+      "wbs": {
+        "done": "Done",
+        "inProgress": "In progress",
+        "delayed": "Delayed",
+        "unbound": "Unbound",
+        "notStarted": "Not started"
+      },
+      "budget": {
+        "planned": "Planned",
+        "actual": "Actual"
+      }
+    },
     "nav": {
       "plan": "Plan",
       "delivery": "Delivery",

@@ -167,6 +167,7 @@ function flagColor(flag: string) {
 async function loadItems() {
   loading.value = true;
   try {
+    const packsPromise = pmListJobPacks().catch(() => [] as PmJobPack[]);
     try {
       const pack = await pmGetPortfolio();
       portfolio.value = pack;
@@ -175,11 +176,7 @@ async function loadItems() {
       portfolio.value = null;
       items.value = (await pmListProjects()).map(asPortfolioRow);
     }
-    try {
-      jobPacks.value = await pmListJobPacks();
-    } catch {
-      jobPacks.value = [];
-    }
+    jobPacks.value = await packsPromise;
   } catch (error) {
     panelError(error, 'projectManagement.errors.loadFailed');
   } finally {

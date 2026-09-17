@@ -3967,6 +3967,49 @@
     "title": "Projeler",
     "detailTitle": "Proje",
     "overview": "Genel",
+    "dashboard": {
+      "title": "Dashboard",
+      "hint": "Proje kompozisyonu. Grafikler ilgili sekmeye gider; satır satır tarama Durum’dadır.",
+      "health": {
+        "ok": "Yolunda",
+        "watch": "İzle",
+        "alert": "Müdahale"
+      },
+      "healthLabel": "Sağlık",
+      "progress": "İlerleme",
+      "nextGate": "Sıradaki kapı",
+      "noOpenGate": "Açık kapı yok",
+      "noFinishDate": "Plan bitiş tarihi yok",
+      "daysLeft": "{n} gün kaldı",
+      "overdueDays": "{n} gün gecikti",
+      "dueToday": "Bitiş bugün",
+      "clickStatus": "Ayrıntı için Durum",
+      "packsInstalled": "{n} paket kurulu",
+      "actionsTitle": "Bugün bakılacaklar",
+      "actionsEmpty": "Acil kalem yok.",
+      "milestonesTitle": "Yakın kilometre taşları",
+      "milestonesEmpty": "Önümüzdeki dört haftada kilometre taşı yok.",
+      "decisionsTitle": "Açık kararlar",
+      "decisionsEmpty": "Açık karar yok.",
+      "openStatus": "Durum ayrıntısı",
+      "wbsTitle": "WBS dağılımı",
+      "gatesTitle": "Kapılar",
+      "raidTitle": "Açık RAID",
+      "budgetTitle": "Bütçe",
+      "chartEmpty": "Grafik için veri yok.",
+      "budgetEmpty": "Bütçe satırı yok.",
+      "wbs": {
+        "done": "Bitti",
+        "inProgress": "Devam",
+        "delayed": "Geciken",
+        "unbound": "İş bağsız",
+        "notStarted": "Başlamadı"
+      },
+      "budget": {
+        "planned": "Plan",
+        "actual": "Gerçek"
+      }
+    },
     "nav": {
       "plan": "Plan",
       "delivery": "Teslimat",

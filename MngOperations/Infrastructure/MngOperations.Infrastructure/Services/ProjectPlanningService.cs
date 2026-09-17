@@ -40,15 +40,26 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
     {
         var token = RequireToken();
         var rows = (await _dg.GetAsync<PmProjectRow>(PmDatasets.Projects, "limit=200&sort=code&expand=false", token, ct)).ToList();
-        var wbs = await LoadAllWbsAsync(token, ct);
-        return rows.Select(p => ToProjectDto(p, wbs)).ToList();
+        return rows.Select(p => ToProjectDto(p, [])).ToList();
     }
 
     public async Task<ProjectDetailDto> GetProjectAsync(string id, CancellationToken ct = default)
     {
         var token = RequireToken();
-        var core = await LoadProjectCoreAsync(id, token, ct);
+        var core = await LoadProjectCoreAsync(id, token, ct, hydrate: false);
         return ToDetailDto(core);
+    }
+
+    public async Task<IReadOnlyList<WbsItemDto>> GetProjectWbsAsync(string id, CancellationToken ct = default)
+    {
+        var token = RequireToken();
+        await LoadProjectOrThrowAsync(id, token, ct);
+        var wbs = await LoadWbsAsync(id, token, ct);
+        var dtos = wbs.Select(ToWbsDto).OrderBy(w => w.WbsCode, StringComparer.Ordinal).ThenBy(w => w.SortOrder).ToList();
+        await Task.WhenAll(
+            HydrateWorkItemsAsync(dtos, token, ct),
+            HydrateEvidenceAsync(dtos, token, ct));
+        return dtos;
     }
 
     public Task<IReadOnlyList<JobPackDto>> ListJobPacksAsync(CancellationToken ct = default)
@@ -580,7 +591,11 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         public List<ProcessMapDto> ProcessMaps { get; init; } = [];
     }
 
-    private async Task<ProjectCoreLoad> LoadProjectCoreAsync(string id, string token, CancellationToken ct)
+    private async Task<ProjectCoreLoad> LoadProjectCoreAsync(
+        string id,
+        string token,
+        CancellationToken ct,
+        bool hydrate = true)
     {
         var project = await LoadProjectOrThrowAsync(id, token, ct);
         var wbsTask = LoadWbsAsync(id, token, ct);
@@ -593,9 +608,12 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
         var gates = await gatesTask;
         var dtos = wbs.Select(ToWbsDto).OrderBy(w => w.WbsCode, StringComparer.Ordinal).ThenBy(w => w.SortOrder).ToList();
         ApplyGateLocks(dtos, gates.Where(g => g.LocksWork).ToList(), wbs, deps);
-        await Task.WhenAll(
-            HydrateWorkItemsAsync(dtos, token, ct),
-            HydrateEvidenceAsync(dtos, token, ct));
+        if (hydrate)
+        {
+            await Task.WhenAll(
+                HydrateWorkItemsAsync(dtos, token, ct),
+                HydrateEvidenceAsync(dtos, token, ct));
+        }
 
         return new ProjectCoreLoad
         {
@@ -771,9 +789,15 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
 
         Visit(string.Empty, string.Empty);
 
-        foreach (var (itemId, code) in pending)
+        if (pending.Count > 0)
         {
-            await _dg.UpdateAsync(PmDatasets.WbsItems, itemId, new Dictionary<string, object?> { ["wbsCode"] = code }, token, ct);
+            await Task.WhenAll(pending.Select(item =>
+                _dg.UpdateAsync(
+                    PmDatasets.WbsItems,
+                    item.Id,
+                    new Dictionary<string, object?> { ["wbsCode"] = item.Code },
+                    token,
+                    ct)));
         }
     }
 

@@ -853,6 +853,78 @@ export interface PmProjectStatusPack {
   processMaps?: PmProjectProcessMaps;
 }
 
+export type PmPulseHealth = 'ok' | 'watch' | 'alert';
+
+export interface PmPulseAction {
+  tab: string;
+  flag: string;
+  title: string;
+  detail?: string | null;
+  wbsId?: string | null;
+  due?: string | null;
+  severity: 'alert' | 'watch' | string;
+}
+
+export interface PmPulseMilestone {
+  wbsId: string;
+  wbsCode?: string | null;
+  name: string;
+  plannedFinish?: string | null;
+  percentComplete: number;
+  atRisk: boolean;
+  delayed: boolean;
+}
+
+export interface PmPulsePacks {
+  installed: number;
+  outdated: number;
+}
+
+export interface PmPulseWbsChart {
+  done: number;
+  inProgress: number;
+  delayed: number;
+  unbound: number;
+  notStarted: number;
+}
+
+export interface PmPulseBucket {
+  key: string;
+  count: number;
+}
+
+export interface PmPulseBudgetChart {
+  planned: number;
+  actual: number;
+  currency: string;
+}
+
+export interface PmPulseCharts {
+  wbs: PmPulseWbsChart;
+  gates: PmPulseBucket[];
+  raid: PmPulseBucket[];
+  budget: PmPulseBudgetChart;
+}
+
+export interface PmProjectPulse {
+  projectId: string;
+  generatedAt: string;
+  health: PmPulseHealth | string;
+  status: string;
+  percentComplete: number;
+  plannedStart?: string | null;
+  plannedFinish?: string | null;
+  baselineDrifted: boolean;
+  nextGate?: PmStageGate | null;
+  counts: PmStatusCounts;
+  actions: PmPulseAction[];
+  upcomingMilestones: PmPulseMilestone[];
+  openDecisions: PmDecision[];
+  packs: PmPulsePacks;
+  daysToFinish?: number | null;
+  charts?: PmPulseCharts | null;
+}
+
 export interface PmJobPackWbsPreview {
   name: string;
   kind: string;

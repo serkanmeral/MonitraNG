@@ -12,9 +12,14 @@ public sealed partial class ProjectPlanningService
     /// </summary>
     public async Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
     {
-        var projects = await ListProjectsAsync(ct);
         var token = RequireToken();
-        var allWbs = await LoadAllWbsAsync(token, ct);
+        var projectsTask = _dg.GetAsync<PmProjectRow>(
+            PmDatasets.Projects, "limit=200&sort=code&expand=false", token, ct);
+        var wbsTask = LoadAllWbsAsync(token, ct);
+        await Task.WhenAll(projectsTask, wbsTask);
+
+        var projects = (await projectsTask).Select(p => ToProjectDto(p, [])).ToList();
+        var allWbs = await wbsTask;
         var wbsByProject = allWbs
             .Where(w => !string.IsNullOrWhiteSpace(w.projectId))
             .GroupBy(w => w.projectId!, StringComparer.Ordinal)

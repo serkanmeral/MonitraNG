@@ -350,6 +350,84 @@ public sealed class ProjectStatusPackDto
     public ProjectProcessMapsDto ProcessMaps { get; set; } = new();
 }
 
+public sealed class ProjectPulseActionDto
+{
+    public string Tab { get; set; } = "status";
+    public string Flag { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? Detail { get; set; }
+    public string? WbsId { get; set; }
+    public DateTime? Due { get; set; }
+    public string Severity { get; set; } = "watch";
+}
+
+public sealed class ProjectPulseMilestoneDto
+{
+    public string WbsId { get; set; } = string.Empty;
+    public string? WbsCode { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public DateTime? PlannedFinish { get; set; }
+    public double PercentComplete { get; set; }
+    public bool AtRisk { get; set; }
+    public bool Delayed { get; set; }
+}
+
+public sealed class ProjectPulsePacksDto
+{
+    public int Installed { get; set; }
+    public int Outdated { get; set; }
+}
+
+public sealed class ProjectPulseDto
+{
+    public string ProjectId { get; set; } = string.Empty;
+    public DateTime GeneratedAt { get; set; }
+    public string Health { get; set; } = "ok";
+    public string Status { get; set; } = "draft";
+    public double PercentComplete { get; set; }
+    public DateTime? PlannedStart { get; set; }
+    public DateTime? PlannedFinish { get; set; }
+    public bool BaselineDrifted { get; set; }
+    public StageGateDto? NextGate { get; set; }
+    public ProjectStatusCountsDto Counts { get; set; } = new();
+    public IReadOnlyList<ProjectPulseActionDto> Actions { get; set; } = Array.Empty<ProjectPulseActionDto>();
+    public IReadOnlyList<ProjectPulseMilestoneDto> UpcomingMilestones { get; set; } = Array.Empty<ProjectPulseMilestoneDto>();
+    public IReadOnlyList<DecisionDto> OpenDecisions { get; set; } = Array.Empty<DecisionDto>();
+    public ProjectPulsePacksDto Packs { get; set; } = new();
+    public int? DaysToFinish { get; set; }
+    public ProjectPulseChartsDto Charts { get; set; } = new();
+}
+
+public sealed class ProjectPulseWbsChartDto
+{
+    public int Done { get; set; }
+    public int InProgress { get; set; }
+    public int Delayed { get; set; }
+    public int Unbound { get; set; }
+    public int NotStarted { get; set; }
+}
+
+public sealed class ProjectPulseBucketDto
+{
+    public string Key { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public sealed class ProjectPulseBudgetChartDto
+{
+    public double Planned { get; set; }
+    public double Actual { get; set; }
+    public string Currency { get; set; } = "TRY";
+}
+
+public sealed class ProjectPulseChartsDto
+{
+    public ProjectPulseWbsChartDto Wbs { get; set; } = new();
+    public IReadOnlyList<ProjectPulseBucketDto> Gates { get; set; } = Array.Empty<ProjectPulseBucketDto>();
+    public IReadOnlyList<ProjectPulseBucketDto> Raid { get; set; } = Array.Empty<ProjectPulseBucketDto>();
+    public ProjectPulseBudgetChartDto Budget { get; set; } = new();
+}
+
 public sealed class PortfolioProjectDto
 {
     public string Id { get; set; } = string.Empty;

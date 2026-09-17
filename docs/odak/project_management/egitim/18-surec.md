@@ -31,6 +31,6 @@ Akış değişince **Diyagramı düzenle** (yeni sürüm) veya yeni kayıt açı
 
 ## Bu eğitim setini bitirmek
 
-Plan (Genel, Gantt, WBS, FS, Durum) → Teslimat (Karar, Kapı, Paket, Kütüphane) → Kontrol ve Taraflar yardımcı kayıtlardır.
+Plan (Genel, Gantt, WBS, FS, Dashboard, Durum) → Teslimat (Karar, Kapı, Paket, Kütüphane) → Kontrol ve Taraflar yardımcı kayıtlardır.
 
-Boş bir projede pratik sıra: Paketler veya WBS → Kütüphane → bağla → Kararlar/Kapılar → Durum.
+Boş bir projede pratik sıra: Paketler veya WBS → Kütüphane → bağla → Kararlar/Kapılar → Dashboard / Durum.
