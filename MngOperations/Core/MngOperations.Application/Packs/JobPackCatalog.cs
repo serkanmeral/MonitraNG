@@ -36,6 +36,14 @@ public static class JobPackCatalog
             Kind = s.Kind,
             Body = s.Body
         }).ToList(),
+        Diagram = pack.Diagram is null
+            ? null
+            : new JobPackDiagramDto
+            {
+                Folder = pack.Diagram.Folder,
+                Title = pack.Diagram.Title,
+                Kind = pack.Diagram.Kind
+            },
         RuleCount = pack.Workspace?.Rules?.Count ?? 0,
         SlaCount = pack.Workspace?.SlaPolicies?.Count ?? 0,
         DashboardCount = pack.Workspace?.Dashboards?.Count ?? 0

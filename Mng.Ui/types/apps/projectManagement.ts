@@ -866,6 +866,12 @@ export interface PmJobPackStarter {
   body?: string | null;
 }
 
+export interface PmJobPackDiagram {
+  folder: string;
+  title: string;
+  kind?: string | null;
+}
+
 export interface PmJobPack {
   code: string;
   name: string;
@@ -880,6 +886,7 @@ export interface PmJobPack {
   folders: string[];
   wbs: PmJobPackWbsPreview[];
   starters?: PmJobPackStarter[];
+  diagram?: PmJobPackDiagram | null;
   ruleCount?: number;
   slaCount?: number;
   dashboardCount?: number;

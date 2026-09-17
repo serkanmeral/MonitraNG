@@ -232,9 +232,11 @@ Bugünkü kırıntılar (DI pack export/import, OC demo seed) bu modelin parças
 
 Raftaki yedi paket Odak TEST’te UI **Kur** ile basıldı; API tekrar kur = atla. SEED-PMO (`027bdf17-…`) dokunulmadı. Kalite lab’inde PMO ikinci paket olarak eklendi ve söküldü; Kalite WBS/işleri kaldı.
 
-Kurulum UX: backend tek POST; DI klasör/starter için kalıcı ilerleme listesi (sahte yüzde yok). Eğitim: [egitim/08-paketler.md](./egitim/08-paketler.md).
+Kurulum UX: backend tek POST; DI klasör / markdown starter / boş draw.io için kalıcı ilerleme listesi (sahte yüzde yok). Aynı pencere yeni proje + paket ve sök için. Eğitim: [egitim/08-paketler.md](./egitim/08-paketler.md).
 
-Bilinen ürün boşluğu: paket JSON `diagram` alanı basılmaz; Diyagram klasörü boş kalır. OC iş anahtarı proje kodunun 12 karakterine kesilir.
+Yeni workspace `workItemKeyPrefix` = proje kodu (tire korunur, en fazla 64). Eski lab workspace’leri kesik 12 karakter önekte kaldı.
+
+Kalan boşluk: paket `diagram` **boş tuval** (örnek XML yok); paket sürüm evrimi (soru 8); kütüphane krom klasörleri paket malı değil.
 
 ### 9.4 Kurallar
 
@@ -268,18 +270,18 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 4. Proje çalışma alanı DI klasörü mü, yoksa ayrı “project hub” mu?
 5. draw.io önizleme: **tarayıcı iframe** (self-host 8088). Sunucu tarafı PNG render yok.
 6. Yetki modeli: DI klasör yetkisi + OC workspace yetkisi + proje rolü nasıl katmanlanır?
-7. İş paketi kimliği: paket bir kez ortama mı kurulur, yoksa her yeni proje örneklenir mi?
+7. İş paketi kimliği: **her yeni projeye örneklenir** (ortama bir kez değil). Lab turu 17 Eylül 2026.
 8. Paket sürümü yükseltince mevcut proje yapıları nasıl evrilir?
 
 ---
 
 ## 12. Sonraki adım
 
-**17 Eylül 2026:** Manifest **0.38.0**. Süreç sicili + self-host draw.io TEST’te. Yedi iş paketi UI turu bitti. NLP/şartname parser **yapılmayacak**.
+**17 Eylül 2026 (gece):** Manifest **0.38.0**. Süreç sicili + self-host draw.io TEST’te. Yedi iş paketi UI turu bitti. Paket boş draw.io basar; kur/sök/yeni proje ilerleme penceresi var. NLP/şartname parser **yapılmayacak**.
 
 Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed + paket lab turu. Oturum notu: [current_status.md](./current_status.md).
 
-Sıradaki ürün boşluğu (açık talepte): paket `diagram` starter’ını basmak. Prod süreç/editör duman testi kullanıcıda.
+Sıradaki (açık talepte): örnek draw.io şablonu; eski lab önek migrasyonu; paket sürüm evrimi. Prod süreç/editör duman testi kullanıcıda.
 
 “Marketplace” netliği (3 Eylül 2026): kastedilen raftan iş paketi şablonu; satın alma vitrini değil.
 

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import PmPackApplyProgressDialog, {
-  type PmPackProgressStep,
-} from '@/components/apps/project-management/PmPackApplyProgressDialog.vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import PmPackApplyProgressDialog from '@/components/apps/project-management/PmPackApplyProgressDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
+import { usePmPackProgress } from '@/composables/usePmPackProgress';
 import {
   pmApplyProjectPack,
   pmDetachProjectPack,
@@ -22,7 +21,6 @@ import {
   applyJobPackDocuments,
   detachJobPackDocuments,
   previewJobPackFolders,
-  type PmPackDocProgress,
   type PmPackFolderPreview,
 } from '@/utils/pmJobPack';
 
@@ -50,64 +48,7 @@ const detachPack = ref<PmJobPack | null>(null);
 const detachPreview = ref<PmPackPreview | null>(null);
 const detachFolders = ref<PmPackFolderPreview | null>(null);
 const detachLoading = ref(false);
-const progressOpen = ref(false);
-const progressRunning = ref(false);
-const progressFailed = ref(false);
-const progressPackName = ref('');
-const progressSteps = ref<PmPackProgressStep[]>([]);
-
-function packFolderLabels(pack: PmJobPack): string[] {
-  return (pack.folders || [])
-    .map((entry) => {
-      if (typeof entry === 'string') return entry.trim();
-      if (entry && typeof entry === 'object' && 'name' in entry) {
-        return String((entry as { name?: unknown }).name || '').trim();
-      }
-      return '';
-    })
-    .filter(Boolean);
-}
-
-function buildProgressSteps(pack: PmJobPack): PmPackProgressStep[] {
-  return [
-    { id: 'runtime', label: t('projectManagement.packCatalog.progressRuntime'), status: 'pending' },
-    { id: 'hub', label: t('projectManagement.packCatalog.progressHub'), status: 'pending' },
-    ...packFolderLabels(pack).map((name) => ({
-      id: `folder:${name}`,
-      label: t('projectManagement.packCatalog.progressFolder', { name }),
-      status: 'pending' as const,
-    })),
-    ...(pack.starters || []).map((starter) => ({
-      id: `starter:${starter.title}`,
-      label: t('projectManagement.packCatalog.progressStarter', { name: starter.title }),
-      status: 'pending' as const,
-    })),
-    { id: 'finish', label: t('projectManagement.packCatalog.progressFinish'), status: 'pending' },
-  ];
-}
-
-function setProgressStep(id: string, status: PmPackProgressStep['status'], detail?: string) {
-  progressSteps.value = progressSteps.value.map((step) =>
-    step.id === id ? { ...step, status, detail: detail ?? step.detail } : step,
-  );
-}
-
-function markPendingSteps(status: PmPackProgressStep['status']) {
-  progressSteps.value = progressSteps.value.map((step) =>
-    step.status === 'pending' ? { ...step, status } : step,
-  );
-}
-
-function applyDocProgress(event: PmPackDocProgress) {
-  const id =
-    event.phase === 'folder' || event.phase === 'starter'
-      ? `${event.phase}:${event.name || ''}`
-      : event.phase;
-  if (event.status === 'start') setProgressStep(id, 'running');
-  else if (event.status === 'skip') setProgressStep(id, 'skip', t('projectManagement.packCatalog.progressSkipped'));
-  else setProgressStep(id, 'done');
-}
-
+const progress = usePmPackProgress();
 const previewPack = computed(() => catalog.value.find((row) => row.code === previewCode.value) || null);
 
 function installOf(code: string) {
@@ -191,16 +132,11 @@ function notifyResult(messageKey: string, result: PmApplyPackResult) {
 
 async function apply(pack: PmJobPack) {
   busyCode.value = pack.code;
-  progressPackName.value = pack.name;
-  progressFailed.value = false;
-  progressRunning.value = true;
-  progressSteps.value = buildProgressSteps(pack);
-  progressOpen.value = true;
-  await nextTick();
-  setProgressStep('runtime', 'running');
+  await progress.beginApply(pack);
+  progress.setStep('runtime', 'running');
   try {
     const result = await pmApplyProjectPack(props.projectId, pack.code, applyModeOf(pack.code));
-    setProgressStep(
+    progress.setStep(
       'runtime',
       'done',
       t('projectManagement.packCatalog.progressRuntimeDetail', {
@@ -214,28 +150,26 @@ async function apply(pack: PmJobPack) {
         props.projectId,
         props.projectCode,
         pack,
-        applyDocProgress,
+        progress.onDocProgress,
       );
       if (!hubId) {
-        setProgressStep('hub', 'skip', t('projectManagement.packCatalog.progressDocsMissing'));
-        markPendingSteps('skip');
+        progress.setStep('hub', 'skip', t('projectManagement.packCatalog.progressDocsMissing'));
+        progress.markPending('skip');
       }
     } catch (error) {
-      const running = progressSteps.value.find((step) => step.status === 'running');
-      if (running) setProgressStep(running.id, 'error');
-      markPendingSteps('skip');
+      const current = progress.steps.value.find((step) => step.status === 'running');
+      if (current) progress.setStep(current.id, 'error');
+      progress.markPending('skip');
       panelError(error, 'projectManagement.errors.packDocsFailed');
     }
     notifyResult('projectManagement.notify.packApplied', result);
     await load();
     emit('changed');
   } catch (error) {
-    progressFailed.value = true;
-    setProgressStep('runtime', 'error');
-    markPendingSteps('skip');
+    progress.fail('runtime');
     panelError(error, 'projectManagement.errors.saveFailed');
   } finally {
-    progressRunning.value = false;
+    progress.succeed();
     busyCode.value = null;
   }
 }
@@ -243,11 +177,23 @@ async function apply(pack: PmJobPack) {
 async function executeDetach() {
   const pack = detachPack.value;
   if (!pack) return;
+  const folderNames = (detachFolders.value?.items || []).map((row) => row.name);
   busyCode.value = pack.code;
+  detachPack.value = null;
+  detachPreview.value = null;
+  detachFolders.value = null;
+  await progress.beginDetach(pack, folderNames);
+  progress.setStep('runtime', 'running');
   try {
     const result = await pmDetachProjectPack(props.projectId, pack.code);
+    progress.setStep('runtime', 'done');
     try {
-      const folders = await detachJobPackDocuments(props.projectCode, pack, remainingPacks(pack.code));
+      const folders = await detachJobPackDocuments(
+        props.projectCode,
+        pack,
+        remainingPacks(pack.code),
+        progress.onDocProgress,
+      );
       if (folders.removed > 0 || folders.kept > 0) {
         toast.push({
           title: t('projectManagement.notify.successTitle'),
@@ -259,17 +205,19 @@ async function executeDetach() {
         });
       }
     } catch (error) {
+      const current = progress.steps.value.find((step) => step.status === 'running');
+      if (current) progress.setStep(current.id, 'error');
+      progress.markPending('skip');
       panelError(error, 'projectManagement.errors.packDocsDetachFailed');
     }
     notifyResult('projectManagement.notify.packDetached', result);
-    detachPack.value = null;
-    detachPreview.value = null;
-    detachFolders.value = null;
     await load();
     emit('changed');
   } catch (error) {
+    progress.fail('runtime');
     panelError(error, 'projectManagement.errors.deleteFailed');
   } finally {
+    progress.succeed();
     busyCode.value = null;
   }
 }
@@ -317,10 +265,6 @@ function onDetachDialog(open: boolean) {
     detachPreview.value = null;
     detachFolders.value = null;
   }
-}
-
-function onProgressDialog(open: boolean) {
-  if (!open && !progressRunning.value) progressOpen.value = false;
 }
 
 watch(previewCode, (code) => {
@@ -556,12 +500,13 @@ onMounted(() => {
     </v-dialog>
 
     <PmPackApplyProgressDialog
-      :model-value="progressOpen"
-      :pack-name="progressPackName"
-      :running="progressRunning"
-      :failed="progressFailed"
-      :steps="progressSteps"
-      @update:model-value="onProgressDialog"
+      :model-value="progress.open.value"
+      :pack-name="progress.packName.value"
+      :running="progress.running.value"
+      :failed="progress.failed.value"
+      :steps="progress.steps.value"
+      :mode="progress.mode.value"
+      @update:model-value="progress.onToggle"
     />
   </div>
 </template>

@@ -392,6 +392,7 @@ public sealed class JobPackDto
     public IReadOnlyList<string> Folders { get; set; } = Array.Empty<string>();
     public IReadOnlyList<JobPackWbsPreview> Wbs { get; set; } = Array.Empty<JobPackWbsPreview>();
     public IReadOnlyList<JobPackStarterDto> Starters { get; set; } = Array.Empty<JobPackStarterDto>();
+    public JobPackDiagramDto? Diagram { get; set; }
     public int RuleCount { get; set; }
     public int SlaCount { get; set; }
     public int DashboardCount { get; set; }
@@ -416,6 +417,13 @@ public sealed class JobPackStarterDto
     public string Title { get; set; } = string.Empty;
     public string? Kind { get; set; }
     public string? Body { get; set; }
+}
+
+public sealed class JobPackDiagramDto
+{
+    public string Folder { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? Kind { get; set; }
 }
 
 public sealed class JobPackWbsPreview

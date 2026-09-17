@@ -33,20 +33,24 @@ Kurulmadı / Kurulu / Sürüm geride listesi.
 
 Önizleme yalan söylemez: zaten duran kalem **atlanır**, eksik olan **oluşturulur**.
 
-**Kur / Eksikleri tamamla / Güncelle** sırasında kalıcı bir ilerleme penceresi açılır. Backend WBS ve OC’yi tek istekte basar; listedeki adımlar kütüphane klasörleri ve başlangıç sayfalarıdır. Yüzde çubuğu yoktur. Pencere iş bitmeden kapanmaz.
+**Kur / Eksikleri tamamla / Güncelle** sırasında kalıcı bir ilerleme penceresi açılır. Backend WBS ve OC’yi tek istekte basar; listedeki adımlar kütüphane klasörleri, başlangıç sayfaları ve varsa diyagram dosyasıdır. Yüzde çubuğu yoktur. Pencere iş bitmeden kapanmaz.
+
+Yeni proje oluştururken paket seçilirse aynı liste açılır. **Sök** onayından sonra da aynı pencere WBS/iş ve klasör adımlarını gösterir.
 
 ## Kurulum ne üretir?
 
 - WBS kalemleri
-- Kütüphane altında paket klasörleri ve varsa başlangıç sayfaları
+- Kütüphane altında paket klasörleri, başlangıç sayfaları ve varsa boş draw.io (ör. `Onboarding akışı.drawio`)
 - Workspace yoksa ince OC iskeleti: kural, SLA, pano
 - Özet üst iş ve yaprak iş kayıtları
 
 App Store gibi rastgele uygulama yüklemez.
 
-Paket JSON’unda `diagram` (ör. `Onboarding akışı.drawio`) tanımlı olsa bile kurulum bugün **draw.io dosyası basmaz**. Diyagram klasörü oluşur, içi boş kalır. Çizim **Kütüphane → Yeni çizim** veya Süreç sekmesinden yapılır.
+Diyagram **boş tuval**dır; paket örnek bir akış çizmez. Düzenlemek **Kütüphane** veya Süreç sekmesinden (Diyagramı düzenle) yapılır. Dosya zaten varsa tekrar kur **atlar**.
 
-Uzun proje kodlarında OC iş anahtarı kısaltılır (ör. `LAB-ONBOARDING` → `LABONBOARDIN-0001`). Bu kurulum hatası değildir.
+Yeni projede OC iş anahtarı proje kodunu izler (`LAB-ONBOARDING-0001`). Eski lab workspace’lerinde kesik önek kalmış olabilir (`LABONBOARDIN-0001`); bu o workspace’in kurulduğu andaki kuraldır.
+
+Wiki, Kararlar, Yüklemeler ve Toplantı notları paket raftan gelmez; proje kütüphanesinin varsayılan klasörleridir. Sök bunları paket malı sanıp silmez.
 
 ## Sökme neyi siler, neyi bırakır?
 

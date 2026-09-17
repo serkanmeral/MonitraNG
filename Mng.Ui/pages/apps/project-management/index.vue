@@ -5,6 +5,8 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { usePmDate } from '@/composables/usePmDate';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
+import { usePmPackProgress } from '@/composables/usePmPackProgress';
+import PmPackApplyProgressDialog from '@/components/apps/project-management/PmPackApplyProgressDialog.vue';
 import PmPortfolioBar from '@/components/apps/project-management/PmPortfolioBar.vue';
 import {
   pmCreateProject,
@@ -54,6 +56,8 @@ const form = ref({
   packCode: '',
 });
 const jobPacks = ref<PmJobPack[]>([]);
+const progress = usePmPackProgress();
+const createdProjectId = ref<string | null>(null);
 
 const page = computed(() => ({ title: t('projectManagement.title') }));
 const breadcrumbs = computed(() => [
@@ -207,7 +211,14 @@ function confirmDelete(row: PmProject) {
 
 async function saveProject() {
   saving.value = true;
+  createdProjectId.value = null;
+  const pack = selectedPack.value;
   try {
+    if (pack) {
+      dialogOpen.value = false;
+      await progress.beginApply(pack);
+      progress.setStep('runtime', 'running');
+    }
     const created = await pmCreateProject({
       code: form.value.code.trim(),
       name: form.value.name.trim(),
@@ -217,24 +228,52 @@ async function saveProject() {
       plannedFinish: pmDatePayload(form.value.plannedFinish),
       packCode: form.value.packCode || null,
     });
-    if (form.value.packCode && selectedPack.value) {
+    createdProjectId.value = created.id;
+    if (pack) {
+      progress.setStep('runtime', 'done');
       try {
-        await applyJobPackDocuments(created.id, created.code, selectedPack.value);
+        const hubId = await applyJobPackDocuments(
+          created.id,
+          created.code,
+          pack,
+          progress.onDocProgress,
+        );
+        if (!hubId) {
+          progress.setStep('hub', 'skip', t('projectManagement.packCatalog.progressDocsMissing'));
+          progress.markPending('skip');
+        }
       } catch (error) {
+        const current = progress.steps.value.find((step) => step.status === 'running');
+        if (current) progress.setStep(current.id, 'error');
+        progress.markPending('skip');
         panelError(error, 'projectManagement.errors.packDocsFailed');
       }
+      progress.succeed();
+    } else {
+      dialogOpen.value = false;
     }
-    dialogOpen.value = false;
     toast.push({
       title: t('projectManagement.notify.successTitle'),
       message: t('projectManagement.notify.created'),
       severity: 'success',
     });
-    await router.push(`/apps/project-management/${encodeURIComponent(created.id)}`);
+    if (!pack) {
+      await router.push(`/apps/project-management/${encodeURIComponent(created.id)}`);
+    }
   } catch (error) {
+    if (pack) progress.fail('runtime');
     panelError(error, 'projectManagement.errors.saveFailed');
   } finally {
     saving.value = false;
+  }
+}
+
+function onCreateProgressToggle(open: boolean) {
+  progress.onToggle(open);
+  if (!open && !progress.running.value && createdProjectId.value) {
+    const id = createdProjectId.value;
+    createdProjectId.value = null;
+    void router.push(`/apps/project-management/${encodeURIComponent(id)}`);
   }
 }
 
@@ -423,6 +462,15 @@ onMounted(() => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <PmPackApplyProgressDialog
+      :model-value="progress.open.value"
+      :pack-name="progress.packName.value"
+      :running="progress.running.value"
+      :failed="progress.failed.value"
+      :steps="progress.steps.value"
+      mode="apply"
+      @update:model-value="onCreateProgressToggle"
+    />
   </div>
 </template>
 

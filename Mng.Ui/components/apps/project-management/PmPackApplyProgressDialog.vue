@@ -17,6 +17,7 @@ const props = defineProps<{
   running: boolean;
   failed: boolean;
   steps: PmPackProgressStep[];
+  mode?: 'apply' | 'detach';
 }>();
 
 const emit = defineEmits<{
@@ -26,9 +27,23 @@ const emit = defineEmits<{
 const { t } = useAppI18n();
 
 const title = computed(() => {
-  if (props.failed) return t('projectManagement.packCatalog.progressFailedTitle', { name: props.packName });
-  if (props.running) return t('projectManagement.packCatalog.progressTitle', { name: props.packName });
-  return t('projectManagement.packCatalog.progressDoneTitle', { name: props.packName });
+  const detach = props.mode === 'detach';
+  if (props.failed) {
+    return t(
+      detach ? 'projectManagement.packCatalog.progressDetachFailedTitle' : 'projectManagement.packCatalog.progressFailedTitle',
+      { name: props.packName },
+    );
+  }
+  if (props.running) {
+    return t(
+      detach ? 'projectManagement.packCatalog.progressDetachTitle' : 'projectManagement.packCatalog.progressTitle',
+      { name: props.packName },
+    );
+  }
+  return t(
+    detach ? 'projectManagement.packCatalog.progressDetachDoneTitle' : 'projectManagement.packCatalog.progressDoneTitle',
+    { name: props.packName },
+  );
 });
 
 function onToggle(open: boolean) {

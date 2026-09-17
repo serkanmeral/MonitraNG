@@ -27,10 +27,25 @@ public sealed partial class ProjectPlanningService
         return string.IsNullOrEmpty(code) ? "PM Project" : $"PM {code}";
     }
 
+    internal const int PackWorkItemKeyPrefixMaxLength = 64;
+
     private static string PackWorkspacePrefix(string? projectCode)
     {
-        var chars = (projectCode ?? string.Empty).Where(char.IsLetterOrDigit).Take(12).ToArray();
-        return chars.Length == 0 ? "PM" : new string(chars).ToUpperInvariant();
+        var raw = (projectCode ?? string.Empty).Trim().ToUpperInvariant();
+        var chars = new List<char>(raw.Length);
+        foreach (var c in raw)
+        {
+            if (char.IsLetterOrDigit(c)) chars.Add(c);
+            else if (c is '-' or '_') chars.Add('-');
+        }
+
+        var collapsed = new string(chars.ToArray());
+        while (collapsed.Contains("--", StringComparison.Ordinal))
+            collapsed = collapsed.Replace("--", "-", StringComparison.Ordinal);
+        collapsed = collapsed.Trim('-');
+        if (collapsed.Length == 0) return "PM";
+        if (collapsed.Length <= PackWorkItemKeyPrefixMaxLength) return collapsed;
+        return collapsed[..PackWorkItemKeyPrefixMaxLength].TrimEnd('-');
     }
 
     private async Task<PackWorkspaceEnsureResult> PreviewPackWorkspaceAsync(

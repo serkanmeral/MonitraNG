@@ -9,7 +9,8 @@ import {
 } from '@/services/documentIntelligenceService';
 import { pmUpdateProject } from '@/services/projectManagementService';
 import type { DiResource, DiTreeNode } from '@/types/apps/documentIntelligence';
-import type { PmJobPack } from '@/types/apps/projectManagement';
+import type { PmJobPack, PmJobPackDiagram } from '@/types/apps/projectManagement';
+import { diCreateBlankDrawio, drawioFileName } from '@/utils/diDrawio';
 
 export const DOCS_FOLDER_NAMES = ['Dökümanlar', 'Dokumanlar', 'Documents'];
 export const PROJECTS_FOLDER = 'Projeler';
@@ -38,8 +39,8 @@ function folderName(node: { name?: string | null }): string {
   return String(node.name || '').trim();
 }
 
-function packFolderNames(pack: PmJobPack): string[] {
-  return (pack.folders || [])
+export function packFolderNames(pack: PmJobPack): string[] {
+  const names = (pack.folders || [])
     .map((entry) => {
       if (typeof entry === 'string') return entry.trim();
       if (entry && typeof entry === 'object' && 'name' in entry) {
@@ -48,6 +49,33 @@ function packFolderNames(pack: PmJobPack): string[] {
       return '';
     })
     .filter(Boolean);
+  const diagramFolder = packDiagramOf(pack)?.folder;
+  if (diagramFolder && !names.some((name) => name.toLocaleLowerCase('tr') === diagramFolder.toLocaleLowerCase('tr'))) {
+    names.push(diagramFolder);
+  }
+  return names;
+}
+
+export function packDiagramOf(pack: PmJobPack): PmJobPackDiagram | null {
+  const folder = pack.diagram?.folder?.trim() || '';
+  const title = pack.diagram?.title?.trim() || '';
+  if (!folder || !title) return null;
+  return {
+    folder,
+    title,
+    kind: pack.diagram?.kind,
+  };
+}
+
+function diagramAlreadyExists(items: DiResource[] | undefined, title: string): boolean {
+  const wanted = [title, drawioFileName(title)].map((value) => value.toLocaleLowerCase('tr'));
+  return (items || []).some((row) => {
+    if (row.type === 'folder') return false;
+    const names = [row.name, row.title, row.fileName]
+      .filter(Boolean)
+      .map((value) => String(value).trim().toLocaleLowerCase('tr'));
+    return names.some((name) => wanted.includes(name));
+  });
 }
 
 function claimedFolderNames(packs: PmJobPack[]): Set<string> {
@@ -167,7 +195,7 @@ function isFolderEmpty(listing: { items?: unknown[]; total?: number | null }): b
   return (listing.total ?? 0) <= 0;
 }
 
-export type PmPackDocProgressPhase = 'hub' | 'folder' | 'starter' | 'finish';
+export type PmPackDocProgressPhase = 'hub' | 'folder' | 'starter' | 'diagram' | 'finish';
 
 export interface PmPackDocProgress {
   phase: PmPackDocProgressPhase;
@@ -225,6 +253,26 @@ export async function applyJobPackDocuments(
     emit({ phase: 'starter', status: 'done', name: starter.title });
   }
 
+  const diagram = packDiagramOf(pack);
+  if (diagram) {
+    emit({ phase: 'diagram', status: 'start', name: diagram.title });
+    let parent = folderIds.get(diagram.folder);
+    if (!parent) {
+      parent = await ensureFolder(hubId, diagram.folder);
+      folderIds.set(diagram.folder, parent);
+    }
+    const listing = await diGetChildren(parent);
+    if (diagramAlreadyExists(listing.items, diagram.title)) {
+      emit({ phase: 'diagram', status: 'skip', name: diagram.title });
+    } else {
+      const created = await diCreateBlankDrawio(parent, diagram.title);
+      if (diagram.kind && created.id) {
+        await diUpdateResourceMetadata(created.id, { kind: diagram.kind });
+      }
+      emit({ phase: 'diagram', status: 'done', name: diagram.title });
+    }
+  }
+
   emit({ phase: 'finish', status: 'start' });
   await collapseEmptyDuplicateFolders(hubId);
   await pmUpdateProject(projectId, { diFolderId: hubId });
@@ -271,7 +319,9 @@ export async function detachJobPackDocuments(
   projectCode: string,
   pack: PmJobPack,
   remainingPacks: PmJobPack[],
+  onProgress?: (event: PmPackDocProgress) => void,
 ): Promise<PmPackFolderDetachResult> {
+  const emit = (event: PmPackDocProgress) => onProgress?.(event);
   const preview = await previewJobPackFolders(projectCode, pack, remainingPacks);
   const hubId = await findProjectHub(projectCode);
   let removed = 0;
@@ -279,23 +329,33 @@ export async function detachJobPackDocuments(
   let skipped = preview.skipCount;
 
   if (!hubId) {
+    for (const row of preview.items) {
+      emit({ phase: 'folder', status: 'skip', name: row.name });
+    }
     return { removed: 0, kept, skipped };
   }
 
   for (const row of preview.items) {
-    if (row.action !== 'remove') continue;
+    emit({ phase: 'folder', status: 'start', name: row.name });
+    if (row.action !== 'remove') {
+      emit({ phase: 'folder', status: 'skip', name: row.name });
+      continue;
+    }
     const folder = await findChildFolder(hubId, [row.name]);
     if (!folder?.id) {
       skipped += 1;
+      emit({ phase: 'folder', status: 'skip', name: row.name });
       continue;
     }
     const listing = await diGetChildren(folder.id);
     if (!isFolderEmpty(listing)) {
       kept += 1;
+      emit({ phase: 'folder', status: 'skip', name: row.name });
       continue;
     }
     await diDelete(folder.id, false);
     removed += 1;
+    emit({ phase: 'folder', status: 'done', name: row.name });
   }
 
   return { removed, kept, skipped };
