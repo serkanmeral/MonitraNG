@@ -879,9 +879,14 @@ export async function createOdakShipment(
     await recalculatePackageLineShippedQuantities(packageId);
   }
   const pkg = await fetchOdakPackageById(packageId);
+  const newStatus = normalizeShipmentStatus(form.status);
+  void dispatchOdakPackageNotification('ShipmentCreated', pkg, {
+    shipmentPreviousStatus: null,
+    shipmentNewStatus: newStatus,
+  });
   void dispatchOdakPackageNotification('ShipmentCompleted', pkg, {
     shipmentPreviousStatus: null,
-    shipmentNewStatus: normalizeShipmentStatus(form.status),
+    shipmentNewStatus: newStatus,
   });
   return shipmentId;
 }

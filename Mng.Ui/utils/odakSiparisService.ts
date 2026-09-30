@@ -483,19 +483,162 @@ export function buildPackageListFilter(query: OdakPackageListQuery): string | un
   return parts.length ? parts.join(',') : undefined;
 }
 
+const PACKAGE_QUICK_SEARCH_MERGE_CAP = 1000;
+const LINE_QUICK_SEARCH_HIT_CAP = 500;
+
+function sanitizeDgContainsValue(raw: string): string {
+  return raw
+    .replace(/[,:]/g, ' ')
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .trim();
+}
+
+async function findPackageIdsByLineQuickSearch(term: string): Promise<string[]> {
+  const q = sanitizeDgContainsValue(term);
+  if (!q) return [];
+  const ids = new Set<string>();
+  await Promise.all(
+    (['customerProjectNo', 'customerPoNo'] as const).map(async (field) => {
+      try {
+        const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.linesDataset, {
+          filter: `${field}:contains:${q}`,
+          limit: LINE_QUICK_SEARCH_HIT_CAP,
+          expand: false,
+        });
+        for (const row of resp.items ?? []) {
+          const parentId = resolveRelationId((row as Record<string, unknown>).parentPackageId);
+          if (parentId) ids.add(parentId);
+        }
+      } catch {
+        /* line search is additive; package-field search still runs */
+      }
+    })
+  );
+  return [...ids];
+}
+
+async function fetchPackagesByIds(
+  ids: string[],
+  baseFilter: string | undefined
+): Promise<OdakPackageRow[]> {
+  if (!ids.length) return [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 40) chunks.push(ids.slice(i, i + 40));
+  const lists = await Promise.all(
+    chunks.map(async (chunk) => {
+      const idFilter = buildRelationInFilter('__dataId', chunk);
+      const filter = [baseFilter, idFilter].filter(Boolean).join(',');
+      const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
+        filter: filter || undefined,
+        limit: chunk.length,
+        expand: true,
+      });
+      return (resp.items ?? []) as OdakPackageRow[];
+    })
+  );
+  return lists.flat();
+}
+
+function packageListSortValue(row: OdakPackageRow, listKey: string): string | number {
+  switch (listKey) {
+    case 'name':
+      return String(row.name ?? '').toLowerCase();
+    case 'customer':
+      return customerLabelFromRow(row, {}).toLowerCase();
+    case 'statusLabel':
+      return String(row.status ?? '');
+    case 'beginDate':
+      return Date.parse(String(row.beginDate ?? '')) || 0;
+    case 'deliveryDate':
+      return Date.parse(String(row.deliveryDate ?? '')) || 0;
+    case 'closedAt':
+      return Date.parse(String(row.closedAt ?? '')) || 0;
+    case 'lineCount':
+      return Number(row.lineCount ?? 0);
+    case 'partCount':
+      return Number(row.partCount ?? 0);
+    case 'stockCount':
+      return Number(row.stockCount ?? 0);
+    case 'shippedCount':
+      return Number(row.shippedCount ?? 0);
+    case 'poVersion':
+      return String(row.poVersion ?? '').toLowerCase();
+    default:
+      return String(row.packageNo ?? '').toLowerCase();
+  }
+}
+
+function comparePackageRows(a: OdakPackageRow, b: OdakPackageRow, sortBy?: OdakPackageListSort[]): number {
+  const primary = sortBy?.[0];
+  const listKey = primary?.key ?? 'displayNo';
+  const dir = (primary?.order ?? 'desc') === 'desc' ? -1 : 1;
+  const av = packageListSortValue(a, listKey);
+  const bv = packageListSortValue(b, listKey);
+  if (av < bv) return -1 * dir;
+  if (av > bv) return 1 * dir;
+  return String(a.packageNo ?? '').localeCompare(String(b.packageNo ?? ''), 'tr');
+}
+
+async function fetchPackagesMatchingTextSearch(query: OdakPackageListQuery, search: string): Promise<OdakPackageRow[]> {
+  const all: OdakPackageRow[] = [];
+  let skip = 0;
+  let total = Number.POSITIVE_INFINITY;
+  const pageSize = 200;
+  const filter = buildPackageListFilter(query);
+  const sort = buildPackageListSort(query.sortBy);
+  while (skip < total && all.length < PACKAGE_QUICK_SEARCH_MERGE_CAP) {
+    const limit = Math.min(pageSize, PACKAGE_QUICK_SEARCH_MERGE_CAP - all.length);
+    const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
+      skip,
+      limit,
+      sort,
+      filter,
+      search,
+    });
+    const batch = (resp.items ?? []) as OdakPackageRow[];
+    total = resp.total ?? skip + batch.length;
+    if (!batch.length) break;
+    all.push(...batch);
+    skip += batch.length;
+    if (batch.length < limit) break;
+  }
+  return all;
+}
+
 export async function fetchOdakPackagesPage(
   query: OdakPackageListQuery
 ): Promise<{ items: OdakPackageRow[]; total: number }> {
-  const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
-    skip: query.skip ?? 0,
-    limit: query.limit ?? 20,
-    sort: buildPackageListSort(query.sortBy),
-    filter: buildPackageListFilter(query),
-    search: query.search?.trim() || undefined,
-  });
+  const search = query.search?.trim();
+  if (!search) {
+    const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
+      skip: query.skip ?? 0,
+      limit: query.limit ?? 20,
+      sort: buildPackageListSort(query.sortBy),
+      filter: buildPackageListFilter(query),
+    });
+    return {
+      items: (resp.items ?? []) as OdakPackageRow[],
+      total: resp.total ?? resp.items?.length ?? 0,
+    };
+  }
+
+  const filter = buildPackageListFilter(query);
+  const [textHits, lineIds] = await Promise.all([
+    fetchPackagesMatchingTextSearch(query, search),
+    findPackageIdsByLineQuickSearch(search),
+  ]);
+  const lineHits = await fetchPackagesByIds(lineIds, filter);
+  const byId = new Map<string, OdakPackageRow>();
+  for (const row of [...textHits, ...lineHits]) {
+    const id = packageDataId(row);
+    if (id) byId.set(id, row);
+  }
+  const merged = [...byId.values()].sort((a, b) => comparePackageRows(a, b, query.sortBy));
+  const skip = query.skip ?? 0;
+  const limit = query.limit ?? 20;
   return {
-    items: (resp.items ?? []) as OdakPackageRow[],
-    total: resp.total ?? resp.items?.length ?? 0,
+    items: merged.slice(skip, skip + limit),
+    total: merged.length,
   };
 }
 

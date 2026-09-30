@@ -4,6 +4,7 @@ import { ODAK_SIPARIS_CONFIG } from '@/utils/odakSiparisConfig';
 export const ODAK_SIPARIS_NOTIFICATION_EVENT_TYPES = [
   'PackageCreated',
   'PackageUpdated',
+  'ShipmentCreated',
   'ShipmentCompleted',
   'GlobalShipmentCreated',
 ] as const;
@@ -14,6 +15,7 @@ export type OdakSiparisNotificationEventType = (typeof ODAK_SIPARIS_NOTIFICATION
 export const ODAK_PACKAGE_NOTIFICATION_EVENT_TYPES = [
   'PackageCreated',
   'PackageUpdated',
+  'ShipmentCreated',
   'ShipmentCompleted',
 ] as const satisfies readonly OdakSiparisNotificationEventType[];
 
@@ -24,6 +26,7 @@ export const ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT_TYPES = [
 ] as const satisfies readonly OdakSiparisNotificationEventType[];
 
 export const ODAK_GLOBAL_SHIPMENT_DEFAULT_MAIL_TEMPLATE = 'odak-global-shipment-created';
+export const ODAK_SHIPMENT_CREATED_DEFAULT_MAIL_TEMPLATE = 'odak-shipment-created';
 
 export type OdakPackageUpdateTriggerMode = 'always' | 'fields';
 export type OdakShipmentTriggerMode = 'transition' | 'toStatus' | 'always';

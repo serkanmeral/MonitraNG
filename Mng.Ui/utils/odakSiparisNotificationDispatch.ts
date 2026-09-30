@@ -197,7 +197,7 @@ async function loadPolicies(): Promise<OdakSiparisNotificationPolicy[]> {
 }
 
 export async function dispatchOdakPackageNotification(
-  eventType: 'PackageCreated' | 'PackageUpdated' | 'ShipmentCompleted',
+  eventType: 'PackageCreated' | 'PackageUpdated' | 'ShipmentCreated' | 'ShipmentCompleted',
   pkg: OdakPackageRow | null | undefined,
   ctx: OdakNotificationDispatchContext = {}
 ): Promise<void> {

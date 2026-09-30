@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import {
+  ODAK_SHIPMENT_CREATED_DEFAULT_MAIL_TEMPLATE,
   ODAK_SIPARIS_NOTIFICATION_EVENT_TYPES,
   newOdakNotificationPolicyDraft,
   parseOdakNotificationPolicyToDraft,
@@ -78,6 +79,15 @@ watch(
         draft.value.eventType = props.defaultEventType;
       }
     }
+  }
+);
+
+watch(
+  () => draft.value.eventType,
+  (eventType) => {
+    if (eventType !== 'ShipmentCreated') return;
+    if (draft.value.emailTemplateKey.trim()) return;
+    draft.value.emailTemplateKey = ODAK_SHIPMENT_CREATED_DEFAULT_MAIL_TEMPLATE;
   }
 );
 
