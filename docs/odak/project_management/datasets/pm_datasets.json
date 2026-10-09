@@ -117,6 +117,15 @@
         "unique": false,
         "isArray": false,
         "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "meetingWorkspaceId",
+        "title": "OC workspace id for meeting assignments",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
       }
     ],
     "indexList": [
@@ -1428,6 +1437,15 @@
       },
       {
         "fieldType": "text",
+        "name": "cancelReason",
+        "title": "Cancel reason",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "text",
         "name": "location",
         "title": "Location",
         "mandatory": false,
@@ -1679,6 +1697,33 @@
         "validation": { "maxLength": 256 }
       },
       {
+        "fieldType": "text",
+        "name": "ownerKind",
+        "title": "Owner kind (user | external)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "ownerUserId",
+        "title": "Owner Keeper user id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "ownerPersonId",
+        "title": "Owner external person id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
         "fieldType": "datetime",
         "name": "dueDate",
         "title": "Due date",
@@ -1754,6 +1799,186 @@
       {
         "name": "idx_mact_wbs",
         "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_meeting_people",
+    "description": "Teslimat Omurgasi — projenin kurum dışı kişisi. Proje ayarlarında tanımlanır. Giriş hesabı değildir. Paydaş kaydı değildir.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Person name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "organization",
+        "title": "Organization",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "email",
+        "title": "Contact email (not a login)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "userId",
+        "title": "Linked Keeper user id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_mpeople_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_mpeople_name",
+        "fields": { "name": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_mpeople_email",
+        "fields": { "email": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_meeting_attendance",
+    "description": "Teslimat Omurgasi — bir toplantının kişisi. Kullanıcı ya da dış kişi. Katılma durumu tek alandır: invited, confirmed, attended, absent, excused.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "meetingId",
+        "title": "Meeting id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (user | external)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "text",
+        "name": "userId",
+        "title": "Keeper user id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "personId",
+        "title": "External person id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "displayName",
+        "title": "Display name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "presence",
+        "title": "Presence (invited | confirmed | attended | absent | excused)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "number",
+        "name": "expected",
+        "title": "Expected (0/1)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "attended",
+        "title": "Attended (0/1)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_matt_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_matt_meeting",
+        "fields": { "meetingId": 1 },
         "unique": false
       }
     ]
@@ -1998,6 +2223,322 @@
       {
         "name": "idx_pmap_wbs",
         "fields": { "wbsId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_payment_terms",
+    "description": "Hakedis sozlesme basligi. Projede tek satir: taban bedel, para birimi, ceza tavani. Fatura yok.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "number",
+        "name": "baseAmount",
+        "title": "Contract base amount",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "currency",
+        "title": "ISO currency",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 8 }
+      },
+      {
+        "fieldType": "number",
+        "name": "penaltyCapPercent",
+        "title": "Penalty cap percent of base (default 35)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_terms_project",
+        "fields": { "projectId": 1 },
+        "unique": true
+      }
+    ]
+  },
+  {
+    "name": "pm_payment_slices",
+    "description": "Hakedis cetvel dilimi. Yuzde veya birim fiyat. Kapı gecmek odeme acmaz.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Slice name",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "text",
+        "name": "kind",
+        "title": "Kind (percent | unit)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 16 }
+      },
+      {
+        "fieldType": "number",
+        "name": "percent",
+        "title": "Percent of base (percent kind)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "cadence",
+        "title": "Cadence (once | installments)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 16 }
+      },
+      {
+        "fieldType": "number",
+        "name": "installmentCount",
+        "title": "Installment count",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "intervalMonths",
+        "title": "Months between installments",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "unitPrice",
+        "title": "Unit price (unit kind)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "gateId",
+        "title": "Stage gate id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "wbsId",
+        "title": "WBS item id (optional)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "budgetLineId",
+        "title": "Budget line id (optional feed)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "anchorDate",
+        "title": "First period date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sort order",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_slice_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "name": "pm_progress_claims",
+    "description": "Hakedis donemi. Talep, kabul, kesinti, fiyat farki, durum, kanit. Net sunucuda hesaplanir.",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "projectId",
+        "title": "Project id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "text",
+        "name": "sliceId",
+        "title": "Payment slice id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 64 }
+      },
+      {
+        "fieldType": "number",
+        "name": "sequence",
+        "title": "Period sequence",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "periodLabel",
+        "title": "Period label",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 256 }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Period date",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "claimedAmount",
+        "title": "Claimed amount",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "acceptedAmount",
+        "title": "Accepted amount",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "deduction",
+        "title": "Requested deduction",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "adjustmentAmount",
+        "title": "Price adjustment (signed)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "quantity",
+        "title": "Quantity (unit kind)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Status (draft | submitted | accepted | paid)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 16 }
+      },
+      {
+        "fieldType": "text",
+        "name": "resourceIds",
+        "title": "Evidence DI resource ids",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "note",
+        "title": "Note",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 2000 }
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_claim_project",
+        "fields": { "projectId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_claim_slice",
+        "fields": { "sliceId": 1 },
         "unique": false
       }
     ]

@@ -47,7 +47,7 @@ public sealed partial class ProjectPlanningService
         if (string.IsNullOrWhiteSpace(id))
             throw new OperationCoreException("CREATE_FAILED", "Meeting series create did not return an id.", "Toplantı serisi oluşturulamadı.", 500);
 
-        await GenerateSeriesOccurrencesAsync(id, projectId, name, wbsId, weekday, startTime, duration, anchor, until, request.Location, request.MeetingUrl, request.Attendees, request.Agenda, request.Note, token, ct);
+        await GenerateSeriesOccurrencesAsync(id, projectId, name, wbsId, weekday, startTime, duration, anchor, until, request.Location, request.MeetingUrl, request.Agenda, request.Note, token, ct);
         return await LoadSeriesDtoAsync(id, token, ct);
     }
 
@@ -88,42 +88,11 @@ public sealed partial class ProjectPlanningService
 
         var location = request.Location ?? existing.location;
         var url = request.MeetingUrl ?? existing.meetingUrl;
-        var attendees = request.Attendees ?? existing.attendees;
         var agenda = request.Agenda ?? existing.agenda;
         var note = request.Note ?? existing.note;
 
-        var meetings = await LoadMeetingRowsAsync(projectId, token, ct);
-        var actions = await LoadMeetingActionRowsAsync(projectId, token, ct);
-        var now = DateTime.UtcNow;
-        foreach (var meeting in meetings)
-        {
-            if (!string.Equals(meeting.seriesId, id, StringComparison.Ordinal)) continue;
-            if (string.IsNullOrWhiteSpace(meeting.__dataId)) continue;
-            if (meeting.detached is >= 1) continue;
-            var start = meeting.startAt ?? meeting.heldAt;
-            var locked = string.Equals(PmMeetingStatus.Normalize(meeting.status), PmMeetingStatus.Held, StringComparison.Ordinal)
-                || string.Equals(PmMeetingStatus.Normalize(meeting.status), PmMeetingStatus.Cancelled, StringComparison.Ordinal)
-                || !string.IsNullOrWhiteSpace(meeting.minutesResourceId)
-                || actions.Any(a => string.Equals(a.meetingId, meeting.__dataId, StringComparison.Ordinal));
-            if (locked) continue;
-            if (start is not null && start.Value.ToUniversalTime() < now)
-            {
-                await _dg.UpdateAsync(PmDatasets.Meetings, meeting.__dataId, new Dictionary<string, object?>
-                {
-                    ["name"] = name,
-                    ["location"] = EmptyToNull(location),
-                    ["meetingUrl"] = EmptyToNull(url),
-                    ["attendees"] = EmptyToNull(attendees),
-                    ["agenda"] = EmptyToNull(agenda),
-                    ["note"] = EmptyToNull(note),
-                    ["wbsId"] = wbsId
-                }, token, ct);
-                continue;
-            }
-            await _dg.DeleteAsync(PmDatasets.Meetings, meeting.__dataId, token, ct);
-        }
-
-        await GenerateSeriesOccurrencesAsync(id, projectId, name, wbsId, weekday, startTime, duration, anchor, until, location, url, attendees, agenda, note, token, ct);
+        await GenerateSeriesOccurrencesAsync(id, projectId, name, wbsId, weekday, startTime, duration, anchor, until, location, url, agenda, note, token, ct);
+        await CancelSeriesTailAsync(id, projectId, until, token, ct);
         return await LoadSeriesDtoAsync(id, token, ct);
     }
 
@@ -152,6 +121,37 @@ public sealed partial class ProjectPlanningService
         }, token, ct);
     }
 
+    private async Task CancelSeriesTailAsync(
+        string seriesId,
+        string projectId,
+        DateTime until,
+        string token,
+        CancellationToken ct)
+    {
+        var meetings = await LoadMeetingRowsAsync(projectId, token, ct);
+        var actions = await LoadMeetingActionRowsAsync(projectId, token, ct);
+        var tz = MeetingTimeZone();
+        var untilDate = until.ToUniversalTime().Date;
+        foreach (var meeting in meetings)
+        {
+            if (!string.Equals(meeting.seriesId, seriesId, StringComparison.Ordinal)) continue;
+            if (string.IsNullOrWhiteSpace(meeting.__dataId)) continue;
+            if (meeting.detached is >= 1) continue;
+            var status = PmMeetingStatus.Normalize(meeting.status);
+            if (!string.Equals(status, PmMeetingStatus.Scheduled, StringComparison.Ordinal)) continue;
+            if (!string.IsNullOrWhiteSpace(meeting.minutesResourceId)) continue;
+            if (actions.Any(a => string.Equals(a.meetingId, meeting.__dataId, StringComparison.Ordinal))) continue;
+            var start = meeting.occurrenceDate ?? meeting.startAt ?? meeting.heldAt;
+            if (start is null) continue;
+            var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(start.Value.ToUniversalTime(), DateTimeKind.Utc), tz);
+            if (local.Date <= untilDate) continue;
+            await _dg.UpdateAsync(PmDatasets.Meetings, meeting.__dataId, new Dictionary<string, object?>
+            {
+                ["status"] = PmMeetingStatus.Cancelled
+            }, token, ct);
+        }
+    }
+
     private async Task GenerateSeriesOccurrencesAsync(
         string seriesId,
         string projectId,
@@ -164,7 +164,6 @@ public sealed partial class ProjectPlanningService
         DateTime untilDateUtc,
         string? location,
         string? meetingUrl,
-        string? attendees,
         string? agenda,
         string? note,
         string token,
@@ -187,7 +186,6 @@ public sealed partial class ProjectPlanningService
             if (!already)
             {
                 var end = cursor.AddMinutes(duration);
-                var status = InferMeetingStatus(cursor);
                 await _dg.CreateAsync(PmDatasets.Meetings, new Dictionary<string, object?>
                 {
                     ["projectId"] = projectId,
@@ -195,9 +193,9 @@ public sealed partial class ProjectPlanningService
                     ["heldAt"] = cursor,
                     ["startAt"] = cursor,
                     ["endAt"] = end,
-                    ["status"] = status,
+                    ["status"] = PmMeetingStatus.Scheduled,
                     ["wbsId"] = wbsId,
-                    ["attendees"] = EmptyToNull(attendees),
+                    ["attendees"] = null,
                     ["note"] = EmptyToNull(note),
                     ["location"] = EmptyToNull(location),
                     ["meetingUrl"] = EmptyToNull(meetingUrl),

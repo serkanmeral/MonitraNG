@@ -6,8 +6,10 @@
 #       Pazarlama/
 #         Docs/
 #         Files/
+#         Broşür/
+#         Odak/
 #
-# Repo kaynak icerik: docs/monitrang/pazarlama/Docs | Files
+# Repo kaynak icerik: docs/monitrang/pazarlama/Docs | Files | brosur | odak
 #
 # Usage (repo kokunden):
 #   .\docs\odak\document_intelligence\scripts\seed-monitrang-pazarlama-folders.ps1
@@ -122,13 +124,15 @@ $pazarlamaId = Ensure-Folder -Name "Pazarlama" -ParentId $monitraNgId
 Ensure-Folder -Name "Docs" -ParentId $pazarlamaId | Out-Null
 Ensure-Folder -Name "Files" -ParentId $pazarlamaId | Out-Null
 Ensure-Folder -Name "Broşür" -ParentId $pazarlamaId | Out-Null
+Ensure-Folder -Name "Odak" -ParentId $pazarlamaId | Out-Null
 
 Write-Host "`nTamamlandi." -ForegroundColor Cyan
 if ($sayfalarId) {
-    Write-Host "UI: Dokumanlar > Sayfalar > MonitraNG > Pazarlama > Docs | Files | Broşür" -ForegroundColor Cyan
+    Write-Host "UI: Dokumanlar > Sayfalar > MonitraNG > Pazarlama > Docs | Files | Broşür | Odak" -ForegroundColor Cyan
 }
 else {
-    Write-Host "UI: Dokumanlar > MonitraNG > Pazarlama > Docs | Files | Broşür" -ForegroundColor Cyan
+    Write-Host "UI: Dokumanlar > MonitraNG > Pazarlama > Docs | Files | Broşür | Odak" -ForegroundColor Cyan
 }
-Write-Host "Repo kaynak: docs/monitrang/pazarlama/Docs | Files | brosur/" -ForegroundColor Gray
+Write-Host "Repo kaynak: docs/monitrang/pazarlama/Docs | Files | brosur/ | odak/" -ForegroundColor Gray
 Write-Host "Broşür seed: docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-brosur.ps1" -ForegroundColor Gray
+Write-Host "Odak seed: docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-odak.ps1" -ForegroundColor Gray

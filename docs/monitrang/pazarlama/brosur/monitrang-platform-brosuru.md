@@ -133,4 +133,4 @@ Güncel ürün tanıtımı, modül detayları ve iletişim için web sitemizi zi
 
 ---
 
-*© MonitraNG · iSIM Platform · Temmuz 2026*
+*© MonitraNG · Temmuz 2026*

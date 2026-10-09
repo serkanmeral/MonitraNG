@@ -1,8 +1,8 @@
 {
   "id": "teslimat-omurgasi",
-  "version": "0.38.0",
-  "updated": "2026-09-17",
-  "description": "F1–F5 + F2-14..16; proje toplantı takvimi, iki sicil, tutanak listesi, gündem/tutanak belgesi. NLP yok. Dış takvim yok.",
+  "version": "0.43.0",
+  "updated": "2026-10-05",
+  "description": "F1–F5 + hakediş + toplantı katılma durumu + toplantı çalışma alanı. Fatura yok. NLP yok.",
   "category": {
     "file": "docs/odak/document_intelligence/datasets/documentintelligence_dataset_category.json",
     "name": "DocumentIntelligenceDatasets"
@@ -66,11 +66,16 @@
       "pm_meetings",
       "pm_meeting_series",
       "pm_meeting_actions",
+      "pm_meeting_people",
+      "pm_meeting_attendance",
       "pm_stakeholders",
-      "pm_process_maps"
+      "pm_process_maps",
+      "pm_payment_terms",
+      "pm_payment_slices",
+      "pm_progress_claims"
     ],
     "verifyFields": {
-      "pm_projects": ["code", "name", "status", "baselineSetAt"],
+      "pm_projects": ["code", "name", "status", "baselineSetAt", "meetingWorkspaceId"],
       "pm_wbs_items": ["projectId", "kind", "name", "plannedStart", "baselineStart"],
       "pm_dependencies": ["projectId", "predecessorId", "successorId", "type"],
       "pm_decisions": ["projectId", "title", "kind", "status", "wbsIds"],
@@ -84,9 +89,14 @@
       "pm_audit_packs": ["projectId", "name", "kind", "status", "resourceIds"],
       "pm_meetings": ["projectId", "name", "startAt", "endAt", "status", "seriesId", "heldAt", "agendaResourceId", "minutesResourceId", "wbsId"],
       "pm_meeting_series": ["projectId", "name", "weekday", "startTime", "durationMinutes", "until"],
-      "pm_meeting_actions": ["projectId", "meetingId", "title", "status", "workItemId"],
+      "pm_meeting_actions": ["projectId", "meetingId", "title", "status", "workItemId", "ownerKind", "ownerUserId", "ownerPersonId"],
+      "pm_meeting_people": ["projectId", "name", "email", "userId"],
+      "pm_meeting_attendance": ["projectId", "meetingId", "kind", "userId", "personId", "displayName", "presence", "expected", "attended"],
       "pm_stakeholders": ["projectId", "name", "kind", "status", "resourceIds"],
-      "pm_process_maps": ["projectId", "name", "kind", "status", "resourceId"]
+      "pm_process_maps": ["projectId", "name", "kind", "status", "resourceId"],
+      "pm_payment_terms": ["projectId", "baseAmount", "currency", "penaltyCapPercent"],
+      "pm_payment_slices": ["projectId", "name", "kind", "cadence", "percent", "budgetLineId"],
+      "pm_progress_claims": ["projectId", "sliceId", "sequence", "periodLabel", "status", "resourceIds"]
     }
   },
   "profiles": {

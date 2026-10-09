@@ -1,0 +1,56 @@
+# Mustafa Cafe — altyapı override (doğrudan IP, Nginx yok)
+# Kullanım (sunucu 192.168.1.42):
+#   cd ApplicationResources/mng_common
+#   cp .env.mustafa.example .env
+#   docker compose -f docker-compose.yml -f docker-compose.mustafa.yml up -d
+#
+# Devre dışı servisler "mustafa-disabled" profilinde; bu profil verilmeden başlamazlar.
+
+services:
+  # Docker Hub ve Quay minio/minio 2026'da kapandı. Chainguard aynı sunucu komutunu çalıştırır.
+  # curl yok; sağlık kontrolü mc. İmaj nonroot; veri hacmi için root.
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    user: "0:0"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  keycloak:
+    ports:
+      - "8080:8080"
+    environment:
+      KC_HOSTNAME: ${MUSTAFA_KEYCLOAK_HOSTNAME:-192.168.1.42}
+      KC_HOSTNAME_PORT: ${MUSTAFA_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: passthrough
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME_PATH: /keycloak
+
+  gitlab:
+    profiles: ["mustafa-disabled"]
+
+  gitlab-postgres:
+    profiles: ["mustafa-disabled"]
+
+  gitlab-redis:
+    profiles: ["mustafa-disabled"]
+
+  gitlab-runner:
+    profiles: ["mustafa-disabled"]
+
+  mkdocs:
+    profiles: ["mustafa-disabled"]
+
+  nginx:
+    profiles: ["mustafa-disabled"]
+
+# Base compose Mailu ağını external ister; bu sunucuda Mailu yok.
+networks:
+  mailu_default:
+    name: mng_mustafa_mailu_placeholder
+    driver: bridge

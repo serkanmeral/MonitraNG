@@ -1,0 +1,65 @@
+# Fatih Home — altyapı override (IP erişim; Prospera ile birlikte yaşam)
+# Kullanım (sunucu 10.0.10.52):
+#   cd ApplicationResources/mng_common
+#   cp env.example .env   # parolaları doldurun — bkz. docs/fatih_home/CREDENTIALS.md
+#   docker compose -f docker-compose.yml -f docker-compose.fatih.yml up -d
+#
+# Devre dışı servisler "fatih-disabled" profilinde; bu profili vermeden başlatılmazlar.
+# Prospera host portları: 80/443, 6379, 8001, 9000, 9001, 4000 — çakışan yayınlar aşağıda kaydırıldı.
+
+services:
+  keycloak:
+    ports:
+      - "8080:8080"
+    environment:
+      # Nginx yok — hostname = sunucu IP
+      KC_HOSTNAME: ${FATIH_KEYCLOAK_HOSTNAME:-10.0.10.52}
+      KC_HOSTNAME_PORT: ${FATIH_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: passthrough
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME_PATH: /keycloak
+
+  # Apps Redis'e Docker DNS (redis:6379) ile gider; host 6379 Prospera'da.
+  redis:
+    ports: !override
+      - "16379:6379"
+
+  redis-commander:
+    ports: !override
+      - "18001:8081"
+
+  # Host 9001 Prospera MinIO console; MQTT 1883 boş.
+  mosquitto:
+    ports: !override
+      - "1883:1883"
+      - "19001:9001"
+
+  gitlab:
+    profiles: ["fatih-disabled"]
+
+  gitlab-postgres:
+    profiles: ["fatih-disabled"]
+
+  gitlab-redis:
+    profiles: ["fatih-disabled"]
+
+  gitlab-runner:
+    profiles: ["fatih-disabled"]
+
+  mkdocs:
+    profiles: ["fatih-disabled"]
+
+  nginx:
+    profiles: ["fatih-disabled"]
+
+  # Host'ta zaten Portainer (:9443) var; isim + port 9000 çakışır.
+  portainer:
+    profiles: ["fatih-disabled"]
+
+# Base compose Mailu ağını external ister; bu sunucuda Mailu yok.
+networks:
+  mailu_default:
+    name: mng_fatih_mailu_placeholder
+    driver: bridge

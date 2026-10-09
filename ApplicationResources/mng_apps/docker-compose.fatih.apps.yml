@@ -1,0 +1,161 @@
+# Fatih Home — mng_apps override (Nginx yok; Prospera ile port/RAM birlikte yaşam)
+# Ön koşul: mng_common (docker-compose.fatih.yml) ayakta, ağ mng_common_mng_network mevcut
+#
+#   docker compose -f docker-compose.production.yml -f docker-compose.fatih.apps.yml --env-file .env up -d --build
+#
+# UI: http://10.0.10.52:3000   DomainUI: http://10.0.10.52:3001
+# Ollama / Collabora kapalı (RAM + Prospera Collabora); stub depends_on için.
+
+services:
+  mnggateway:
+    ports:
+      - "5040:5000"
+    environment:
+      - MngGatewaySettings__Server__Scheme=http
+      - MngGatewaySettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://10.0.10.52:5040}
+      - MngGatewaySettings__Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngGatewaySettings__Jwt__RequireHttpsMetadata=false
+      - MngGatewaySettings__Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_1:-http://10.0.10.52:3000}
+      - MngGatewaySettings__Cors__AllowedOrigins__1=${CORS_ALLOWED_ORIGIN_2:-http://10.0.10.52:3001}
+
+  mngkeeper:
+    ports:
+      - "5001:5001"
+    environment:
+      - MngKeeperSettings__OpenApiServerPath=http://10.0.10.52:5001
+
+  mngdatagateway:
+    ports:
+      - "5010:5010"
+
+  mngreactor:
+    ports:
+      - "5003:5003"
+    environment:
+      - MngReactorSettings__OpenApiServerPath=http://10.0.10.52:5040/reactor
+      - MngReactorSettings__EngineServerUrl=http://mngreactor:5003
+      - MngReactorSettings__Actors__MngKeeperEngineUrl=http://mngkeeper:5001
+      - MngReactorSettings__MongoDB__Host=mongo
+      - MngReactorSettings__MongoDB__Password=${MONGO_PASSWORD:-admin123}
+      - MngReactorSettings__RabbitMQ__Host=rabbitmq
+      - MngReactorSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD:-admin123}
+      - MngReactorSettings__Mqtt__Host=mosquitto
+      - MngReactorSettings__ObservationPublish__Enabled=true
+      - MngReactorSettings__SecEvents__OpenSearchDualWriteEnabled=true
+      - MngReactorSettings__SecEvents__OpenSearchReadEnabled=true
+      - MngReactorSettings__SecEvents__OpenSearchUrl=http://opensearch:9200
+
+  mngengine:
+    ports:
+      - "5037:5037"
+
+  mnghub:
+    ports:
+      - "5020:5020"
+
+  mnglogcollector:
+    ports:
+      - "5091:5091"
+
+  ollama:
+    build: !reset null
+    image: alpine:3.19
+    container_name: ollama
+    command: ["sleep", "infinity"]
+    healthcheck:
+      disable: true
+    deploy: !override
+      resources:
+        limits:
+          memory: 32M
+          cpus: "0.1"
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngllm:
+    build: !reset null
+    image: alpine:3.19
+    container_name: mngllm
+    command: ["sleep", "infinity"]
+    healthcheck:
+      disable: true
+    deploy: !override
+      resources:
+        limits:
+          memory: 32M
+          cpus: "0.1"
+    depends_on:
+      - ollama
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngscheduler:
+    ports:
+      - "5090:5090"
+
+  mngworkflow:
+    ports:
+      - "5085:5085"
+
+  mngalarm:
+    ports:
+      - "5087:5087"
+
+  mngoperations:
+    ports:
+      - "5086:5086"
+    environment:
+      - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngOperationsSettings__OpenApiServerPath=http://10.0.10.52:5040/operations
+      - MngOperationsSettings__Actors__KeycloakBaseUrl=http://keycloak:8080/keycloak
+
+  mngdocument:
+    ports:
+      - "5095:5095"
+    environment:
+      - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngDocumentSettings__OpenApiServerPath=http://10.0.10.52:5040/documents
+      - MngDocumentSettings__Collabora__Enabled=false
+      - MngDocumentSettings__Collabora__PublicBaseUrl=http://10.0.10.52:9980
+      - MngDocumentSettings__Notifications__UiBaseUrl=http://10.0.10.52:3000
+
+  collabora:
+    build: !reset null
+    image: alpine:3.19
+    container_name: collabora
+    command: ["sleep", "infinity"]
+    ports: !override []
+    healthcheck:
+      disable: true
+    deploy: !override
+      resources:
+        limits:
+          memory: 32M
+          cpus: "0.1"
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngadmin:
+    ports:
+      - "5080:5080"
+
+  mngnotifier:
+    ports:
+      - "5070:5070"
+
+  mngui:
+    ports:
+      - "3000:80"
+    build:
+      context: ../../Mng.Ui
+      dockerfile: Dockerfile
+      args:
+        GATEWAY_URL: ${GATEWAY_URL:-http://10.0.10.52:5040}
+        HUB_URL: ${HUB_URL:-http://10.0.10.52:5020}
+
+  mngdomainui:
+    ports:
+      - "3001:3000"

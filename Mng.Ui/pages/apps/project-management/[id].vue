@@ -5,6 +5,7 @@ import PmAcksPanel from '@/components/apps/project-management/PmAcksPanel.vue';
 import PmAuditPacksPanel from '@/components/apps/project-management/PmAuditPacksPanel.vue';
 import PmStakeholdersPanel from '@/components/apps/project-management/PmStakeholdersPanel.vue';
 import PmBudgetPanel from '@/components/apps/project-management/PmBudgetPanel.vue';
+import PmProgressPanel from '@/components/apps/project-management/PmProgressPanel.vue';
 import PmCapacityPanel from '@/components/apps/project-management/PmCapacityPanel.vue';
 import PmDecisionsPanel from '@/components/apps/project-management/PmDecisionsPanel.vue';
 import PmGanttChart from '@/components/apps/project-management/PmGanttChart.vue';
@@ -35,6 +36,7 @@ import {
   pmGetProjectAcks,
   pmGetProjectAuditPacks,
   pmGetProjectBudget,
+  pmGetProjectProgress,
   pmGetProjectCapacity,
   pmGetProjectObligations,
   pmGetProjectProcessMaps,
@@ -76,6 +78,9 @@ import {
 
 const PmMeetingsPanel = defineAsyncComponent(
   () => import('@/components/apps/project-management/PmMeetingsPanel.vue'),
+);
+const PmProjectSettingsPanel = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmProjectSettingsPanel.vue'),
 );
 const PmDiLibrary = defineAsyncComponent(
   () => import('@/components/apps/project-management/PmDiLibrary.vue'),
@@ -152,10 +157,12 @@ type PmViewTab =
   | 'raid'
   | 'capacity'
   | 'budget'
+  | 'progress'
   | 'acks'
   | 'obligations'
   | 'audit'
   | 'meetings'
+  | 'settings'
   | 'stakeholders'
   | 'processMaps'
   | 'gates'
@@ -229,6 +236,7 @@ const navGroups = computed(() => [
       { value: 'raid' as const, title: t('projectManagement.raid.title'), icon: 'mdi-alert-octagon-outline' },
       { value: 'capacity' as const, title: t('projectManagement.capacity.title'), icon: 'mdi-account-clock-outline' },
       { value: 'budget' as const, title: t('projectManagement.budget.title'), icon: 'mdi-cash' },
+      { value: 'progress' as const, title: t('projectManagement.progress.title'), icon: 'mdi-cash-check' },
       { value: 'acks' as const, title: t('projectManagement.ack.title'), icon: 'mdi-check-decagram-outline' },
       { value: 'obligations' as const, title: t('projectManagement.obligation.title'), icon: 'mdi-file-document-outline' },
       { value: 'audit' as const, title: t('projectManagement.auditPack.title'), icon: 'mdi-shield-search' },
@@ -240,6 +248,12 @@ const navGroups = computed(() => [
       { value: 'meetings' as const, title: t('projectManagement.meeting.title'), icon: 'mdi-calendar-account-outline' },
       { value: 'stakeholders' as const, title: t('projectManagement.stakeholder.title'), icon: 'mdi-account-group-outline' },
       { value: 'processMaps' as const, title: t('projectManagement.processMap.title'), icon: 'mdi-sitemap-outline' },
+    ],
+  },
+  {
+    title: t('projectManagement.nav.settings'),
+    items: [
+      { value: 'settings' as const, title: t('projectManagement.settings.title'), icon: 'mdi-cog-outline' },
     ],
   },
 ]);
@@ -293,6 +307,7 @@ const assignments = computed(() => detail.value?.assignments ?? []);
 const capacity = computed(() => detail.value?.capacity ?? null);
 const budgetLines = computed(() => detail.value?.budgetLines ?? []);
 const budget = computed(() => detail.value?.budget ?? null);
+const progress = computed(() => detail.value?.progress ?? null);
 const acknowledgements = computed(() => detail.value?.acknowledgements ?? []);
 const obligations = computed(() => detail.value?.obligations ?? []);
 const auditPacks = computed(() => detail.value?.auditPacks ?? []);
@@ -633,7 +648,7 @@ async function ensureTabData(tab: string, force = false) {
   if (!projectId.value || !detail.value) return;
   if (!force && tabLoaded.value.has(tab)) return;
 
-  const coreTabs = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates', 'packs', 'library', 'meetings']);
+  const coreTabs = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates', 'packs', 'library', 'meetings', 'settings']);
   if (coreTabs.has(tab)) {
     markTabLoaded(tab);
     return;
@@ -662,6 +677,14 @@ async function ensureTabData(tab: string, force = false) {
       case 'budget': {
         const pack = await pmGetProjectBudget(projectId.value);
         mergeDetail({ budget: pack, budgetLines: pack.lines ?? [] });
+        break;
+      }
+      case 'progress': {
+        const [pack, budgetPack] = await Promise.all([
+          pmGetProjectProgress(projectId.value),
+          pmGetProjectBudget(projectId.value),
+        ]);
+        mergeDetail({ progress: pack, budget: budgetPack, budgetLines: budgetPack.lines ?? [] });
         break;
       }
       case 'acks':
@@ -1519,6 +1542,21 @@ watch(viewTab, (tab) => {
         />
       </v-card-text>
 
+      <v-card-text v-else-if="viewTab === 'progress'" class="px-6 py-4">
+        <PmProgressPanel
+          :project-id="projectId"
+          :project-code="detail?.project.code || ''"
+          :hub-folder-id="detail?.project.diFolderId"
+          :progress="progress"
+          :wbs="wbs"
+          :gates="stageGates"
+          :budget-lines="budgetLines"
+          :loading="loading || tabLoading"
+          @changed="onPanelChanged"
+          @hub-ready="onLibraryHubReady"
+        />
+      </v-card-text>
+
       <v-card-text v-else-if="viewTab === 'acks'" class="px-6 py-4">
         <PmAcksPanel
           :project-id="projectId"
@@ -1567,7 +1605,12 @@ watch(viewTab, (tab) => {
           :loading="loading || tabLoading"
           @changed="onPanelChanged"
           @hub-ready="onLibraryHubReady"
+          @navigate="openProjectTab"
         />
+      </v-card-text>
+
+      <v-card-text v-else-if="viewTab === 'settings'" class="px-6 py-4">
+        <PmProjectSettingsPanel :project-id="projectId" />
       </v-card-text>
 
       <v-card-text v-else-if="viewTab === 'stakeholders'" class="px-6 py-4">

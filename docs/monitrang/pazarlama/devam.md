@@ -2,7 +2,7 @@
 
 Bu dosya, pazarlama içerikleri üzerinde yapılan işleri ve bir sonraki oturumda ele alınacak konuları özetler. Yeni bir chat veya oturumda **«pazarlama devam.md'ye bak»** demek yeterli olmalıdır.
 
-**Son güncelleme:** 15 Temmuz 2026
+**Son güncelleme:** 27 Temmuz 2026
 
 ---
 
@@ -12,13 +12,17 @@ Bu dosya, pazarlama içerikleri üzerinde yapılan işleri ve bir sonraki oturum
 |-------|--------|
 | `brosur/monitrang-platform-brosuru.md` | Ana platform broşürü (kaynak MD) |
 | `brosur/moduller/*.md` | Modül alt sayfaları (DI'da ayrı sayfalar) |
+| `odak/dijital-donusum-planlamasi.md` | Odak Kompozit dijital dönüşüm / faz planı |
 | `Docs/*.md` | Detaylı modül / platform dokümantasyonu (pazarlama kaynağı) |
 | `Files/` | Logo, modül haritası, üretilmiş DOCX/PDF |
-| `scripts/` | Antet seed, referans DOCX, PDF export |
+| `scripts/` | Antet seed, referans DOCX, PDF/DOCX export |
 | `templates/reference-brosur-mng-std.docx` | Pandoc `--reference-doc` (tipografi + antet/footer) |
-| `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-brosur.ps1` | MD + görselleri DI'ya senkron |
+| `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-brosur.ps1` | Broşür MD + görselleri DI'ya senkron |
+| `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-odak.ps1` | Odak MD'yi DI'ya senkron |
 
-**DI klasör yolu:** `MonitraNG > Pazarlama > Broşür` (markdown sayfalar + `MonitraNG Platform Broşürü.docx`)
+**DI klasör yolları:**
+- Broşür: `MonitraNG > Pazarlama > Broşür` (markdown sayfalar + `MonitraNG Platform Broşürü.docx`)
+- Odak: `MonitraNG > Pazarlama > Odak` (`Dijital Dönüşüm Planlaması` markdown + `Odak Dijital Dönüşüm Planlaması.docx`)
 
 ---
 
@@ -33,6 +37,7 @@ Kaynak: `brosur/monitrang-platform-brosuru.md`
 - **Dil çeviri** satırı «Tanıdık sorunlar» tablosuna ve DI modül açıklamasına eklendi.
 - **Platform modülleri** tablosu zenginleştirildi: Dinamik Form, Widget & Dashboard, Scheduler ayrı satırlar; Raporlama veri katmanları ve çalıştırma modları; OC, DI, Monitoring detayları.
 - Modül bağlantı haritası: SVG → PNG + `di-fp:` (DI seed script ile).
+- Footer: `© MonitraNG · Temmuz 2026` (iSIM Platform ifadesi kaldırıldı).
 
 ### 2. DI uygulama içi broşür senkronu
 
@@ -46,17 +51,39 @@ Script: `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-brosur
 .\docs\odak\document_intelligence\scripts\seed-monitrang-pazarlama-brosur.ps1
 ```
 
+### 2b. Odak dijital dönüşüm planı (MD + DI + DOCX)
+
+Kaynak: `odak/dijital-donusum-planlamasi.md`
+
+- Faz 1–3 teslim / kapsam / ücret özeti; bakım bitiş **11.07.2027**.
+- DI markdown seed: `seed-monitrang-pazarlama-odak.ps1`
+- DOCX export: `export-odak-dijital-donusum-docx.ps1` (`-LocalOnly` veya DI yükleme; PDF isteğe bağlı)
+
+**Çalıştırma:**
+```powershell
+.\docs\odak\document_intelligence\scripts\seed-monitrang-pazarlama-odak.ps1
+.\docs\monitrang\pazarlama\scripts\export-odak-dijital-donusum-docx.ps1 -LocalOnly
+.\docs\monitrang\pazarlama\scripts\export-odak-dijital-donusum-docx.ps1
+.\docs\monitrang\pazarlama\scripts\export-odak-dijital-donusum-docx.ps1 -SkipPdf
+```
+
+**Çıktılar:**
+- `Files/Odak-Dijital-Donusum-Planlamasi.docx`
+- `Files/Odak-Dijital-Donusum-Planlamasi.pdf` (full export, Gotenberg)
+- DI: `Odak Dijital Dönüşüm Planlaması.docx`
+
 ### 3. DataGateway — SVG MIME tipi
 
 - `MngDataGateway/.../FileFieldValidator.cs`: SVG dosyaları magic byte yerine içerik (`<svg`, `<?xml`) ile tanınıyor.
 - DI'ya SVG yükleme seed sırasında çalışıyor (PNG yine tercih ediliyor).
 
-### 4. MD → DOCX → PDF pipeline
+### 4. MD → DOCX → PDF pipeline (broşür)
 
 | Script | Amaç |
 |--------|------|
 | `scripts/ensure-brosur-reference-docx.ps1` | Pandoc referans DOCX (tablo stilleri, margin, antet/footer) |
 | `scripts/export-monitrang-brosur-pdf.ps1` | MD → DOCX → DI yükleme → PDF export |
+| `scripts/export-odak-dijital-donusum-docx.ps1` | Odak MD → DOCX → DI (+ PDF) |
 
 **Referans DOCX özellikleri:**
 - Pandoc varsayılan `Table` stili (tablolar düzgün render).
@@ -117,6 +144,7 @@ Bir sonraki büyük iş için iki seçenek tartışıldı; henüz kesinleşmedi:
 
 - [ ] **Modül alt sayfaları:** Ana broşürdeki zenginlik seviyesine `02-operasyon-merkezi`, `05-guvenlik-merkezi`, `06-workflow`, `00-platform-omurgasi`, `07-veri-yuzeyleri` getirilsin.
 - [ ] **DI seed:** Modül MD güncellemelerinden sonra `seed-monitrang-pazarlama-brosur.ps1` çalıştırılsın.
+- [ ] **Odak DI:** Docker lokal ayaktayken `seed-monitrang-pazarlama-odak.ps1` + `export-odak-dijital-donusum-docx.ps1` çalıştırılsın.
 - [ ] **Tablo sütunları:** Manuel DI düzenlemesi repo ile senkron mu kontrol edilsin; gerekirse DI'dan nihai DOCX `Files/` altına alınsın.
 
 ### Orta vadeli
@@ -135,7 +163,7 @@ Bir sonraki büyük iş için iki seçenek tartışıldı; henüz kesinleşmedi:
 
 ## Önemli notlar
 
-1. **Kaynak sırası:** Broşür metni için birincil kaynak repo'daki `.md` dosyalarıdır. DI markdown sayfaları seed ile güncellenir; printable DOCX/PDF ayrı export pipeline'ından gelir.
+1. **Kaynak sırası:** Broşür / Odak metni için birincil kaynak repo'daki `.md` dosyalarıdır. DI markdown sayfaları seed ile güncellenir; printable DOCX/PDF ayrı export pipeline'ından gelir.
 2. **www.monitrang.com:** MD kaynağında hero satırı duruyor (DI markdown görünümü için). PDF/DOCX export'ta gövdeden çıkarılıp antet/footer'a yazılıyor. «Daha fazla bilgi» bölümündeki web linki bilinçli bırakıldı.
 3. **PNG üretimi:** Modül haritası SVG'si için PNG gerekirse `resvg-js` veya benzeri ile `Files/monitrang-modul-baglanti-haritasi.png` üretilmeli (seed/export kontrol eder).
 4. **Docker:** PDF export için DI + Gotenberg çalışır olmalı (`ApplicationResources/mng_apps/docker-compose.yml`).
@@ -149,11 +177,18 @@ Bir sonraki büyük iş için iki seçenek tartışıldı; henüz kesinleşmedi:
 # DI markdown broşür sayfalarını güncelle
 .\docs\odak\document_intelligence\scripts\seed-monitrang-pazarlama-brosur.ps1
 
-# Printable DOCX + PDF (DI'ya da yükler)
+# DI markdown Odak sayfasını güncelle
+.\docs\odak\document_intelligence\scripts\seed-monitrang-pazarlama-odak.ps1
+
+# Broşür printable DOCX + PDF (DI'ya da yükler)
 .\docs\monitrang\pazarlama\scripts\export-monitrang-brosur-pdf.ps1
+
+# Odak DOCX (+ DI; PDF icin Gotenberg)
+.\docs\monitrang\pazarlama\scripts\export-odak-dijital-donusum-docx.ps1
 
 # Sadece yerel DOCX (DI/Gotenberg olmadan)
 .\docs\monitrang\pazarlama\scripts\export-monitrang-brosur-pdf.ps1 -LocalOnly
+.\docs\monitrang\pazarlama\scripts\export-odak-dijital-donusum-docx.ps1 -LocalOnly
 ```
 
 ---
@@ -164,8 +199,12 @@ Bir sonraki büyük iş için iki seçenek tartışıldı; henüz kesinleşmedi:
 - `docs/monitrang/pazarlama/brosur/moduller/01-dokuman-zekasi.md`
 - `docs/monitrang/pazarlama/brosur/moduller/03-raporlama.md`
 - `docs/monitrang/pazarlama/brosur/moduller/04-monitoring.md`
-- `docs/monitrang/pazarlama/scripts/ensure-brosur-reference-docx.ps1` *(yeniden yazıldı)*
+- `docs/monitrang/pazarlama/odak/dijital-donusum-planlamasi.md`
+- `docs/monitrang/pazarlama/scripts/ensure-brosur-reference-docx.ps1`
 - `docs/monitrang/pazarlama/scripts/export-monitrang-brosur-pdf.ps1`
+- `docs/monitrang/pazarlama/scripts/export-odak-dijital-donusum-docx.ps1`
 - `docs/monitrang/pazarlama/templates/reference-brosur-mng-std.docx`
 - `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-brosur.ps1`
+- `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-odak.ps1`
+- `docs/odak/document_intelligence/scripts/seed-monitrang-pazarlama-folders.ps1`
 - `MngDataGateway/.../FileFieldValidator.cs` *(SVG MIME)*

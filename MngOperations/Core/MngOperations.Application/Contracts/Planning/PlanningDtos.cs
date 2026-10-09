@@ -17,6 +17,20 @@ public sealed class ProjectDto
     public bool BaselineDrifted { get; set; }
     public string? DiFolderId { get; set; }
     public string? WorkspaceId { get; set; }
+    public string? MeetingWorkspaceId { get; set; }
+}
+
+public sealed class MeetingWorkspaceDto
+{
+    public string? WorkspaceId { get; set; }
+    public string? WorkspaceName { get; set; }
+    public string TemplateName { get; set; } = "Toplantı tutanağı";
+    public string SuggestedName { get; set; } = string.Empty;
+}
+
+public sealed class SetMeetingWorkspaceRequest
+{
+    public string? WorkspaceId { get; set; }
 }
 
 public sealed class WbsItemDto
@@ -982,12 +996,14 @@ public sealed class MeetingDto
     public string? Location { get; set; }
     public string? MeetingUrl { get; set; }
     public string? Agenda { get; set; }
+    public string? CancelReason { get; set; }
     public string? SeriesId { get; set; }
     public DateTime? OccurrenceDate { get; set; }
     public bool Detached { get; set; }
     public int ActionCount { get; set; }
     public int OpenActionCount { get; set; }
     public IReadOnlyList<MeetingActionDto> Actions { get; set; } = Array.Empty<MeetingActionDto>();
+    public IReadOnlyList<MeetingAttendanceDto> Attendance { get; set; } = Array.Empty<MeetingAttendanceDto>();
 }
 
 public sealed class CreateMeetingRequest
@@ -1005,6 +1021,7 @@ public sealed class CreateMeetingRequest
     public string? Location { get; set; }
     public string? MeetingUrl { get; set; }
     public string? Agenda { get; set; }
+    public string? CancelReason { get; set; }
 }
 
 public sealed class UpdateMeetingRequest
@@ -1022,6 +1039,7 @@ public sealed class UpdateMeetingRequest
     public string? Location { get; set; }
     public string? MeetingUrl { get; set; }
     public string? Agenda { get; set; }
+    public string? CancelReason { get; set; }
     public bool? Detached { get; set; }
 }
 
@@ -1083,6 +1101,9 @@ public sealed class MeetingActionDto
     public string MeetingId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string? OwnerName { get; set; }
+    public string? OwnerKind { get; set; }
+    public string? OwnerUserId { get; set; }
+    public string? OwnerPersonId { get; set; }
     public DateTime? DueDate { get; set; }
     public string Status { get; set; } = "open";
     public string? WorkItemId { get; set; }
@@ -1099,6 +1120,9 @@ public sealed class CreateMeetingActionRequest
 {
     public string Title { get; set; } = string.Empty;
     public string? OwnerName { get; set; }
+    public string? OwnerKind { get; set; }
+    public string? OwnerUserId { get; set; }
+    public string? OwnerPersonId { get; set; }
     public DateTime? DueDate { get; set; }
     public string? Status { get; set; }
     public string? WorkItemId { get; set; }
@@ -1110,11 +1134,75 @@ public sealed class UpdateMeetingActionRequest
 {
     public string? Title { get; set; }
     public string? OwnerName { get; set; }
+    public string? OwnerKind { get; set; }
+    public string? OwnerUserId { get; set; }
+    public string? OwnerPersonId { get; set; }
     public DateTime? DueDate { get; set; }
     public string? Status { get; set; }
     public string? WorkItemId { get; set; }
     public string? WbsId { get; set; }
     public string? Note { get; set; }
+}
+
+public sealed class MeetingPersonDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Organization { get; set; }
+    public string? Email { get; set; }
+    public string? Note { get; set; }
+    public string? UserId { get; set; }
+}
+
+public sealed class CreateMeetingPersonRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Organization { get; set; }
+    public string? Email { get; set; }
+    public string? Note { get; set; }
+}
+
+public sealed class UpdateMeetingPersonRequest
+{
+    public string? Name { get; set; }
+    public string? Organization { get; set; }
+    public string? Email { get; set; }
+    public string? Note { get; set; }
+}
+
+public sealed class MeetingAttendanceDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string MeetingId { get; set; } = string.Empty;
+    public string Kind { get; set; } = "user";
+    public string? UserId { get; set; }
+    public string? PersonId { get; set; }
+    public string DisplayName { get; set; } = string.Empty;
+    public string? Organization { get; set; }
+    public string? Email { get; set; }
+    public string Presence { get; set; } = "invited";
+    public bool Expected { get; set; }
+    public bool Attended { get; set; }
+}
+
+public sealed class CreateMeetingAttendanceRequest
+{
+    public string Kind { get; set; } = "user";
+    public string? UserId { get; set; }
+    public string? PersonId { get; set; }
+    public string? DisplayName { get; set; }
+    public string? Presence { get; set; }
+    public bool? Expected { get; set; }
+    public bool? Attended { get; set; }
+}
+
+public sealed class UpdateMeetingAttendanceRequest
+{
+    public string? Presence { get; set; }
+    public bool? Expected { get; set; }
+    public bool? Attended { get; set; }
 }
 
 public sealed class MeetingListQuery
@@ -1242,6 +1330,144 @@ public sealed class UpdateProcessMapRequest
     public string? WbsId { get; set; }
     public string? Status { get; set; }
     public string? Note { get; set; }
+}
+
+public sealed class PaymentTermsDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public double BaseAmount { get; set; }
+    public string Currency { get; set; } = "TRY";
+    public double PenaltyCapPercent { get; set; } = 35;
+}
+
+public sealed class UpsertPaymentTermsRequest
+{
+    public double BaseAmount { get; set; }
+    public string? Currency { get; set; }
+    public double? PenaltyCapPercent { get; set; }
+}
+
+public sealed class PaymentSliceDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Kind { get; set; } = "percent";
+    public double Percent { get; set; }
+    public string Cadence { get; set; } = "once";
+    public int InstallmentCount { get; set; } = 1;
+    public int IntervalMonths { get; set; }
+    public double UnitPrice { get; set; }
+    public string? GateId { get; set; }
+    public string? WbsId { get; set; }
+    public string? BudgetLineId { get; set; }
+    public DateTime? AnchorDate { get; set; }
+    public int SortOrder { get; set; }
+    public string? Note { get; set; }
+    public double ScheduledAmount { get; set; }
+}
+
+public sealed class CreatePaymentSliceRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Kind { get; set; }
+    public double Percent { get; set; }
+    public string? Cadence { get; set; }
+    public int? InstallmentCount { get; set; }
+    public int? IntervalMonths { get; set; }
+    public double UnitPrice { get; set; }
+    public string? GateId { get; set; }
+    public string? WbsId { get; set; }
+    public string? BudgetLineId { get; set; }
+    public DateTime? AnchorDate { get; set; }
+    public int? SortOrder { get; set; }
+    public string? Note { get; set; }
+}
+
+public sealed class UpdatePaymentSliceRequest
+{
+    public string? Name { get; set; }
+    public string? Kind { get; set; }
+    public double? Percent { get; set; }
+    public string? Cadence { get; set; }
+    public int? InstallmentCount { get; set; }
+    public int? IntervalMonths { get; set; }
+    public double? UnitPrice { get; set; }
+    public string? GateId { get; set; }
+    public string? WbsId { get; set; }
+    public string? BudgetLineId { get; set; }
+    public DateTime? AnchorDate { get; set; }
+    public int? SortOrder { get; set; }
+    public string? Note { get; set; }
+}
+
+public sealed class ProgressClaimDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string SliceId { get; set; } = string.Empty;
+    public int Sequence { get; set; }
+    public string PeriodLabel { get; set; } = string.Empty;
+    public DateTime? DueDate { get; set; }
+    public double ClaimedAmount { get; set; }
+    public double AcceptedAmount { get; set; }
+    public double Deduction { get; set; }
+    public double AdjustmentAmount { get; set; }
+    public double Quantity { get; set; }
+    public string Status { get; set; } = "draft";
+    public IReadOnlyList<string> ResourceIds { get; set; } = Array.Empty<string>();
+    public string? Note { get; set; }
+    public double AppliedDeduction { get; set; }
+    public double OutstandingAmount { get; set; }
+    public double Net { get; set; }
+}
+
+public sealed class CreateProgressClaimRequest
+{
+    public string SliceId { get; set; } = string.Empty;
+    public int? Sequence { get; set; }
+    public string? PeriodLabel { get; set; }
+    public DateTime? DueDate { get; set; }
+    public double ClaimedAmount { get; set; }
+    public double AcceptedAmount { get; set; }
+    public double Deduction { get; set; }
+    public double AdjustmentAmount { get; set; }
+    public double Quantity { get; set; }
+    public string? Note { get; set; }
+    public IReadOnlyList<string>? ResourceIds { get; set; }
+}
+
+public sealed class UpdateProgressClaimRequest
+{
+    public int? Sequence { get; set; }
+    public string? PeriodLabel { get; set; }
+    public DateTime? DueDate { get; set; }
+    public double? ClaimedAmount { get; set; }
+    public double? AcceptedAmount { get; set; }
+    public double? Deduction { get; set; }
+    public double? AdjustmentAmount { get; set; }
+    public double? Quantity { get; set; }
+    public string? Status { get; set; }
+    public string? Note { get; set; }
+    public IReadOnlyList<string>? ResourceIds { get; set; }
+}
+
+public sealed class ProjectProgressDto
+{
+    public PaymentTermsDto Terms { get; set; } = new();
+    public double PenaltyCapAmount { get; set; }
+    public double AcceptedNet { get; set; }
+    public double PaidNet { get; set; }
+    public double PercentScheduled { get; set; }
+    public double PercentAcceptedNet { get; set; }
+    public double PercentRemaining { get; set; }
+    public double PercentTotal { get; set; }
+    public bool PercentOver { get; set; }
+    public double Deducted { get; set; }
+    public double Outstanding { get; set; }
+    public IReadOnlyList<PaymentSliceDto> Slices { get; set; } = Array.Empty<PaymentSliceDto>();
+    public IReadOnlyList<ProgressClaimDto> Claims { get; set; } = Array.Empty<ProgressClaimDto>();
 }
 
 public sealed class ProjectProcessMapsDto

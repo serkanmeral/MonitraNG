@@ -18,6 +18,14 @@ export interface PmProject {
   baselineDrifted: boolean;
   diFolderId?: string | null;
   workspaceId?: string | null;
+  meetingWorkspaceId?: string | null;
+}
+
+export interface PmMeetingWorkspace {
+  workspaceId?: string | null;
+  workspaceName?: string | null;
+  templateName: string;
+  suggestedName: string;
 }
 
 export interface PmPortfolioProject extends PmProject {
@@ -88,6 +96,7 @@ export interface PmProjectDetail {
   capacity?: PmProjectCapacity;
   budgetLines?: PmBudgetLine[];
   budget?: PmProjectBudget;
+  progress?: PmProjectProgress;
   acknowledgements?: PmAcknowledgement[];
   obligations?: PmObligation[];
   auditPacks?: PmAuditPack[];
@@ -368,6 +377,125 @@ export interface PmProjectBudget {
   packages: PmBudgetPackage[];
 }
 
+export type PmPaymentSliceKind = 'percent' | 'unit';
+export type PmPaymentCadence = 'once' | 'installments';
+export type PmProgressClaimStatus = 'draft' | 'submitted' | 'accepted' | 'paid';
+
+export interface PmPaymentTerms {
+  id: string;
+  projectId: string;
+  baseAmount: number;
+  currency: string;
+  penaltyCapPercent: number;
+}
+
+export interface PmPaymentSlice {
+  id: string;
+  projectId: string;
+  name: string;
+  kind: PmPaymentSliceKind | string;
+  percent: number;
+  cadence: PmPaymentCadence | string;
+  installmentCount: number;
+  intervalMonths: number;
+  unitPrice: number;
+  gateId?: string | null;
+  wbsId?: string | null;
+  budgetLineId?: string | null;
+  anchorDate?: string | null;
+  sortOrder: number;
+  note?: string | null;
+  scheduledAmount: number;
+}
+
+export interface PmProgressClaim {
+  id: string;
+  projectId: string;
+  sliceId: string;
+  sequence: number;
+  periodLabel: string;
+  dueDate?: string | null;
+  claimedAmount: number;
+  acceptedAmount: number;
+  deduction: number;
+  adjustmentAmount: number;
+  quantity: number;
+  status: PmProgressClaimStatus | string;
+  resourceIds: string[];
+  note?: string | null;
+  appliedDeduction: number;
+  outstandingAmount: number;
+  net: number;
+}
+
+export interface PmProjectProgress {
+  terms: PmPaymentTerms;
+  penaltyCapAmount: number;
+  acceptedNet: number;
+  paidNet: number;
+  percentScheduled: number;
+  percentAcceptedNet: number;
+  percentRemaining: number;
+  percentTotal: number;
+  percentOver: boolean;
+  deducted: number;
+  outstanding: number;
+  slices: PmPaymentSlice[];
+  claims: PmProgressClaim[];
+}
+
+export interface PmUpsertPaymentTermsRequest {
+  baseAmount: number;
+  currency?: string | null;
+  penaltyCapPercent?: number | null;
+}
+
+export interface PmCreatePaymentSliceRequest {
+  name: string;
+  kind?: string | null;
+  percent?: number;
+  cadence?: string | null;
+  installmentCount?: number | null;
+  intervalMonths?: number | null;
+  unitPrice?: number;
+  gateId?: string | null;
+  wbsId?: string | null;
+  budgetLineId?: string | null;
+  anchorDate?: string | null;
+  sortOrder?: number | null;
+  note?: string | null;
+}
+
+export type PmUpdatePaymentSliceRequest = Partial<PmCreatePaymentSliceRequest>;
+
+export interface PmCreateProgressClaimRequest {
+  sliceId: string;
+  sequence?: number | null;
+  periodLabel?: string | null;
+  dueDate?: string | null;
+  claimedAmount?: number;
+  acceptedAmount?: number;
+  deduction?: number;
+  adjustmentAmount?: number;
+  quantity?: number;
+  note?: string | null;
+  resourceIds?: string[] | null;
+}
+
+export interface PmUpdateProgressClaimRequest {
+  sequence?: number | null;
+  periodLabel?: string | null;
+  dueDate?: string | null;
+  claimedAmount?: number | null;
+  acceptedAmount?: number | null;
+  deduction?: number | null;
+  adjustmentAmount?: number | null;
+  quantity?: number | null;
+  status?: string | null;
+  note?: string | null;
+  resourceIds?: string[] | null;
+}
+
 export type PmAckStatus = 'pending' | 'acknowledged' | 'waived';
 
 export interface PmAcknowledgement {
@@ -493,8 +621,64 @@ export interface PmProjectAuditPacks {
   items: PmAuditPack[];
 }
 
+export type PmAttendancePresence = 'invited' | 'confirmed' | 'attended' | 'absent' | 'excused';
 export type PmMeetingActionStatus = 'open' | 'inProgress' | 'done' | 'waived';
 export type PmMeetingStatus = 'scheduled' | 'held' | 'cancelled';
+
+export interface PmMeetingPerson {
+  id: string;
+  projectId?: string;
+  name: string;
+  organization?: string | null;
+  email?: string | null;
+  note?: string | null;
+  userId?: string | null;
+}
+
+export interface PmMeetingAttendance {
+  id: string;
+  projectId: string;
+  meetingId: string;
+  kind: 'user' | 'external' | string;
+  userId?: string | null;
+  personId?: string | null;
+  displayName: string;
+  organization?: string | null;
+  email?: string | null;
+  presence?: PmAttendancePresence | string | null;
+  expected: boolean;
+  attended: boolean;
+}
+
+export interface PmCreateMeetingPersonRequest {
+  name: string;
+  organization?: string | null;
+  email?: string | null;
+  note?: string | null;
+}
+
+export interface PmUpdateMeetingPersonRequest {
+  name?: string | null;
+  organization?: string | null;
+  email?: string | null;
+  note?: string | null;
+}
+
+export interface PmCreateMeetingAttendanceRequest {
+  kind: 'user' | 'external';
+  userId?: string | null;
+  personId?: string | null;
+  displayName?: string | null;
+  presence?: PmAttendancePresence | string | null;
+  expected?: boolean;
+  attended?: boolean;
+}
+
+export interface PmUpdateMeetingAttendanceRequest {
+  presence?: PmAttendancePresence | string | null;
+  expected?: boolean;
+  attended?: boolean;
+}
 
 export interface PmMeetingAction {
   id: string;
@@ -502,6 +686,9 @@ export interface PmMeetingAction {
   meetingId: string;
   title: string;
   ownerName?: string | null;
+  ownerKind?: string | null;
+  ownerUserId?: string | null;
+  ownerPersonId?: string | null;
   dueDate?: string | null;
   status: PmMeetingActionStatus | string;
   workItemId?: string | null;
@@ -530,12 +717,14 @@ export interface PmMeeting {
   location?: string | null;
   meetingUrl?: string | null;
   agenda?: string | null;
+  cancelReason?: string | null;
   seriesId?: string | null;
   occurrenceDate?: string | null;
   detached?: boolean;
   actionCount: number;
   openActionCount: number;
   actions: PmMeetingAction[];
+  attendance?: PmMeetingAttendance[];
 }
 
 export interface PmMeetingSeries {
@@ -571,6 +760,7 @@ export interface PmCreateMeetingRequest {
   location?: string | null;
   meetingUrl?: string | null;
   agenda?: string | null;
+  cancelReason?: string | null;
 }
 
 export type PmUpdateMeetingRequest = Partial<PmCreateMeetingRequest> & { detached?: boolean | null };
@@ -595,6 +785,9 @@ export type PmUpdateMeetingSeriesRequest = Partial<Omit<PmCreateMeetingSeriesReq
 export interface PmCreateMeetingActionRequest {
   title: string;
   ownerName?: string | null;
+  ownerKind?: string | null;
+  ownerUserId?: string | null;
+  ownerPersonId?: string | null;
   dueDate?: string | null;
   status?: string | null;
   workItemId?: string | null;

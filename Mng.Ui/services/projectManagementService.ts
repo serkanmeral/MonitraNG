@@ -7,6 +7,7 @@ import type {
   PmProject,
   PmPortfolio,
   PmProjectDetail,
+  PmMeetingWorkspace,
   PmUpdateProjectRequest,
   PmUpdateWbsRequest,
   PmWbsItem,
@@ -37,6 +38,15 @@ import type {
   PmCreateBudgetLineRequest,
   PmUpdateBudgetLineRequest,
   PmProjectBudget,
+  PmProjectProgress,
+  PmPaymentTerms,
+  PmPaymentSlice,
+  PmProgressClaim,
+  PmUpsertPaymentTermsRequest,
+  PmCreatePaymentSliceRequest,
+  PmUpdatePaymentSliceRequest,
+  PmCreateProgressClaimRequest,
+  PmUpdateProgressClaimRequest,
   PmAcknowledgement,
   PmCreateAcknowledgementRequest,
   PmUpdateAcknowledgementRequest,
@@ -50,6 +60,12 @@ import type {
   PmUpdateAuditPackRequest,
   PmProjectAuditPacks,
   PmMeeting,
+  PmMeetingPerson,
+  PmMeetingAttendance,
+  PmCreateMeetingPersonRequest,
+  PmUpdateMeetingPersonRequest,
+  PmCreateMeetingAttendanceRequest,
+  PmUpdateMeetingAttendanceRequest,
   PmMeetingAction,
   PmMeetingSeries,
   PmCreateMeetingRequest,
@@ -476,6 +492,77 @@ export async function pmDeleteBudgetLine(id: string): Promise<void> {
   await fetchFromOperations(`/api/v1/budget/${encodeURIComponent(id)}`, 'DELETE');
 }
 
+export async function pmGetProjectProgress(projectId: string): Promise<PmProjectProgress> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/progress`,
+    'GET',
+  )) as PmProjectProgress;
+}
+
+export async function pmUpsertPaymentTerms(
+  projectId: string,
+  body: PmUpsertPaymentTermsRequest,
+): Promise<PmPaymentTerms> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/progress/terms`,
+    'PUT',
+    body,
+  )) as PmPaymentTerms;
+}
+
+export async function pmCreatePaymentSlice(
+  projectId: string,
+  body: PmCreatePaymentSliceRequest,
+): Promise<PmPaymentSlice> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/progress/slices`,
+    'POST',
+    body,
+  )) as PmPaymentSlice;
+}
+
+export async function pmUpdatePaymentSlice(id: string, body: PmUpdatePaymentSliceRequest): Promise<PmPaymentSlice> {
+  return (await fetchFromOperations(
+    `/api/v1/progress/slices/${encodeURIComponent(id)}`,
+    'PUT',
+    body,
+  )) as PmPaymentSlice;
+}
+
+export async function pmDeletePaymentSlice(id: string): Promise<void> {
+  await fetchFromOperations(`/api/v1/progress/slices/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export async function pmWriteSlicePlan(id: string): Promise<PmBudgetLine> {
+  return (await fetchFromOperations(
+    `/api/v1/progress/slices/${encodeURIComponent(id)}/plan`,
+    'POST',
+  )) as PmBudgetLine;
+}
+
+export async function pmCreateProgressClaim(
+  projectId: string,
+  body: PmCreateProgressClaimRequest,
+): Promise<PmProgressClaim> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/progress/claims`,
+    'POST',
+    body,
+  )) as PmProgressClaim;
+}
+
+export async function pmUpdateProgressClaim(id: string, body: PmUpdateProgressClaimRequest): Promise<PmProgressClaim> {
+  return (await fetchFromOperations(
+    `/api/v1/progress/claims/${encodeURIComponent(id)}`,
+    'PUT',
+    body,
+  )) as PmProgressClaim;
+}
+
+export async function pmDeleteProgressClaim(id: string): Promise<void> {
+  await fetchFromOperations(`/api/v1/progress/claims/${encodeURIComponent(id)}`, 'DELETE');
+}
+
 export async function pmGetProjectAcks(projectId: string): Promise<PmProjectAcknowledgements> {
   return (await fetchFromOperations(
     `/api/v1/projects/${encodeURIComponent(projectId)}/acks`,
@@ -646,6 +733,93 @@ export async function pmUpdateMeetingAction(
 
 export async function pmDeleteMeetingAction(id: string): Promise<void> {
   await fetchFromOperations(`/api/v1/meeting-actions/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export async function pmGetMeetingWorkspace(projectId: string): Promise<PmMeetingWorkspace> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meeting-workspace`,
+    'GET',
+  )) as PmMeetingWorkspace;
+}
+
+export async function pmSetMeetingWorkspace(
+  projectId: string,
+  workspaceId: string | null,
+): Promise<PmMeetingWorkspace> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meeting-workspace`,
+    'PUT',
+    { workspaceId },
+  )) as PmMeetingWorkspace;
+}
+
+export async function pmEnsureMeetingWorkspace(projectId: string): Promise<PmMeetingWorkspace> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meeting-workspace`,
+    'POST',
+  )) as PmMeetingWorkspace;
+}
+
+export async function pmListProjectMeetingPeople(projectId: string, query = ''): Promise<PmMeetingPerson[]> {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set('q', query.trim());
+  const qs = params.toString();
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meeting-people${qs ? `?${qs}` : ''}`,
+    'GET',
+  )) as PmMeetingPerson[];
+}
+
+export async function pmCreateMeetingPerson(
+  projectId: string,
+  body: PmCreateMeetingPersonRequest,
+): Promise<PmMeetingPerson> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/meeting-people`,
+    'POST',
+    body,
+  )) as PmMeetingPerson;
+}
+
+export async function pmUpdateMeetingPerson(
+  id: string,
+  body: PmUpdateMeetingPersonRequest,
+): Promise<PmMeetingPerson> {
+  return (await fetchFromOperations(
+    `/api/v1/meeting-people/${encodeURIComponent(id)}`,
+    'PUT',
+    body,
+  )) as PmMeetingPerson;
+}
+
+export async function pmDeleteMeetingPerson(id: string): Promise<void> {
+  await fetchFromOperations(`/api/v1/meeting-people/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export async function pmCreateMeetingAttendance(
+  meetingId: string,
+  body: PmCreateMeetingAttendanceRequest,
+): Promise<PmMeetingAttendance> {
+  return (await fetchFromOperations(
+    `/api/v1/meetings/${encodeURIComponent(meetingId)}/attendance`,
+    'POST',
+    body,
+  )) as PmMeetingAttendance;
+}
+
+export async function pmUpdateMeetingAttendance(
+  id: string,
+  body: PmUpdateMeetingAttendanceRequest,
+): Promise<PmMeetingAttendance> {
+  return (await fetchFromOperations(
+    `/api/v1/meeting-attendance/${encodeURIComponent(id)}`,
+    'PUT',
+    body,
+  )) as PmMeetingAttendance;
+}
+
+export async function pmDeleteMeetingAttendance(id: string): Promise<void> {
+  await fetchFromOperations(`/api/v1/meeting-attendance/${encodeURIComponent(id)}`, 'DELETE');
 }
 
 export async function pmGetProjectStakeholders(projectId: string): Promise<PmProjectStakeholders> {

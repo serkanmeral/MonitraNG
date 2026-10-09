@@ -16,6 +16,7 @@ public sealed class PmProjectRow
     public string? baselineNote { get; set; }
     public string? diFolderId { get; set; }
     public string? workspaceId { get; set; }
+    public string? meetingWorkspaceId { get; set; }
 }
 
 public sealed class PmWbsRow
@@ -204,6 +205,7 @@ public sealed class PmMeetingRow
     public string? location { get; set; }
     public string? meetingUrl { get; set; }
     public string? agenda { get; set; }
+    public string? cancelReason { get; set; }
     public string? seriesId { get; set; }
     public DateTime? occurrenceDate { get; set; }
     public double? detached { get; set; }
@@ -234,6 +236,9 @@ public sealed class PmMeetingActionRow
     public string? meetingId { get; set; }
     public string? title { get; set; }
     public string? ownerName { get; set; }
+    public string? ownerKind { get; set; }
+    public string? ownerUserId { get; set; }
+    public string? ownerPersonId { get; set; }
     public DateTime? dueDate { get; set; }
     public string? status { get; set; }
     public string? workItemId { get; set; }
@@ -241,6 +246,31 @@ public sealed class PmMeetingActionRow
     public string? note { get; set; }
     public DateTime? closedAt { get; set; }
     public string? closedBy { get; set; }
+}
+
+public sealed class PmMeetingPersonRow
+{
+    public string? __dataId { get; set; }
+    public string? projectId { get; set; }
+    public string? name { get; set; }
+    public string? organization { get; set; }
+    public string? email { get; set; }
+    public string? note { get; set; }
+    public string? userId { get; set; }
+}
+
+public sealed class PmMeetingAttendanceRow
+{
+    public string? __dataId { get; set; }
+    public string? projectId { get; set; }
+    public string? meetingId { get; set; }
+    public string? kind { get; set; }
+    public string? userId { get; set; }
+    public string? personId { get; set; }
+    public string? displayName { get; set; }
+    public string? presence { get; set; }
+    public double? expected { get; set; }
+    public double? attended { get; set; }
 }
 
 public sealed class PmStakeholderRow
@@ -274,4 +304,50 @@ public sealed class PmProcessMapRow
     public string? currentBy { get; set; }
     public DateTime? supersededAt { get; set; }
     public string? supersededBy { get; set; }
+}
+
+public sealed class PmPaymentTermsRow
+{
+    public string? __dataId { get; set; }
+    public string? projectId { get; set; }
+    public double? baseAmount { get; set; }
+    public string? currency { get; set; }
+    public double? penaltyCapPercent { get; set; }
+}
+
+public sealed class PmPaymentSliceRow
+{
+    public string? __dataId { get; set; }
+    public string? projectId { get; set; }
+    public string? name { get; set; }
+    public string? kind { get; set; }
+    public double? percent { get; set; }
+    public string? cadence { get; set; }
+    public double? installmentCount { get; set; }
+    public double? intervalMonths { get; set; }
+    public double? unitPrice { get; set; }
+    public string? gateId { get; set; }
+    public string? wbsId { get; set; }
+    public string? budgetLineId { get; set; }
+    public DateTime? anchorDate { get; set; }
+    public double? sortOrder { get; set; }
+    public string? note { get; set; }
+}
+
+public sealed class PmProgressClaimRow
+{
+    public string? __dataId { get; set; }
+    public string? projectId { get; set; }
+    public string? sliceId { get; set; }
+    public double? sequence { get; set; }
+    public string? periodLabel { get; set; }
+    public DateTime? dueDate { get; set; }
+    public double? claimedAmount { get; set; }
+    public double? acceptedAmount { get; set; }
+    public double? deduction { get; set; }
+    public double? adjustmentAmount { get; set; }
+    public double? quantity { get; set; }
+    public string? status { get; set; }
+    public List<string>? resourceIds { get; set; }
+    public string? note { get; set; }
 }

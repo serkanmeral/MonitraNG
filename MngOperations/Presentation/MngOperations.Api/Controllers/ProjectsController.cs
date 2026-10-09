@@ -570,6 +570,112 @@ public sealed class ProjectsController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("projects/{id}/progress")]
+    [ProducesResponseType(typeof(ProjectProgressDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProgress(string id, CancellationToken cancellationToken)
+    {
+        var pack = await _planning.GetProgressAsync(id, cancellationToken);
+        return Ok(pack);
+    }
+
+    [HttpPut("projects/{id}/progress/terms")]
+    [ProducesResponseType(typeof(PaymentTermsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpsertPaymentTerms(
+        string id,
+        [FromBody] UpsertPaymentTermsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var terms = await _planning.UpsertPaymentTermsAsync(id, request, cancellationToken);
+        return Ok(terms);
+    }
+
+    [HttpPost("projects/{id}/progress/slices")]
+    [ProducesResponseType(typeof(PaymentSliceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreatePaymentSlice(
+        string id,
+        [FromBody] CreatePaymentSliceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _planning.CreatePaymentSliceAsync(id, request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPut("progress/slices/{id}")]
+    [ProducesResponseType(typeof(PaymentSliceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdatePaymentSlice(
+        string id,
+        [FromBody] UpdatePaymentSliceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UpdatePaymentSliceAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("progress/slices/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeletePaymentSlice(string id, CancellationToken cancellationToken)
+    {
+        await _planning.DeletePaymentSliceAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("progress/slices/{id}/plan")]
+    [ProducesResponseType(typeof(BudgetLineDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> WriteSlicePlan(string id, CancellationToken cancellationToken)
+    {
+        var line = await _planning.WriteSlicePlanAsync(id, cancellationToken);
+        return Ok(line);
+    }
+
+    [HttpPost("projects/{id}/progress/claims")]
+    [ProducesResponseType(typeof(ProgressClaimDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateProgressClaim(
+        string id,
+        [FromBody] CreateProgressClaimRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _planning.CreateProgressClaimAsync(id, request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPut("progress/claims/{id}")]
+    [ProducesResponseType(typeof(ProgressClaimDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateProgressClaim(
+        string id,
+        [FromBody] UpdateProgressClaimRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UpdateProgressClaimAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("progress/claims/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeleteProgressClaim(string id, CancellationToken cancellationToken)
+    {
+        await _planning.DeleteProgressClaimAsync(id, cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("projects/{id}/acks")]
     [ProducesResponseType(typeof(ProjectAcknowledgementsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -840,6 +946,120 @@ public sealed class ProjectsController : ControllerBase
     {
         var updated = await _planning.UpdateMeetingActionAsync(id, request, cancellationToken);
         return Ok(updated);
+    }
+
+    [HttpGet("projects/{id}/meeting-workspace")]
+    [ProducesResponseType(typeof(MeetingWorkspaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMeetingWorkspace(string id, CancellationToken cancellationToken)
+    {
+        var item = await _planning.GetMeetingWorkspaceAsync(id, cancellationToken);
+        return Ok(item);
+    }
+
+    [HttpPut("projects/{id}/meeting-workspace")]
+    [ProducesResponseType(typeof(MeetingWorkspaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetMeetingWorkspace(
+        string id,
+        [FromBody] SetMeetingWorkspaceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var item = await _planning.SetMeetingWorkspaceAsync(id, request, cancellationToken);
+        return Ok(item);
+    }
+
+    [HttpPost("projects/{id}/meeting-workspace")]
+    [ProducesResponseType(typeof(MeetingWorkspaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EnsureMeetingWorkspace(string id, CancellationToken cancellationToken)
+    {
+        var item = await _planning.EnsureMeetingWorkspaceAsync(id, cancellationToken);
+        return Ok(item);
+    }
+
+    [HttpGet("projects/{id}/meeting-people")]
+    [ProducesResponseType(typeof(IReadOnlyList<MeetingPersonDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListMeetingPeople(string id, [FromQuery] string? q, CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListMeetingPeopleAsync(id, q, cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpPost("projects/{id}/meeting-people")]
+    [ProducesResponseType(typeof(MeetingPersonDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateMeetingPerson(
+        string id,
+        [FromBody] CreateMeetingPersonRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _planning.CreateMeetingPersonAsync(id, request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPut("meeting-people/{id}")]
+    [ProducesResponseType(typeof(MeetingPersonDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateMeetingPerson(
+        string id,
+        [FromBody] UpdateMeetingPersonRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UpdateMeetingPersonAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("meeting-people/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeleteMeetingPerson(string id, CancellationToken cancellationToken)
+    {
+        await _planning.DeleteMeetingPersonAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("meetings/{id}/attendance")]
+    [ProducesResponseType(typeof(MeetingAttendanceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateMeetingAttendance(
+        string id,
+        [FromBody] CreateMeetingAttendanceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _planning.CreateMeetingAttendanceAsync(id, request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPut("meeting-attendance/{id}")]
+    [ProducesResponseType(typeof(MeetingAttendanceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMeetingAttendance(
+        string id,
+        [FromBody] UpdateMeetingAttendanceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _planning.UpdateMeetingAttendanceAsync(id, request, cancellationToken);
+        return Ok(updated);
+    }
+
+    [HttpDelete("meeting-attendance/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteMeetingAttendance(string id, CancellationToken cancellationToken)
+    {
+        await _planning.DeleteMeetingAttendanceAsync(id, cancellationToken);
+        return NoContent();
     }
 
     [HttpDelete("meeting-actions/{id}")]

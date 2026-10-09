@@ -162,6 +162,20 @@ public interface IProjectPlanningService
 
     Task DeleteMeetingActionAsync(string id, CancellationToken ct = default);
 
+    Task<IReadOnlyList<MeetingPersonDto>> ListMeetingPeopleAsync(string projectId, string? query, CancellationToken ct = default);
+
+    Task<MeetingPersonDto> CreateMeetingPersonAsync(string projectId, CreateMeetingPersonRequest request, CancellationToken ct = default);
+
+    Task<MeetingPersonDto> UpdateMeetingPersonAsync(string id, UpdateMeetingPersonRequest request, CancellationToken ct = default);
+
+    Task DeleteMeetingPersonAsync(string id, CancellationToken ct = default);
+
+    Task<MeetingAttendanceDto> CreateMeetingAttendanceAsync(string meetingId, CreateMeetingAttendanceRequest request, CancellationToken ct = default);
+
+    Task<MeetingAttendanceDto> UpdateMeetingAttendanceAsync(string id, UpdateMeetingAttendanceRequest request, CancellationToken ct = default);
+
+    Task DeleteMeetingAttendanceAsync(string id, CancellationToken ct = default);
+
     Task<ProjectStakeholdersDto> GetStakeholdersAsync(string projectId, CancellationToken ct = default);
 
     Task<StakeholderDto> CreateStakeholderAsync(string projectId, CreateStakeholderRequest request, CancellationToken ct = default);
@@ -177,4 +191,28 @@ public interface IProjectPlanningService
     Task<ProcessMapDto> UpdateProcessMapAsync(string id, UpdateProcessMapRequest request, CancellationToken ct = default);
 
     Task DeleteProcessMapAsync(string id, CancellationToken ct = default);
+
+    Task<ProjectProgressDto> GetProgressAsync(string projectId, CancellationToken ct = default);
+
+    Task<PaymentTermsDto> UpsertPaymentTermsAsync(string projectId, UpsertPaymentTermsRequest request, CancellationToken ct = default);
+
+    Task<PaymentSliceDto> CreatePaymentSliceAsync(string projectId, CreatePaymentSliceRequest request, CancellationToken ct = default);
+
+    Task<PaymentSliceDto> UpdatePaymentSliceAsync(string id, UpdatePaymentSliceRequest request, CancellationToken ct = default);
+
+    Task DeletePaymentSliceAsync(string id, CancellationToken ct = default);
+
+    Task<BudgetLineDto> WriteSlicePlanAsync(string sliceId, CancellationToken ct = default);
+
+    Task<ProgressClaimDto> CreateProgressClaimAsync(string projectId, CreateProgressClaimRequest request, CancellationToken ct = default);
+
+    Task<ProgressClaimDto> UpdateProgressClaimAsync(string id, UpdateProgressClaimRequest request, CancellationToken ct = default);
+
+    Task DeleteProgressClaimAsync(string id, CancellationToken ct = default);
+
+    Task<MeetingWorkspaceDto> GetMeetingWorkspaceAsync(string projectId, CancellationToken ct = default);
+
+    Task<MeetingWorkspaceDto> SetMeetingWorkspaceAsync(string projectId, SetMeetingWorkspaceRequest request, CancellationToken ct = default);
+
+    Task<MeetingWorkspaceDto> EnsureMeetingWorkspaceAsync(string projectId, CancellationToken ct = default);
 }

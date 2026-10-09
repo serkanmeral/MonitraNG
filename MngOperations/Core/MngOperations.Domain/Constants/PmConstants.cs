@@ -17,8 +17,13 @@ public static class PmDatasets
     public const string Meetings = "pm_meetings";
     public const string MeetingSeries = "pm_meeting_series";
     public const string MeetingActions = "pm_meeting_actions";
+    public const string MeetingPeople = "pm_meeting_people";
+    public const string MeetingAttendance = "pm_meeting_attendance";
     public const string Stakeholders = "pm_stakeholders";
     public const string ProcessMaps = "pm_process_maps";
+    public const string PaymentTerms = "pm_payment_terms";
+    public const string PaymentSlices = "pm_payment_slices";
+    public const string ProgressClaims = "pm_progress_claims";
 }
 
 public static class PmProjectStatus
@@ -372,6 +377,34 @@ public static class PmMeetingActionStatus
         || string.Equals(status, Waived, StringComparison.OrdinalIgnoreCase);
 }
 
+public static class PmAttendancePresence
+{
+    public const string Invited = "invited";
+    public const string Confirmed = "confirmed";
+    public const string Attended = "attended";
+    public const string Absent = "absent";
+    public const string Excused = "excused";
+
+    public static string? NormalizeOrNull(string? presence)
+    {
+        var value = presence?.Trim().ToLowerInvariant();
+        return value switch
+        {
+            Invited => Invited,
+            Confirmed => Confirmed,
+            Attended => Attended,
+            Absent => Absent,
+            Excused => Excused,
+            _ => null
+        };
+    }
+
+    public static string FromFlags(bool attended) => attended ? Attended : Invited;
+
+    public static (bool Expected, bool Attended) ToFlags(string presence) =>
+        (true, string.Equals(presence, Attended, StringComparison.Ordinal));
+}
+
 public static class PmMeetingStatus
 {
     public const string Scheduled = "scheduled";
@@ -469,4 +502,64 @@ public static class PmProcessMapStatus
 
     public static bool IsClosed(string status) =>
         string.Equals(status, Superseded, StringComparison.OrdinalIgnoreCase);
+}
+
+public static class PmPaymentSliceKind
+{
+    public const string Percent = "percent";
+    public const string Unit = "unit";
+
+    public static string Normalize(string? kind)
+    {
+        var k = kind?.Trim();
+        if (string.Equals(k, Unit, StringComparison.OrdinalIgnoreCase)) return Unit;
+        return Percent;
+    }
+}
+
+public static class PmPaymentCadence
+{
+    public const string Once = "once";
+    public const string Installments = "installments";
+
+    public static string Normalize(string? cadence)
+    {
+        var c = cadence?.Trim();
+        if (string.Equals(c, Installments, StringComparison.OrdinalIgnoreCase)) return Installments;
+        return Once;
+    }
+}
+
+public static class PmProgressClaimStatus
+{
+    public const string Draft = "draft";
+    public const string Submitted = "submitted";
+    public const string Accepted = "accepted";
+    public const string Paid = "paid";
+
+    public static string Normalize(string? status)
+    {
+        var s = status?.Trim();
+        if (string.Equals(s, Submitted, StringComparison.OrdinalIgnoreCase)) return Submitted;
+        if (string.Equals(s, Accepted, StringComparison.OrdinalIgnoreCase)) return Accepted;
+        if (string.Equals(s, Paid, StringComparison.OrdinalIgnoreCase)) return Paid;
+        return Draft;
+    }
+
+    public static bool ConsumesCap(string status) =>
+        string.Equals(status, Accepted, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, Paid, StringComparison.OrdinalIgnoreCase);
+
+    public static bool NeedsEvidence(string status) =>
+        !string.Equals(status, Draft, StringComparison.OrdinalIgnoreCase);
+
+    public static bool CanMove(string from, string to)
+    {
+        if (string.Equals(from, to, StringComparison.Ordinal)) return true;
+        if (from == Draft && to == Submitted) return true;
+        if (from == Submitted && to == Draft) return true;
+        if (from == Submitted && to == Accepted) return true;
+        if (from == Accepted && to == Paid) return true;
+        return false;
+    }
 }

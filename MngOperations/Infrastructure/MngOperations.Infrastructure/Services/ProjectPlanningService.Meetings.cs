@@ -23,9 +23,13 @@ public sealed partial class ProjectPlanningService
         var byMeeting = actionDtos
             .GroupBy(a => a.MeetingId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.Open).ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase).ToList(), StringComparer.Ordinal);
+        var attendance = await LoadAttendanceByMeetingAsync(projectId, token, ct);
 
         var all = meetings
-            .Select(row => ToMeetingDto(row, byMeeting.GetValueOrDefault(row.__dataId ?? string.Empty) ?? new List<MeetingActionDto>()))
+            .Select(row => ToMeetingDto(
+                row,
+                byMeeting.GetValueOrDefault(row.__dataId ?? string.Empty) ?? new List<MeetingActionDto>(),
+                attendance.GetValueOrDefault(row.__dataId ?? string.Empty)))
             .ToList();
         var filtered = FilterMeetings(all, query).ToList();
         var skip = Math.Max(0, query.Skip);
@@ -69,7 +73,7 @@ public sealed partial class ProjectPlanningService
         var start = request.StartAt ?? request.HeldAt;
         var end = request.EndAt ?? start?.AddMinutes(60);
         var status = string.IsNullOrWhiteSpace(request.Status)
-            ? InferMeetingStatus(start)
+            ? PmMeetingStatus.Scheduled
             : PmMeetingStatus.Normalize(request.Status);
         await AssertMeetingSlotUniqueAsync(projectId, name, start, excludeId: null, token, ct);
 
@@ -89,6 +93,9 @@ public sealed partial class ProjectPlanningService
             ["location"] = EmptyToNull(request.Location),
             ["meetingUrl"] = EmptyToNull(request.MeetingUrl),
             ["agenda"] = EmptyToNull(request.Agenda),
+            ["cancelReason"] = string.Equals(status, PmMeetingStatus.Cancelled, StringComparison.Ordinal)
+                ? EmptyToNull(request.CancelReason)
+                : null,
             ["detached"] = 0
         };
 
@@ -134,7 +141,18 @@ public sealed partial class ProjectPlanningService
             payload["heldAt"] = start;
         }
         if (request.EndAt.HasValue || request.StartAt.HasValue || request.HeldAt.HasValue) payload["endAt"] = end;
-        if (request.Status is not null) payload["status"] = PmMeetingStatus.Normalize(request.Status);
+        var nextStatus = request.Status is not null
+            ? PmMeetingStatus.Normalize(request.Status)
+            : PmMeetingStatus.Normalize(existing.status);
+        if (request.Status is not null)
+            payload["status"] = nextStatus;
+        if (request.CancelReason is not null || request.Status is not null)
+        {
+            var reason = request.CancelReason is not null ? request.CancelReason : existing.cancelReason;
+            payload["cancelReason"] = string.Equals(nextStatus, PmMeetingStatus.Cancelled, StringComparison.Ordinal)
+                ? EmptyToNull(reason)
+                : null;
+        }
         if (request.MinutesResourceId is not null) payload["minutesResourceId"] = minutesId;
         if (request.AgendaResourceId is not null) payload["agendaResourceId"] = agendaId;
         if (request.WbsId is not null) payload["wbsId"] = wbsId;
@@ -164,6 +182,7 @@ public sealed partial class ProjectPlanningService
                 && string.Equals(action.meetingId, id, StringComparison.Ordinal))
                 await _dg.DeleteAsync(PmDatasets.MeetingActions, action.__dataId, token, ct);
         }
+        await DeleteAttendanceForMeetingsAsync(existing.projectId!, new HashSet<string>(StringComparer.Ordinal) { id }, token, ct);
         await _dg.DeleteAsync(PmDatasets.Meetings, id, token, ct);
     }
 
@@ -174,6 +193,12 @@ public sealed partial class ProjectPlanningService
     {
         var token = RequireToken();
         var meeting = await LoadMeetingRowOrThrowAsync(meetingId, token, ct);
+        if (string.Equals(PmMeetingStatus.Normalize(meeting.status), PmMeetingStatus.Cancelled, StringComparison.Ordinal))
+            throw new OperationCoreException(
+                "MEETING_CANCELLED",
+                "Cancelled meetings do not take assignments.",
+                "İptal edilen toplantıya görev yazılmaz.",
+                400);
         var projectId = meeting.projectId!;
         var title = RequireActionTitle(request.Title);
         var wbsId = await NormalizeOptionalWbsIdAsync(projectId, request.WbsId, token, ct);
@@ -186,6 +211,7 @@ public sealed partial class ProjectPlanningService
         var note = EmptyToNull(request.Note);
         AssertMeetingActionClose(status, note);
         await AssertMeetingActionUniqueAsync(projectId, meetingId, title, excludeId: null, token, ct);
+        var owner = await ResolveActionOwnerAsync(request.OwnerKind, request.OwnerUserId, request.OwnerPersonId, request.OwnerName, token, ct);
 
         var closed = PmMeetingActionStatus.IsClosed(status);
         var payload = new Dictionary<string, object?>
@@ -193,7 +219,10 @@ public sealed partial class ProjectPlanningService
             ["projectId"] = projectId,
             ["meetingId"] = meetingId,
             ["title"] = title,
-            ["ownerName"] = EmptyToNull(request.OwnerName),
+            ["ownerName"] = owner.Name,
+            ["ownerKind"] = owner.Kind,
+            ["ownerUserId"] = owner.UserId,
+            ["ownerPersonId"] = owner.PersonId,
             ["dueDate"] = request.DueDate,
             ["status"] = status,
             ["workItemId"] = workItemId,
@@ -241,7 +270,20 @@ public sealed partial class ProjectPlanningService
 
         var payload = new Dictionary<string, object?>();
         if (request.Title is not null) payload["title"] = title;
-        if (request.OwnerName is not null) payload["ownerName"] = EmptyToNull(request.OwnerName);
+        if (request.OwnerKind is not null || request.OwnerName is not null || request.OwnerUserId is not null || request.OwnerPersonId is not null)
+        {
+            var owner = await ResolveActionOwnerAsync(
+                request.OwnerKind ?? existing.ownerKind,
+                request.OwnerUserId ?? existing.ownerUserId,
+                request.OwnerPersonId ?? existing.ownerPersonId,
+                request.OwnerName ?? existing.ownerName,
+                token,
+                ct);
+            payload["ownerName"] = owner.Name;
+            payload["ownerKind"] = owner.Kind;
+            payload["ownerUserId"] = owner.UserId;
+            payload["ownerPersonId"] = owner.PersonId;
+        }
         if (request.DueDate.HasValue) payload["dueDate"] = request.DueDate;
         if (request.Status is not null) payload["status"] = status;
         if (request.WorkItemId is not null) payload["workItemId"] = workItemId;
@@ -282,8 +324,12 @@ public sealed partial class ProjectPlanningService
             .GroupBy(a => a.MeetingId, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.Open).ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase).ToList(), StringComparer.Ordinal);
 
+        var attendance = await LoadAttendanceByMeetingAsync(projectId, token, ct);
         return meetings
-            .Select(row => ToMeetingDto(row, byMeeting.GetValueOrDefault(row.__dataId ?? string.Empty) ?? new List<MeetingActionDto>()))
+            .Select(row => ToMeetingDto(
+                row,
+                byMeeting.GetValueOrDefault(row.__dataId ?? string.Empty) ?? new List<MeetingActionDto>(),
+                attendance.GetValueOrDefault(row.__dataId ?? string.Empty)))
             .OrderBy(m => m.StartAt ?? m.HeldAt)
             .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -344,7 +390,8 @@ public sealed partial class ProjectPlanningService
             .OrderByDescending(a => a.Open)
             .ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        return ToMeetingDto(row, actions);
+        var attendance = await LoadAttendanceByMeetingAsync(row.projectId!, token, ct);
+        return ToMeetingDto(row, actions, attendance.GetValueOrDefault(id));
     }
 
     private async Task<MeetingActionDto> LoadMeetingActionDtoAsync(string id, string token, CancellationToken ct)
@@ -406,12 +453,15 @@ public sealed partial class ProjectPlanningService
         }
     }
 
-    private static MeetingDto ToMeetingDto(PmMeetingRow row, IReadOnlyList<MeetingActionDto> actions)
+    private static MeetingDto ToMeetingDto(
+        PmMeetingRow row,
+        IReadOnlyList<MeetingActionDto> actions,
+        IReadOnlyList<MeetingAttendanceDto>? attendance = null)
     {
         var start = row.startAt ?? row.heldAt;
         var end = row.endAt ?? start?.AddMinutes(60);
         var status = string.IsNullOrWhiteSpace(row.status)
-            ? InferMeetingStatus(start)
+            ? PmMeetingStatus.Scheduled
             : PmMeetingStatus.Normalize(row.status);
         return new MeetingDto
         {
@@ -430,12 +480,14 @@ public sealed partial class ProjectPlanningService
             Location = EmptyToNull(row.location),
             MeetingUrl = EmptyToNull(row.meetingUrl),
             Agenda = EmptyToNull(row.agenda),
+            CancelReason = EmptyToNull(row.cancelReason),
             SeriesId = EmptyToNull(row.seriesId),
             OccurrenceDate = row.occurrenceDate,
             Detached = row.detached is >= 1,
             ActionCount = actions.Count,
             OpenActionCount = actions.Count(a => a.Open),
-            Actions = actions
+            Actions = actions,
+            Attendance = attendance ?? Array.Empty<MeetingAttendanceDto>()
         };
     }
 
@@ -485,12 +537,6 @@ public sealed partial class ProjectPlanningService
             .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    private static string InferMeetingStatus(DateTime? start)
-    {
-        if (start is null) return PmMeetingStatus.Scheduled;
-        return start.Value.ToUniversalTime() < DateTime.UtcNow ? PmMeetingStatus.Held : PmMeetingStatus.Scheduled;
-    }
-
     private static MeetingActionDto ToMeetingActionDto(PmMeetingActionRow row)
     {
         var status = PmMeetingActionStatus.Normalize(row.status);
@@ -504,6 +550,9 @@ public sealed partial class ProjectPlanningService
             MeetingId = row.meetingId ?? string.Empty,
             Title = (row.title ?? string.Empty).Trim(),
             OwnerName = EmptyToNull(row.ownerName),
+            OwnerKind = EmptyToNull(row.ownerKind),
+            OwnerUserId = EmptyToNull(row.ownerUserId),
+            OwnerPersonId = EmptyToNull(row.ownerPersonId),
             DueDate = row.dueDate,
             Status = status,
             WorkItemId = workItemId,

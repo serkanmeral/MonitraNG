@@ -245,6 +245,7 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             if (!string.IsNullOrWhiteSpace(action.__dataId))
                 await _dg.DeleteAsync(PmDatasets.MeetingActions, action.__dataId, token, ct);
         }
+        await DeleteAttendanceForMeetingsAsync(id, meetingIds: null, token, ct);
         foreach (var meeting in meetings)
         {
             if (!string.IsNullOrWhiteSpace(meeting.__dataId))
@@ -483,6 +484,8 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             if (meetingGone || wbsGone)
                 await _dg.DeleteAsync(PmDatasets.MeetingActions, action.__dataId, token, ct);
         }
+        if (deletedMeetingIds.Count > 0)
+            await DeleteAttendanceForMeetingsAsync(projectId, deletedMeetingIds, token, ct);
         var stakeholders = await LoadStakeholderRowsAsync(projectId, token, ct);
         foreach (var stakeholder in stakeholders)
         {
@@ -881,7 +884,8 @@ public sealed partial class ProjectPlanningService : IProjectPlanningService
             BaselineNote = p.baselineNote,
             BaselineDrifted = mine.Any(IsDrifted),
             DiFolderId = p.diFolderId,
-            WorkspaceId = p.workspaceId
+            WorkspaceId = p.workspaceId,
+            MeetingWorkspaceId = p.meetingWorkspaceId
         };
     }
 

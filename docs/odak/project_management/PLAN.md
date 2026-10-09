@@ -263,7 +263,7 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 - Yapay zekâ asistanı
 - Kritik yol motoru ve otomatik zamanlama
 - Kaynak, maliyet, portföy
-- Genel DOCX/PDF şartname maddesi çıkarımı (NLP) — ayrı ürün kararı; AnkaraBT ihalesini teslim etmek için açılmaz
+- Genel DOCX/PDF şartname maddesi çıkarımı (NLP) — ayrı ürün kararı; AnkaraBT ihalesini teslim etmek için açılmaz. 1 Ekim 2026: kurumun kendi şartnamesiyle proje kurdurması bölüm 13.3’te, yarın. Bu satır o konuşmaya kadar durur.
 - App Store / satın alınır üçüncü taraf paket (imza, ücret) — kullanıcı “marketplace” ile bunu kastetmedi; şablon katalog ayrı ve bitti
 
 `docs/ankarabt/` altındaki teknik şartname ve personel nitelikleri **örnek kaynak**tır. Generic omurgayı tasarlarken kullanıldı; o şartnamenin maddeleri parse edilmez, WBS/yükümlülük olarak doldurulmaz, ihale hayata geçirilmez.
@@ -285,13 +285,15 @@ Görüşmede geçen, ilk pakette **yok** sayılanlar:
 
 ## 12. Sonraki adım
 
-**17 Eylül 2026 (akşam):** Manifest **0.38.0**. Proje Dashboard chart yüzeyi + pulse uç + Gantt açılış + sol sekme + iskelet ilk boya TEST `mngoperations`’ta. NLP/şartname parser **yapılmayacak**.
+**17 Eylül 2026 (akşam):** Manifest **0.38.0**. Proje Dashboard chart yüzeyi + pulse uç + Gantt açılış + sol sekme + iskelet ilk boya TEST `mngoperations`’ta. NLP/şartname parser o tarihte yapılmayacaktı; 1 Ekim 2026’da bölüm 13.3 ile yeniden açıldı, yarın konuşulacak.
 
 Biten kademeler: F1-0…F1-9, F2-1…F2-16, F3-1…F3-5, F4-1…F4-7, F5-1 + portföy/seed + paket lab turu + proje Dashboard. Oturum notu: [current_status.md](./current_status.md).
 
 Sıradaki (açık talepte): örnek draw.io şablonu; eski lab önek migrasyonu; paket sürüm evrimi; Durum DG maliyeti. Prod süreç/editör duman testi kullanıcıda.
 
 “Marketplace” netliği (3 Eylül 2026): kastedilen raftan iş paketi şablonu; satın alma vitrini değil.
+
+**1 Ekim 2026:** Yarın planlanacak üç madde bölüm 13’te: Hakediş, toplantı görevlendirmesi, şartnameden proje kuran yapay zekâ. Tasarım ve kod yok.
 
 Tarihsel not — plan onayından sonraki ilk iş **F1-0 + F1-4 sahiplik kararı**ydı; ikisi de uygulandı.
 
@@ -300,3 +302,45 @@ O sırada onaylananlar (artık uygulandı):
 - Faz 1 kapsamı (Gantt ve draw.io içeride, editör/tam Project dışarıda)
 - Seed/manifest disiplini
 - Kodlamaya F1-0 ile başlamak
+
+---
+
+## 13. Yarın planlanacak — 1 Ekim 2026
+
+Üç madde konuşulacak, yarın planlanacak. Bu bölüm kayıt. Tasarım ve kod yok.
+
+### 13.1 Hakediş
+
+Projede **Hakediş** başlığı. Bütçe satırı değil: kabul edilmiş bir dilimin parasal talebi.
+
+Bugün bütçe satırı plan/gerçek tutar notudur. Kapı geçmek ödeme açmaz. Ceza, birim fiyat, fiyat farkı ve dönem taksiti yoktur. Proline’daki TCDD-BV (Tablo 11) ve DDYS (Tablo 4) satırları yüzdeyi isimde taşır; tutar 0 TL’dir. Hakediş onların yerine geçmez, onları besler.
+
+İki şartname aynı iskeleti gösteriyor. Taban sözleşme (yazılım) bedeli. Her dilim bir kabule bağlı: yüzde veya tutar, tek sefer ya da taksit. Dönem kaydı: talep, kabul edilen, kesinti, net, durum (taslak / sunuldu / kabul / ödendi). Kanıt o dönemin raporu. Yüzdeye girmeyen iş ayrı satır: birim fiyatlı personel, test adedi, kapsam değişikliği. Yürüyen toplam: ödenen, kalan, kesilen ceza ve tavan.
+
+**İş Paketi 1 — Kaynak Planlama ve Büyük Veri (Tablo 11).** Taban yazılım bedeli. Tek sefer: analiz %7,5, tasarım %7,5, veri ambarı kurulum ve taşıma %10, 50 KDS raporu %15, açık veri portalı ve 10 veri seti %10, büyük veri portalı %10, geçici kabul %20. Garanti ve işletme %20, geçici kabul ile kesin kabul arasında üçer aylık taksit. Sınıf I değişiklik Etki Analizi’nde adam-ay ve Ek-1 birim fiyatla ayrıca fiyatlanır. Ceza ödemeden kesilir; yetmezse ayrıca tahsil. Tavan sözleşme bedelinin %35’i. Dönem kabulünden önce üç aylık gerçekleşme paketi gelir.
+
+**İş Paketi 2 — DDYS (Tablo 4, madde 6.2 ve 7.4).** Tek sefer: analiz %15, tasarım %10, geçici kabul %50. Garanti %25, dört üç aylık taksit. İşletme personeli bu %25’in içinde değildir; birim fiyatla ayrıca ödenir. Performans ve güvenlik testi, test adedi üzerinden birim fiyattır. Onaylı iş programına göre fiyat farkı uygulanır. Her üç ayda gerçekleşme raporu ve hakediş; o hakedişle güncel kaynak kodu teslim edilir. Ceza tavanı yine %35. EK-3 fiyat listesi PDF’de yok.
+
+Sınır: fatura, muhasebe fişi, vergi, banka yok. Bölüm 4’teki ERP kararı durur. Hakediş, projede talebin ve kabulün kaydıdır.
+
+Yarın: ekran, kayıt ve kapı/WBS bağı. Bu gece açılmaz.
+
+### 13.2 Toplantı tutanağında görevlendirme
+
+Tutanakta **Görevlendirmeler**. Toplantı bitince çıkan iş: kim, ne, ne zamana kadar.
+
+Bugünkü aksiyon (`pm_meeting_actions`) tutanağın yanında duran listedir. Başlık, serbest sahip adı, son tarih, kendi durumu (açık / sürüyor / bitti / vazgeçildi). İsteğe bağlı mevcut bir işe veya WBS satırına bağlanır. Bağ, işi doğurmaz. Aksiyonu bitirmek OC işini kapatmaz. Tutanak, bağlı işin canlı durumunu göstermez. Hedef çalışma alanı seçilmez.
+
+İstenen: görevlendirme tutanağın eklentisi olsun. Satır kişi ve son tarih taşısın. Önceden seçilen bir OC çalışma alanına görev olarak yazılabilsin. Bu alan projenin kendi çalışma alanı olabileceği gibi başka bir alan da olabilir. Tutanak, bu görevlerin OC’deki durumunu göstersin.
+
+Yarın: aksiyonun büyümesi mi, tutanakta ayrı blok mu; alan seçimi; durumun nereden okunacağı. Bu gece açılmaz.
+
+### 13.3 Şartnameden proje
+
+Kurum, uygulamaya bir teknik şartname verir. Uygulama, bugün Cursor’ın yaptığı gibi projeyi kurar: iş kırılımı, kapı, kütüphane, tarih ve çalışma alanı.
+
+Bugün bunu kişi yaptı. İş Paketi 1 ve DDYS PDF’leri okundu; proline’da TCDD-BV ve DDYS projeleri, kütüphaneleri ve OC çalışma alanları elle kuruldu. Uygulamanın içinde böyle bir kapı yok. Bölüm 10’daki “şartname parser yapılmayacak” kaydı, AnkaraBT ihalesini ürüne doldurmamak içindi. Bu madde o kaydı yarınki konuşmaya açar.
+
+İki yol. Çevrimdışı Ollama. Ya da çevrimiçi bir model. MngLLM bugün çeviri içindir (Ollama, Qwen); şartnameden proje kurmaz. Cafe’de Ollama ve MngLLM ayakta bir model olarak durmuyor.
+
+Yarın: hangi yol, şartnamenin nereye yükleneceği, kurulan projenin onaylanmadan açılıp açılmayacağı. Bu gece açılmaz.

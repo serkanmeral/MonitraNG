@@ -70,7 +70,8 @@ services:
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      # Gateway listens HTTPS only (Scheme=https)
+      test: ["CMD-SHELL", "curl -skf https://localhost:5000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -528,7 +529,8 @@ services:
       - mngllm
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      # Use 127.0.0.1 — alpine wget to "localhost" may hit ::1 while nginx listens on IPv4 only
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

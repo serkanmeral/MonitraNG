@@ -1,6 +1,9 @@
 # Teslimat Omurgası — Oturum durumu
 
-**Son güncelleme:** 17 Eylül 2026 (akşam)  
+**Son güncelleme:** 1 Ekim 2026  
+**Kayıt:** Yarın planlanacak üç madde [PLAN.md](./PLAN.md) bölüm 13: Hakediş, toplantı görevlendirmesi, şartnameden proje kuran yapay zekâ. Tasarım yok.
+
+**Son güncelleme (önceki):** 17 Eylül 2026 (akşam)  
 **Konu:** Proje Dashboard (chart) + Gantt açılış + sol sekme + pulse + ilk boya + DI Gezgin kök yükleme  
 **Ortam:** TEST `192.168.20.20` (`mngoperations` no-cache). UI local `npm run dev`; **mngui image yok.**  
 **Manifest:** `docs/odak/project_management/install/manifest.json` **0.38.0** (şema değişmedi)  
