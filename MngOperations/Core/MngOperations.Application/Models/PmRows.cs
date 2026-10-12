@@ -229,12 +229,23 @@ public sealed class PmMeetingSeriesRow
     public string? note { get; set; }
 }
 
+public sealed class PmMeetingActionTarget
+{
+    public string? kind { get; set; }
+    public string? userId { get; set; }
+    public string? personId { get; set; }
+    public string? organization { get; set; }
+    public string? name { get; set; }
+}
+
 public sealed class PmMeetingActionRow
 {
     public string? __dataId { get; set; }
     public string? projectId { get; set; }
     public string? meetingId { get; set; }
     public string? title { get; set; }
+    public string? code { get; set; }
+    public List<PmMeetingActionTarget>? targets { get; set; }
     public string? ownerName { get; set; }
     public string? ownerKind { get; set; }
     public string? ownerUserId { get; set; }

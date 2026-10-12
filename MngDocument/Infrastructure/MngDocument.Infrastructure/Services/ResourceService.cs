@@ -44,6 +44,7 @@ public class ResourceService : IResourceService
     private readonly LetterheadHeaderValueEnricher _headerEnricher;
     private readonly IDocumentRenderService _render;
     private readonly MngDocumentSettings _settings;
+    private readonly DocumentIndexCleaner _indexCleaner;
     private readonly ILogger<ResourceService> _logger;
 
     public ResourceService(
@@ -57,6 +58,7 @@ public class ResourceService : IResourceService
         ITemplateBrandingApplier brandingApplier,
         LetterheadHeaderValueEnricher headerEnricher,
         IDocumentRenderService render,
+        DocumentIndexCleaner indexCleaner,
         IOptions<MngDocumentSettings> settings,
         ILogger<ResourceService> logger)
     {
@@ -70,6 +72,7 @@ public class ResourceService : IResourceService
         _brandingApplier = brandingApplier;
         _headerEnricher = headerEnricher;
         _render = render;
+        _indexCleaner = indexCleaner;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -579,7 +582,9 @@ public class ResourceService : IResourceService
             }
         }
 
+        DocumentIndexCleaner.Apply(payload);
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteVersionAsync(id, newVersion, request.Content ?? string.Empty, ResolveChangeNote(request.ChangeNote, "update"), ct);
         return ToDto(updated, snapshot.Resolve(updated));
     }
@@ -707,8 +712,10 @@ public class ResourceService : IResourceService
             ["currentVersionNumber"] = newVersion,
             ["size"] = (long)content.Length
         };
+        DocumentIndexCleaner.Apply(payload);
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteVersionAsync(id, newVersion, content, $"restore from v{versionNumber}", ct);
         return ToDto(updated, snapshot.Resolve(updated));
     }
@@ -814,6 +821,7 @@ public class ResourceService : IResourceService
             ["currentVersionNumber"] = newVersion,
             ["size"] = bytes.LongLength
         };
+        DocumentIndexCleaner.Apply(payload);
 
         string mimeForVersion;
         if (ResourceOrigin.IsManagedDocument(existing.origin)
@@ -829,6 +837,7 @@ public class ResourceService : IResourceService
         }
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteFileVersionAsync(id, newVersion, bytes, fileName, $"restore from v{versionNumber}", ct, mimeType: mimeForVersion);
         return ToDto(updated, snapshot.Resolve(updated));
     }
@@ -912,8 +921,10 @@ public class ResourceService : IResourceService
             ["extension"] = profile.Extension,
             ["currentVersionNumber"] = newVersion
         };
+        DocumentIndexCleaner.Apply(payload);
 
         await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, dataGatewayToken, ct);
+        await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteFileVersionAsync(id, newVersion, content, fileName, "save", ct, dataGatewayToken);
         return newVersion;
     }
@@ -1027,6 +1038,8 @@ public class ResourceService : IResourceService
         if (!string.IsNullOrWhiteSpace(request.Extension))
             payload["extension"] = request.Extension.Trim();
 
+        DocumentIndexCleaner.Apply(payload);
+
         if (string.IsNullOrWhiteSpace(existing.kind)
             && VisualEvidence.IsVisualEvidence(request.Extension, originalName, mime))
         {
@@ -1034,6 +1047,7 @@ public class ResourceService : IResourceService
         }
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteFileVersionAsync(
             id,
             newVersion,
@@ -2314,11 +2328,59 @@ public class ResourceService : IResourceService
             GenerationProfile = r.generationProfile,
             LetterheadId = r.letterheadId,
             DocumentNo = r.documentNo,
+            IndexStatus = ResolveIndexStatus(r),
+            IndexedAt = r.indexedAt,
+            IndexError = r.indexError,
+            IndexCharCount = r.indexCharCount,
+            SummaryStatus = ResolveSummaryStatus(r),
+            SummaryText = r.summaryText,
+            SummarizedAt = r.summarizedAt,
+            SummaryError = r.summaryError,
+            SummaryStep = r.summaryStep,
+            SummaryChunked = r.summaryChunked == true,
+            SummaryCompleted = r.summaryCompleted ?? 0,
+            SummaryTotal = r.summaryTotal ?? 0,
+            SummaryUpdatedAt = r.summaryUpdatedAt,
+            SummaryLog = SplitLog(r.summaryLogText),
             CreatedAt = CreatedFrom(r.__history)?.timestamp,
             CreatedBy = CreatedFrom(r.__history)?.userEmail,
             UpdatedAt = UpdatedFrom(r.__history)?.timestamp,
             UpdatedBy = UpdatedFrom(r.__history)?.userEmail
         };
+    }
+
+    private static string ResolveIndexStatus(DmResource r)
+    {
+        var status = string.IsNullOrWhiteSpace(r.indexStatus) ? "none" : r.indexStatus.Trim();
+        if (status is "done" or "failed"
+            && r.indexedVersionNumber is int indexed
+            && indexed != (r.currentVersionNumber ?? 1))
+        {
+            return "stale";
+        }
+
+        return status;
+    }
+
+    private static string ResolveSummaryStatus(DmResource r)
+    {
+        var status = string.IsNullOrWhiteSpace(r.summaryStatus) ? "none" : r.summaryStatus.Trim();
+        if (status != "done")
+            return status;
+
+        var indexStale = r.indexedVersionNumber is int indexed
+            && indexed != (r.currentVersionNumber ?? 1);
+        var summaryOld = r.summarizedVersionNumber is int summarized
+            && r.indexedVersionNumber is int indexedVersion
+            && summarized != indexedVersion;
+        return indexStale || summaryOld ? "stale" : status;
+    }
+
+    private static IReadOnlyList<string> SplitLog(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return Array.Empty<string>();
+        return text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     /// <summary>DG <c>file</c> alanından (stored object: path/file_name) path ve dosya adını çıkarır.</summary>

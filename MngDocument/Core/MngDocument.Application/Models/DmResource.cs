@@ -70,6 +70,27 @@ public class DmResource
     public string? generationProfile { get; set; }
     public string? letterheadId { get; set; }
     public string? documentNo { get; set; }
+
+    /// <summary>Düz metin indeks durumu: none, running, done, failed. stale okumada hesaplanır.</summary>
+    public string? indexStatus { get; set; }
+    public DateTime? indexedAt { get; set; }
+    public string? indexError { get; set; }
+    public int? indexCharCount { get; set; }
+    public int? indexedVersionNumber { get; set; }
+
+    /// <summary>Özet durumu: none, running, done, failed. stale okumada hesaplanır.</summary>
+    public string? summaryStatus { get; set; }
+    public string? summaryText { get; set; }
+    public DateTime? summarizedAt { get; set; }
+    public string? summaryError { get; set; }
+    public string? summaryStep { get; set; }
+    public bool? summaryChunked { get; set; }
+    public int? summarizedVersionNumber { get; set; }
+    public int? summaryCompleted { get; set; }
+    public int? summaryTotal { get; set; }
+    public DateTime? summaryUpdatedAt { get; set; }
+    /// <summary>Adım satırları, satır sonu ile birleşik. Şema dizisi gerektirmez.</summary>
+    public string? summaryLogText { get; set; }
 }
 
 /// <summary>

@@ -680,11 +680,21 @@ export interface PmUpdateMeetingAttendanceRequest {
   attended?: boolean;
 }
 
+export interface PmMeetingActionTarget {
+  kind: 'user' | 'external' | 'organization' | string;
+  userId?: string | null;
+  personId?: string | null;
+  organization?: string | null;
+  name?: string | null;
+}
+
 export interface PmMeetingAction {
   id: string;
   projectId: string;
   meetingId: string;
   title: string;
+  code?: string | null;
+  targets?: PmMeetingActionTarget[];
   ownerName?: string | null;
   ownerKind?: string | null;
   ownerUserId?: string | null;
@@ -784,6 +794,8 @@ export type PmUpdateMeetingSeriesRequest = Partial<Omit<PmCreateMeetingSeriesReq
 
 export interface PmCreateMeetingActionRequest {
   title: string;
+  code?: string | null;
+  targets?: PmMeetingActionTarget[] | null;
   ownerName?: string | null;
   ownerKind?: string | null;
   ownerUserId?: string | null;

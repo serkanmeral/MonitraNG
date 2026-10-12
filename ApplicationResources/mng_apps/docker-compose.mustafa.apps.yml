@@ -58,17 +58,16 @@ services:
       - "5091:5091"
 
   ollama:
-    build: !reset null
-    image: alpine:3.19
+    image: ollama/ollama:latest
     container_name: ollama
-    command: ["sleep", "infinity"]
-    healthcheck:
-      disable: true
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_KEEP_ALIVE=0
     deploy: !override
       resources:
         limits:
-          memory: 32M
-          cpus: "0.1"
+          memory: 4G
+          cpus: "4"
     networks:
       - mng_common_mng_network
     restart: unless-stopped

@@ -38,10 +38,26 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
+        services.AddHttpClient("OpenSearch", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
+        services.AddHttpClient("Ollama", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(180);
+        });
+
         services.AddMemoryCache();
+        services.AddSingleton<SummaryJobBoard>();
+        services.AddScoped<DocumentIndexCleaner>();
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IResourceService, ResourceService>();
+        services.AddScoped<IDocumentIndexService, DocumentIndexService>();
+        services.AddScoped<IDocumentSummaryService, DocumentSummaryService>();
+        services.AddScoped<IDocumentDiffService, DocumentDiffService>();
+        services.AddScoped<DocumentSummaryRunner>();
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();

@@ -63,8 +63,11 @@ if (settings.Server.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
 }
 
 // Configure Kestrel
+var maxRequestBody = builder.Configuration.GetValue<long?>("Kestrel:Limits:MaxRequestBodySize");
 builder.WebHost.ConfigureKestrel(options =>
 {
+    if (maxRequestBody is long limit && limit > 0)
+        options.Limits.MaxRequestBodySize = limit;
     if (certificate != null && settings.Server.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
     {
         options.ListenAnyIP(settings.Server.Port, listenOptions =>

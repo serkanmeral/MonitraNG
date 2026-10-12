@@ -180,6 +180,16 @@ function mapResource(raw: unknown): DiResource {
     origin: str(o, 'origin'),
     letterheadId: str(o, 'letterheadId'),
     documentNo: str(o, 'documentNo'),
+    indexStatus: str(o, 'indexStatus') ?? 'none',
+    indexedAt: str(o, 'indexedAt'),
+    indexError: str(o, 'indexError'),
+    indexCharCount: num(o, 'indexCharCount'),
+    summaryStatus: str(o, 'summaryStatus') ?? 'none',
+    summaryText: str(o, 'summaryText'),
+    summarizedAt: str(o, 'summarizedAt'),
+    summaryError: str(o, 'summaryError'),
+    summaryStep: str(o, 'summaryStep'),
+    summaryChunked: Boolean(o.summaryChunked),
     templateId: str(o, 'templateId'),
     templateCode: str(o, 'templateCode'),
     generationProfile: str(o, 'generationProfile'),
@@ -411,7 +421,169 @@ export async function diGetDrafts(limit = 50): Promise<DiResourceListResult> {
   return mapListResult(raw);
 }
 
-/** Tek kaynak metadata'sı. */
+export interface DiResourceIndexResult {
+  status: string;
+  charCount: number;
+  error: string | null;
+  indexedAt: string | null;
+  steps: string[];
+  resource: DiResource;
+}
+
+export interface DiResourceSummaryResult {
+  status: string;
+  text: string | null;
+  error: string | null;
+  step: string | null;
+  chunked: boolean;
+  summarizedAt: string | null;
+  completed: number;
+  total: number;
+  updatedAt: string | null;
+  log: string[];
+}
+
+export async function diGetSummary(id: string): Promise<DiResourceSummaryResult> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/summary`, 'GET');
+  return mapSummary(raw);
+}
+
+export async function diSummarizeResource(id: string): Promise<DiResourceSummaryResult> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/summary`, 'POST');
+  return mapSummary(raw);
+}
+
+export interface DiResourceDiffLine {
+  text: string;
+  heading: string;
+}
+
+export interface DiResourceDiffChange {
+  base: string;
+  other: string;
+  heading: string;
+}
+
+export interface DiResourceDiffComparison {
+  id: string;
+  name: string;
+  compared: boolean;
+  reason: string | null;
+  unchangedCount: number;
+  truncated: boolean;
+  addedCount: number;
+  removedCount: number;
+  changedCount: number;
+  noiseAddedCount: number;
+  noiseRemovedCount: number;
+  noiseChangedCount: number;
+  added: DiResourceDiffLine[];
+  removed: DiResourceDiffLine[];
+  changed: DiResourceDiffChange[];
+  noiseAdded: DiResourceDiffLine[];
+  noiseRemoved: DiResourceDiffLine[];
+  noiseChanged: DiResourceDiffChange[];
+}
+
+export interface DiResourceDiffResult {
+  baseId: string;
+  baseName: string;
+  comparisons: DiResourceDiffComparison[];
+}
+
+export async function diDiffResource(id: string, otherIds: string[]): Promise<DiResourceDiffResult> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/diff`, 'POST', { otherIds });
+  return mapDiff(raw);
+}
+
+function mapDiff(raw: unknown): DiResourceDiffResult {
+  const o = asRecord(raw);
+  const comparisons = Array.isArray(o.comparisons) ? o.comparisons : [];
+  return {
+    baseId: str(o, 'baseId') ?? '',
+    baseName: str(o, 'baseName') ?? '',
+    comparisons: comparisons.map((item) => {
+      const row = asRecord(item);
+      const added = mapDiffLines(row.added);
+      const removed = mapDiffLines(row.removed);
+      const noiseAdded = mapDiffLines(row.noiseAdded);
+      const noiseRemoved = mapDiffLines(row.noiseRemoved);
+      const changedRows = mapDiffChanges(row.changed);
+      const noiseChanged = mapDiffChanges(row.noiseChanged);
+      return {
+        id: str(row, 'id') ?? '',
+        name: str(row, 'name') ?? '',
+        compared: Boolean(row.compared),
+        reason: str(row, 'reason'),
+        unchangedCount: num(row, 'unchangedCount') ?? 0,
+        truncated: Boolean(row.truncated),
+        added,
+        removed,
+        changed: changedRows,
+        noiseAdded,
+        noiseRemoved,
+        noiseChanged,
+        addedCount: num(row, 'addedCount') ?? added.length,
+        removedCount: num(row, 'removedCount') ?? removed.length,
+        changedCount: num(row, 'changedCount') ?? changedRows.length,
+        noiseAddedCount: num(row, 'noiseAddedCount') ?? noiseAdded.length,
+        noiseRemovedCount: num(row, 'noiseRemovedCount') ?? noiseRemoved.length,
+        noiseChangedCount: num(row, 'noiseChangedCount') ?? noiseChanged.length,
+      };
+    }),
+  };
+}
+
+function mapDiffChanges(raw: unknown): DiResourceDiffChange[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((change) => {
+    const pair = asRecord(change);
+    return {
+      base: str(pair, 'base') ?? '',
+      other: str(pair, 'other') ?? '',
+      heading: str(pair, 'heading') ?? '',
+    };
+  });
+}
+
+function mapDiffLines(raw: unknown): DiResourceDiffLine[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    if (typeof item === 'string') return { text: item, heading: '' };
+    const row = asRecord(item);
+    return { text: str(row, 'text') ?? '', heading: str(row, 'heading') ?? '' };
+  });
+}
+
+function mapSummary(raw: unknown): DiResourceSummaryResult {
+  const o = asRecord(raw);
+  return {
+    status: str(o, 'status') ?? 'none',
+    text: str(o, 'text'),
+    error: str(o, 'error'),
+    step: str(o, 'step'),
+    chunked: Boolean(o.chunked),
+    summarizedAt: str(o, 'summarizedAt'),
+    completed: num(o, 'completed') ?? 0,
+    total: num(o, 'total') ?? 0,
+    updatedAt: str(o, 'updatedAt'),
+    log: strArray(o.log),
+  };
+}
+
+export async function diIndexResource(id: string): Promise<DiResourceIndexResult> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/index`, 'POST');
+  const o = asRecord(raw);
+  return {
+    status: str(o, 'status') ?? 'none',
+    charCount: num(o, 'charCount') ?? 0,
+    error: str(o, 'error'),
+    indexedAt: str(o, 'indexedAt'),
+    steps: strArray(o.steps),
+    resource: mapResource(o.resource),
+  };
+}
+
 export async function diGetById(id: string): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}`, 'GET');
   return mapResource(raw);

@@ -56,8 +56,11 @@ namespace MngDataGateway.Api.Config
         var serverSettings = builder.Configuration.GetSection("MngDataGatewaySettings:Server").Get<ServerSettings>() 
             ?? new ServerSettings();
 
+        var maxRequestBody = builder.Configuration.GetValue<long?>("Kestrel:Limits:MaxRequestBodySize");
         builder.WebHost.ConfigureKestrel(options =>
         {
+            if (maxRequestBody is long limit && limit > 0)
+                options.Limits.MaxRequestBodySize = limit;
             options.AddServerHeader = false;
 
             // Parse host - if "0.0.0.0" or "*" listen on any IP

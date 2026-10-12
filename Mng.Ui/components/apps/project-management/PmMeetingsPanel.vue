@@ -8,7 +8,6 @@ import trLocale from '@fullcalendar/core/locales/tr';
 import type { CalendarOptions, DateSelectArg, DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core';
 import PmMeetingDocField from '@/components/apps/project-management/PmMeetingDocField.vue';
 import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
-import PmPickWorkItemDialog from '@/components/apps/project-management/PmPickWorkItemDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useKeeperDirectoryPicker } from '@/composables/useKeeperDirectoryPicker';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
@@ -22,7 +21,6 @@ import {
   diGetMarkdownContent,
   diUpdateMarkdown,
 } from '@/services/documentIntelligenceService';
-import { ocGetWorkItemProfile } from '@/services/operationCoreService';
 import {
   pmCreateMeeting,
   pmCreateMeetingAction,
@@ -51,10 +49,10 @@ import type {
   PmMeetingAttendance,
   PmMeetingPerson,
   PmMeetingActionStatus,
+  PmMeetingActionTarget,
   PmMeetingSeries,
   PmMeetingStatus,
   PmWbsItem,
-  PmWorkItemCandidate,
 } from '@/types/apps/projectManagement';
 import { diPageResourceLabel } from '@/utils/diPageResource';
 import {
@@ -114,7 +112,6 @@ const meetingDialog = ref(false);
 const seriesDialog = ref(false);
 const actionDialog = ref(false);
 const pickOpen = ref(false);
-const workPickOpen = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 const statusBusyId = ref<string | null>(null);
@@ -137,6 +134,7 @@ const draftAttendance = ref<PmMeetingAttendance[]>([]);
 const attendanceBaseline = ref<PmMeetingAttendance[]>([]);
 const draftActions = ref<PmMeetingAction[]>([]);
 const internalPicker = useKeeperDirectoryPicker('user');
+const actionUserPicker = useKeeperDirectoryPicker('user');
 const attendancePresenceValues = ['invited', 'confirmed', 'attended', 'absent', 'excused'] as const;
 const seriesForm = ref(emptySeriesForm());
 const actionForm = ref(emptyActionForm());
@@ -147,7 +145,6 @@ const adhocItems = ref<PmMeeting[]>([]);
 const occurrenceItems = ref<PmMeeting[]>([]);
 const openCount = ref(0);
 const overdueCount = ref(0);
-const unboundCount = ref(0);
 const summaryLoading = ref(false);
 const calendarLoading = ref(false);
 const adhocLoading = ref(false);
@@ -238,13 +235,12 @@ function emptySeriesForm() {
 function emptyActionForm() {
   return {
     title: '',
-    ownerName: '',
-    ownerKey: '',
+    code: '',
+    userIds: [] as string[],
+    personIds: [] as string[],
+    organizations: [] as string[],
     dueDate: '',
     status: 'open' as PmMeetingActionStatus,
-    workItemId: '',
-    workItemKey: '',
-    workItemTitle: '',
     wbsId: '',
     note: '',
   };
@@ -359,32 +355,21 @@ function rememberAttendance(meetingId: string, rows: PmMeetingAttendance[]) {
 
 const editingMeeting = computed(() => findMeeting(editingMeetingId.value));
 const visibleActions = computed(() => editingMeeting.value?.actions ?? draftActions.value);
-const actionOwnerItems = computed(() => {
-  const source = !editingMeetingId.value || actionMeetingId.value === editingMeetingId.value
-    ? draftAttendance.value
-    : (findMeeting(actionMeetingId.value)?.attendance || []);
-  return source
-    .filter((row) => (row.kind === 'external' ? row.personId : row.userId))
-    .map((row) => ({
-      title: row.organization ? `${row.displayName} · ${row.organization}` : row.displayName,
-      value: row.kind === 'external' ? row.personId as string : row.userId as string,
-      kind: row.kind === 'external' ? 'external' : 'user',
-      userId: row.userId || '',
-      personId: row.personId || '',
-      name: row.displayName,
-    }));
+const firmOptions = computed(() => {
+  const names = new Map<string, string>();
+  const remember = (value: string | null | undefined) => {
+    const name = (value || '').trim();
+    if (!name) return;
+    const key = name.toLocaleLowerCase('tr');
+    if (!names.has(key)) names.set(key, name);
+  };
+  for (const person of projectPeople.value) remember(person.organization);
+  for (const firm of actionForm.value.organizations || []) remember(firm);
+  return [...names.values()].sort((a, b) => a.localeCompare(b, 'tr'));
 });
-const internalOwnerItems = computed(() => actionOwnerItems.value.filter((item) => item.kind === 'user'));
-const externalOwnerItems = computed(() => actionOwnerItems.value.filter((item) => item.kind === 'external'));
-const internalOwnerId = computed(() => (
-  actionForm.value.ownerKey.startsWith('user:') ? actionForm.value.ownerKey.slice('user:'.length) : null
-));
-const externalOwnerId = computed(() => (
-  actionForm.value.ownerKey.startsWith('external:') ? actionForm.value.ownerKey.slice('external:'.length) : null
-));
-const legacyOwnerName = computed(() => (
-  actionForm.value.ownerKey.startsWith('legacy:') ? actionForm.value.ownerKey.slice('legacy:'.length) : ''
-));
+const externalTargetItems = computed(() =>
+  [...projectPeople.value].sort((a, b) => a.name.localeCompare(b.name, 'tr')),
+);
 const isSeriesOccurrence = computed(() => Boolean(editingMeeting.value?.seriesId) && !editingMeeting.value?.detached);
 
 const derivedWeekday = computed(() => isoWeekdayFromInput(seriesForm.value.firstStart) || seriesForm.value.weekday);
@@ -559,24 +544,11 @@ function actionStatusColor(row: PmMeetingAction) {
   if (row.status === 'waived') return 'warning';
   if (row.status === 'done') return 'success';
   if (row.overdue) return 'error';
-  if (row.unbound) return 'warning';
   return 'info';
 }
 
 function resourceHref(id: string) {
   return `/apps/document-intelligence/r/${encodeURIComponent(id)}`;
-}
-
-function workItemHref(id: string) {
-  return `/apps/operation-core/work-items/${encodeURIComponent(id)}/profile`;
-}
-
-function workItemLabel(id?: string | null, key?: string | null, title?: string | null) {
-  if (key && title) return `${key} · ${title}`;
-  if (title) return title;
-  if (key) return key;
-  if (!id) return '';
-  return id.slice(0, 8);
 }
 
 async function resolveDocumentLabel(id: string) {
@@ -586,19 +558,6 @@ async function resolveDocumentLabel(id: string) {
     return diPageResourceLabel(resource) || id;
   } catch {
     return id;
-  }
-}
-
-async function resolveWorkItemLabel(id: string) {
-  if (!id) return { key: '', title: '' };
-  try {
-    const profile = await ocGetWorkItemProfile(id);
-    return {
-      key: profile.workItem?.key || '',
-      title: profile.workItem?.title || '',
-    };
-  } catch {
-    return { key: '', title: '' };
   }
 }
 
@@ -615,7 +574,6 @@ async function loadSummary() {
     seriesRows.value = pack.series ?? [];
     openCount.value = pack.openActionCount ?? 0;
     overdueCount.value = pack.overdueActionCount ?? 0;
-    unboundCount.value = pack.unboundActionCount ?? 0;
   } catch (error) {
     panelError(error, 'projectManagement.errors.loadFailed');
   } finally {
@@ -851,6 +809,17 @@ function openEditSeries(row: PmMeetingSeries) {
   seriesDialog.value = true;
 }
 
+function actionTargetsOf(row: PmMeetingAction): PmMeetingActionTarget[] {
+  if (row.targets?.length) return row.targets;
+  if (row.ownerKind === 'external' && row.ownerPersonId) {
+    return [{ kind: 'external', personId: row.ownerPersonId, name: row.ownerName }];
+  }
+  if (row.ownerKind === 'user' && row.ownerUserId) {
+    return [{ kind: 'user', userId: row.ownerUserId, name: row.ownerName }];
+  }
+  return [];
+}
+
 function openCreateAction(meeting: PmMeeting) {
   editingActionId.value = null;
   actionMeetingId.value = meeting.id;
@@ -858,37 +827,34 @@ function openCreateAction(meeting: PmMeeting) {
     ...emptyActionForm(),
     wbsId: meeting.wbsId || '',
   };
+  void loadProjectPeople();
   actionDialog.value = true;
 }
 
 async function openEditAction(row: PmMeetingAction) {
   editingActionId.value = row.id;
   actionMeetingId.value = row.meetingId;
-  const ownerKey = row.ownerKind === 'external' && row.ownerPersonId
-    ? `external:${row.ownerPersonId}`
-    : row.ownerKind === 'user' && row.ownerUserId
-      ? `user:${row.ownerUserId}`
-      : row.ownerName
-        ? `legacy:${row.ownerName}`
-        : '';
+  const targets = actionTargetsOf(row);
+  const userIds = targets.filter((item) => item.kind === 'user' && item.userId).map((item) => item.userId as string);
+  const personIds = targets.filter((item) => item.kind === 'external' && item.personId).map((item) => item.personId as string);
+  const organizations = targets
+    .filter((item) => item.kind === 'organization')
+    .map((item) => (item.organization || item.name || '').trim())
+    .filter(Boolean);
   actionForm.value = {
     title: row.title,
-    ownerName: row.ownerName || '',
-    ownerKey,
+    code: row.code || '',
+    userIds,
+    personIds,
+    organizations,
     dueDate: pmDateInput(row.dueDate),
     status: (row.status as PmMeetingActionStatus) || 'open',
-    workItemId: row.workItemId || '',
-    workItemKey: '',
-    workItemTitle: row.workItemId || '',
     wbsId: row.wbsId || '',
     note: row.note || '',
   };
   actionDialog.value = true;
-  const work = await resolveWorkItemLabel(row.workItemId || '');
-  if (editingActionId.value === row.id) {
-    actionForm.value.workItemKey = work.key;
-    actionForm.value.workItemTitle = work.title;
-  }
+  await loadProjectPeople();
+  await actionUserPicker.ensureSelectedLabels(userIds);
 }
 
 function pickDocument(resource: DiResource) {
@@ -910,18 +876,6 @@ function clearMeetingDoc(kind: MeetingDocKind) {
 function openPick(kind: MeetingDocKind) {
   pickTarget.value = kind;
   pickOpen.value = true;
-}
-
-function pickWorkItem(row: PmWorkItemCandidate) {
-  actionForm.value.workItemId = row.id;
-  actionForm.value.workItemKey = row.key || '';
-  actionForm.value.workItemTitle = row.title || '';
-}
-
-function clearWorkItem() {
-  actionForm.value.workItemId = '';
-  actionForm.value.workItemKey = '';
-  actionForm.value.workItemTitle = '';
 }
 
 function excerpt(text: string): string | null {
@@ -974,41 +928,34 @@ function seriesPayload() {
   };
 }
 
-function setActionOwner(kind: 'user' | 'external', id: string | null) {
-  if (!id) {
-    const prefix = kind === 'user' ? 'user:' : 'external:';
-    if (actionForm.value.ownerKey.startsWith(prefix)) actionForm.value.ownerKey = '';
-    return;
+async function actionPayload() {
+  const userIds = (actionForm.value.userIds || []).filter(Boolean);
+  await actionUserPicker.ensureSelectedLabels(userIds);
+  const targets: PmMeetingActionTarget[] = [];
+  for (const id of userIds) {
+    const label = actionUserPicker.labelFor(id);
+    targets.push({ kind: 'user', userId: id, name: label || id });
   }
-  actionForm.value.ownerKey = `${kind}:${id}`;
-}
-
-function actionPayload() {
-  const key = actionForm.value.ownerKey;
-  if (key.startsWith('legacy:')) {
-    return {
-      title: actionForm.value.title.trim(),
-      ownerName: key.slice('legacy:'.length) || null,
-      ownerKind: '',
-      ownerUserId: '',
-      ownerPersonId: '',
-      dueDate: pmDatePayload(actionForm.value.dueDate),
-      status: actionForm.value.status,
-      workItemId: actionForm.value.workItemId.trim() || null,
-      wbsId: actionForm.value.wbsId || null,
-      note: actionForm.value.note.trim() || null,
-    };
+  for (const id of (actionForm.value.personIds || []).filter(Boolean)) {
+    const person = projectPeople.value.find((row) => row.id === id);
+    targets.push({ kind: 'external', personId: id, name: person?.name || id });
   }
-  const picked = actionOwnerItems.value.find((item) => `${item.kind}:${item.value}` === key);
+  const seenFirms = new Set<string>();
+  for (const raw of actionForm.value.organizations) {
+    const name = String(raw || '').trim();
+    const key = name.toLocaleLowerCase('tr');
+    if (!name || seenFirms.has(key)) continue;
+    seenFirms.add(key);
+    targets.push({ kind: 'organization', organization: name, name });
+  }
+  const ownerName = targets.map((item) => item.name).filter(Boolean).join(' / ') || null;
   return {
     title: actionForm.value.title.trim(),
-    ownerName: picked?.name || null,
-    ownerKind: picked?.kind || '',
-    ownerUserId: picked?.userId || '',
-    ownerPersonId: picked?.personId || '',
+    code: actionForm.value.code.trim() || null,
+    targets,
+    ownerName,
     dueDate: pmDatePayload(actionForm.value.dueDate),
     status: actionForm.value.status,
-    workItemId: actionForm.value.workItemId.trim() || null,
     wbsId: actionForm.value.wbsId || null,
     note: actionForm.value.note.trim() || null,
   };
@@ -1318,26 +1265,27 @@ async function saveSeries() {
   }
 }
 
-function draftActionRow(id?: string): PmMeetingAction {
-  const payload = actionPayload();
+function draftActionRow(id: string | undefined, payload: Awaited<ReturnType<typeof actionPayload>>): PmMeetingAction {
   const open = payload.status !== 'done' && payload.status !== 'waived';
+  const only = payload.targets?.length === 1 ? payload.targets[0] : null;
   return {
     id: id || `draft-action-${draftActions.value.length + 1}-${Date.now()}`,
     projectId: props.projectId,
     meetingId: '',
     title: payload.title,
+    code: payload.code,
+    targets: payload.targets || [],
     ownerName: payload.ownerName,
-    ownerKind: payload.ownerKind || null,
-    ownerUserId: payload.ownerUserId || null,
-    ownerPersonId: payload.ownerPersonId || null,
+    ownerKind: only?.kind || null,
+    ownerUserId: only?.kind === 'user' ? only.userId : null,
+    ownerPersonId: only?.kind === 'external' ? only.personId : null,
     dueDate: payload.dueDate,
-    status: payload.status,
-    workItemId: payload.workItemId,
+    status: payload.status || 'open',
     wbsId: payload.wbsId,
     note: payload.note,
     open,
     overdue: false,
-    unbound: !payload.workItemId,
+    unbound: false,
   };
 }
 
@@ -1349,13 +1297,10 @@ async function persistDraftActions(meetingId: string) {
   for (const row of draftActions.value) {
     await pmCreateMeetingAction(meetingId, {
       title: row.title,
-      ownerName: row.ownerName || null,
-      ownerKind: row.ownerKind || null,
-      ownerUserId: row.ownerUserId || null,
-      ownerPersonId: row.ownerPersonId || null,
+      code: row.code || null,
+      targets: row.targets || [],
       dueDate: row.dueDate || null,
       status: row.status,
-      workItemId: row.workItemId || null,
       wbsId: row.wbsId || null,
       note: row.note || null,
     });
@@ -1366,7 +1311,7 @@ async function persistDraftActions(meetingId: string) {
 async function saveAction() {
   if (!canSaveAction.value) return;
   if (!actionMeetingId.value) {
-    const row = draftActionRow(editingActionId.value || undefined);
+    const row = draftActionRow(editingActionId.value || undefined, await actionPayload());
     if (editingActionId.value) {
       draftActions.value = draftActions.value.map((item) => (item.id === editingActionId.value ? row : item));
     } else {
@@ -1377,8 +1322,9 @@ async function saveAction() {
   }
   saving.value = true;
   try {
-    if (editingActionId.value) await pmUpdateMeetingAction(editingActionId.value, actionPayload());
-    else await pmCreateMeetingAction(actionMeetingId.value, actionPayload());
+    const payload = await actionPayload();
+    if (editingActionId.value) await pmUpdateMeetingAction(editingActionId.value, payload);
+    else await pmCreateMeetingAction(actionMeetingId.value, payload);
     actionDialog.value = false;
     toast.push({
       title: t('projectManagement.notify.successTitle'),
@@ -1402,7 +1348,7 @@ async function markDone(row: PmMeetingAction) {
   }
   closingId.value = row.id;
   try {
-    await pmUpdateMeetingAction(row.id, { status: 'done', workItemId: row.workItemId });
+    await pmUpdateMeetingAction(row.id, { status: 'done' });
     toast.push({
       title: t('projectManagement.notify.successTitle'),
       message: t('projectManagement.notify.meetingActionSaved'),
@@ -1637,9 +1583,6 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
       </v-chip>
       <v-chip size="small" :color="overdueCount ? 'error' : 'success'" variant="tonal">
         {{ t('projectManagement.meeting.overdue') }} · {{ overdueCount }}
-      </v-chip>
-      <v-chip size="small" :color="unboundCount ? 'warning' : 'default'" variant="tonal">
-        {{ t('projectManagement.meeting.unbound') }} · {{ unboundCount }}
       </v-chip>
     </div>
 
@@ -2255,7 +2198,7 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
                     <tr v-for="action in visibleActions" :key="action.id">
                       <td>
                         <div>{{ action.title }}</div>
-                        <div v-if="action.workItemId" class="text-caption text-medium-emphasis">{{ action.workItemId }}</div>
+                        <div v-if="action.code" class="text-caption text-medium-emphasis">{{ action.code }}</div>
                       </td>
                       <td>
                         <v-chip size="small" :color="actionStatusColor(action)" variant="tonal">
@@ -2406,60 +2349,62 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="actionDialog" max-width="560">
+    <v-dialog v-model="actionDialog" max-width="720">
       <v-card rounded="lg">
         <v-card-title>
           {{ editingActionId ? t('projectManagement.meeting.editAction') : t('projectManagement.meeting.newAction') }}
         </v-card-title>
         <v-card-text class="d-flex flex-column ga-3">
-          <v-text-field v-model="actionForm.title" :label="t('projectManagement.meeting.action')" density="comfortable" />
-          <v-select
-            :model-value="internalOwnerId"
-            :items="internalOwnerItems"
-            item-title="title"
-            item-value="value"
-            :label="t('projectManagement.meeting.internalPeople')"
-            :hint="t('projectManagement.meeting.ownerHint')"
-            :no-data-text="t('projectManagement.meeting.ownerInternalEmpty')"
+          <div class="d-flex flex-wrap ga-3">
+            <v-text-field
+              v-model="actionForm.code"
+              :label="t('projectManagement.meeting.actionCode')"
+              maxlength="32"
+              density="comfortable"
+              style="max-width: 140px"
+            />
+            <v-text-field
+              v-model="actionForm.title"
+              :label="t('projectManagement.meeting.action')"
+              density="comfortable"
+              class="flex-grow-1"
+            />
+          </div>
+          <p class="text-caption text-medium-emphasis mb-0">{{ t('projectManagement.meeting.ownerHint') }}</p>
+          <MngDirectoryPickerField
+            v-model="actionForm.userIds"
+            entity="user"
+            multiple
+            :external-picker="actionUserPicker"
+            :label="t('projectManagement.meeting.targetUsers')"
+          />
+          <v-autocomplete
+            v-model="actionForm.personIds"
+            :items="externalTargetItems"
+            item-title="name"
+            item-value="id"
+            :label="t('projectManagement.meeting.targetPeople')"
+            multiple
+            chips
+            closable-chips
+            clearable
+            density="comfortable"
+          />
+          <v-combobox
+            v-model="actionForm.organizations"
+            :items="firmOptions"
+            :label="t('projectManagement.meeting.targetFirms')"
+            :hint="t('projectManagement.meeting.targetFirmsHint')"
             persistent-hint
+            multiple
+            chips
+            closable-chips
             clearable
             density="comfortable"
-            @update:model-value="setActionOwner('user', $event ? String($event) : null)"
           />
-          <v-select
-            :model-value="externalOwnerId"
-            :items="externalOwnerItems"
-            item-title="title"
-            item-value="value"
-            :label="t('projectManagement.meeting.externalPeople')"
-            :no-data-text="t('projectManagement.meeting.ownerExternalEmpty')"
-            clearable
-            density="comfortable"
-            @update:model-value="setActionOwner('external', $event ? String($event) : null)"
-          />
-          <p v-if="legacyOwnerName" class="text-caption text-medium-emphasis mb-0">
-            {{ t('projectManagement.meeting.legacyOwner') }}: {{ legacyOwnerName }}
-          </p>
           <v-select v-model="actionForm.wbsId" :items="wbsItems" :label="t('projectManagement.fields.wbsCode')" density="comfortable" />
           <v-select v-model="actionForm.status" :items="actionStatusItems" :label="t('projectManagement.fields.status')" density="comfortable" />
           <v-text-field v-model="actionForm.dueDate" type="date" :label="t('projectManagement.meeting.dueDate')" density="comfortable" />
-          <div>
-            <div class="text-body-2 font-weight-medium mb-1">{{ t('projectManagement.meeting.workItemId') }}</div>
-            <div v-if="actionForm.workItemId" class="d-flex align-center ga-2 flex-wrap mb-2">
-              <NuxtLink :to="workItemHref(actionForm.workItemId)" class="text-decoration-none" @click.stop>
-                <v-chip size="small" color="primary" variant="tonal">
-                  {{ workItemLabel(actionForm.workItemId, actionForm.workItemKey, actionForm.workItemTitle) }}
-                </v-chip>
-              </NuxtLink>
-              <v-btn size="small" variant="text" @click="clearWorkItem">
-                {{ t('projectManagement.obligation.clearWorkItem') }}
-              </v-btn>
-            </div>
-            <div v-else class="text-caption text-medium-emphasis mb-2">{{ t('projectManagement.obligation.noWorkItem') }}</div>
-            <v-btn variant="tonal" class="text-none" @click="workPickOpen = true">
-              {{ t('projectManagement.pickWorkItem.open') }}
-            </v-btn>
-          </div>
           <v-textarea v-model="actionForm.note" :label="t('projectManagement.meeting.actionNote')" density="comfortable" rows="2" auto-grow />
         </v-card-text>
         <v-card-actions>
@@ -2542,7 +2487,6 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
       @pick="pickDocument"
       @hub-ready="emit('hubReady', $event)"
     />
-    <PmPickWorkItemDialog v-model="workPickOpen" :project-id="projectId" @pick="pickWorkItem" />
   </div>
 </template>
 

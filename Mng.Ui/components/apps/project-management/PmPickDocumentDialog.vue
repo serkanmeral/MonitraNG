@@ -14,13 +14,31 @@ const props = withDefaults(
     hubFolderId?: string | null;
     markdownOnly?: boolean;
     excludeResourceIds?: string[];
+    indexedOnly?: boolean;
+    multiple?: boolean;
+    maxSelection?: number;
+    initialSelection?: DiResource[];
+    title?: string | null;
+    hint?: string | null;
+    confirmLabel?: string | null;
   }>(),
-  { markdownOnly: false, excludeResourceIds: () => [] },
+  {
+    markdownOnly: false,
+    excludeResourceIds: () => [],
+    indexedOnly: false,
+    multiple: false,
+    maxSelection: 4,
+    initialSelection: () => [],
+    title: null,
+    hint: null,
+    confirmLabel: null,
+  },
 );
 
 const emit = defineEmits<{
   'update:modelValue': [boolean];
   pick: [DiResource];
+  'pick-many': [DiResource[]];
   hubReady: [string];
 }>();
 
@@ -68,10 +86,15 @@ watch(
     :root-folder-id="resolvedHub"
     :markdown-only="markdownOnly"
     :exclude-resource-ids="excludeResourceIds"
-    :title="t('projectManagement.pickDocument.title')"
-    :hint="t('projectManagement.pickDocument.hint')"
-    :confirm-label="t('projectManagement.pickDocument.confirm')"
+    :indexed-only="indexedOnly"
+    :multiple="multiple"
+    :max-selection="maxSelection"
+    :initial-selection="initialSelection"
+    :title="title || t('projectManagement.pickDocument.title')"
+    :hint="hint || t('projectManagement.pickDocument.hint')"
+    :confirm-label="confirmLabel || t('projectManagement.pickDocument.confirm')"
     :root-label="t('projectManagement.library.title')"
     @pick="emit('pick', $event)"
+    @pick-many="emit('pick-many', $event)"
   />
 </template>

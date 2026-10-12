@@ -921,6 +921,9 @@ services:
       - MngDocumentSettings__OpenApiServerPath=https://api.monitra.local/documents
       - MngDocumentSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
       - MngDocumentSettings__DataGateway__ApiVersion=v1
+      - MngDocumentSettings__OpenSearch__BaseUrl=http://opensearch:9200
+      - MngDocumentSettings__Summary__BaseUrl=http://ollama:11434
+      - MngDocumentSettings__Summary__Model=qwen2.5:3b
       - MngDocumentSettings__DocumentRendering__Enabled=true
       - MngDocumentSettings__DocumentRendering__GotenbergBaseUrl=http://gotenberg:3000
       - MngDocumentSettings__DocumentRendering__TimeoutSeconds=120
@@ -1036,8 +1039,9 @@ services:
       - "11434:11434"
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
-      # Keep model loaded between extract calls (CPU 7b load is expensive).
+      # RTX 4060. A per-request keep_alive of 0 still unloads the model after that call.
       - OLLAMA_KEEP_ALIVE=30m
+    gpus: all
     volumes:
       - ollama_data:/root/.ollama
     networks:

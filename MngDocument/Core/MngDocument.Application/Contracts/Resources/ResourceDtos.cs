@@ -48,6 +48,25 @@ public sealed record ResourceDto
     public string? GenerationProfile { get; init; }
     public string? LetterheadId { get; init; }
     public string? DocumentNo { get; init; }
+
+    /// <summary>none, running, done, failed veya okumada hesaplanan stale.</summary>
+    public string IndexStatus { get; init; } = "none";
+    public DateTime? IndexedAt { get; init; }
+    public string? IndexError { get; init; }
+    public int? IndexCharCount { get; init; }
+
+    /// <summary>none, running, done, failed veya okumada hesaplanan stale.</summary>
+    public string SummaryStatus { get; init; } = "none";
+    public string? SummaryText { get; init; }
+    public DateTime? SummarizedAt { get; init; }
+    public string? SummaryError { get; init; }
+    public string? SummaryStep { get; init; }
+    public bool SummaryChunked { get; init; }
+    public int SummaryCompleted { get; init; }
+    public int SummaryTotal { get; init; }
+    public DateTime? SummaryUpdatedAt { get; init; }
+    public IReadOnlyList<string> SummaryLog { get; init; } = Array.Empty<string>();
+
     public DateTime? CreatedAt { get; init; }
     public string? CreatedBy { get; init; }
     public DateTime? UpdatedAt { get; init; }
@@ -174,6 +193,78 @@ public sealed record ResourceBrowseContextDto
     public ResourceListResult Children { get; init; } = new();
     public IReadOnlyList<BreadcrumbDto> Breadcrumb { get; init; } = Array.Empty<BreadcrumbDto>();
     public ResourceDto? SelectedFolder { get; init; }
+}
+
+/// <summary>Belge özetinin durumu. Üretim bitene kadar adım alanı dolar.</summary>
+public sealed record ResourceSummaryResultDto
+{
+    public string Status { get; init; } = "none";
+    public string? Text { get; init; }
+    public string? Error { get; init; }
+    public string? Step { get; init; }
+    public bool Chunked { get; init; }
+    public DateTime? SummarizedAt { get; init; }
+    public int Completed { get; init; }
+    public int Total { get; init; }
+    public DateTime? UpdatedAt { get; init; }
+    public IReadOnlyList<string> Log { get; init; } = Array.Empty<string>();
+}
+
+public sealed class ResourceDiffRequest
+{
+    public List<string> OtherIds { get; set; } = new();
+}
+
+public sealed record ResourceDiffResultDto
+{
+    public string BaseId { get; init; } = string.Empty;
+    public string BaseName { get; init; } = string.Empty;
+    public IReadOnlyList<ResourceDiffComparisonDto> Comparisons { get; init; } = Array.Empty<ResourceDiffComparisonDto>();
+}
+
+public sealed record ResourceDiffComparisonDto
+{
+    public string Id { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public bool Compared { get; init; }
+    public string? Reason { get; init; }
+    public int UnchangedCount { get; init; }
+    public bool Truncated { get; init; }
+    public IReadOnlyList<ResourceDiffLineDto> Added { get; init; } = Array.Empty<ResourceDiffLineDto>();
+    public IReadOnlyList<ResourceDiffLineDto> Removed { get; init; } = Array.Empty<ResourceDiffLineDto>();
+    public IReadOnlyList<ResourceDiffChangeDto> Changed { get; init; } = Array.Empty<ResourceDiffChangeDto>();
+    public int AddedCount { get; init; }
+    public int RemovedCount { get; init; }
+    public int ChangedCount { get; init; }
+    public IReadOnlyList<ResourceDiffLineDto> NoiseAdded { get; init; } = Array.Empty<ResourceDiffLineDto>();
+    public IReadOnlyList<ResourceDiffLineDto> NoiseRemoved { get; init; } = Array.Empty<ResourceDiffLineDto>();
+    public IReadOnlyList<ResourceDiffChangeDto> NoiseChanged { get; init; } = Array.Empty<ResourceDiffChangeDto>();
+    public int NoiseAddedCount { get; init; }
+    public int NoiseRemovedCount { get; init; }
+    public int NoiseChangedCount { get; init; }
+}
+
+public sealed record ResourceDiffLineDto
+{
+    public string Text { get; init; } = string.Empty;
+    public string Heading { get; init; } = string.Empty;
+}
+
+public sealed record ResourceDiffChangeDto
+{
+    public string Base { get; init; } = string.Empty;
+    public string Other { get; init; } = string.Empty;
+    public string Heading { get; init; } = string.Empty;
+}
+
+public sealed record ResourceIndexResultDto
+{
+    public string Status { get; init; } = "none";
+    public int CharCount { get; init; }
+    public string? Error { get; init; }
+    public DateTime? IndexedAt { get; init; }
+    public IReadOnlyList<string> Steps { get; init; } = Array.Empty<string>();
+    public ResourceDto Resource { get; init; } = new();
 }
 
 public sealed record MarkdownContentDto

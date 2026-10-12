@@ -22,6 +22,8 @@ const props = defineProps<{
   isLoading?: (parentId: string | null) => boolean;
   /** Derin link: bu düğümler başlangıçta açık. */
   initialExpandedIds?: string[];
+  /** Klasör adı kesilmez; kapsayıcı yatay kaydırılır. */
+  expandLabels?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -89,10 +91,17 @@ function isTopAreaFolder(name: string): boolean {
 function isFileNode(node: DiTreeNode): boolean {
   return node.kind === 'file';
 }
+
+function labelClass(emphasis = false): string[] {
+  return [
+    props.expandLabels ? 'text-no-wrap' : 'text-truncate flex-grow-1',
+    emphasis ? 'text-body-2 font-weight-bold' : 'text-body-2',
+  ];
+}
 </script>
 
 <template>
-  <div :class="['di-tree', { 'di-tree--root': isRoot }]">
+  <div :class="['di-tree', { 'di-tree--root': isRoot, 'di-tree--expand': expandLabels }]">
     <template v-if="isRoot">
       <div
         :class="['di-tree__row di-tree__row--root', { 'di-tree__row--selected': selectedId === null }]"
@@ -109,7 +118,7 @@ function isFileNode(node: DiTreeNode): boolean {
           <ChevronRightIcon v-else size="18" />
         </v-btn>
         <FoldersIcon size="20" class="mr-2 di-tree__icon-root flex-shrink-0" />
-        <span class="text-body-2 font-weight-bold flex-grow-1 text-truncate">{{ rootLabel }}</span>
+        <span :class="labelClass(true)">{{ rootLabel }}</span>
       </div>
 
       <div v-show="isExpanded(DI_ROOT_ID)" class="di-tree__children">
@@ -155,10 +164,7 @@ function isFileNode(node: DiTreeNode): boolean {
               ]"
             />
             <span
-              :class="[
-                'text-truncate flex-grow-1',
-                isTopAreaFolder(node.name) ? 'text-body-2 font-weight-bold' : 'text-body-2',
-              ]"
+              :class="labelClass(isTopAreaFolder(node.name))"
             >{{ node.name }}</span>
           </div>
           <div v-show="isExpanded(node.id) && (node.children?.length || isNodeLoading(node.id))" class="di-tree__nested">
@@ -174,6 +180,7 @@ function isFileNode(node: DiTreeNode): boolean {
               :load-children="loadChildren"
               :is-loading="isLoading"
               :initial-expanded-ids="initialExpandedIds"
+              :expand-labels="expandLabels"
               @select="emit('select', $event)"
             />
           </div>
@@ -206,7 +213,7 @@ function isFileNode(node: DiTreeNode): boolean {
             class="mr-2 flex-shrink-0 di-tree__icon-file"
           />
           <FolderIcon v-else size="18" class="mr-2 di-tree__icon-folder flex-shrink-0" />
-          <span class="text-body-2 text-truncate flex-grow-1">{{ node.name }}</span>
+          <span :class="labelClass()">{{ node.name }}</span>
         </div>
         <div v-show="isExpanded(node.id) && (node.children?.length || isNodeLoading(node.id))" class="di-tree__nested">
           <div v-if="isNodeLoading(node.id) && !(node.children?.length)" class="di-tree__empty py-1 text-caption text-medium-emphasis pl-6">
@@ -221,6 +228,7 @@ function isFileNode(node: DiTreeNode): boolean {
             :load-children="loadChildren"
             :is-loading="isLoading"
             :initial-expanded-ids="initialExpandedIds"
+            :expand-labels="expandLabels"
             @select="emit('select', $event)"
           />
         </div>
@@ -230,6 +238,14 @@ function isFileNode(node: DiTreeNode): boolean {
 </template>
 
 <style scoped>
+.di-tree--expand {
+  width: max-content;
+  min-width: 100%;
+}
+.di-tree--expand .di-tree__row {
+  width: max-content;
+  min-width: 100%;
+}
 .di-tree__row {
   display: flex;
   align-items: center;

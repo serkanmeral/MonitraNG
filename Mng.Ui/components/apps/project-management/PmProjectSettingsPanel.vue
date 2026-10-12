@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { ocListWorkspaces } from '@/services/operationCoreService';
@@ -36,6 +36,46 @@ const dialog = ref(false);
 const editingId = ref<string | null>(null);
 const deleteTarget = ref<PmMeetingPerson | null>(null);
 const form = ref({ name: '', organization: '', email: '', note: '' });
+const search = ref<string | null>('');
+const organizationFilter = ref<string | null>(null);
+const page = ref(1);
+
+function compareText(a?: string | null, b?: string | null) {
+  return (a || '').localeCompare(b || '', 'tr', { sensitivity: 'base' });
+}
+
+const headers = computed(() => [
+  { title: t('projectManagement.settings.colName'), key: 'name', sort: compareText },
+  { title: t('projectManagement.settings.colOrganization'), key: 'organization', sort: compareText },
+  { title: t('projectManagement.settings.colEmail'), key: 'email', sort: compareText },
+  { title: t('projectManagement.settings.note'), key: 'note', sort: compareText },
+  { title: '', key: 'actions', sortable: false, align: 'end' as const, width: 96 },
+]);
+
+const organizationOptions = computed(() => {
+  const names = new Set(
+    people.value.map((person) => (person.organization || '').trim()).filter((name) => name.length > 0),
+  );
+  return [...names].sort((a, b) => a.localeCompare(b, 'tr', { sensitivity: 'base' }));
+});
+
+const filteredPeople = computed(() => {
+  const query = (search.value || '').trim().toLocaleLowerCase('tr');
+  const organization = organizationFilter.value;
+  return people.value.filter((person) => {
+    if (organization && (person.organization || '') !== organization) return false;
+    if (!query) return true;
+    const haystack = [person.name, person.organization, person.email, person.note]
+      .filter((part) => part)
+      .join(' ')
+      .toLocaleLowerCase('tr');
+    return haystack.includes(query);
+  });
+});
+
+watch([search, organizationFilter], () => {
+  page.value = 1;
+});
 
 async function loadPeople() {
   if (!props.projectId) return;
@@ -188,35 +228,67 @@ onMounted(() => {
           </v-btn>
         </div>
 
-        <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-3" />
+        <div class="d-flex flex-wrap ga-3 mb-3 align-center">
+          <v-text-field
+            v-model="search"
+            :label="t('projectManagement.settings.search')"
+            density="compact"
+            hide-details
+            clearable
+            prepend-inner-icon="mdi-magnify"
+            style="max-width: 320px; min-width: 220px;"
+          />
+          <v-select
+            v-model="organizationFilter"
+            :items="organizationOptions"
+            :label="t('projectManagement.settings.filterOrganization')"
+            :placeholder="t('projectManagement.settings.filterAll')"
+            density="compact"
+            hide-details
+            clearable
+            style="max-width: 280px; min-width: 200px;"
+          />
+          <div class="text-body-2 text-medium-emphasis">
+            {{ t('projectManagement.settings.count', { n: filteredPeople.length }) }}
+          </div>
+        </div>
 
-        <v-table v-else-if="people.length" density="comfortable">
-      <thead>
-        <tr>
-          <th>{{ t('projectManagement.settings.colName') }}</th>
-          <th>{{ t('projectManagement.settings.colOrganization') }}</th>
-          <th>{{ t('projectManagement.settings.colEmail') }}</th>
-          <th class="text-end">{{ t('projectManagement.settings.colActions') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="person in people" :key="person.id">
-          <td>{{ person.name }}</td>
-          <td>{{ person.organization || '—' }}</td>
-          <td>{{ person.email || '—' }}</td>
-          <td class="text-end">
-            <v-btn icon variant="text" size="small" @click="openEdit(person)">
-              <v-icon>mdi-pencil-outline</v-icon>
-            </v-btn>
-            <v-btn icon variant="text" size="small" color="error" @click="deleteTarget = person">
-              <component :is="TrashIcon" size="18" />
-            </v-btn>
-          </td>
-        </tr>
-      </tbody>
-    </v-table>
-
-        <div v-else class="text-body-2 text-medium-emphasis">{{ t('projectManagement.settings.empty') }}</div>
+        <v-data-table
+          v-model:page="page"
+          :headers="headers"
+          :items="filteredPeople"
+          :loading="loading"
+          item-value="id"
+          density="comfortable"
+          class="rounded-lg border"
+          :items-per-page="25"
+          :items-per-page-options="[10, 25, 50, 100]"
+        >
+          <template #item.organization="{ item }">
+            {{ item.organization || '—' }}
+          </template>
+          <template #item.email="{ item }">
+            {{ item.email || '—' }}
+          </template>
+          <template #item.note="{ item }">
+            {{ item.note || '—' }}
+          </template>
+          <template #item.actions="{ item }">
+            <div class="d-flex justify-end">
+              <v-btn icon variant="text" size="small" @click="openEdit(item)">
+                <v-icon>mdi-pencil-outline</v-icon>
+              </v-btn>
+              <v-btn icon variant="text" size="small" color="error" @click="deleteTarget = item">
+                <component :is="TrashIcon" size="18" />
+              </v-btn>
+            </div>
+          </template>
+          <template #no-data>
+            <div class="text-body-2 text-medium-emphasis py-6">
+              {{ people.length ? t('projectManagement.settings.noMatch') : t('projectManagement.settings.empty') }}
+            </div>
+          </template>
+        </v-data-table>
       </v-window-item>
 
       <v-window-item value="meetings">

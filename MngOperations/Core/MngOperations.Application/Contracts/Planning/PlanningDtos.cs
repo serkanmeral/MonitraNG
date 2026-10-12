@@ -1094,12 +1094,23 @@ public sealed class UpdateMeetingSeriesRequest
     public string? Note { get; set; }
 }
 
+public sealed class MeetingActionTargetDto
+{
+    public string Kind { get; set; } = string.Empty;
+    public string? UserId { get; set; }
+    public string? PersonId { get; set; }
+    public string? Organization { get; set; }
+    public string? Name { get; set; }
+}
+
 public sealed class MeetingActionDto
 {
     public string Id { get; set; } = string.Empty;
     public string ProjectId { get; set; } = string.Empty;
     public string MeetingId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string? Code { get; set; }
+    public IReadOnlyList<MeetingActionTargetDto> Targets { get; set; } = Array.Empty<MeetingActionTargetDto>();
     public string? OwnerName { get; set; }
     public string? OwnerKind { get; set; }
     public string? OwnerUserId { get; set; }
@@ -1119,6 +1130,8 @@ public sealed class MeetingActionDto
 public sealed class CreateMeetingActionRequest
 {
     public string Title { get; set; } = string.Empty;
+    public string? Code { get; set; }
+    public List<MeetingActionTargetDto>? Targets { get; set; }
     public string? OwnerName { get; set; }
     public string? OwnerKind { get; set; }
     public string? OwnerUserId { get; set; }
@@ -1133,6 +1146,8 @@ public sealed class CreateMeetingActionRequest
 public sealed class UpdateMeetingActionRequest
 {
     public string? Title { get; set; }
+    public string? Code { get; set; }
+    public List<MeetingActionTargetDto>? Targets { get; set; }
     public string? OwnerName { get; set; }
     public string? OwnerKind { get; set; }
     public string? OwnerUserId { get; set; }

@@ -201,17 +201,21 @@ public sealed partial class ProjectPlanningService
                 400);
         var projectId = meeting.projectId!;
         var title = RequireActionTitle(request.Title);
+        var code = NormalizeActionCode(request.Code);
         var wbsId = await NormalizeOptionalWbsIdAsync(projectId, request.WbsId, token, ct);
-        var workItemId = NormalizeOptionalId(
-            request.WorkItemId,
-            "WORKITEM_LENGTH",
-            "Work item id is too long.",
-            "İş kaydı kimliği çok uzun.");
         var status = PmMeetingActionStatus.Normalize(request.Status);
         var note = EmptyToNull(request.Note);
         AssertMeetingActionClose(status, note);
         await AssertMeetingActionUniqueAsync(projectId, meetingId, title, excludeId: null, token, ct);
-        var owner = await ResolveActionOwnerAsync(request.OwnerKind, request.OwnerUserId, request.OwnerPersonId, request.OwnerName, token, ct);
+        var targets = await ResolveActionTargetsAsync(
+            projectId,
+            request.Targets,
+            request.OwnerKind,
+            request.OwnerUserId,
+            request.OwnerPersonId,
+            request.OwnerName,
+            token,
+            ct);
 
         var closed = PmMeetingActionStatus.IsClosed(status);
         var payload = new Dictionary<string, object?>
@@ -219,13 +223,15 @@ public sealed partial class ProjectPlanningService
             ["projectId"] = projectId,
             ["meetingId"] = meetingId,
             ["title"] = title,
-            ["ownerName"] = owner.Name,
-            ["ownerKind"] = owner.Kind,
-            ["ownerUserId"] = owner.UserId,
-            ["ownerPersonId"] = owner.PersonId,
+            ["code"] = code,
+            ["targets"] = targets.Stored,
+            ["ownerName"] = targets.OwnerName,
+            ["ownerKind"] = targets.OwnerKind,
+            ["ownerUserId"] = targets.OwnerUserId,
+            ["ownerPersonId"] = targets.OwnerPersonId,
             ["dueDate"] = request.DueDate,
             ["status"] = status,
-            ["workItemId"] = workItemId,
+            ["workItemId"] = null,
             ["wbsId"] = wbsId,
             ["note"] = note,
             ["closedAt"] = closed ? DateTime.UtcNow : null,
@@ -253,13 +259,6 @@ public sealed partial class ProjectPlanningService
         var wbsId = request.WbsId is not null
             ? await NormalizeOptionalWbsIdAsync(projectId, request.WbsId, token, ct)
             : EmptyToNull(existing.wbsId);
-        var workItemId = request.WorkItemId is not null
-            ? NormalizeOptionalId(
-                request.WorkItemId,
-                "WORKITEM_LENGTH",
-                "Work item id is too long.",
-                "İş kaydı kimliği çok uzun.")
-            : EmptyToNull(existing.workItemId);
         var status = PmMeetingActionStatus.Normalize(request.Status ?? existing.status);
         var note = request.Note is not null ? EmptyToNull(request.Note) : EmptyToNull(existing.note);
         AssertMeetingActionClose(status, note);
@@ -270,23 +269,43 @@ public sealed partial class ProjectPlanningService
 
         var payload = new Dictionary<string, object?>();
         if (request.Title is not null) payload["title"] = title;
-        if (request.OwnerKind is not null || request.OwnerName is not null || request.OwnerUserId is not null || request.OwnerPersonId is not null)
+        if (request.Code is not null) payload["code"] = NormalizeActionCode(request.Code);
+        if (request.Targets is not null)
         {
-            var owner = await ResolveActionOwnerAsync(
+            var targets = await ResolveActionTargetsAsync(
+                projectId,
+                request.Targets,
+                ownerKind: null,
+                userId: null,
+                personId: null,
+                ownerName: null,
+                token,
+                ct);
+            payload["targets"] = targets.Stored;
+            payload["ownerName"] = targets.OwnerName;
+            payload["ownerKind"] = targets.OwnerKind;
+            payload["ownerUserId"] = targets.OwnerUserId;
+            payload["ownerPersonId"] = targets.OwnerPersonId;
+        }
+        else if (request.OwnerKind is not null || request.OwnerName is not null || request.OwnerUserId is not null || request.OwnerPersonId is not null)
+        {
+            var targets = await ResolveActionTargetsAsync(
+                projectId,
+                targets: null,
                 request.OwnerKind ?? existing.ownerKind,
                 request.OwnerUserId ?? existing.ownerUserId,
                 request.OwnerPersonId ?? existing.ownerPersonId,
                 request.OwnerName ?? existing.ownerName,
                 token,
                 ct);
-            payload["ownerName"] = owner.Name;
-            payload["ownerKind"] = owner.Kind;
-            payload["ownerUserId"] = owner.UserId;
-            payload["ownerPersonId"] = owner.PersonId;
+            payload["targets"] = targets.Stored;
+            payload["ownerName"] = targets.OwnerName;
+            payload["ownerKind"] = targets.OwnerKind;
+            payload["ownerUserId"] = targets.OwnerUserId;
+            payload["ownerPersonId"] = targets.OwnerPersonId;
         }
         if (request.DueDate.HasValue) payload["dueDate"] = request.DueDate;
         if (request.Status is not null) payload["status"] = status;
-        if (request.WorkItemId is not null) payload["workItemId"] = workItemId;
         if (request.WbsId is not null) payload["wbsId"] = wbsId;
         if (request.Note is not null) payload["note"] = note;
 
@@ -541,29 +560,72 @@ public sealed partial class ProjectPlanningService
     {
         var status = PmMeetingActionStatus.Normalize(row.status);
         var open = PmMeetingActionStatus.IsOpen(status);
-        var workItemId = EmptyToNull(row.workItemId);
         var due = row.dueDate?.ToUniversalTime().Date;
+        var targets = ReadActionTargets(row);
         return new MeetingActionDto
         {
             Id = row.__dataId ?? string.Empty,
             ProjectId = row.projectId ?? string.Empty,
             MeetingId = row.meetingId ?? string.Empty,
             Title = (row.title ?? string.Empty).Trim(),
+            Code = EmptyToNull(row.code),
+            Targets = targets,
             OwnerName = EmptyToNull(row.ownerName),
             OwnerKind = EmptyToNull(row.ownerKind),
             OwnerUserId = EmptyToNull(row.ownerUserId),
             OwnerPersonId = EmptyToNull(row.ownerPersonId),
             DueDate = row.dueDate,
             Status = status,
-            WorkItemId = workItemId,
+            WorkItemId = EmptyToNull(row.workItemId),
             WbsId = EmptyToNull(row.wbsId),
             Note = EmptyToNull(row.note),
             ClosedAt = row.closedAt,
             ClosedBy = EmptyToNull(row.closedBy),
             Open = open,
             Overdue = open && due is not null && due.Value < DateTime.UtcNow.Date,
-            Unbound = open && string.IsNullOrWhiteSpace(workItemId)
+            Unbound = false
         };
+    }
+
+    private static List<MeetingActionTargetDto> ReadActionTargets(PmMeetingActionRow row)
+    {
+        var targets = new List<MeetingActionTargetDto>();
+        foreach (var item in row.targets ?? new List<PmMeetingActionTarget>())
+        {
+            var kind = (item.kind ?? string.Empty).Trim().ToLowerInvariant();
+            if (kind is not ("user" or "external" or "organization")) continue;
+            targets.Add(new MeetingActionTargetDto
+            {
+                Kind = kind,
+                UserId = EmptyToNull(item.userId),
+                PersonId = EmptyToNull(item.personId),
+                Organization = EmptyToNull(item.organization),
+                Name = EmptyToNull(item.name)
+            });
+        }
+
+        if (targets.Count > 0) return targets;
+        var legacyKind = (row.ownerKind ?? string.Empty).Trim().ToLowerInvariant();
+        if (legacyKind == "user" && !string.IsNullOrWhiteSpace(row.ownerUserId))
+        {
+            targets.Add(new MeetingActionTargetDto
+            {
+                Kind = "user",
+                UserId = row.ownerUserId.Trim(),
+                Name = EmptyToNull(row.ownerName)
+            });
+        }
+        else if (legacyKind == "external" && !string.IsNullOrWhiteSpace(row.ownerPersonId))
+        {
+            targets.Add(new MeetingActionTargetDto
+            {
+                Kind = "external",
+                PersonId = row.ownerPersonId.Trim(),
+                Name = EmptyToNull(row.ownerName)
+            });
+        }
+
+        return targets;
     }
 
     internal static ProjectMeetingsDto BuildMeetings(IReadOnlyList<MeetingDto> items)
@@ -604,7 +666,18 @@ public sealed partial class ProjectPlanningService
         var title = (value ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(title))
             throw new OperationCoreException("TITLE_REQUIRED", "Action title is required.", "Aksiyon metni zorunludur.", 400);
+        if (title.Length > 4000)
+            throw new OperationCoreException("TITLE_LENGTH", "Action title is too long.", "Aksiyon metni çok uzun.", 400);
         return title;
+    }
+
+    private static string? NormalizeActionCode(string? value)
+    {
+        var code = EmptyToNull(value);
+        if (code is null) return null;
+        if (code.Length > 32)
+            throw new OperationCoreException("CODE_LENGTH", "Action code is too long.", "Görev kodu çok uzun.", 400);
+        return code;
     }
 
     private static void AssertMeetingActionClose(string status, string? note)

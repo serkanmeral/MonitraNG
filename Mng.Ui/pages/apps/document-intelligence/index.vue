@@ -313,10 +313,33 @@ function resourceMatchesTagFilter(resource: DiResource): boolean {
   return (resource.tags ?? []).some((tag) => tag.toLowerCase() === needle);
 }
 
-const filteredChildren = computed(() => {
-  if (!activeTagFilter.value) return children.value;
-  return children.value.filter((item) => item.type === 'folder' || resourceMatchesTagFilter(item));
-});
+const indexListFilter = ref<'all' | 'done' | 'missing'>('all');
+
+function resourceMatchesIndexFilter(resource: DiResource): boolean {
+  if (resource.type === 'folder' || indexListFilter.value === 'all') return true;
+  const indexed = resource.indexStatus === 'done' || resource.indexStatus === 'stale';
+  return indexListFilter.value === 'done' ? indexed : !indexed;
+}
+
+function indexChipLabel(status: string | null | undefined): string {
+  if (status === 'done') return t('documentIntelligence.indexDone');
+  if (status === 'stale') return t('documentIntelligence.indexStale');
+  if (status === 'failed') return t('documentIntelligence.indexFailed');
+  if (status === 'running') return t('documentIntelligence.indexRunning');
+  return t('documentIntelligence.indexNone');
+}
+
+function indexChipColor(status: string | null | undefined): string {
+  if (status === 'done') return 'success';
+  if (status === 'stale') return 'warning';
+  if (status === 'failed') return 'error';
+  if (status === 'running') return 'info';
+  return 'default';
+}
+
+const filteredChildren = computed(() =>
+  children.value.filter((item) => resourceMatchesTagFilter(item) && resourceMatchesIndexFilter(item))
+);
 
 const folderTagOptions = computed(() => {
   const set = new Set<string>();
@@ -1721,6 +1744,33 @@ watch(
                   @open="openResource"
                 />
 
+                <div v-if="selectedFolder" class="d-flex align-center flex-wrap ga-2 mb-3">
+                  <v-chip
+                    size="small"
+                    :variant="indexListFilter === 'all' ? 'flat' : 'outlined'"
+                    :color="indexListFilter === 'all' ? 'primary' : undefined"
+                    @click="indexListFilter = 'all'"
+                  >
+                    {{ t('documentIntelligence.indexFilterAll') }}
+                  </v-chip>
+                  <v-chip
+                    size="small"
+                    :variant="indexListFilter === 'done' ? 'flat' : 'outlined'"
+                    :color="indexListFilter === 'done' ? 'success' : undefined"
+                    @click="indexListFilter = 'done'"
+                  >
+                    {{ t('documentIntelligence.indexFilterDone') }}
+                  </v-chip>
+                  <v-chip
+                    size="small"
+                    :variant="indexListFilter === 'missing' ? 'flat' : 'outlined'"
+                    :color="indexListFilter === 'missing' ? 'warning' : undefined"
+                    @click="indexListFilter = 'missing'"
+                  >
+                    {{ t('documentIntelligence.indexFilterMissing') }}
+                  </v-chip>
+                </div>
+
                 <div v-if="folderTagOptions.length" class="d-flex align-center flex-wrap ga-2 mb-3">
                   <span class="text-caption text-medium-emphasis">{{ t('documentIntelligence.tags.filterLabel') }}</span>
                   <v-chip
@@ -1861,6 +1911,15 @@ watch(
                           {{ resourceLabel(d) }}
                           <v-chip v-if="isDiManagedDocument(d) && d.documentNo" size="x-small" variant="tonal" color="primary" class="ml-1">
                             {{ d.documentNo }}
+                          </v-chip>
+                          <v-chip
+                            v-if="d.type !== 'folder'"
+                            size="x-small"
+                            variant="tonal"
+                            :color="indexChipColor(d.indexStatus)"
+                            class="ml-1"
+                          >
+                            {{ indexChipLabel(d.indexStatus) }}
                           </v-chip>
                           <v-chip
                             v-if="d.type !== 'folder' && d.status && d.status !== 'published'"

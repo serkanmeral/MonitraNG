@@ -35,8 +35,11 @@ public static class Extensions
 
     public static void InitWebApp(this WebApplicationBuilder builder, MngDocumentSettings settings)
     {
+        var maxRequestBody = builder.Configuration.GetValue<long?>("Kestrel:Limits:MaxRequestBodySize");
         builder.WebHost.ConfigureKestrel(options =>
         {
+            if (maxRequestBody is long limit && limit > 0)
+                options.Limits.MaxRequestBodySize = limit;
             options.AddServerHeader = false;
             if (settings.Server.Host is "0.0.0.0" or "*")
                 options.ListenAnyIP(settings.Server.Port);

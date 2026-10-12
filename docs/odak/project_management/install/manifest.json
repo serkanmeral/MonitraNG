@@ -89,7 +89,7 @@
       "pm_audit_packs": ["projectId", "name", "kind", "status", "resourceIds"],
       "pm_meetings": ["projectId", "name", "startAt", "endAt", "status", "seriesId", "heldAt", "agendaResourceId", "minutesResourceId", "wbsId"],
       "pm_meeting_series": ["projectId", "name", "weekday", "startTime", "durationMinutes", "until"],
-      "pm_meeting_actions": ["projectId", "meetingId", "title", "status", "workItemId", "ownerKind", "ownerUserId", "ownerPersonId"],
+      "pm_meeting_actions": ["projectId", "meetingId", "title", "code", "targets", "status", "workItemId", "ownerKind", "ownerUserId", "ownerPersonId"],
       "pm_meeting_people": ["projectId", "name", "email", "userId"],
       "pm_meeting_attendance": ["projectId", "meetingId", "kind", "userId", "personId", "displayName", "presence", "expected", "attended"],
       "pm_stakeholders": ["projectId", "name", "kind", "status", "resourceIds"],

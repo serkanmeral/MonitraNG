@@ -20,6 +20,31 @@ public class MngDocumentSettings
     public DocumentGenerationSettings DocumentGeneration { get; set; } = new();
     /// <summary>D-N — document notifications (mail via MngNotifier).</summary>
     public DocumentNotificationsSettings Notifications { get; set; } = new();
+
+    /// <summary>DI düz metin indeksi. Güvenlik olay indekslerinden ayrıdır.</summary>
+    public OpenSearchSettings OpenSearch { get; set; } = new();
+
+    /// <summary>İndeksli belgenin tek seferlik özeti. Model iş bitince bellekten iner.</summary>
+    public SummarySettings Summary { get; set; } = new();
+}
+
+public class OpenSearchSettings
+{
+    /// <summary>Cafe ve yerel Docker ağında OpenSearch. Boşsa indeks yazılmaz.</summary>
+    public string BaseUrl { get; set; } = "http://opensearch:9200";
+}
+
+public class SummarySettings
+{
+    public string BaseUrl { get; set; } = "http://ollama:11434";
+    public string Model { get; set; } = "qwen2.5:3b";
+    public int NumCtx { get; set; } = 4096;
+    public int ChunkChars { get; set; } = 6000;
+    /// <summary>Parça özeti üst sınırı. Birleştirme bundan uzun olabilir.</summary>
+    public int ChunkPredict { get; set; } = 150;
+    public int MergePredict { get; set; } = 400;
+    /// <summary>Parçalar bitene kadar model bellekte kalır. Son çağrı 0 gönderir.</summary>
+    public int KeepAliveSeconds { get; set; } = 1800;
 }
 
 public class ServerSettings

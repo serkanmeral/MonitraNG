@@ -31,11 +31,13 @@ import {
   diFetchResourceExportPdf,
   diGetBreadcrumb,
   diGetById,
+  diIndexResource,
   diGetMarkdownContent,
   diUpdateMarkdown,
   diUpdateResourceMetadata,
 } from '@/services/documentIntelligenceService';
 import type { DiBreadcrumb, DiResource } from '@/types/apps/documentIntelligence';
+import type { DiResourceIndexResult } from '@/services/documentIntelligenceService';
 
 definePageMeta({ layout: 'default' });
 
@@ -74,6 +76,37 @@ const pendingSaveAsDraft = ref(false);
 const historyDialog = ref(false);
 const fileHistoryDialog = ref(false);
 const exportingPdf = ref(false);
+const indexing = ref(false);
+const indexResult = ref<DiResourceIndexResult | null>(null);
+
+const canIndex = computed(() => {
+  const current = resource.value;
+  if (!current) return false;
+  if (current.type === 'markdown') return true;
+  if (current.type !== 'file') return false;
+  const ext = `${current.extension ?? ''} ${current.fileName ?? ''}`.toLowerCase();
+  return ext.includes('docx');
+});
+
+async function indexDocument() {
+  if (!resource.value || indexing.value) return;
+  indexing.value = true;
+  indexResult.value = null;
+  try {
+    const result = await diIndexResource(resource.value.id);
+    indexResult.value = result;
+    resource.value = result.resource;
+    if (result.status === 'done') {
+      notify(t('documentIntelligence.indexResult', { count: result.charCount }), 'success');
+    } else if (result.error) {
+      notify(result.error, 'error');
+    }
+  } catch (error) {
+    panelError(error);
+  } finally {
+    indexing.value = false;
+  }
+}
 
 function resourceLabel(r: DiResource | null): string {
   if (!r) return '…';
@@ -247,6 +280,7 @@ async function loadResource() {
 
   loading.value = true;
   errorMessage.value = '';
+  indexResult.value = null;
   showMarkdown.value = false;
   showDocxDetail.value = false;
   editorOpen.value = false;
@@ -501,6 +535,18 @@ onBeforeRouteLeave((to) => {
             >
               {{ t('documentIntelligence.history') }}
             </v-btn>
+            <v-btn
+              v-if="canIndex"
+              size="small"
+              variant="tonal"
+              color="primary"
+              class="text-none"
+              prepend-icon="mdi-database-search"
+              :loading="indexing"
+              @click="indexDocument"
+            >
+              {{ t('documentIntelligence.index') }}
+            </v-btn>
           </template>
           <template v-else>
             <v-btn size="small" variant="text" class="text-none" :disabled="saving" @click="cancelEdit">
@@ -538,6 +584,20 @@ onBeforeRouteLeave((to) => {
           class="mb-3 rounded-lg"
         >
           {{ t('documentIntelligence.viewOnlyHint') }}
+        </v-alert>
+
+        <v-alert
+          v-if="indexResult"
+          :type="indexResult.status === 'done' ? 'success' : 'error'"
+          variant="tonal"
+          density="compact"
+          class="mb-3 rounded-lg"
+        >
+          <div>{{ indexResult.steps.join(' · ') }}</div>
+          <div v-if="indexResult.status === 'done'">
+            {{ t('documentIntelligence.indexResult', { count: indexResult.charCount }) }}
+          </div>
+          <div v-else-if="indexResult.error">{{ indexResult.error }}</div>
         </v-alert>
 
         <div v-if="docMode === 'view'" class="mb-3 d-flex flex-wrap align-center ga-2">
@@ -652,7 +712,33 @@ onBeforeRouteLeave((to) => {
           >
             {{ t('documentIntelligence.download') }}
           </v-btn>
+          <v-btn
+            v-if="canIndex"
+            size="small"
+            variant="tonal"
+            color="primary"
+            class="text-none"
+            prepend-icon="mdi-database-search"
+            :loading="indexing"
+            @click="indexDocument"
+          >
+            {{ t('documentIntelligence.index') }}
+          </v-btn>
         </div>
+
+        <v-alert
+          v-if="indexResult"
+          :type="indexResult.status === 'done' ? 'success' : 'error'"
+          variant="tonal"
+          density="compact"
+          class="mb-3 rounded-lg"
+        >
+          <div>{{ indexResult.steps.join(' · ') }}</div>
+          <div v-if="indexResult.status === 'done'">
+            {{ t('documentIntelligence.indexResult', { count: indexResult.charCount }) }}
+          </div>
+          <div v-else-if="indexResult.error">{{ indexResult.error }}</div>
+        </v-alert>
 
         <v-alert
           v-if="!resource.permissions.canEdit"

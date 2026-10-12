@@ -1655,7 +1655,7 @@
   },
   {
     "name": "pm_meeting_actions",
-    "description": "Teslimat Omurgasi F2-9 — toplantı aksiyonu. OC iş kimliği bağlanır; iş kopyalanmaz, otomatik oluşturulmaz.",
+    "description": "Toplantı görevlendirmesi. Hedef kurum kullanıcısı, kurum dışı kişi veya firmadır. Bir satırda birden fazla hedef olabilir. OC iş kaydı olarak yazılmaz.",
     "forceSchema": true,
     "logging": "self",
     "publish_mode": "none",
@@ -1685,7 +1685,24 @@
         "mandatory": true,
         "unique": false,
         "isArray": false,
-        "validation": { "maxLength": 512 }
+        "validation": { "maxLength": 4000 }
+      },
+      {
+        "fieldType": "text",
+        "name": "code",
+        "title": "Action code",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 32 }
+      },
+      {
+        "fieldType": "object",
+        "name": "targets",
+        "title": "Targets (user | external | organization)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
       },
       {
         "fieldType": "text",
@@ -1694,7 +1711,7 @@
         "mandatory": false,
         "unique": false,
         "isArray": false,
-        "validation": { "maxLength": 256 }
+        "validation": { "maxLength": 1024 }
       },
       {
         "fieldType": "text",

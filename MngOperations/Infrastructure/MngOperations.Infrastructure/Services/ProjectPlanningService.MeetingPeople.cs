@@ -302,6 +302,149 @@ public sealed partial class ProjectPlanningService
         throw new OperationCoreException("OWNER_KIND", "Owner kind is invalid.", "Görev kişisinin türü geçersiz.", 400);
     }
 
+    private async Task<ResolvedActionTargets> ResolveActionTargetsAsync(
+        string projectId,
+        IReadOnlyList<MeetingActionTargetDto>? targets,
+        string? ownerKind,
+        string? userId,
+        string? personId,
+        string? ownerName,
+        string token,
+        CancellationToken ct)
+    {
+        if (targets is null)
+        {
+            var owner = await ResolveActionOwnerAsync(ownerKind, userId, personId, ownerName, token, ct);
+            var legacy = new List<MeetingActionTargetDto>();
+            if (owner.Kind == "user")
+            {
+                legacy.Add(new MeetingActionTargetDto
+                {
+                    Kind = "user",
+                    UserId = owner.UserId,
+                    Name = owner.Name
+                });
+            }
+            else if (owner.Kind == "external")
+            {
+                var person = await LoadMeetingPersonRowOrThrowAsync(owner.PersonId!, token, ct);
+                AssertPersonOnProject(person, projectId);
+                legacy.Add(new MeetingActionTargetDto
+                {
+                    Kind = "external",
+                    PersonId = owner.PersonId,
+                    Name = (person.name ?? string.Empty).Trim()
+                });
+            }
+
+            return PackActionTargets(legacy, owner.Name);
+        }
+
+        var resolved = new List<MeetingActionTargetDto>();
+        var seenUsers = new HashSet<string>(StringComparer.Ordinal);
+        var seenPeople = new HashSet<string>(StringComparer.Ordinal);
+        var seenFirms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var raw in targets)
+        {
+            var kind = (raw.Kind ?? string.Empty).Trim().ToLowerInvariant();
+            if (kind == "user")
+            {
+                var id = EmptyToNull(raw.UserId);
+                var name = EmptyToNull(raw.Name);
+                if (id is null || name is null)
+                    throw new OperationCoreException("OWNER_USER", "User owner needs an id and a name.", "Görev için kullanıcı seçin.", 400);
+                if (id.Length > 64)
+                    throw new OperationCoreException("OWNER_USER", "User id is too long.", "Kullanıcı kimliği çok uzun.", 400);
+                if (!seenUsers.Add(id)) continue;
+                resolved.Add(new MeetingActionTargetDto { Kind = "user", UserId = id, Name = name });
+                continue;
+            }
+
+            if (kind == "external")
+            {
+                var id = EmptyToNull(raw.PersonId);
+                if (id is null)
+                    throw new OperationCoreException("OWNER_PERSON", "External owner needs a person.", "Görev için kişi kartı seçin.", 400);
+                if (!seenPeople.Add(id)) continue;
+                var person = await LoadMeetingPersonRowOrThrowAsync(id, token, ct);
+                AssertPersonOnProject(person, projectId);
+                resolved.Add(new MeetingActionTargetDto
+                {
+                    Kind = "external",
+                    PersonId = id,
+                    Name = (person.name ?? string.Empty).Trim()
+                });
+                continue;
+            }
+
+            if (kind == "organization")
+            {
+                var firm = EmptyToNull(raw.Organization) ?? EmptyToNull(raw.Name);
+                if (firm is null)
+                    throw new OperationCoreException("TARGET_ORG", "Firm name is required.", "Firma adı zorunludur.", 400);
+                if (firm.Length > 256)
+                    throw new OperationCoreException("TARGET_ORG", "Firm name is too long.", "Firma adı çok uzun.", 400);
+                if (!seenFirms.Add(firm)) continue;
+                resolved.Add(new MeetingActionTargetDto
+                {
+                    Kind = "organization",
+                    Organization = firm,
+                    Name = firm
+                });
+                continue;
+            }
+
+            throw new OperationCoreException("TARGET_KIND", "Target kind is invalid.", "Görev hedefinin türü geçersiz.", 400);
+        }
+
+        return PackActionTargets(resolved, legacyName: null);
+    }
+
+    private static void AssertPersonOnProject(PmMeetingPersonRow person, string projectId)
+    {
+        if (!string.Equals(person.projectId, projectId, StringComparison.Ordinal))
+            throw new OperationCoreException("OWNER_PROJECT", "This person is not on the project.", "Kişi bu projede değil.", 400);
+    }
+
+    private static ResolvedActionTargets PackActionTargets(List<MeetingActionTargetDto> items, string? legacyName)
+    {
+        string? kind = null;
+        string? userId = null;
+        string? personId = null;
+        if (items.Count == 1)
+        {
+            kind = items[0].Kind;
+            if (kind == "user") userId = items[0].UserId;
+            else if (kind == "external") personId = items[0].PersonId;
+        }
+
+        var names = items
+            .Select(item => item.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList();
+        var ownerName = names.Count > 0 ? string.Join(" / ", names) : EmptyToNull(legacyName);
+        if (ownerName is { Length: > 1000 }) ownerName = ownerName[..1000];
+
+        var stored = items.Select(item =>
+        {
+            var row = new Dictionary<string, object?> { ["kind"] = item.Kind, ["name"] = item.Name };
+            if (item.UserId is not null) row["userId"] = item.UserId;
+            if (item.PersonId is not null) row["personId"] = item.PersonId;
+            if (item.Organization is not null) row["organization"] = item.Organization;
+            return row;
+        }).ToList();
+
+        return new ResolvedActionTargets(ownerName, kind, userId, personId, stored);
+    }
+
+    private sealed record ResolvedActionTargets(
+        string? OwnerName,
+        string? OwnerKind,
+        string? OwnerUserId,
+        string? OwnerPersonId,
+        List<Dictionary<string, object?>> Stored);
+
     private static MeetingPersonDto ToMeetingPersonDto(PmMeetingPersonRow row) => new()
     {
         Id = row.__dataId ?? string.Empty,

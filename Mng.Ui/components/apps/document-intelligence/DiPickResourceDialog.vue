@@ -23,6 +23,12 @@ const props = withDefaults(
     hint?: string | null;
     confirmLabel?: string | null;
     rootLabel?: string | null;
+    /** Yalnızca indexStatus done kayıtlar seçilebilir. */
+    indexedOnly?: boolean;
+    /** Birden fazla belge seçilir; pencere onaylanana kadar açık kalır. */
+    multiple?: boolean;
+    maxSelection?: number;
+    initialSelection?: DiResource[];
   }>(),
   {
     markdownOnly: false,
@@ -32,12 +38,17 @@ const props = withDefaults(
     hint: null,
     confirmLabel: null,
     rootLabel: null,
+    indexedOnly: false,
+    multiple: false,
+    maxSelection: 4,
+    initialSelection: () => [],
   }
 );
 
 const emit = defineEmits<{
   'update:modelValue': [boolean];
   pick: [DiResource];
+  'pick-many': [DiResource[]];
 }>();
 
 const { t } = useAppI18n();
@@ -55,6 +66,7 @@ const treeLoading = ref(false);
 const childrenLoading = ref(false);
 const errorLocal = ref<string | null>(null);
 const selectedResourceId = ref<string | null>(null);
+const selectedResources = ref<DiResource[]>([]);
 const searchQuery = ref('');
 const searchLoading = ref(false);
 const searchResults = ref<DiResource[]>([]);
@@ -94,8 +106,21 @@ function isUnderRoot(r: DiResource): boolean {
 function isPickable(r: DiResource): boolean {
   if (excludedSet.value.has(r.id.trim().toLowerCase())) return false;
   if (!isUnderRoot(r)) return false;
+  if (props.indexedOnly && r.indexStatus !== 'done') return false;
   if (props.markdownOnly) return r.type === DI_RESOURCE_TYPE.markdown;
   return r.type === DI_RESOURCE_TYPE.markdown || r.type === DI_RESOURCE_TYPE.file;
+}
+
+function isChosen(id: string): boolean {
+  return selectedResources.value.some((item) => item.id === id);
+}
+
+function rowActive(id: string): boolean {
+  return props.multiple ? isChosen(id) : selectedResourceId.value === id;
+}
+
+function rowDisabled(id: string): boolean {
+  return props.multiple && selectedResources.value.length >= props.maxSelection && !isChosen(id);
 }
 
 const pickableChildren = computed(() => children.value.filter(isPickable));
@@ -199,16 +224,45 @@ async function selectFolder(folderId: string | null) {
   }
 }
 
+function toggleResource(resource: DiResource) {
+  if (!props.multiple) {
+    selectedResourceId.value = resource.id;
+    return;
+  }
+  if (isChosen(resource.id)) {
+    selectedResources.value = selectedResources.value.filter((item) => item.id !== resource.id);
+    return;
+  }
+  if (selectedResources.value.length >= props.maxSelection) return;
+  selectedResources.value = [...selectedResources.value, resource];
+}
+
 function pickRecent(r: DiResource) {
+  if (props.multiple) {
+    toggleResource(r);
+    return;
+  }
   emit('pick', r);
   open.value = false;
 }
 
 function confirmPick() {
+  if (props.multiple) {
+    if (!selectedResources.value.length) return;
+    emit('pick-many', selectedResources.value.slice(0, props.maxSelection));
+    open.value = false;
+    return;
+  }
   const r = selectedResource.value;
   if (!r) return;
   emit('pick', r);
   open.value = false;
+}
+
+function onRowDblClick(resource: DiResource) {
+  if (props.multiple) return;
+  selectedResourceId.value = resource.id;
+  confirmPick();
 }
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -220,10 +274,17 @@ watch(searchQuery, () => {
 watch(open, (v) => {
   if (!v) {
     selectedResourceId.value = null;
+    selectedResources.value = [];
     errorLocal.value = null;
     searchQuery.value = '';
     searchResults.value = [];
     return;
+  }
+  if (props.multiple) {
+    selectedResources.value = (props.initialSelection ?? [])
+      .filter((item) => !props.indexedOnly || item.indexStatus === 'done')
+      .filter((item) => !excludedSet.value.has(item.id.trim().toLowerCase()))
+      .slice(0, props.maxSelection);
   }
   void loadTree();
   void loadRecent();
@@ -253,6 +314,21 @@ watch(open, (v) => {
           class="mb-3"
         />
 
+        <div v-if="multiple" class="text-caption text-medium-emphasis mb-2">
+          {{ t('documentIntelligence.internalLink.selectionCount', { count: selectedResources.length, max: maxSelection }) }}
+        </div>
+        <div v-if="multiple && selectedResources.length" class="d-flex flex-wrap ga-2 mb-3">
+          <v-chip
+            v-for="picked in selectedResources"
+            :key="picked.id"
+            closable
+            size="small"
+            @click:close="toggleResource(picked)"
+          >
+            {{ resourceLabel(picked) }}
+          </v-chip>
+        </div>
+
         <div v-if="!searchQuery.trim() && recentPages.length" class="mb-3">
           <div class="text-caption text-medium-emphasis mb-2">
             {{ t('documentIntelligence.internalLink.recentPages') }}
@@ -278,16 +354,17 @@ watch(open, (v) => {
         <div v-if="searchQuery.trim().length >= 2" class="flex-grow-1">
           <v-progress-linear v-if="searchLoading" indeterminate color="primary" class="mb-2" />
           <div v-if="!searchLoading && !displayedResources.length" class="text-body-2 text-medium-emphasis py-4">
-            {{ t('documentIntelligence.internalLink.searchEmpty') }}
+            {{ indexedOnly ? t('documentIntelligence.internalLink.indexedEmpty') : t('documentIntelligence.internalLink.searchEmpty') }}
           </div>
           <v-list v-else density="compact" class="py-0">
             <v-list-item
               v-for="r in displayedResources"
               :key="r.id"
-              :active="selectedResourceId === r.id"
+              :active="rowActive(r.id)"
+              :disabled="rowDisabled(r.id)"
               rounded="lg"
-              @click="selectedResourceId = r.id"
-              @dblclick="confirmPick"
+              @click="toggleResource(r)"
+              @dblclick="onRowDblClick(r)"
             >
               <template #prepend>
                 <v-icon :icon="diPageResourceIcon(r)" size="20" />
@@ -302,6 +379,7 @@ watch(open, (v) => {
             <v-progress-linear v-if="treeLoading" indeterminate color="primary" class="mb-2" />
             <DiResourceTree
               :nodes="tree"
+              expand-labels
               :selected-id="selectedFolderId === scopedRootId ? null : selectedFolderId"
               :root-label="treeRootLabel"
               :empty-label="t('documentIntelligence.noFolders')"
@@ -312,16 +390,17 @@ watch(open, (v) => {
           <div class="flex-grow-1">
             <v-progress-linear v-if="childrenLoading" indeterminate color="primary" class="mb-2" />
             <div v-if="!childrenLoading && !displayedResources.length" class="text-body-2 text-medium-emphasis py-4">
-              {{ t('documentIntelligence.internalLink.noPickable') }}
+              {{ indexedOnly ? t('documentIntelligence.internalLink.indexedEmpty') : t('documentIntelligence.internalLink.noPickable') }}
             </div>
             <v-list v-else density="compact" class="py-0">
               <v-list-item
                 v-for="r in displayedResources"
                 :key="r.id"
-                :active="selectedResourceId === r.id"
+                :active="rowActive(r.id)"
+                :disabled="rowDisabled(r.id)"
                 rounded="lg"
-                @click="selectedResourceId = r.id"
-                @dblclick="confirmPick"
+                @click="toggleResource(r)"
+                @dblclick="onRowDblClick(r)"
               >
                 <template #prepend>
                   <v-icon
@@ -346,7 +425,7 @@ watch(open, (v) => {
           color="primary"
           variant="flat"
           class="text-none"
-          :disabled="!selectedResource"
+          :disabled="multiple ? !selectedResources.length : !selectedResource"
           @click="confirmPick"
         >
           {{ dialogConfirm }}

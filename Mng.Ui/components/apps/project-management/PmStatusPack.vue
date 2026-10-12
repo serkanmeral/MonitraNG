@@ -50,7 +50,6 @@ const countCards = computed(() => {
     { flag: 'overdueAuditPack' as const, value: c?.overdueAuditPack ?? 0, color: 'error' },
     { flag: 'openMeetingAction' as const, value: c?.openMeetingAction ?? 0, color: 'info' },
     { flag: 'overdueMeetingAction' as const, value: c?.overdueMeetingAction ?? 0, color: 'error' },
-    { flag: 'unboundMeetingAction' as const, value: c?.unboundMeetingAction ?? 0, color: 'warning' },
     { flag: 'openStakeholder' as const, value: c?.openStakeholder ?? 0, color: 'info' },
     { flag: 'incompleteStakeholder' as const, value: c?.incompleteStakeholder ?? 0, color: 'warning' },
     { flag: 'overdueStakeholder' as const, value: c?.overdueStakeholder ?? 0, color: 'error' },

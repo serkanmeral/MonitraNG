@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import DiDrawioEditorDialog from '@/components/apps/document-intelligence/DiDrawioEditorDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligence/DiGenerateFromTemplateDialog.vue';
@@ -13,6 +13,7 @@ import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTr
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import PmLibraryBindDialog from '@/components/apps/project-management/PmLibraryBindDialog.vue';
+import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
 import type { PmLibraryBindKind } from '@/components/apps/project-management/PmLibraryBindDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
@@ -26,10 +27,15 @@ import {
   diCreateNativeDocument,
   diCreateNativePresentation,
   diCreateNativeSheet,
+  diDelete,
   diDownloadResource,
   diErrorStatus,
   diGetBrowseContext,
   diGetById,
+  diDiffResource,
+  diGetSummary,
+  diIndexResource,
+  diSummarizeResource,
   diGetLetterhead,
   diGetMarkdownContent,
   diGetTreeChildren,
@@ -38,6 +44,7 @@ import {
   diUpdateMarkdown,
   diUpdateResourceMetadata,
 } from '@/services/documentIntelligenceService';
+import type { DiResourceDiffResult, DiResourceIndexResult, DiResourceSummaryResult } from '@/services/documentIntelligenceService';
 import type {
   DiBreadcrumb,
   DiGenerateDocumentResult,
@@ -97,6 +104,66 @@ const treeNodes = ref<DiTreeNode[]>([]);
 const treeLoading = ref(false);
 const listingLoading = ref(false);
 const searchQuery = ref('');
+const indexListFilter = ref<'all' | 'done' | 'missing'>('all');
+const indexingId = ref<string | null>(null);
+const indexResult = ref<DiResourceIndexResult | null>(null);
+const indexDialog = ref(false);
+const summarizingId = ref<string | null>(null);
+const summaryResult = ref<DiResourceSummaryResult | null>(null);
+const aiDialog = ref(false);
+const aiTab = ref<'index' | 'summary' | 'diff'>('summary');
+const aiResource = ref<DiResource | null>(null);
+const summaryDraft = ref('');
+const summaryDraftTouched = ref(false);
+const savingSummary = ref(false);
+const summaryNow = ref(Date.now());
+const diffTargets = ref<DiResource[]>([]);
+const diffResult = ref<DiResourceDiffResult | null>(null);
+const diffLoading = ref(false);
+const diffPickerOpen = ref(false);
+const diffGroup = ref<'changed' | 'removed' | 'added' | null>(null);
+const diffExpanded = ref<Record<string, boolean>>({});
+const diffShowNoise = ref(false);
+const savingDiff = ref(false);
+const diffPeerId = ref<string | null>(null);
+let summaryClock: ReturnType<typeof setInterval> | undefined;
+
+const summaryPercent = computed(() => {
+  const result = summaryResult.value;
+  if (!result) return 0;
+  if (result.status === 'done') return 100;
+  if (!result.total) return 0;
+  return Math.min(100, Math.round((result.completed / result.total) * 100));
+});
+
+const summaryElapsedLabel = computed(() => {
+  const result = summaryResult.value;
+  if (!result || result.status !== 'running' || !result.updatedAt) return '';
+  const then = Date.parse(result.updatedAt);
+  if (Number.isNaN(then)) return '';
+  const seconds = Math.max(0, Math.floor((summaryNow.value - then) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  if (minutes >= 8) return t('documentIntelligence.summaryStall', { minutes });
+  if (minutes > 0) return t('documentIntelligence.summaryElapsed', { minutes, seconds: seconds % 60 });
+  return t('documentIntelligence.summaryElapsedSeconds', { seconds });
+});
+
+watch(aiDialog, (open) => {
+  if (summaryClock) {
+    clearInterval(summaryClock);
+    summaryClock = undefined;
+  }
+  if (!open) return;
+  summaryNow.value = Date.now();
+  summaryClock = setInterval(() => {
+    summaryNow.value = Date.now();
+  }, 1000);
+});
+
+onBeforeUnmount(() => {
+  if (summaryClock) clearInterval(summaryClock);
+});
+let summaryTicket = 0;
 const tagColorTick = ref(0);
 const busy = ref(false);
 const folderDialog = ref(false);
@@ -129,6 +196,9 @@ const nativeDocHeaderFields = ref<DiLetterheadHeaderFields>({
 const letterheadOptions = ref<DiLetterhead[]>([]);
 const fileInputEl = ref<HTMLInputElement | null>(null);
 const openDoc = ref<DiResource | null>(null);
+const deleteTarget = ref<DiResource | null>(null);
+const deleteDialog = ref(false);
+const deleting = ref(false);
 const docMode = ref<'view' | 'edit'>('view');
 const docContent = ref('');
 const editContent = ref('');
@@ -168,15 +238,21 @@ const scopedCrumbs = computed(() => {
 const listingHeaders = computed(() => [
   { title: t('projectManagement.library.colName'), key: 'name', minWidth: 240 },
   { title: t('projectManagement.library.colType'), key: 'type', width: 140 },
+  { title: t('projectManagement.library.colSize'), key: 'size', width: 110, sortable: false },
   { title: t('projectManagement.library.colTags'), key: 'tags', sortable: false, minWidth: 180 },
   { title: t('projectManagement.library.colStatus'), key: 'status', width: 130 },
+  { title: t('projectManagement.library.colIndex'), key: 'index', width: 150, sortable: false },
+  { title: t('projectManagement.library.colCreated'), key: 'createdAt', width: 160 },
+  { title: t('projectManagement.library.colCreatedBy'), key: 'createdBy', width: 160, sortable: false },
   { title: t('projectManagement.library.colUpdated'), key: 'updatedAt', width: 160 },
   {
     title: t('projectManagement.actions'),
     key: 'actions',
-    width: 96,
+    width: 64,
     sortable: false,
     align: 'end' as const,
+    headerProps: { class: 'pm-library-actions' },
+    cellProps: { class: 'pm-library-actions' },
   },
 ]);
 const diHref = computed(() => buildDiFolderUrl(selectedFolderId.value || hubId.value));
@@ -199,6 +275,435 @@ function resourceIcon(resource: DiResource): string {
 
 function resourceLabel(resource: DiResource): string {
   return diPageResourceLabel(resource);
+}
+
+function isIndexable(resource: DiResource): boolean {
+  if (resource.type === 'markdown') return true;
+  if (resource.type !== 'file') return false;
+  const ext = `${resource.extension ?? ''} ${resource.fileName ?? ''} ${resource.name ?? ''}`.toLowerCase();
+  return ext.includes('docx');
+}
+
+function matchesIndexFilter(resource: DiResource): boolean {
+  if (resource.type === 'folder' || indexListFilter.value === 'all') return true;
+  const indexed = resource.indexStatus === 'done' || resource.indexStatus === 'stale';
+  return indexListFilter.value === 'done' ? indexed : !indexed;
+}
+
+function indexChipLabel(status: string | null | undefined): string {
+  if (status === 'done') return t('documentIntelligence.indexDone');
+  if (status === 'stale') return t('documentIntelligence.indexStale');
+  if (status === 'failed') return t('documentIntelligence.indexFailed');
+  if (status === 'running') return t('documentIntelligence.indexRunning');
+  return t('documentIntelligence.indexNone');
+}
+
+function indexChipColor(status: string | null | undefined): string {
+  if (status === 'done') return 'success';
+  if (status === 'stale') return 'warning';
+  if (status === 'failed') return 'error';
+  if (status === 'running') return 'info';
+  return 'default';
+}
+
+function pageFiltered(rows: DiResource[]) {
+  const filtered = rows.filter((row) => matchesIndexFilter(row));
+  listingTotal.value = filtered.length;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / listingPageSize.value) || 1);
+  if (listingPage.value > pageCount) {
+    suppressListingWatch.value = true;
+    listingPage.value = pageCount;
+    suppressListingWatch.value = false;
+  }
+  const skip = (listingPage.value - 1) * listingPageSize.value;
+  children.value = filtered.slice(skip, skip + listingPageSize.value);
+}
+
+async function indexDocument(resource: DiResource) {
+  if (!isIndexable(resource) || indexingId.value) return;
+  indexingId.value = resource.id;
+  indexResult.value = null;
+  try {
+    const result = await diIndexResource(resource.id);
+    indexResult.value = result;
+    indexDialog.value = true;
+    if (openDoc.value?.id === result.resource.id) openDoc.value = result.resource;
+    const row = children.value.findIndex((item) => item.id === result.resource.id);
+    if (row >= 0) children.value[row] = result.resource;
+    if (result.status === 'done') {
+      toast.push({
+        title: t('projectManagement.notify.successTitle'),
+        message: t('documentIntelligence.indexResult', { count: result.charCount }),
+        severity: 'success',
+      });
+    } else if (result.error) {
+      toast.push({
+        title: t('errors.dg.toastTitle'),
+        message: result.error,
+        severity: 'error',
+      });
+    }
+    if (selectedFolderId.value) await loadListing(selectedFolderId.value);
+  } catch (error) {
+    panelError(error);
+  } finally {
+    indexingId.value = null;
+  }
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatFileSize(bytes: number | null | undefined): string {
+  if (bytes == null || bytes < 0) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function summaryFileTitle(resource: DiResource): string {
+  const stem = (resource.title || resource.name || 'Belge').replace(/\.[^.]+$/, '');
+  return `${stem} — Özet`;
+}
+
+async function openAi(resource: DiResource) {
+  if (resource.indexStatus !== 'done') return;
+  aiResource.value = resource;
+  aiTab.value = 'summary';
+  summaryDraftTouched.value = false;
+  summaryDraft.value = '';
+  summaryResult.value = null;
+  diffTargets.value = [];
+  diffResult.value = null;
+  diffPickerOpen.value = false;
+  aiDialog.value = true;
+  try {
+    const existing = await diGetSummary(resource.id);
+    if (aiResource.value?.id !== resource.id) return;
+    summaryResult.value = existing;
+    if (existing.text) summaryDraft.value = existing.text;
+  } catch (error) {
+    panelError(error);
+  }
+}
+
+function onDiffTargetsPicked(rows: DiResource[]) {
+  diffTargets.value = rows.slice(0, 4);
+  diffResult.value = null;
+}
+
+function onDiffHubReady(id: string) {
+  if (!id || hubId.value === id) return;
+  hubId.value = id;
+  emit('hub-ready', id);
+}
+
+function removeDiffTarget(id: string) {
+  diffTargets.value = diffTargets.value.filter((item) => item.id !== id);
+  diffResult.value = null;
+}
+
+async function runDiff() {
+  const resource = aiResource.value;
+  if (!resource || !diffTargets.value.length || diffLoading.value) return;
+  diffLoading.value = true;
+  diffGroup.value = null;
+  diffExpanded.value = {};
+  diffShowNoise.value = false;
+  try {
+    diffResult.value = await diDiffResource(resource.id, diffTargets.value.map((item) => item.id));
+    diffPeerId.value = diffResult.value.comparisons[0]?.id ?? null;
+  } catch (error) {
+    panelError(error);
+  } finally {
+    diffLoading.value = false;
+  }
+}
+
+function diffHasChanges(item: DiResourceDiffResult['comparisons'][number]): boolean {
+  return item.addedCount > 0 || item.removedCount > 0 || item.changedCount > 0;
+}
+
+function toggleDiffGroup(group: 'changed' | 'removed' | 'added') {
+  diffGroup.value = diffGroup.value === group ? null : group;
+}
+
+function showDiffGroup(group: 'changed' | 'removed' | 'added'): boolean {
+  return diffGroup.value === null || diffGroup.value === group;
+}
+
+function diffCountText(shown: number, total: number): string {
+  return shown < total ? `${shown} / ${total}` : String(total);
+}
+
+function groupDiffLines<T extends { heading: string }>(rows: T[]) {
+  const groups: { heading: string; rows: Array<T & { index: number }> }[] = [];
+  rows.forEach((row, index) => {
+    const heading = row.heading || '';
+    const tagged = { ...row, index };
+    const last = groups[groups.length - 1];
+    if (last && last.heading === heading) last.rows.push(tagged);
+    else groups.push({ heading, rows: [tagged] });
+  });
+  return groups;
+}
+
+function diffLineLong(text: string): boolean {
+  return text.length > 280;
+}
+
+function toggleDiffLine(key: string) {
+  diffExpanded.value = { ...diffExpanded.value, [key]: !diffExpanded.value[key] };
+}
+
+interface DiffToken {
+  text: string;
+  changed: boolean;
+}
+
+function wordDiff(base: string, other: string): { base: DiffToken[]; other: DiffToken[] } {
+  const left = base.split(/(\s+)/).filter((part) => part.length > 0);
+  const right = other.split(/(\s+)/).filter((part) => part.length > 0);
+  if (left.length * right.length > 40000) {
+    return {
+      base: [{ text: base, changed: base !== other }],
+      other: [{ text: other, changed: base !== other }],
+    };
+  }
+  const n = left.length;
+  const m = right.length;
+  const dp = Array.from({ length: n + 1 }, () => Array<number>(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      dp[i][j] = left[i] === right[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const baseTokens: DiffToken[] = [];
+  const otherTokens: DiffToken[] = [];
+  let x = 0;
+  let y = 0;
+  while (x < n && y < m) {
+    if (left[x] === right[y]) {
+      baseTokens.push({ text: left[x], changed: false });
+      otherTokens.push({ text: right[y], changed: false });
+      x += 1;
+      y += 1;
+    } else if (dp[x + 1][y] >= dp[x][y + 1]) {
+      baseTokens.push({ text: left[x], changed: true });
+      x += 1;
+    } else {
+      otherTokens.push({ text: right[y], changed: true });
+      y += 1;
+    }
+  }
+  while (x < n) {
+    baseTokens.push({ text: left[x], changed: true });
+    x += 1;
+  }
+  while (y < m) {
+    otherTokens.push({ text: right[y], changed: true });
+    y += 1;
+  }
+  return { base: mergeDiffTokens(baseTokens), other: mergeDiffTokens(otherTokens) };
+}
+
+function mergeDiffTokens(tokens: DiffToken[]): DiffToken[] {
+  const merged: DiffToken[] = [];
+  for (const token of tokens) {
+    const last = merged[merged.length - 1];
+    if (last && last.changed === token.changed) last.text += token.text;
+    else merged.push({ text: token.text, changed: token.changed });
+  }
+  return merged;
+}
+
+function diffDocLabel(name: string): string {
+  return name.replace(/\.[^.]+$/, '');
+}
+
+const diffComparisons = computed(() => diffResult.value?.comparisons ?? []);
+
+const activeDiff = computed(() => {
+  const rows = diffComparisons.value;
+  if (!rows.length) return null;
+  return rows.find((row) => row.id === diffPeerId.value) ?? rows[0];
+});
+
+function selectDiffPeer(id: string) {
+  if (diffPeerId.value === id) return;
+  diffPeerId.value = id;
+  diffGroup.value = null;
+  diffShowNoise.value = false;
+  diffExpanded.value = {};
+}
+
+function onDiffPeerTab(value: unknown) {
+  if (typeof value === 'string') selectDiffPeer(value);
+}
+
+function diffNoiseCount(item: DiResourceDiffResult['comparisons'][number]): number {
+  return item.noiseAddedCount + item.noiseRemovedCount + item.noiseChangedCount;
+}
+
+function diffFileTitle(resource: DiResource): string {
+  const stem = (resource.title || resource.name || 'Belge').replace(/\.[^.]+$/, '');
+  return `${stem} — Fark`;
+}
+
+function quoteDiff(text: string): string {
+  return text.split('\n').map((line) => `> ${line}`).join('\n');
+}
+
+function appendDiffLines(lines: string[], heading: string, rows: { heading: string; text: string }[]) {
+  if (!rows.length) return;
+  lines.push('', `### ${heading}`);
+  for (const group of groupDiffLines(rows)) {
+    lines.push('', `#### ${group.heading || t('documentIntelligence.diffNoHeading')}`);
+    for (const row of group.rows) lines.push('', quoteDiff(row.text));
+  }
+}
+
+function appendDiffChanges(lines: string[], heading: string, rows: DiResourceDiffResult['comparisons'][number]['changed']) {
+  if (!rows.length) return;
+  lines.push('', `### ${heading}`);
+  for (const group of groupDiffLines(rows)) {
+    lines.push('', `#### ${group.heading || t('documentIntelligence.diffNoHeading')}`);
+    for (const row of group.rows) {
+      lines.push('', `**${t('documentIntelligence.diffBase')}**`, '', quoteDiff(row.base), '', `**${t('documentIntelligence.diffOther')}**`, '', quoteDiff(row.other));
+    }
+  }
+}
+
+function diffMarkdown(result: DiResourceDiffResult, includeNoise: boolean, resource: DiResource): string {
+  const lines = [`# ${diffFileTitle(resource)}`, '', `${t('documentIntelligence.diffBase')}: ${result.baseName}`];
+  for (const item of result.comparisons) {
+    lines.push('', `## ${item.name}`);
+    if (!item.compared) {
+      if (item.reason) lines.push('', item.reason);
+      continue;
+    }
+    lines.push('', t('documentIntelligence.diffSame', { count: item.unchangedCount }));
+    appendDiffChanges(lines, t('documentIntelligence.diffChanged'), item.changed);
+    appendDiffLines(lines, t('documentIntelligence.diffRemoved'), item.removed);
+    appendDiffLines(lines, t('documentIntelligence.diffAdded'), item.added);
+    if (includeNoise) {
+      appendDiffChanges(lines, `${t('documentIntelligence.diffChanged')} — ${t('documentIntelligence.diffNoise', { count: item.noiseChangedCount })}`, item.noiseChanged);
+      appendDiffLines(lines, `${t('documentIntelligence.diffRemoved')} — ${t('documentIntelligence.diffNoise', { count: item.noiseRemovedCount })}`, item.noiseRemoved);
+      appendDiffLines(lines, `${t('documentIntelligence.diffAdded')} — ${t('documentIntelligence.diffNoise', { count: item.noiseAddedCount })}`, item.noiseAdded);
+    }
+  }
+  return lines.join('\n');
+}
+
+async function saveDiffDocument() {
+  const resource = aiResource.value;
+  const result = diffResult.value;
+  if (!resource || !result || savingDiff.value) return;
+  savingDiff.value = true;
+  try {
+    await diCreateMarkdown({
+      parentId: resource.parentId,
+      title: diffFileTitle(resource),
+      content: diffMarkdown(result, diffShowNoise.value, resource),
+    });
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.diffSaved'),
+      severity: 'success',
+    });
+    if (selectedFolderId.value) await loadListing(selectedFolderId.value);
+  } catch (error) {
+    panelError(error);
+  } finally {
+    savingDiff.value = false;
+  }
+}
+
+const diffWordMap = computed(() => {
+  const map = new Map<string, { base: DiffToken[]; other: DiffToken[] }>();
+  for (const item of diffResult.value?.comparisons ?? []) {
+    item.changed.forEach((change, index) => {
+      map.set(`${item.id}:c:${index}`, wordDiff(change.base, change.other));
+    });
+    item.noiseChanged?.forEach((change, index) => {
+      map.set(`${item.id}:n:${index}`, wordDiff(change.base, change.other));
+    });
+  }
+  return map;
+});
+
+async function saveSummaryDocument() {
+  const resource = aiResource.value;
+  const content = summaryDraft.value.trim();
+  if (!resource || !content || savingSummary.value) return;
+  savingSummary.value = true;
+  try {
+    await diCreateMarkdown({
+      parentId: resource.parentId,
+      title: summaryFileTitle(resource),
+      content,
+    });
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.summarySaved'),
+      severity: 'success',
+    });
+    if (selectedFolderId.value) await loadListing(selectedFolderId.value);
+  } catch (error) {
+    panelError(error);
+  } finally {
+    savingSummary.value = false;
+  }
+}
+
+async function summarizeDocument(resource: DiResource) {
+  if (resource.indexStatus !== 'done' || summarizingId.value) return;
+  const ticket = ++summaryTicket;
+  summarizingId.value = resource.id;
+  summaryDraftTouched.value = false;
+  summaryResult.value = {
+    status: 'running',
+    text: null,
+    error: null,
+    step: t('documentIntelligence.summary'),
+    chunked: false,
+    summarizedAt: null,
+    completed: 0,
+    total: 0,
+    updatedAt: new Date().toISOString(),
+    log: [],
+  };
+  try {
+    let result = await diSummarizeResource(resource.id);
+    while (ticket === summaryTicket && result.status === 'running') {
+      summaryResult.value = result;
+      await wait(3000);
+      if (ticket !== summaryTicket) return;
+      result = await diGetSummary(resource.id);
+    }
+    if (ticket !== summaryTicket) return;
+    summaryResult.value = result;
+    if (result.text && !summaryDraftTouched.value) summaryDraft.value = result.text;
+    if (result.status === 'done' && result.text && !result.error) {
+      toast.push({
+        title: t('projectManagement.notify.successTitle'),
+        message: t('documentIntelligence.summaryTitle'),
+        severity: 'success',
+      });
+    } else if (result.error) {
+      toast.push({
+        title: t('errors.dg.toastTitle'),
+        message: result.error,
+        severity: 'error',
+      });
+    }
+    if (selectedFolderId.value) await loadListing(selectedFolderId.value);
+  } catch (error) {
+    panelError(error);
+  } finally {
+    if (ticket === summaryTicket) summarizingId.value = null;
+  }
 }
 
 function resourceTypeLabel(resource: DiResource): string {
@@ -281,21 +786,14 @@ async function loadListing(folderId: string) {
     if (query.length >= 2) {
       const result = await diSearch(query, 0, 200);
       if (token !== listingToken) return;
-      const filtered = (result.items || []).filter((row) => isInSelectedFolder(row, folderId));
-      listingTotal.value = filtered.length;
-      const pageCount = Math.max(1, Math.ceil(filtered.length / listingPageSize.value) || 1);
-      if (listingPage.value > pageCount) {
-        suppressListingWatch.value = true;
-        listingPage.value = pageCount;
-        suppressListingWatch.value = false;
-      }
-      const skip = (listingPage.value - 1) * listingPageSize.value;
-      children.value = filtered.slice(skip, skip + listingPageSize.value);
+      pageFiltered((result.items || []).filter((row) => isInSelectedFolder(row, folderId)));
       return;
     }
 
-    const skip = (listingPage.value - 1) * listingPageSize.value;
-    const context = await diGetBrowseContext(folderId, { skip, limit: listingPageSize.value });
+    const filteringIndex = indexListFilter.value !== 'all';
+    const skip = filteringIndex ? 0 : (listingPage.value - 1) * listingPageSize.value;
+    const limit = filteringIndex ? 200 : listingPageSize.value;
+    const context = await diGetBrowseContext(folderId, { skip, limit });
     if (token !== listingToken) return;
     const selected = context.selectedFolder;
     const hub = hubId.value;
@@ -315,14 +813,18 @@ async function loadListing(folderId: string) {
     }
     selectedFolder.value = selected;
     breadcrumb.value = context.breadcrumb || [];
-    children.value = context.children.items || [];
-    listingTotal.value = context.children.total ?? children.value.length;
-    const pageCount = Math.max(1, Math.ceil(listingTotal.value / listingPageSize.value) || 1);
-    if (listingTotal.value > 0 && listingPage.value > pageCount) {
-      suppressListingWatch.value = true;
-      listingPage.value = pageCount;
-      suppressListingWatch.value = false;
-      await loadListing(folderId);
+    if (filteringIndex) {
+      pageFiltered(context.children.items || []);
+    } else {
+      children.value = context.children.items || [];
+      listingTotal.value = context.children.total ?? children.value.length;
+      const pageCount = Math.max(1, Math.ceil(listingTotal.value / listingPageSize.value) || 1);
+      if (listingTotal.value > 0 && listingPage.value > pageCount) {
+        suppressListingWatch.value = true;
+        listingPage.value = pageCount;
+        suppressListingWatch.value = false;
+        await loadListing(folderId);
+      }
     }
   } catch (error) {
     if (token !== listingToken) return;
@@ -891,6 +1393,39 @@ function openBind(resource: DiResource) {
   bindDialog.value = true;
 }
 
+function openDelete(resource: DiResource) {
+  if (!resource.permissions.canDelete) return;
+  deleteTarget.value = resource;
+  deleteDialog.value = true;
+}
+
+async function submitLibraryDelete() {
+  const target = deleteTarget.value;
+  if (!target || deleting.value) return;
+  deleting.value = true;
+  try {
+    await diDelete(target.id);
+    deleteDialog.value = false;
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.deleted'),
+      severity: 'success',
+    });
+    const parentId = target.parentId || selectedFolderId.value || hubId.value;
+    if (openDoc.value?.id === target.id) {
+      openDoc.value = null;
+      if (parentId) await selectFolder(parentId);
+      else await refreshAll();
+    } else {
+      await refreshAll();
+    }
+  } catch (error) {
+    panelError(error);
+  } finally {
+    deleting.value = false;
+  }
+}
+
 function onBound() {
   emit('bound');
 }
@@ -898,6 +1433,14 @@ function onBound() {
 function onListingRowClick(_event: Event, ctx: { item: DiResource }) {
   void openResource(ctx.item);
 }
+
+watch(indexListFilter, () => {
+  if (!selectedFolderId.value) return;
+  suppressListingWatch.value = true;
+  listingPage.value = 1;
+  suppressListingWatch.value = false;
+  void loadListing(selectedFolderId.value);
+});
 
 watch(searchQuery, () => {
   if (searchTimer) clearTimeout(searchTimer);
@@ -1014,6 +1557,29 @@ watch(
               </v-btn>
               <v-btn size="small" variant="text" class="text-none" prepend-icon="mdi-history" @click="historyDialog = true">
                 {{ t('documentIntelligence.history') }}
+              </v-btn>
+              <v-btn
+                v-if="isIndexable(openDoc)"
+                size="small"
+                variant="tonal"
+                color="primary"
+                class="text-none"
+                prepend-icon="mdi-database-search"
+                :loading="indexingId === openDoc.id"
+                @click="indexDocument(openDoc)"
+              >
+                {{ t('documentIntelligence.index') }}
+              </v-btn>
+              <v-btn
+                v-if="openDoc.indexStatus === 'done'"
+                size="small"
+                variant="tonal"
+                color="secondary"
+                class="text-none"
+                prepend-icon="mdi-creation"
+                @click="openAi(openDoc)"
+              >
+                {{ t('documentIntelligence.aiTitle') }}
               </v-btn>
               <v-btn
                 size="small"
@@ -1166,6 +1732,33 @@ watch(
           </a>
         </div>
 
+        <div class="px-4 pt-3 d-flex align-center flex-wrap ga-2">
+          <v-chip
+            size="small"
+            :variant="indexListFilter === 'all' ? 'flat' : 'outlined'"
+            :color="indexListFilter === 'all' ? 'primary' : undefined"
+            @click="indexListFilter = 'all'"
+          >
+            {{ t('documentIntelligence.indexFilterAll') }}
+          </v-chip>
+          <v-chip
+            size="small"
+            :variant="indexListFilter === 'done' ? 'flat' : 'outlined'"
+            :color="indexListFilter === 'done' ? 'success' : undefined"
+            @click="indexListFilter = 'done'"
+          >
+            {{ t('documentIntelligence.indexFilterDone') }}
+          </v-chip>
+          <v-chip
+            size="small"
+            :variant="indexListFilter === 'missing' ? 'flat' : 'outlined'"
+            :color="indexListFilter === 'missing' ? 'warning' : undefined"
+            @click="indexListFilter = 'missing'"
+          >
+            {{ t('documentIntelligence.indexFilterMissing') }}
+          </v-chip>
+        </div>
+
         <div class="pa-4">
           <div class="pm-library-table-wrap">
             <v-data-table-server
@@ -1203,6 +1796,9 @@ watch(
               <template #item.type="{ item }">
                 <v-chip size="x-small" variant="tonal">{{ resourceTypeLabel(item) }}</v-chip>
               </template>
+              <template #item.size="{ item }">
+                <span class="text-body-2">{{ item.type === 'folder' ? '—' : formatFileSize(item.size) }}</span>
+              </template>
               <template #item.tags="{ item }">
                 <div v-if="item.tags?.length" class="d-flex flex-wrap ga-1">
                   <v-chip
@@ -1228,24 +1824,88 @@ watch(
                 </v-chip>
                 <span v-else class="text-medium-emphasis">—</span>
               </template>
+              <template #item.index="{ item }">
+                <v-chip
+                  v-if="item.type !== 'folder'"
+                  size="x-small"
+                  variant="tonal"
+                  :color="indexChipColor(item.indexStatus)"
+                >
+                  {{ indexChipLabel(item.indexStatus) }}
+                </v-chip>
+                <span v-else class="text-medium-emphasis">—</span>
+              </template>
               <template #item.updatedAt="{ item }">
-                <span class="text-body-2">{{ formatDateTime(item.updatedAt) || '—' }}</span>
+                <span class="text-body-2">{{ item.type === 'folder' ? '—' : (formatDateTime(item.updatedAt) || '—') }}</span>
+              </template>
+              <template #item.createdAt="{ item }">
+                <span class="text-body-2">{{ item.type === 'folder' ? '—' : (formatDateTime(item.createdAt) || '—') }}</span>
+              </template>
+              <template #item.createdBy="{ item }">
+                <span class="text-body-2 text-truncate d-inline-block library-person">
+                  {{ item.type === 'folder' ? '—' : (item.createdBy || '—') }}
+                </span>
               </template>
               <template #item.actions="{ item }">
                 <div class="d-flex justify-end" @click.stop>
-                  <v-btn
-                    v-if="canBindResource(item)"
-                    icon
-                    size="small"
-                    variant="text"
-                    :title="t('projectManagement.library.bind.action')"
-                    @click="openBind(item)"
-                  >
-                    <v-icon size="18">mdi-link-plus</v-icon>
-                  </v-btn>
-                  <v-btn icon size="small" variant="text" @click="openResource(item)">
-                    <v-icon size="18">mdi-chevron-right</v-icon>
-                  </v-btn>
+                  <v-menu location="bottom end">
+                    <template #activator="{ props: menuProps }">
+                      <v-btn
+                        v-bind="menuProps"
+                        icon
+                        size="small"
+                        variant="text"
+                        :title="t('projectManagement.actions')"
+                      >
+                        <v-icon size="18">mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list density="compact" min-width="220">
+                      <v-list-item
+                        prepend-icon="mdi-folder-open-outline"
+                        :title="t('projectManagement.library.open')"
+                        @click="openResource(item)"
+                      />
+                      <v-list-item
+                        v-if="item.type === 'file' && item.permissions.canDownload"
+                        prepend-icon="mdi-download"
+                        :title="t('documentIntelligence.download')"
+                        @click="downloadFile(item)"
+                      />
+                      <v-list-item
+                        v-if="canBindResource(item)"
+                        prepend-icon="mdi-link-plus"
+                        :title="t('projectManagement.library.bind.action')"
+                        @click="openBind(item)"
+                      />
+                      <template v-if="isIndexable(item) || item.indexStatus === 'done'">
+                        <v-divider class="my-1" />
+                        <v-list-subheader>{{ t('documentIntelligence.aiTitle') }}</v-list-subheader>
+                        <v-list-item
+                          v-if="isIndexable(item)"
+                          prepend-icon="mdi-database-search"
+                          :title="t('documentIntelligence.index')"
+                          :disabled="indexingId === item.id"
+                          @click="indexDocument(item)"
+                        />
+                        <v-list-item
+                          v-if="item.indexStatus === 'done'"
+                          prepend-icon="mdi-creation"
+                          :title="t('documentIntelligence.aiTitle')"
+                          @click="openAi(item)"
+                        />
+                      </template>
+                      <template v-if="item.permissions.canDelete">
+                        <v-divider class="my-1" />
+                        <v-list-item
+                          prepend-icon="mdi-delete-outline"
+                          class="text-error"
+                          :title="t('projectManagement.library.remove')"
+                          @click="openDelete(item)"
+                        />
+                      </template>
+                    </v-list>
+                  </v-menu>
                 </div>
               </template>
               <template #no-data>
@@ -1259,6 +1919,382 @@ watch(
         </template>
       </div>
     </div>
+
+    <v-dialog v-model="deleteDialog" max-width="420">
+      <v-card v-if="deleteTarget" rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('projectManagement.library.remove') }}</v-card-title>
+        <v-card-text>
+          {{ t('documentIntelligence.deleteConfirm', { name: resourceLabel(deleteTarget) }) }}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="deleteDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="error" variant="flat" class="text-none" :loading="deleting" @click="submitLibraryDelete">
+            {{ t('projectManagement.library.remove') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="aiDialog" max-width="1100" :persistent="diffPickerOpen">
+      <v-card v-if="aiResource" rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.aiTitle') }}</v-card-title>
+        <v-card-subtitle class="pb-0">{{ aiResource.title || aiResource.name }}</v-card-subtitle>
+        <v-tabs v-model="aiTab" color="primary" density="comfortable" class="px-2">
+          <v-tab value="index">{{ t('documentIntelligence.aiTabIndex') }}</v-tab>
+          <v-tab value="summary">{{ t('documentIntelligence.aiTabSummary') }}</v-tab>
+          <v-tab value="diff">{{ t('documentIntelligence.aiTabDiff') }}</v-tab>
+        </v-tabs>
+        <v-divider />
+        <v-card-text>
+          <div v-show="aiTab === 'index'">
+            <div class="text-body-2">{{ t('documentIntelligence.indexSize', { count: (aiResource.indexCharCount ?? 0).toLocaleString('tr-TR') }) }}</div>
+            <div v-if="aiResource.indexedAt" class="text-caption text-medium-emphasis mt-1">
+              {{ formatDateTime(aiResource.indexedAt) }}
+            </div>
+          </div>
+          <div v-show="aiTab === 'summary'">
+            <template v-if="summaryResult && (summaryResult.status === 'running' || summaryResult.log.length)">
+              <v-progress-linear
+                :indeterminate="summaryResult.status === 'running' && !summaryResult.total"
+                :model-value="summaryPercent"
+                color="primary"
+                height="8"
+                rounded
+                class="mb-3"
+              />
+              <div class="d-flex align-center justify-space-between ga-2 mb-2">
+                <span class="text-body-2">{{ summaryResult.step }}</span>
+                <span v-if="summaryResult.total" class="text-caption text-medium-emphasis">
+                  {{ summaryResult.completed }}/{{ summaryResult.total }}
+                </span>
+              </div>
+              <div v-if="summaryElapsedLabel" class="text-caption text-medium-emphasis mb-2">{{ summaryElapsedLabel }}</div>
+              <div v-if="summaryResult.log.length" class="summary-log mb-3">
+                <div
+                  v-for="(line, index) in summaryResult.log"
+                  :key="index"
+                  :class="summaryResult.status === 'failed' && index === summaryResult.log.length - 1 ? 'text-error' : ''"
+                >
+                  {{ line }}
+                </div>
+              </div>
+              <div v-if="summaryResult.error && summaryResult.status !== 'running'" class="text-error text-body-2 mb-2">
+                {{ summaryResult.error }}
+              </div>
+              <div v-if="summaryResult.chunked" class="text-caption text-medium-emphasis mb-2">
+                {{ t('documentIntelligence.summaryChunked') }}
+              </div>
+            </template>
+            <DiMarkdownEditor
+              v-model="summaryDraft"
+              compact
+              :show-preview="false"
+              :current-resource-id="aiResource.id"
+              :upload-parent-id="aiResource.parentId || selectedFolderId"
+              :can-upload="aiResource.permissions.canUpload"
+              @update:model-value="summaryDraftTouched = true"
+            />
+            <div class="d-flex justify-end ga-2 mt-3">
+              <v-btn
+                variant="tonal"
+                class="text-none"
+                :loading="summarizingId === aiResource.id"
+                :disabled="summarizingId === aiResource.id"
+                @click="summarizeDocument(aiResource)"
+              >
+                {{ t('documentIntelligence.summary') }}
+              </v-btn>
+              <v-btn
+                color="primary"
+                variant="flat"
+                class="text-none"
+                :loading="savingSummary"
+                :disabled="!summaryDraft.trim() || summarizingId === aiResource.id"
+                @click="saveSummaryDocument"
+              >
+                {{ t('documentIntelligence.saveSummary') }}
+              </v-btn>
+            </div>
+          </div>
+          <div v-show="aiTab === 'diff'">
+            <p class="text-body-2 mb-3">{{ t('documentIntelligence.diffHint') }}</p>
+            <v-btn
+              variant="tonal"
+              class="text-none"
+              prepend-icon="mdi-file-search-outline"
+              @click="diffPickerOpen = true"
+            >
+              {{ t('projectManagement.pickDocument.open') }}
+            </v-btn>
+            <div v-if="diffTargets.length" class="d-flex flex-wrap ga-2 mt-3">
+              <v-chip
+                v-for="target in diffTargets"
+                :key="target.id"
+                closable
+                size="small"
+                @click:close="removeDiffTarget(target.id)"
+              >
+                {{ target.title || target.name }}
+              </v-chip>
+            </div>
+            <div class="d-flex justify-end mt-3">
+              <v-btn
+                color="primary"
+                variant="flat"
+                class="text-none"
+                :loading="diffLoading"
+                :disabled="!diffTargets.length"
+                @click="runDiff"
+              >
+                {{ t('documentIntelligence.diffCompare') }}
+              </v-btn>
+              <v-btn
+                variant="tonal"
+                class="text-none"
+                :loading="savingDiff"
+                :disabled="!diffResult || diffLoading"
+                @click="saveDiffDocument"
+              >
+                {{ t('documentIntelligence.saveDiff') }}
+              </v-btn>
+            </div>
+            <div v-if="diffResult && activeDiff" class="mt-4">
+              <v-tabs
+                v-if="diffComparisons.length > 1"
+                :model-value="activeDiff.id"
+                color="primary"
+                density="comfortable"
+                show-arrows
+                class="mb-2"
+                @update:model-value="onDiffPeerTab"
+              >
+                <v-tab
+                  v-for="peer in diffComparisons"
+                  :key="peer.id"
+                  :value="peer.id"
+                  class="text-none"
+                >
+                  {{ diffDocLabel(peer.name) }}
+                </v-tab>
+              </v-tabs>
+              <div class="text-subtitle-2">
+                {{ diffDocLabel(diffResult.baseName) }} → {{ diffDocLabel(activeDiff.name) }}
+              </div>
+              <div
+                v-for="item in [activeDiff]"
+                :key="item.id"
+                class="mb-4"
+              >
+                <div v-if="!item.compared" class="text-body-2 text-medium-emphasis mt-1">{{ item.reason }}</div>
+                <template v-else>
+                  <div class="text-caption text-medium-emphasis mt-1">
+                    {{ t('documentIntelligence.diffSame', { count: item.unchangedCount }) }}
+                  </div>
+                  <div class="d-flex flex-wrap ga-2 mt-3">
+                    <v-btn
+                      size="small"
+                      class="text-none"
+                      :color="diffGroup === 'changed' ? 'warning' : undefined"
+                      :variant="diffGroup === 'changed' ? 'flat' : 'tonal'"
+                      :disabled="!item.changedCount"
+                      @click="toggleDiffGroup('changed')"
+                    >
+                      {{ t('documentIntelligence.diffChanged') }} {{ diffCountText(item.changed.length, item.changedCount) }}
+                    </v-btn>
+                    <v-btn
+                      size="small"
+                      class="text-none"
+                      :color="diffGroup === 'removed' ? 'error' : undefined"
+                      :variant="diffGroup === 'removed' ? 'flat' : 'tonal'"
+                      :disabled="!item.removedCount"
+                      @click="toggleDiffGroup('removed')"
+                    >
+                      {{ t('documentIntelligence.diffRemoved') }} {{ diffCountText(item.removed.length, item.removedCount) }}
+                    </v-btn>
+                    <v-btn
+                      size="small"
+                      class="text-none"
+                      :color="diffGroup === 'added' ? 'success' : undefined"
+                      :variant="diffGroup === 'added' ? 'flat' : 'tonal'"
+                      :disabled="!item.addedCount"
+                      @click="toggleDiffGroup('added')"
+                    >
+                      {{ t('documentIntelligence.diffAdded') }} {{ diffCountText(item.added.length, item.addedCount) }}
+                    </v-btn>
+                    <v-btn
+                      v-if="diffNoiseCount(item)"
+                      size="small"
+                      class="text-none"
+                      :variant="diffShowNoise ? 'flat' : 'text'"
+                      @click="diffShowNoise = !diffShowNoise"
+                    >
+                      {{ t('documentIntelligence.diffNoise', { count: diffNoiseCount(item) }) }}
+                    </v-btn>
+                  </div>
+                  <div v-if="item.truncated" class="text-caption text-medium-emphasis mt-2">
+                    {{ t('documentIntelligence.diffTruncated') }}
+                  </div>
+                  <div v-if="!diffHasChanges(item)" class="text-body-2 mt-2">
+                    {{ t('documentIntelligence.diffNone') }}
+                  </div>
+                  <div v-if="showDiffGroup('changed') && item.changed.length" class="mt-3">
+                    <div v-for="group in groupDiffLines(item.changed)" :key="`c-${group.rows[0].index}`" class="mb-3">
+                      <div class="text-caption font-weight-medium text-primary mb-2">
+                        {{ group.heading || t('documentIntelligence.diffNoHeading') }}
+                      </div>
+                      <div v-for="change in group.rows" :key="`c-${change.index}`" class="diff-pair mb-2">
+                        <div class="diff-side">
+                          <div class="text-caption text-medium-emphasis mb-1">{{ t('documentIntelligence.diffBase') }}</div>
+                          <div :class="{ 'diff-clamp': diffLineLong(change.base) && !diffExpanded[`${item.id}:c:${change.index}`] }">
+                            <span
+                              v-for="(token, tokenIndex) in diffWordMap.get(`${item.id}:c:${change.index}`)?.base"
+                              :key="`b-${tokenIndex}`"
+                              :class="token.changed ? 'diff-del' : 'diff-same'"
+                            >{{ token.text }}</span>
+                          </div>
+                        </div>
+                        <div class="diff-side">
+                          <div class="text-caption text-medium-emphasis mb-1">{{ t('documentIntelligence.diffOther') }}</div>
+                          <div :class="{ 'diff-clamp': diffLineLong(change.other) && !diffExpanded[`${item.id}:c:${change.index}`] }">
+                            <span
+                              v-for="(token, tokenIndex) in diffWordMap.get(`${item.id}:c:${change.index}`)?.other"
+                              :key="`o-${tokenIndex}`"
+                              :class="token.changed ? 'diff-ins' : 'diff-same'"
+                            >{{ token.text }}</span>
+                          </div>
+                        </div>
+                        <v-btn
+                          v-if="diffLineLong(change.base) || diffLineLong(change.other)"
+                          variant="text"
+                          size="small"
+                          class="text-none diff-pair-span"
+                          @click="toggleDiffLine(`${item.id}:c:${change.index}`)"
+                        >
+                          {{ diffExpanded[`${item.id}:c:${change.index}`] ? t('documentIntelligence.diffCollapse') : t('documentIntelligence.diffExpand') }}
+                        </v-btn>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="showDiffGroup('removed') && item.removed.length" class="mt-3">
+                    <div v-for="group in groupDiffLines(item.removed)" :key="`r-${group.rows[0].index}`" class="mb-3">
+                      <div class="text-caption font-weight-medium text-primary mb-2">
+                        {{ group.heading || t('documentIntelligence.diffNoHeading') }}
+                      </div>
+                      <div v-for="line in group.rows" :key="`r-${line.index}`" class="diff-side mb-2">
+                        <div :class="{ 'diff-clamp': diffLineLong(line.text) && !diffExpanded[`${item.id}:r:${line.index}`] }">
+                          <span class="diff-del">{{ line.text }}</span>
+                        </div>
+                        <v-btn
+                          v-if="diffLineLong(line.text)"
+                          variant="text"
+                          size="small"
+                          class="text-none px-0"
+                          @click="toggleDiffLine(`${item.id}:r:${line.index}`)"
+                        >
+                          {{ diffExpanded[`${item.id}:r:${line.index}`] ? t('documentIntelligence.diffCollapse') : t('documentIntelligence.diffExpand') }}
+                        </v-btn>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="showDiffGroup('added') && item.added.length" class="mt-3">
+                    <div v-for="group in groupDiffLines(item.added)" :key="`a-${group.rows[0].index}`" class="mb-3">
+                      <div class="text-caption font-weight-medium text-primary mb-2">
+                        {{ group.heading || t('documentIntelligence.diffNoHeading') }}
+                      </div>
+                      <div v-for="line in group.rows" :key="`a-${line.index}`" class="diff-side mb-2">
+                        <div :class="{ 'diff-clamp': diffLineLong(line.text) && !diffExpanded[`${item.id}:a:${line.index}`] }">
+                          <span class="diff-ins">{{ line.text }}</span>
+                        </div>
+                        <v-btn
+                          v-if="diffLineLong(line.text)"
+                          variant="text"
+                          size="small"
+                          class="text-none px-0"
+                          @click="toggleDiffLine(`${item.id}:a:${line.index}`)"
+                        >
+                          {{ diffExpanded[`${item.id}:a:${line.index}`] ? t('documentIntelligence.diffCollapse') : t('documentIntelligence.diffExpand') }}
+                        </v-btn>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="diffShowNoise && showDiffGroup('changed') && item.noiseChanged.length" class="mt-3">
+                    <div v-for="group in groupDiffLines(item.noiseChanged)" :key="`nc-${group.rows[0].index}`" class="mb-3">
+                      <div class="text-caption font-weight-medium text-medium-emphasis mb-2">
+                        {{ group.heading || t('documentIntelligence.diffNoHeading') }}
+                      </div>
+                      <div v-for="change in group.rows" :key="`nc-${change.index}`" class="diff-pair mb-2">
+                        <div class="diff-side">
+                          <div class="text-caption text-medium-emphasis mb-1">{{ t('documentIntelligence.diffBase') }}</div>
+                          <div :class="{ 'diff-clamp': diffLineLong(change.base) && !diffExpanded[`${item.id}:n:${change.index}`] }">
+                            <span
+                              v-for="(token, tokenIndex) in diffWordMap.get(`${item.id}:n:${change.index}`)?.base"
+                              :key="`nb-${tokenIndex}`"
+                              :class="token.changed ? 'diff-del' : 'diff-same'"
+                            >{{ token.text }}</span>
+                          </div>
+                        </div>
+                        <div class="diff-side">
+                          <div class="text-caption text-medium-emphasis mb-1">{{ t('documentIntelligence.diffOther') }}</div>
+                          <div :class="{ 'diff-clamp': diffLineLong(change.other) && !diffExpanded[`${item.id}:n:${change.index}`] }">
+                            <span
+                              v-for="(token, tokenIndex) in diffWordMap.get(`${item.id}:n:${change.index}`)?.other"
+                              :key="`no-${tokenIndex}`"
+                              :class="token.changed ? 'diff-ins' : 'diff-same'"
+                            >{{ token.text }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="diffShowNoise && showDiffGroup('removed') && item.noiseRemoved.length" class="mt-3">
+                    <div v-for="group in groupDiffLines(item.noiseRemoved)" :key="`nr-${group.rows[0].index}`" class="mb-3">
+                      <div class="text-caption text-medium-emphasis mb-2">
+                        {{ group.heading || t('documentIntelligence.diffNoHeading') }}
+                      </div>
+                      <div v-for="line in group.rows" :key="`nr-${line.index}`" class="diff-side mb-2">
+                        <span class="diff-del">{{ line.text }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="diffShowNoise && showDiffGroup('added') && item.noiseAdded.length" class="mt-3">
+                    <div v-for="group in groupDiffLines(item.noiseAdded)" :key="`na-${group.rows[0].index}`" class="mb-3">
+                      <div class="text-caption text-medium-emphasis mb-2">
+                        {{ group.heading || t('documentIntelligence.diffNoHeading') }}
+                      </div>
+                      <div v-for="line in group.rows" :key="`na-${line.index}`" class="diff-side mb-2">
+                        <span class="diff-ins">{{ line.text }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="aiDialog = false">{{ t('documentIntelligence.close') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="indexDialog" max-width="480">
+      <v-card v-if="indexResult" rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.index') }}</v-card-title>
+        <v-card-text>
+          <div class="text-body-2">{{ indexResult.steps.join(' · ') }}</div>
+          <div v-if="indexResult.status === 'done'" class="mt-2">
+            {{ t('documentIntelligence.indexResult', { count: indexResult.charCount }) }}
+          </div>
+          <div v-else-if="indexResult.error" class="mt-2 text-error">{{ indexResult.error }}</div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="indexDialog = false">{{ t('documentIntelligence.close') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="folderDialog" max-width="420">
       <v-card rounded="lg">
@@ -1504,6 +2540,22 @@ watch(
       </v-card>
     </v-dialog>
 
+    <PmPickDocumentDialog
+      v-model="diffPickerOpen"
+      :project-id="projectId"
+      :project-code="projectCode"
+      :hub-folder-id="hubId"
+      indexed-only
+      multiple
+      :max-selection="4"
+      :exclude-resource-ids="aiResource ? [aiResource.id] : []"
+      :initial-selection="diffTargets"
+      :title="t('documentIntelligence.diffPickTitle')"
+      :hint="t('documentIntelligence.diffHint')"
+      :confirm-label="t('documentIntelligence.diffPickConfirm')"
+      @pick-many="onDiffTargetsPicked"
+      @hub-ready="onDiffHubReady"
+    />
     <PmLibraryBindDialog
       v-model="bindDialog"
       :project-id="projectId"
@@ -1595,25 +2647,79 @@ watch(
   text-decoration: none;
 }
 .pm-library-table-wrap {
-  overflow-x: auto;
+  min-width: 0;
 }
 .pm-library-table :deep(tbody tr) {
   cursor: pointer;
 }
-.pm-library-table :deep(thead th:last-child),
-.pm-library-table :deep(tbody td:last-child) {
+.pm-library-table :deep(.v-table__wrapper > table > thead > tr > th.pm-library-actions),
+.pm-library-table.v-table--hover :deep(.v-table__wrapper > table > tbody > tr > td.pm-library-actions) {
   position: sticky;
   right: 0;
+  left: auto;
   z-index: 2;
   background: rgb(var(--v-theme-surface));
   box-shadow: -4px 0 8px -4px rgba(0, 0, 0, 0.12);
   white-space: nowrap;
 }
-.pm-library-table :deep(thead th:last-child) {
+.pm-library-table :deep(.v-table__wrapper > table > thead > tr > th.pm-library-actions) {
   z-index: 3;
+}
+.library-person {
+  max-width: 150px;
 }
 .border {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+.summary-log {
+  max-height: 140px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.diff-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.diff-pair-span {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.diff-side {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.diff-del {
+  background: rgba(var(--v-theme-error), 0.18);
+  border-radius: 2px;
+}
+.diff-ins {
+  background: rgba(var(--v-theme-success), 0.2);
+  border-radius: 2px;
+}
+.diff-same {
+  color: rgba(var(--v-theme-on-surface), 0.62);
+}
+.diff-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (max-width: 700px) {
+  .diff-pair {
+    grid-template-columns: 1fr;
+  }
 }
 .min-width-0 {
   min-width: 0;

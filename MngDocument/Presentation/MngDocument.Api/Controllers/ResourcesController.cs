@@ -22,15 +22,24 @@ public class ResourcesController : ControllerBase
     private readonly IResourceService _resources;
     private readonly IPermissionService _permissions;
     private readonly IResourceEditorService _resourceEditor;
+    private readonly IDocumentIndexService _index;
+    private readonly IDocumentSummaryService _summary;
+    private readonly IDocumentDiffService _diff;
 
     public ResourcesController(
         IResourceService resources,
         IPermissionService permissions,
-        IResourceEditorService resourceEditor)
+        IResourceEditorService resourceEditor,
+        IDocumentIndexService index,
+        IDocumentSummaryService summary,
+        IDocumentDiffService diff)
     {
         _resources = resources;
         _permissions = permissions;
         _resourceEditor = resourceEditor;
+        _index = index;
+        _summary = summary;
+        _diff = diff;
     }
 
     /// <summary>Klasör ağacı (yalnızca klasörler, iç içe).</summary>
@@ -118,6 +127,36 @@ public class ResourcesController : ControllerBase
     [ProducesResponseType(typeof(ResourceListResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDrafts([FromQuery] int limit = 50, CancellationToken ct = default) =>
         Ok(await _resources.GetDraftsAsync(limit, ct));
+
+    /// <summary>Düz metin indeksinin durumu.</summary>
+    [HttpGet("{id}/index")]
+    [ProducesResponseType(typeof(ResourceIndexResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetIndex(string id, CancellationToken ct) =>
+        Ok(await _index.GetStatusAsync(id, ct));
+
+    /// <summary>Docx veya markdown belgenin düz metnini indeksler. Aynı anda tek iş.</summary>
+    [HttpPost("{id}/index")]
+    [ProducesResponseType(typeof(ResourceIndexResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Index(string id, CancellationToken ct) =>
+        Ok(await _index.IndexAsync(id, ct));
+
+    /// <summary>Saklanan özet. Üretim sürüyorsa adımı döner.</summary>
+    [HttpGet("{id}/summary")]
+    [ProducesResponseType(typeof(ResourceSummaryResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSummary(string id, CancellationToken ct) =>
+        Ok(await _summary.GetAsync(id, ct));
+
+    /// <summary>İndeksi tamamlanmış belgenin özetini üretir veya saklanan özeti döner.</summary>
+    [HttpPost("{id}/summary")]
+    [ProducesResponseType(typeof(ResourceSummaryResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Summarize(string id, CancellationToken ct) =>
+        Ok(await _summary.StartAsync(id, ct));
+
+    /// <summary>Taban belgenin indeks metnini seçilen belgelerle karşılaştırır. Model kullanmaz.</summary>
+    [HttpPost("{id}/diff")]
+    [ProducesResponseType(typeof(ResourceDiffResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Diff(string id, [FromBody] ResourceDiffRequest? request, CancellationToken ct) =>
+        Ok(await _diff.CompareAsync(id, request?.OtherIds ?? new List<string>(), ct));
 
     /// <summary>Tek kaynak metadata'sı.</summary>
     [HttpGet("{id}")]

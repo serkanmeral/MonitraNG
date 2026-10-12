@@ -99,6 +99,18 @@ export interface DiResource {
   origin: string | null;
   letterheadId: string | null;
   documentNo: string | null;
+  /** none | running | done | failed | stale */
+  indexStatus: string;
+  indexedAt: string | null;
+  indexError: string | null;
+  indexCharCount: number | null;
+  /** none | running | done | failed | stale */
+  summaryStatus: string;
+  summaryText: string | null;
+  summarizedAt: string | null;
+  summaryError: string | null;
+  summaryStep: string | null;
+  summaryChunked: boolean;
   templateId: string | null;
   templateCode: string | null;
   generationProfile: string | null;
