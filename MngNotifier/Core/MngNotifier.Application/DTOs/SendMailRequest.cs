@@ -8,6 +8,9 @@ public class SendMailRequest
     public string Subject { get; set; } = string.Empty;
     public string Body { get; set; } = string.Empty;
     public bool IsHtml { get; set; } = true;
+
+    /// <summary>Tenant name. When set, SMTP is taken from that domain if configured.</summary>
+    public string? DomainName { get; set; }
 }
 
 public class MailAddressDto

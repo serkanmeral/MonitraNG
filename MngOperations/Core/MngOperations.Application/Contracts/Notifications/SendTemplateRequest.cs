@@ -10,4 +10,5 @@ public sealed class SendTemplateRequest
     /// <summary>Boş ise Notifier template subject kullanır.</summary>
     public string? Subject { get; init; }
     public JsonElement Context { get; init; }
+    public string? DomainName { get; init; }
 }

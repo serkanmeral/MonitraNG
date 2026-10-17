@@ -21,6 +21,19 @@ export interface DirectoryLdapSettings {
   bindPassword?: string;
 }
 
+export interface DomainMailSettings {
+  enabled?: boolean;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  enableSsl?: boolean;
+  secureSocketMode?: string;
+  fromEmail?: string;
+  fromName?: string | null;
+  passwordConfigured?: boolean;
+}
+
 export interface Domain {
   id: string;
   name: string;
@@ -40,6 +53,7 @@ export interface Domain {
     customSettings?: Record<string, any>;
     directoryPrivileges?: UpdateDirectoryPrivilegeSettingsRequest | null;
     directoryLdap?: DirectoryLdapSettings | null;
+    mail?: DomainMailSettings | null;
   };
   createdAt?: string;
   expiresAt?: string;
@@ -101,6 +115,7 @@ export interface UpdateDomainRequest {
     customSettings?: Record<string, any>;
     directoryPrivileges?: DirectoryPrivilegeSettings | null;
     directoryLdap?: DirectoryLdapSettings | null;
+    mail?: DomainMailSettings | null;
   };
 }
 

@@ -119,6 +119,7 @@ public sealed class AlarmNotificationDispatchService(
                             policy.EmailTemplateKey!.Trim(),
                             policy.EmailSubject,
                             perRecipientContext,
+                            message.DomainName,
                             cancellationToken);
                         dispatched = true;
                     }

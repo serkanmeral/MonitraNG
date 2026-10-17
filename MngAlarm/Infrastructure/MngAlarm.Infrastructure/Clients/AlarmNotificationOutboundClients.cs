@@ -198,6 +198,7 @@ public interface IAlarmNotifiersDispatchClient
         string templateKey,
         string? subjectOverride,
         Dictionary<string, object?> context,
+        string? domainName = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -212,6 +213,7 @@ public sealed class AlarmNotifiersDispatchClient(
         string templateKey,
         string? subjectOverride,
         Dictionary<string, object?> context,
+        string? domainName = null,
         CancellationToken cancellationToken = default)
     {
         var notifier = settings.Value.NotificationDispatch.MngNotifiers;
@@ -229,6 +231,7 @@ public sealed class AlarmNotifiersDispatchClient(
                 templateKey,
                 subject = subjectOverride,
                 context,
+                domainName,
             }, options: JsonOptions),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);

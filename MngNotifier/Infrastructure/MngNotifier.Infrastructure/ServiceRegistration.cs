@@ -11,11 +11,18 @@ public static class ServiceRegistration
     {
         services.AddHttpClient("MngDataGateway");
         services.AddHttpClient("MngKeeper");
+        services.AddHttpClient("OpenSearch", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
         services.AddHttpClient("TelegramBot", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);
         });
 
+        services.AddSingleton<DomainMailSettingsCache>();
+        services.AddScoped<IDomainMailSettingsResolver, KeeperDomainMailSettingsResolver>();
+        services.AddScoped<IMailDeliveryLog, OpenSearchMailDeliveryLog>();
         services.AddScoped<IMailProvider, SmtpMailProvider>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IDataGatewayTemplateClient, DataGatewayTemplateClient>();

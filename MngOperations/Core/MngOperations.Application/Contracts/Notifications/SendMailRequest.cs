@@ -8,6 +8,7 @@ public sealed class SendMailRequest
     public required string Subject { get; init; }
     public required string Body { get; init; }
     public bool IsHtml { get; init; } = true;
+    public string? DomainName { get; init; }
 }
 
 public sealed class MailAddressDto

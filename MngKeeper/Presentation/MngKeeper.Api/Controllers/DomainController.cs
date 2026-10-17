@@ -88,6 +88,7 @@ namespace MngKeeper.Api.Controllers
                     return NotFound();
                 }
 
+                RedactMailPassword(domain);
                 return Ok(domain);
             }
             catch (Exception ex)
@@ -113,6 +114,9 @@ namespace MngKeeper.Api.Controllers
                     domains = await _domainRepository.GetAllAsync();
                 }
 
+                foreach (var domain in domains)
+                    RedactMailPassword(domain);
+
                 return Ok(domains);
             }
             catch (Exception ex)
@@ -134,6 +138,7 @@ namespace MngKeeper.Api.Controllers
                     return NotFound();
                 }
 
+                RedactMailPassword(domain);
                 return Ok(domain);
             }
             catch (Exception ex)
@@ -186,6 +191,7 @@ namespace MngKeeper.Api.Controllers
                 existingDomain.UpdatedBy = "system"; // TODO: Get from current user context
 
                 var updatedDomain = await _domainRepository.UpdateAsync(existingDomain);
+                RedactMailPassword(updatedDomain);
                 return Ok(updatedDomain);
             }
             catch (Exception ex)
@@ -308,6 +314,39 @@ namespace MngKeeper.Api.Controllers
 
             if (incoming.DirectoryLdap != null)
                 MergeDirectoryLdap(target, incoming.DirectoryLdap);
+
+            if (incoming.Mail != null)
+                MergeMail(target, incoming.Mail);
+        }
+
+        private static void RedactMailPassword(MngKeeper.Domain.Entities.Domain domain)
+        {
+            var mail = domain.Settings?.Mail;
+            if (mail == null)
+                return;
+
+            mail.PasswordConfigured = !string.IsNullOrEmpty(mail.Password);
+            mail.Password = string.Empty;
+        }
+
+        private static void MergeMail(DomainSettings target, DomainMailSettings incoming)
+        {
+            target.Mail ??= new DomainMailSettings();
+            var mail = target.Mail;
+
+            mail.Enabled = incoming.Enabled;
+            mail.Host = incoming.Host?.Trim() ?? string.Empty;
+            mail.Port = incoming.Port > 0 ? incoming.Port : 587;
+            mail.Username = incoming.Username?.Trim() ?? string.Empty;
+            mail.EnableSsl = incoming.EnableSsl;
+            mail.SecureSocketMode = string.IsNullOrWhiteSpace(incoming.SecureSocketMode)
+                ? "Auto"
+                : incoming.SecureSocketMode.Trim();
+            mail.FromEmail = incoming.FromEmail?.Trim() ?? string.Empty;
+            mail.FromName = string.IsNullOrWhiteSpace(incoming.FromName) ? null : incoming.FromName.Trim();
+
+            if (!string.IsNullOrEmpty(incoming.Password))
+                mail.Password = incoming.Password;
         }
 
         private static void MergeDirectoryPrivileges(
