@@ -50,6 +50,7 @@ public static class ServiceRegistration
 
         services.AddMemoryCache();
         services.AddSingleton<SummaryJobBoard>();
+        services.AddSingleton<BulkIndexJobBoard>();
         services.AddScoped<DocumentIndexCleaner>();
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IPermissionService, PermissionService>();
@@ -58,6 +59,7 @@ public static class ServiceRegistration
         services.AddScoped<IDocumentSummaryService, DocumentSummaryService>();
         services.AddScoped<IDocumentDiffService, DocumentDiffService>();
         services.AddScoped<DocumentSummaryRunner>();
+        services.AddScoped<DocumentIndexBatchRunner>();
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();

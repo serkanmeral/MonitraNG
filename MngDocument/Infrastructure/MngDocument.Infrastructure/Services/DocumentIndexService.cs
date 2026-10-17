@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
@@ -11,7 +13,7 @@ using MngDocument.Domain.Constants;
 namespace MngDocument.Infrastructure.Services;
 
 /// <summary>
-/// Seçilen docx veya markdown belgenin düz metnini OpenSearch'e yazar.
+/// Seçilen belgenin düz metnini OpenSearch'e yazar.
 /// Model çağırmaz. Aynı anda bir etki alanında tek iş çalışır.
 /// </summary>
 public sealed class DocumentIndexService : IDocumentIndexService
@@ -22,6 +24,8 @@ public sealed class DocumentIndexService : IDocumentIndexService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IServiceScopeFactory _scopes;
+    private readonly BulkIndexJobBoard _batchBoard;
     private readonly MngDocumentSettings _settings;
     private readonly ILogger<DocumentIndexService> _logger;
 
@@ -30,6 +34,8 @@ public sealed class DocumentIndexService : IDocumentIndexService
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IHttpClientFactory httpClientFactory,
+        IServiceScopeFactory scopes,
+        BulkIndexJobBoard batchBoard,
         IOptions<MngDocumentSettings> settings,
         ILogger<DocumentIndexService> logger)
     {
@@ -37,6 +43,8 @@ public sealed class DocumentIndexService : IDocumentIndexService
         _dg = dg;
         _ctx = ctx;
         _httpClientFactory = httpClientFactory;
+        _scopes = scopes;
+        _batchBoard = batchBoard;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -104,6 +112,129 @@ public sealed class DocumentIndexService : IDocumentIndexService
         }
     }
 
+    public Task<BulkIndexJobDto> GetBatchAsync(string folderId, CancellationToken ct = default)
+    {
+        var job = _batchBoard.Find(DomainKey());
+        if (job is null || !string.Equals(job.FolderId, folderId, StringComparison.Ordinal))
+            return Task.FromResult(NoneBatch(folderId));
+        return Task.FromResult(job.ToDto());
+    }
+
+    public Task<BulkIndexJobDto> CancelBatchAsync(string folderId, CancellationToken ct = default)
+    {
+        var job = _batchBoard.Find(DomainKey());
+        if (job is null || !string.Equals(job.FolderId, folderId, StringComparison.Ordinal))
+            return Task.FromResult(NoneBatch(folderId));
+        job.RequestStop();
+        return Task.FromResult(job.ToDto());
+    }
+
+    public async Task<BulkIndexJobDto> StartBatchAsync(string folderId, CancellationToken ct = default)
+    {
+        var folder = await _resources.GetByIdAsync(folderId, ct);
+        if (!string.Equals(folder.Type, ResourceType.Folder, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_FOLDER",
+                "Bulk index starts from a folder.",
+                "Toplu indeks bir klasörden başlar.");
+        }
+
+        var domain = DomainKey();
+        var active = _batchBoard.Find(domain);
+        if (active is { IsActive: true })
+        {
+            throw DocumentException.Conflict(
+                "DOCUMENT_JOB_BUSY",
+                "Another document job is running.",
+                "Başka bir belgenin indeks veya özet işi sürüyor. O bitince tekrar deneyin.");
+        }
+
+        var gate = DocumentJobGate.For(domain);
+        if (!await gate.WaitAsync(0, ct))
+        {
+            throw DocumentException.Conflict(
+                "DOCUMENT_JOB_BUSY",
+                "Another document job is running.",
+                "Başka bir belgenin indeks veya özet işi sürüyor. O bitince tekrar deneyin.");
+        }
+
+        var handed = false;
+        try
+        {
+            var files = new List<(string Id, string Name)>();
+            await CollectFilesAsync(folderId, files, ct);
+            var job = new BulkIndexJob(folder.Id, folder.Name, files.Count);
+            _batchBoard.Set(domain, job);
+            if (files.Count == 0)
+            {
+                job.Finish(false);
+                return job.ToDto();
+            }
+
+            var token = _ctx.BearerToken ?? string.Empty;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = _scopes.CreateScope();
+                    var runner = scope.ServiceProvider.GetRequiredService<DocumentIndexBatchRunner>();
+                    await runner.ExecuteAsync(job, files, token, domain, job.Stop.Token);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Bulk index crashed for folder {FolderId}", folderId);
+                    job.Finish(true);
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            });
+            handed = true;
+            return job.ToDto();
+        }
+        finally
+        {
+            if (!handed)
+                gate.Release();
+        }
+    }
+
+    private async Task CollectFilesAsync(string folderId, List<(string Id, string Name)> files, CancellationToken ct)
+    {
+        var page = await _resources.GetChildrenAsync(folderId, limit: null, ct: ct);
+        StringComparer comparer;
+        try
+        {
+            comparer = StringComparer.Create(CultureInfo.GetCultureInfo("tr-TR"), true);
+        }
+        catch (CultureNotFoundException)
+        {
+            comparer = StringComparer.OrdinalIgnoreCase;
+        }
+        foreach (var file in page.Items.Where(IsIndexableResource).OrderBy(item => item.Name, comparer))
+            files.Add((file.Id, file.Name));
+
+        foreach (var child in page.Items
+            .Where(item => string.Equals(item.Type, ResourceType.Folder, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(item => item.Name, comparer))
+        {
+            await CollectFilesAsync(child.Id, files, ct);
+        }
+    }
+
+    private static bool IsIndexableResource(ResourceDto resource)
+    {
+        if (string.Equals(resource.Type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return string.Equals(resource.Type, ResourceType.File, StringComparison.OrdinalIgnoreCase)
+            && IndexPlainText.IsIndexableExtension(resource.Extension, resource.FileName ?? resource.Name);
+    }
+
+    private static BulkIndexJobDto NoneBatch(string folderId) =>
+        new() { Status = "none", FolderId = folderId };
+
     private async Task<string> ExtractTextAsync(ResourceDto resource, CancellationToken ct)
     {
         if (string.Equals(resource.Type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase))
@@ -112,9 +243,8 @@ public sealed class DocumentIndexService : IDocumentIndexService
             return page.Content ?? string.Empty;
         }
 
-        var (bytes, _) = await _resources.GetCurrentFileContentAsync(resource.Id, ct);
-        using var stream = new MemoryStream(bytes);
-        return DocxStructureParser.ExtractPlainText(stream);
+        var (bytes, fileName) = await _resources.GetCurrentFileContentAsync(resource.Id, ct);
+        return IndexPlainText.ExtractFile(resource.Extension, fileName, bytes);
     }
 
     private async Task WriteSearchAsync(ResourceDto resource, string text, CancellationToken ct)
@@ -222,14 +352,13 @@ public sealed class DocumentIndexService : IDocumentIndexService
         if (string.Equals(resource.Type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase))
             return;
         if (string.Equals(resource.Type, ResourceType.File, StringComparison.OrdinalIgnoreCase)
-            && (DocxStructureParser.IsDocxExtension(resource.Extension)
-                || DocxStructureParser.IsDocxExtension(Path.GetExtension(resource.FileName ?? string.Empty))))
+            && IndexPlainText.IsIndexableExtension(resource.Extension, resource.FileName))
             return;
 
         throw DocumentException.Validation(
             "INDEX_UNSUPPORTED",
-            "Only docx files and markdown pages can be indexed.",
-            "Yalnızca docx dosyası ve markdown sayfası indekslenir.");
+            "Only docx, txt, csv, xlsx, pptx, pdf files and markdown pages can be indexed.",
+            "Yalnızca docx, txt, csv, xlsx, pptx, pdf dosyaları ve markdown sayfası indekslenir.");
     }
 
     private string DomainKey() =>

@@ -10,6 +10,8 @@ const props = defineProps<{
   excludeSubtreeId?: string | null;
   loadChildren: (parentId: string | null) => Promise<DiTreeNode[]>;
   isLoading?: (parentId: string | null) => boolean;
+  /** Verilmezse tüm alan klasörlerinde aranır. */
+  searchFolders?: (query: string) => Promise<DiTreeNode[]>;
 }>();
 
 const emit = defineEmits<{
@@ -117,7 +119,9 @@ async function runFolderSearch(q: string) {
   }
   searchLoading.value = true;
   try {
-    searchResults.value = await diSearchTreeFolders(trimmed, 50);
+    searchResults.value = props.searchFolders
+      ? await props.searchFolders(trimmed)
+      : await diSearchTreeFolders(trimmed, 50);
   } catch {
     searchResults.value = [];
   } finally {

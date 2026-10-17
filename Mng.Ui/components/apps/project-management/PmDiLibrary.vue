@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import DiCloneResourceDialog from '@/components/apps/document-intelligence/DiCloneResourceDialog.vue';
 import DiDrawioEditorDialog from '@/components/apps/document-intelligence/DiDrawioEditorDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
+import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/DiFileVersionHistoryDialog.vue';
+import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligence/DiGenerateFromTemplateDialog.vue';
 import DiLifecycleBar from '@/components/apps/document-intelligence/DiLifecycleBar.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intelligence/DiMarkdownVersionHistoryDialog.vue';
+import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
+import DiResourceInfoDialog from '@/components/apps/document-intelligence/DiResourceInfoDialog.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
+import DiResourceTagsDialog from '@/components/apps/document-intelligence/DiResourceTagsDialog.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
@@ -30,11 +36,19 @@ import {
   diDelete,
   diDownloadResource,
   diErrorStatus,
+  diFetchResourceExportPdf,
+  diMove,
+  diRename,
+  diReplaceFileContent,
+  diSearchTreeFolders,
   diGetBrowseContext,
   diGetById,
   diDiffResource,
   diGetSummary,
+  diCancelBulkIndex,
+  diGetBulkIndex,
   diIndexResource,
+  diStartBulkIndex,
   diSummarizeResource,
   diGetLetterhead,
   diGetMarkdownContent,
@@ -44,7 +58,7 @@ import {
   diUpdateMarkdown,
   diUpdateResourceMetadata,
 } from '@/services/documentIntelligenceService';
-import type { DiResourceDiffResult, DiResourceIndexResult, DiResourceSummaryResult } from '@/services/documentIntelligenceService';
+import type { DiBulkIndexJob, DiResourceDiffResult, DiResourceIndexResult, DiResourceSummaryResult } from '@/services/documentIntelligenceService';
 import type {
   DiBreadcrumb,
   DiGenerateDocumentResult,
@@ -54,10 +68,11 @@ import type {
   DiTreeNode,
 } from '@/types/apps/documentIntelligence';
 import { diFullPermission } from '@/types/apps/documentIntelligence';
-import { isDiDrawioFile, isDiManagedDocument, isDiOfficeEditable, isDiPreviewable, isDiPresentation, isDiSheet } from '@/utils/diFilePreview';
+import { isDiCloneable, isDiDrawioFile, isDiIndexable, isDiManagedDocument, isDiOfficeEditable, isDiOfficePdfExportable, isDiPreviewable, isDiPresentation, isDiSheet, isDiUploadedFile } from '@/utils/diFilePreview';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import { diCreateBlankDrawio } from '@/utils/diDrawio';
 import { buildDiFolderUrl } from '@/utils/diResourceLink';
+import { useAuthStore } from '@/stores/auth';
 import type { PmWbsItem } from '@/types/apps/projectManagement';
 import {
   ensurePmLibraryTags,
@@ -85,6 +100,7 @@ const emit = defineEmits<{
 const MAX_FILE_MB = 20;
 
 const { t } = useAppI18n();
+const authStore = useAuthStore();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
@@ -162,9 +178,56 @@ watch(aiDialog, (open) => {
 
 onBeforeUnmount(() => {
   if (summaryClock) clearInterval(summaryClock);
+  clearBulkTimer();
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
 });
 let summaryTicket = 0;
 const tagColorTick = ref(0);
+const TREE_WIDTH_KEY = 'pm-library-tree-width';
+const TREE_WIDTH_MIN = 200;
+const TREE_WIDTH_MAX = 640;
+
+function loadTreeWidth(): number {
+  if (typeof window === 'undefined') return 260;
+  const raw = Number(localStorage.getItem(TREE_WIDTH_KEY));
+  if (!Number.isFinite(raw)) return 260;
+  return Math.min(TREE_WIDTH_MAX, Math.max(TREE_WIDTH_MIN, raw));
+}
+
+const treeWidth = ref(loadTreeWidth());
+const treeResizeActive = ref(false);
+let treeResizeStartX = 0;
+let treeResizeStartWidth = 260;
+
+function onTreeResizeStart(event: PointerEvent) {
+  const handle = event.currentTarget as HTMLElement | null;
+  if (!handle) return;
+  treeResizeActive.value = true;
+  treeResizeStartX = event.clientX;
+  treeResizeStartWidth = treeWidth.value;
+  handle.setPointerCapture(event.pointerId);
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function onTreeResizeMove(event: PointerEvent) {
+  if (!treeResizeActive.value) return;
+  const next = treeResizeStartWidth + (event.clientX - treeResizeStartX);
+  treeWidth.value = Math.min(TREE_WIDTH_MAX, Math.max(TREE_WIDTH_MIN, next));
+}
+
+function onTreeResizeEnd() {
+  if (!treeResizeActive.value) return;
+  treeResizeActive.value = false;
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  try {
+    localStorage.setItem(TREE_WIDTH_KEY, String(Math.round(treeWidth.value)));
+  } catch {
+    // Width still applies for this visit when storage is unavailable.
+  }
+}
 const busy = ref(false);
 const folderDialog = ref(false);
 const pageDialog = ref(false);
@@ -209,6 +272,28 @@ const saveDialog = ref(false);
 const saveDialogMode = ref<DiSavePageMode>('save');
 const pendingSaveAsDraft = ref(false);
 const historyDialog = ref(false);
+const historyResource = ref<DiResource | null>(null);
+const fileHistoryDialog = ref(false);
+const fileHistoryTarget = ref<DiResource | null>(null);
+const infoDialog = ref(false);
+const infoTarget = ref<DiResource | null>(null);
+const tagsDialog = ref(false);
+const tagsTarget = ref<DiResource | null>(null);
+const renameDialog = ref(false);
+const renameTarget = ref<DiResource | null>(null);
+const renameName = ref('');
+const moveDialog = ref(false);
+const moveTarget = ref<DiResource | null>(null);
+const moveDestId = ref<string | null>(null);
+const cloneDialog = ref(false);
+const cloneTarget = ref<DiResource | null>(null);
+const permissionsDialog = ref(false);
+const permTargetId = ref<string | null>(null);
+const permTargetName = ref('');
+const replaceDialog = ref(false);
+const replaceTarget = ref<DiResource | null>(null);
+const replaceFile = ref<File | null>(null);
+const replaceInputEl = ref<HTMLInputElement | null>(null);
 const fileEditorOpen = ref(false);
 const fileEditorResource = ref<DiResource | null>(null);
 const filePreviewOpen = ref(false);
@@ -278,10 +363,7 @@ function resourceLabel(resource: DiResource): string {
 }
 
 function isIndexable(resource: DiResource): boolean {
-  if (resource.type === 'markdown') return true;
-  if (resource.type !== 'file') return false;
-  const ext = `${resource.extension ?? ''} ${resource.fileName ?? ''} ${resource.name ?? ''}`.toLowerCase();
-  return ext.includes('docx');
+  return isDiIndexable(resource);
 }
 
 function matchesIndexFilter(resource: DiResource): boolean {
@@ -317,6 +399,100 @@ function pageFiltered(rows: DiResource[]) {
   }
   const skip = (listingPage.value - 1) * listingPageSize.value;
   children.value = filtered.slice(skip, skip + listingPageSize.value);
+}
+
+const bulkDialog = ref(false);
+const bulkStarting = ref(false);
+const bulkJob = ref<DiBulkIndexJob | null>(null);
+const bulkFolderId = ref<string | null>(null);
+let bulkTimer: ReturnType<typeof setTimeout> | null = null;
+
+const bulkDone = computed(() => {
+  const job = bulkJob.value;
+  if (!job) return 0;
+  return job.indexedCount + job.skippedCount + job.failedCount;
+});
+
+const bulkPercent = computed(() => {
+  const total = bulkJob.value?.total ?? 0;
+  if (total <= 0) return 0;
+  return Math.min(100, Math.round((bulkDone.value / total) * 100));
+});
+
+function clearBulkTimer() {
+  if (bulkTimer) {
+    clearTimeout(bulkTimer);
+    bulkTimer = null;
+  }
+}
+
+function scheduleBulkPoll() {
+  clearBulkTimer();
+  bulkTimer = setTimeout(() => {
+    void pollBulk();
+  }, 3000);
+}
+
+async function pollBulk() {
+  const id = bulkFolderId.value;
+  if (!id || !bulkDialog.value) return;
+  try {
+    const job = await diGetBulkIndex(id);
+    if (!bulkDialog.value) return;
+    bulkJob.value = job;
+    if (job.status === 'running' || job.status === 'stopping') {
+      scheduleBulkPoll();
+      return;
+    }
+    if (selectedFolderId.value) await loadListing(selectedFolderId.value);
+  } catch {
+    if (bulkDialog.value) scheduleBulkPoll();
+  }
+}
+
+async function openBulkIndex(resource: DiResource) {
+  bulkFolderId.value = resource.id;
+  bulkJob.value = null;
+  bulkDialog.value = true;
+  bulkStarting.value = true;
+  clearBulkTimer();
+  try {
+    const existing = await diGetBulkIndex(resource.id);
+    if (existing.status === 'running' || existing.status === 'stopping') {
+      bulkJob.value = existing;
+      scheduleBulkPoll();
+      return;
+    }
+    bulkJob.value = await diStartBulkIndex(resource.id);
+    if (bulkJob.value.status === 'running' || bulkJob.value.status === 'stopping') {
+      scheduleBulkPoll();
+    } else if (selectedFolderId.value) {
+      await loadListing(selectedFolderId.value);
+    }
+  } catch (error) {
+    panelError(error);
+  } finally {
+    bulkStarting.value = false;
+  }
+}
+
+async function stopBulkIndex() {
+  const id = bulkFolderId.value;
+  if (!id) return;
+  try {
+    bulkJob.value = await diCancelBulkIndex(id);
+  } catch (error) {
+    panelError(error);
+  }
+}
+
+function onBulkDialogToggle(open: boolean) {
+  if (!open) clearBulkTimer();
+}
+
+function closeBulkIndex() {
+  bulkDialog.value = false;
+  clearBulkTimer();
 }
 
 async function indexDocument(resource: DiResource) {
@@ -852,6 +1028,280 @@ async function selectFolder(folderId: string | null) {
 
 async function loadTreeChildren(parentId: string): Promise<DiTreeNode[]> {
   return diGetTreeChildren(parentId);
+}
+
+async function loadLibraryFolders(parentId: string | null): Promise<DiTreeNode[]> {
+  const hub = hubId.value;
+  if (!hub) return [];
+  if (!parentId) {
+    let name = t('projectManagement.library.rootLabel');
+    let parent: string | null = null;
+    try {
+      const folder = await diGetById(hub);
+      name = folder.name || name;
+      parent = folder.parentId;
+    } catch {
+      // The hub id is enough to root the picker.
+    }
+    return [{ id: hub, name, parentId: parent, hasChildren: true, children: [] }];
+  }
+  return diGetTreeChildren(parentId);
+}
+
+async function searchLibraryFolders(query: string): Promise<DiTreeNode[]> {
+  const hub = hubId.value;
+  const rows = await diSearchTreeFolders(query, 50);
+  if (!hub) return [];
+  const checks = await Promise.all(rows.map(async (row) => {
+    if (row.id === hub) return row;
+    try {
+      const resource = await diGetById(row.id);
+      if (resource.id === hub || (resource.ancestorIds || []).includes(hub)) return row;
+    } catch {
+      return null;
+    }
+    return null;
+  }));
+  return checks.filter((row): row is DiTreeNode => row != null);
+}
+
+function canManageFolder(resource: DiResource): boolean {
+  return resource.type === 'folder' && (authStore.isAdmin || resource.permissions.canShare);
+}
+
+function hasLibraryFileActions(resource: DiResource): boolean {
+  if (resource.type === 'markdown') return true;
+  if (resource.type !== 'file') return false;
+  return resource.permissions.canDownload || (resource.permissions.canEdit && isDiUploadedFile(resource));
+}
+
+function openResourceInfo(resource: DiResource) {
+  infoTarget.value = resource;
+  infoDialog.value = true;
+}
+
+function openRename(resource: DiResource) {
+  if (!resource.permissions.canEdit) return;
+  renameTarget.value = resource;
+  renameName.value = resource.type === 'markdown' ? resource.title || resource.name : resource.name;
+  renameDialog.value = true;
+}
+
+async function submitRename() {
+  const target = renameTarget.value;
+  const name = renameName.value.trim();
+  if (!target || !name || busy.value) return;
+  busy.value = true;
+  try {
+    await diRename(target.id, { name });
+    renameDialog.value = false;
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.renamed'),
+      severity: 'success',
+    });
+    if (openDoc.value?.id === target.id) {
+      openDoc.value = { ...openDoc.value, name, title: name };
+    }
+    await refreshAll();
+  } catch (error) {
+    panelError(error, 'documentIntelligence.errors.rename');
+  } finally {
+    busy.value = false;
+  }
+}
+
+function openMove(resource: DiResource) {
+  if (!resource.permissions.canMove) return;
+  moveTarget.value = resource;
+  moveDestId.value = resource.parentId || hubId.value;
+  moveDialog.value = true;
+}
+
+async function submitMove() {
+  const target = moveTarget.value;
+  const dest = moveDestId.value;
+  const hub = hubId.value;
+  if (!target || !dest || !hub || busy.value) return;
+  busy.value = true;
+  try {
+    if (dest !== hub) {
+      const folder = await diGetById(dest);
+      const inside = folder.id === hub || (folder.ancestorIds || []).includes(hub);
+      if (!inside) return;
+    }
+    await diMove(target.id, { newParentId: dest });
+    moveDialog.value = false;
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.moved'),
+      severity: 'success',
+    });
+    if (openDoc.value?.id === target.id) {
+      openDoc.value = null;
+      await selectFolder(dest);
+    } else {
+      await refreshAll();
+    }
+  } catch (error) {
+    panelError(error, 'documentIntelligence.errors.move');
+  } finally {
+    busy.value = false;
+  }
+}
+
+function openClone(resource: DiResource) {
+  if (!isDiCloneable(resource)) return;
+  cloneTarget.value = resource;
+  cloneDialog.value = true;
+}
+
+async function onCloned(created: DiResource) {
+  toast.push({
+    title: t('projectManagement.notify.successTitle'),
+    message: t('documentIntelligence.cloned'),
+    severity: 'success',
+  });
+  await refreshAll();
+  if (created.type === 'markdown') await openMarkdown(created);
+}
+
+function openResourceTags(resource: DiResource) {
+  if (!resource.permissions.canEdit) return;
+  tagsTarget.value = resource;
+  tagsDialog.value = true;
+}
+
+function onResourceTagsSaved(updated: DiResource) {
+  toast.push({
+    title: t('projectManagement.notify.successTitle'),
+    message: t('documentIntelligence.saved'),
+    severity: 'success',
+  });
+  if (openDoc.value?.id === updated.id) {
+    openDoc.value = {
+      ...openDoc.value,
+      tags: updated.tags,
+      classificationTagId: updated.classificationTagId,
+      kind: updated.kind,
+    };
+  }
+  void refreshAll();
+}
+
+function openPermissions(resource: DiResource) {
+  if (!canManageFolder(resource)) return;
+  permTargetId.value = resource.id;
+  permTargetName.value = resource.name;
+  permissionsDialog.value = true;
+}
+
+function onPermissionsNotify(text: string, color: 'success' | 'error' | 'info') {
+  toast.push({
+    title: color === 'error' ? t('errors.dg.toastTitle') : t('projectManagement.notify.successTitle'),
+    message: text,
+    severity: color,
+  });
+}
+
+function openRowHistory(resource: DiResource) {
+  if (resource.type === 'markdown') {
+    historyResource.value = resource;
+    historyDialog.value = true;
+    return;
+  }
+  if (resource.type === 'file' && resource.permissions.canDownload) {
+    fileHistoryTarget.value = resource;
+    fileHistoryDialog.value = true;
+  }
+}
+
+function openPageHistory() {
+  if (!openDoc.value) return;
+  openRowHistory(openDoc.value);
+}
+
+function openLibraryPreview(resource: DiResource) {
+  filePreviewResource.value = resource;
+  filePreviewOpen.value = true;
+}
+
+function openLibraryEditor(resource: DiResource) {
+  if (isDiDrawioFile(resource)) {
+    drawingEditorId.value = resource.id;
+    drawingEditorTitle.value = resource.name;
+    drawingEditorOpen.value = true;
+    return;
+  }
+  fileEditorResource.value = resource;
+  fileEditorOpen.value = true;
+}
+
+function openReplace(resource: DiResource) {
+  if (resource.type !== 'file' || !resource.permissions.canEdit || !isDiUploadedFile(resource)) return;
+  replaceTarget.value = resource;
+  replaceFile.value = null;
+  replaceDialog.value = true;
+}
+
+function onReplacePick(event: Event) {
+  const input = event.target as HTMLInputElement;
+  replaceFile.value = input.files && input.files.length ? input.files[0] : null;
+  if (replaceInputEl.value) replaceInputEl.value.value = '';
+}
+
+async function submitReplace() {
+  const target = replaceTarget.value;
+  const file = replaceFile.value;
+  if (!target || !file || busy.value) return;
+  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+    toast.push({
+      title: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
+      message: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
+      severity: 'error',
+    });
+    return;
+  }
+  busy.value = true;
+  try {
+    await diReplaceFileContent(target.id, {
+      content: await fileToBase64(file),
+      originalFileName: file.name,
+      mimeType: file.type || null,
+      extension: fileExtension(file.name) || null,
+      changeNote: 'replace',
+    });
+    replaceDialog.value = false;
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('documentIntelligence.fileReplaced'),
+      severity: 'success',
+    });
+    await refreshAll();
+  } catch (error) {
+    panelError(error, 'documentIntelligence.errors.replace');
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function downloadPdfExport(resource: DiResource) {
+  if (!resource.permissions.canDownload || !isDiOfficePdfExportable(resource)) return;
+  try {
+    const blob = await diFetchResourceExportPdf(resource.id);
+    const base = resource.fileName || resource.name || 'document';
+    const pdfName = base.replace(/\.(docx|xlsx|pptx)$/i, '.pdf');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = pdfName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    panelError(error, 'documentIntelligence.generateFromTemplate.errors.exportPdf');
+  }
 }
 
 async function refreshAll() {
@@ -1510,7 +1960,11 @@ watch(
 
     <v-progress-linear v-if="booting" indeterminate color="primary" />
 
-    <div v-else-if="hubId" class="pm-library__layout d-flex">
+    <div
+      v-else-if="hubId"
+      class="pm-library__layout d-flex"
+      :style="{ '--pm-library-tree-width': treeWidth + 'px' }"
+    >
       <div class="pm-library__tree flex-shrink-0">
         <div class="d-flex align-center justify-space-between px-3 py-2 border-b">
           <span class="text-subtitle-2 font-weight-bold">{{ t('documentIntelligence.explorer') }}</span>
@@ -1527,6 +1981,16 @@ watch(
           />
         </div>
       </div>
+      <div
+        class="pm-library__resize flex-shrink-0"
+        :class="{ 'pm-library__resize--active': treeResizeActive }"
+        role="separator"
+        aria-orientation="vertical"
+        @pointerdown="onTreeResizeStart"
+        @pointermove="onTreeResizeMove"
+        @pointerup="onTreeResizeEnd"
+        @pointercancel="onTreeResizeEnd"
+      />
 
       <div class="pm-library__content flex-grow-1 min-width-0">
         <template v-if="openDoc">
@@ -1555,7 +2019,7 @@ watch(
               >
                 {{ t('documentIntelligence.edit') }}
               </v-btn>
-              <v-btn size="small" variant="text" class="text-none" prepend-icon="mdi-history" @click="historyDialog = true">
+              <v-btn size="small" variant="text" class="text-none" prepend-icon="mdi-history" @click="openPageHistory">
                 {{ t('documentIntelligence.history') }}
               </v-btn>
               <v-btn
@@ -1860,17 +2324,85 @@ watch(
                         <v-icon size="18">mdi-dots-vertical</v-icon>
                       </v-btn>
                     </template>
-                    <v-list density="compact" min-width="220">
+                    <v-list density="compact" min-width="240">
                       <v-list-item
                         prepend-icon="mdi-folder-open-outline"
                         :title="t('projectManagement.library.open')"
                         @click="openResource(item)"
                       />
                       <v-list-item
-                        v-if="item.type === 'file' && item.permissions.canDownload"
-                        prepend-icon="mdi-download"
-                        :title="t('documentIntelligence.download')"
-                        @click="downloadFile(item)"
+                        prepend-icon="mdi-information-outline"
+                        :title="t('documentIntelligence.resourceInfoTitle')"
+                        @click="openResourceInfo(item)"
+                      />
+                      <v-list-item
+                        v-if="item.permissions.canEdit"
+                        prepend-icon="mdi-pencil-box-outline"
+                        :title="t('documentIntelligence.rename')"
+                        @click="openRename(item)"
+                      />
+                      <v-list-item
+                        v-if="item.permissions.canEdit"
+                        prepend-icon="mdi-tag-outline"
+                        :title="t('documentIntelligence.tags.editTitle')"
+                        @click="openResourceTags(item)"
+                      />
+                      <v-list-item
+                        v-if="item.permissions.canMove"
+                        prepend-icon="mdi-folder-move-outline"
+                        :title="t('documentIntelligence.move')"
+                        @click="openMove(item)"
+                      />
+                      <v-list-item
+                        v-if="isDiCloneable(item)"
+                        prepend-icon="mdi-content-copy"
+                        :title="t('documentIntelligence.clone')"
+                        @click="openClone(item)"
+                      />
+                      <template v-if="hasLibraryFileActions(item)">
+                        <v-divider class="my-1" />
+                        <v-list-item
+                          v-if="item.type === 'file' && item.permissions.canDownload"
+                          prepend-icon="mdi-download"
+                          :title="t('documentIntelligence.download')"
+                          @click="downloadFile(item)"
+                        />
+                        <v-list-item
+                          v-if="item.type === 'file' && item.permissions.canDownload && isDiOfficePdfExportable(item)"
+                          prepend-icon="mdi-file-pdf-box"
+                          :title="t('documentIntelligence.exportPdf')"
+                          @click="downloadPdfExport(item)"
+                        />
+                        <v-list-item
+                          v-if="item.type === 'file' && item.permissions.canEdit && isDiUploadedFile(item)"
+                          prepend-icon="mdi-file-replace-outline"
+                          :title="t('documentIntelligence.replaceFile')"
+                          @click="openReplace(item)"
+                        />
+                        <v-list-item
+                          v-if="item.type === 'markdown' || (item.type === 'file' && item.permissions.canDownload)"
+                          prepend-icon="mdi-history"
+                          :title="t('documentIntelligence.versionHistory')"
+                          @click="openRowHistory(item)"
+                        />
+                        <v-list-item
+                          v-if="item.type === 'file' && item.permissions.canDownload && isDiPreviewable(item)"
+                          prepend-icon="mdi-file-eye-outline"
+                          :title="t('documentIntelligence.preview')"
+                          @click="openLibraryPreview(item)"
+                        />
+                        <v-list-item
+                          v-if="item.type === 'file' && item.permissions.canDownload && (isDiOfficeEditable(item) || isDiDrawioFile(item))"
+                          prepend-icon="mdi-open-in-new"
+                          :title="t('documentIntelligence.openInEditor')"
+                          @click="openLibraryEditor(item)"
+                        />
+                      </template>
+                      <v-list-item
+                        v-if="canManageFolder(item)"
+                        prepend-icon="mdi-shield-account-outline"
+                        :title="t('documentIntelligence.permissions.menuTitle')"
+                        @click="openPermissions(item)"
                       />
                       <v-list-item
                         v-if="canBindResource(item)"
@@ -1878,9 +2410,18 @@ watch(
                         :title="t('projectManagement.library.bind.action')"
                         @click="openBind(item)"
                       />
+                      <template v-if="item.type === 'folder'">
+                        <v-divider class="my-1" />
+                        <v-list-subheader>{{ t('documentIntelligence.menuAdvanced') }}</v-list-subheader>
+                        <v-list-item
+                          prepend-icon="mdi-database-search"
+                          :title="t('documentIntelligence.bulkIndex')"
+                          @click="openBulkIndex(item)"
+                        />
+                      </template>
                       <template v-if="isIndexable(item) || item.indexStatus === 'done'">
                         <v-divider class="my-1" />
-                        <v-list-subheader>{{ t('documentIntelligence.aiTitle') }}</v-list-subheader>
+                        <v-list-subheader>{{ t('documentIntelligence.menuAdvanced') }}</v-list-subheader>
                         <v-list-item
                           v-if="isIndexable(item)"
                           prepend-icon="mdi-database-search"
@@ -1891,7 +2432,7 @@ watch(
                         <v-list-item
                           v-if="item.indexStatus === 'done'"
                           prepend-icon="mdi-creation"
-                          :title="t('documentIntelligence.aiTitle')"
+                          :title="t('documentIntelligence.summaryAndDiff')"
                           @click="openAi(item)"
                         />
                       </template>
@@ -2279,6 +2820,76 @@ watch(
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="bulkDialog" max-width="720" @update:model-value="onBulkDialogToggle">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">
+          {{ t('documentIntelligence.bulkIndexTitle') }}
+          <span v-if="bulkJob?.folderName" class="text-medium-emphasis"> — {{ bulkJob.folderName }}</span>
+        </v-card-title>
+        <v-card-text>
+          <div v-if="bulkStarting && !bulkJob" class="text-body-2">{{ t('documentIntelligence.bulkIndexWait') }}</div>
+          <template v-else-if="bulkJob">
+            <div v-if="bulkJob.status === 'running' && bulkJob.currentName" class="text-body-2 mb-2">
+              {{ t('documentIntelligence.bulkIndexCurrent', { name: bulkJob.currentName }) }}
+            </div>
+            <div v-else-if="bulkJob.status === 'stopping'" class="text-body-2 mb-2">{{ t('documentIntelligence.bulkIndexStopping') }}</div>
+            <div v-else-if="bulkJob.status === 'done' && bulkJob.total === 0" class="text-body-2 mb-2">{{ t('documentIntelligence.bulkIndexEmpty') }}</div>
+            <div v-else-if="bulkJob.status === 'done'" class="text-body-2 mb-2">{{ t('documentIntelligence.bulkIndexDone') }}</div>
+            <div v-else-if="bulkJob.status === 'stopped'" class="text-body-2 mb-2">{{ t('documentIntelligence.bulkIndexStopped') }}</div>
+            <v-progress-linear
+              :model-value="bulkPercent"
+              color="primary"
+              height="8"
+              rounded
+            />
+            <div class="text-caption text-medium-emphasis mt-1 mb-3">
+              {{ t('documentIntelligence.bulkIndexProgress', { done: bulkDone, total: bulkJob.total }) }}
+            </div>
+            <v-row dense>
+              <v-col cols="12" md="4">
+                <div class="text-caption font-weight-bold mb-1">{{ t('documentIntelligence.bulkIndexIndexed') }} ({{ bulkJob.indexedCount }})</div>
+                <div class="bulk-index-list">
+                  <div v-for="item in bulkJob.indexedItems" :key="item.id" class="text-body-2 text-truncate">{{ item.name }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="text-caption font-weight-bold mb-1">{{ t('documentIntelligence.bulkIndexSkipped') }} ({{ bulkJob.skippedCount }})</div>
+                <div class="bulk-index-list">
+                  <div v-for="item in bulkJob.skippedItems" :key="item.id" class="text-body-2 text-truncate">{{ item.name }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="text-caption font-weight-bold mb-1">{{ t('documentIntelligence.bulkIndexFailed') }} ({{ bulkJob.failedCount }})</div>
+                <div class="bulk-index-list">
+                  <div v-for="item in bulkJob.failedItems" :key="item.id" class="text-body-2">
+                    <div class="text-truncate">{{ item.name }}</div>
+                    <div v-if="item.error" class="text-caption text-error">{{ item.error }}</div>
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+            <div v-if="bulkJob.status === 'running' || bulkJob.status === 'stopping'" class="text-caption text-medium-emphasis mt-3">
+              {{ t('documentIntelligence.bulkIndexHint') }}
+            </div>
+          </template>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            v-if="bulkJob && (bulkJob.status === 'running' || bulkJob.status === 'stopping')"
+            variant="text"
+            color="error"
+            class="text-none"
+            :disabled="bulkJob.status === 'stopping'"
+            @click="stopBulkIndex"
+          >
+            {{ t('documentIntelligence.bulkIndexStop') }}
+          </v-btn>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="closeBulkIndex">{{ t('documentIntelligence.close') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="indexDialog" max-width="480">
       <v-card v-if="indexResult" rounded="lg">
         <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.index') }}</v-card-title>
@@ -2575,10 +3186,106 @@ watch(
       :loading="savingDoc"
       @confirm="confirmSaveEdit"
     />
+    <v-dialog v-model="renameDialog" max-width="420">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.rename') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="renameName"
+            :label="t('documentIntelligence.newName')"
+            variant="outlined"
+            density="comfortable"
+            autofocus
+            hide-details
+            @keydown.enter="submitRename"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="renameDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!renameName.trim()" @click="submitRename">
+            {{ t('documentIntelligence.save') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="moveDialog" max-width="480">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.move') }}</v-card-title>
+        <v-card-text>
+          <DiFolderPickerList
+            v-model="moveDestId"
+            :exclude-subtree-id="moveTarget?.type === 'folder' ? moveTarget.id : null"
+            :load-children="loadLibraryFolders"
+            :search-folders="searchLibraryFolders"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="moveDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!moveDestId" @click="submitMove">
+            {{ t('documentIntelligence.move') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="replaceDialog" max-width="460">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.replaceFile') }}</v-card-title>
+        <v-card-text>
+          <input ref="replaceInputEl" type="file" class="d-none" @change="onReplacePick" />
+          <div
+            class="di-dropzone d-flex flex-column align-center justify-center text-center pa-6 rounded-lg"
+            @click="replaceInputEl?.click()"
+          >
+            <v-icon size="40" class="text-medium-emphasis mb-2">mdi-cloud-upload-outline</v-icon>
+            <div v-if="!replaceFile" class="text-body-2 text-medium-emphasis">
+              {{ t('documentIntelligence.selectFileHint', { max: MAX_FILE_MB }) }}
+            </div>
+            <div v-else class="text-body-2 font-weight-medium">{{ replaceFile.name }}</div>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="replaceDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!replaceFile" @click="submitReplace">
+            {{ t('documentIntelligence.upload') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <DiCloneResourceDialog
+      v-model="cloneDialog"
+      :resource="cloneTarget"
+      :load-children="loadLibraryFolders"
+      :search-folders="searchLibraryFolders"
+      :loading="busy"
+      @cloned="onCloned"
+    />
+
+    <DiResourceInfoDialog v-model="infoDialog" :resource="infoTarget" />
+    <DiResourceTagsDialog v-model="tagsDialog" :resource="tagsTarget" @saved="onResourceTagsSaved" />
+    <DiPermissionsDialog
+      v-model="permissionsDialog"
+      :folder-id="permTargetId"
+      :folder-name="permTargetName"
+      @changed="refreshAll"
+      @notify="onPermissionsNotify"
+    />
+    <DiFileVersionHistoryDialog
+      v-model="fileHistoryDialog"
+      :resource="fileHistoryTarget"
+      :can-restore="fileHistoryTarget?.permissions.canEdit ?? false"
+      @restored="refreshAll"
+    />
+
     <DiMarkdownVersionHistoryDialog
       v-model="historyDialog"
-      :resource-id="openDoc?.id ?? null"
-      :can-restore="openDoc?.permissions.canEdit ?? false"
+      :resource-id="historyResource?.id ?? null"
+      :can-restore="historyResource?.permissions.canEdit ?? false"
       @restored="onVersionRestored"
     />
     <DiResourceEditorDialog
@@ -2603,15 +3310,41 @@ watch(
 </template>
 
 <style scoped>
+.bulk-index-list {
+  max-height: 180px;
+  overflow: auto;
+}
 .pm-library__layout {
   min-height: 520px;
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 .pm-library__tree {
-  width: 260px;
-  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  width: var(--pm-library-tree-width, 260px);
   display: flex;
   flex-direction: column;
+}
+.pm-library__resize {
+  width: 6px;
+  margin-left: -3px;
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+  z-index: 2;
+}
+.pm-library__resize::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+}
+.pm-library__resize:hover::before,
+.pm-library__resize--active::before {
+  left: 1px;
+  width: 3px;
+  background: rgba(var(--v-theme-primary), 0.45);
 }
 .pm-library__tree-scroll {
   overflow: auto;
@@ -2667,6 +3400,14 @@ watch(
 }
 .library-person {
   max-width: 150px;
+}
+.di-dropzone {
+  border: 2px dashed rgba(var(--v-theme-on-surface), 0.2);
+  cursor: pointer;
+}
+.di-dropzone:hover {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.04);
 }
 .border {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
@@ -2730,9 +3471,11 @@ watch(
   }
   .pm-library__tree {
     width: 100%;
-    border-right: 0;
     border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
     max-height: 220px;
+  }
+  .pm-library__resize {
+    display: none;
   }
 }
 </style>

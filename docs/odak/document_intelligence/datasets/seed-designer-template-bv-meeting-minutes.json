@@ -1,0 +1,32 @@
+{
+  "categoryPath": ["Toplantı", "Tutanaklar"],
+  "template": {
+    "name": "BV Toplantı Tutanağı",
+    "code": "BV-MEETING-MINUTES",
+    "description": "BV toplantı tutanağı. Üst bilgi, katılımcı tablosu ve işlem maddeleri başlıkları sabittir.",
+    "docxFile": "BV-MEETING-MINUTES-template-seed.docx",
+    "letterhead": {
+      "enabled": false,
+      "showLogo": false,
+      "showDocumentName": false,
+      "showDocumentNumber": false,
+      "showGeneratedAt": false
+    },
+    "footer": {
+      "enabled": false,
+      "showFormRevision": false,
+      "showOfficeColumns": false,
+      "showAddresses": false,
+      "showContacts": false,
+      "showDividerLine": false
+    },
+    "parameters": [
+      { "key": "meetingName", "label": "Toplantı adı", "dataType": "text", "valueSourceMode": "manual" },
+      { "key": "meetingDate", "label": "Tarih", "dataType": "text", "valueSourceMode": "manual" },
+      { "key": "meetingTime", "label": "Saat", "dataType": "text", "valueSourceMode": "manual" },
+      { "key": "meetingPlace", "label": "Yer", "dataType": "text", "valueSourceMode": "manual" },
+      { "key": "topics", "label": "Görüşülen konular", "dataType": "text", "valueSourceMode": "manual" },
+      { "key": "preparedBy", "label": "Hazırlayan", "dataType": "text", "valueSourceMode": "manual" }
+    ]
+  }
+}

@@ -22,7 +22,7 @@ import DiResourcePreviewProvider from '@/components/apps/document-intelligence/D
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAppToast } from '@/composables/useAppToast';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
+import { isDiIndexable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
 import { DI_HOME_PATH, DI_LAST_FOLDER_STORAGE_KEY, buildDiFolderUrl, parseFromFolderQuery } from '@/utils/diResourceLink';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
@@ -81,11 +81,7 @@ const indexResult = ref<DiResourceIndexResult | null>(null);
 
 const canIndex = computed(() => {
   const current = resource.value;
-  if (!current) return false;
-  if (current.type === 'markdown') return true;
-  if (current.type !== 'file') return false;
-  const ext = `${current.extension ?? ''} ${current.fileName ?? ''}`.toLowerCase();
-  return ext.includes('docx');
+  return current ? isDiIndexable(current) : false;
 });
 
 async function indexDocument() {

@@ -13,6 +13,7 @@ const props = defineProps<{
   resource: DiResource | null;
   loadChildren: (parentId: string | null) => Promise<DiTreeNode[]>;
   isLoading?: (parentId: string | null) => boolean;
+  searchFolders?: (query: string) => Promise<DiTreeNode[]>;
   loading?: boolean;
 }>();
 
@@ -139,6 +140,7 @@ async function submit() {
           v-model="parentId"
           :load-children="loadChildren"
           :is-loading="isLoading"
+          :search-folders="searchFolders"
         />
 
         <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-3 rounded-lg">

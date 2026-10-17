@@ -16,15 +16,19 @@ import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import { useLocaleStore } from '@/stores/locale';
 import {
+  diCreateFileResource,
   diCreateMarkdown,
   diGetById,
   diGetMarkdownContent,
+  diGetTemplateCategoryTree,
+  diListTemplates,
   diUpdateMarkdown,
 } from '@/services/documentIntelligenceService';
 import {
   pmCreateMeeting,
   pmCreateMeetingAction,
   pmCreateMeetingAttendance,
+  pmCreateMeetingPerson,
   pmCreateMeetingSeries,
   pmDateInput,
   pmDatePayload,
@@ -41,7 +45,7 @@ import {
   pmUpdateMeetingAttendance,
   pmUpdateMeetingSeries,
 } from '@/services/projectManagementService';
-import type { DiResource } from '@/types/apps/documentIntelligence';
+import type { DiResource, DiTemplateSummary, DiTreeNode } from '@/types/apps/documentIntelligence';
 import type {
   PmAttendancePresence,
   PmMeeting,
@@ -60,7 +64,8 @@ import {
   PM_LIBRARY_MEETINGS_FOLDER,
   resolvePmLibraryAutoTags,
 } from '@/utils/pmProjectLibrary';
-import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
+import { fileTitle, minutesReaderFor, parseMinutesDocx, type ParsedMinutes } from '@/utils/pmMinutesDocx';
+import { FileTextIcon, PlusIcon, TrashIcon } from 'vue-tabler-icons';
 
 type DocSource = 'write' | 'existing';
 type MeetingSurface = 'calendar' | 'list' | 'minutes';
@@ -109,6 +114,14 @@ const agendaDoc = ref<MeetingDoc>(emptyMeetingDoc());
 const minutesDoc = ref<MeetingDoc>(emptyMeetingDoc());
 
 const meetingDialog = ref(false);
+const minutesImportOpen = ref(false);
+const minutesImportFile = ref<File | null>(null);
+const minutesImportTemplateId = ref<string | null>(null);
+const minutesImportTemplates = ref<DiTemplateSummary[]>([]);
+const minutesImportCategoryPath = ref<Record<string, string>>({});
+const minutesImportTemplatesLoading = ref(false);
+const minutesImportPreview = ref<ParsedMinutes | null>(null);
+const minutesImportBusy = ref(false);
 const seriesDialog = ref(false);
 const actionDialog = ref(false);
 const pickOpen = ref(false);
@@ -748,6 +761,219 @@ function openCreateMeeting(start?: Date, end?: Date) {
   void seedAttendance([]);
   void loadProjectPeople();
   meetingDialog.value = true;
+}
+
+const minutesImportItems = computed(() =>
+  minutesImportTemplates.value.map((row) => ({
+    title: row.name,
+    value: row.id,
+    subtitle: minutesImportCategoryPath.value[row.categoryId || ''] || row.code || '',
+  })),
+);
+
+const selectedMinutesTemplate = computed(() =>
+  minutesImportTemplates.value.find((row) => row.id === minutesImportTemplateId.value) || null,
+);
+
+function resetMinutesImport() {
+  minutesImportFile.value = null;
+  minutesImportTemplateId.value = null;
+  minutesImportPreview.value = null;
+}
+
+async function openMinutesImport() {
+  resetMinutesImport();
+  minutesImportOpen.value = true;
+  const prefer = () => {
+    const preferred = minutesImportTemplates.value.find((row) => minutesReaderFor(row.code));
+    if (preferred) minutesImportTemplateId.value = preferred.id;
+  };
+  if (minutesImportTemplates.value.length) {
+    prefer();
+    return;
+  }
+  minutesImportTemplatesLoading.value = true;
+  try {
+    const [listed, tree] = await Promise.all([
+      diListTemplates(),
+      diGetTemplateCategoryTree(),
+    ]);
+    const paths: Record<string, string> = {};
+    const walk = (nodes: DiTreeNode[], prefix: string) => {
+      for (const node of nodes || []) {
+        const path = prefix ? `${prefix} / ${node.name}` : node.name;
+        paths[node.id] = path;
+        walk(node.children || [], path);
+      }
+    };
+    walk(tree, '');
+    minutesImportCategoryPath.value = paths;
+    const published = listed.items.filter((row) => (row.status || '').toLowerCase() === 'published');
+    published.sort((a, b) => {
+      const aBv = minutesReaderFor(a.code) ? 0 : 1;
+      const bBv = minutesReaderFor(b.code) ? 0 : 1;
+      if (aBv !== bBv) return aBv - bBv;
+      return a.name.localeCompare(b.name, 'tr');
+    });
+    minutesImportTemplates.value = published;
+    prefer();
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    minutesImportTemplatesLoading.value = false;
+  }
+}
+
+function onMinutesTemplate(value: unknown) {
+  minutesImportTemplateId.value = typeof value === 'string' ? value : null;
+  void refreshMinutesPreview();
+}
+
+function onMinutesFile(value: File | File[] | null) {
+  const file = Array.isArray(value) ? value[0] || null : value;
+  if (file && !file.name.toLowerCase().endsWith('.docx')) {
+    minutesImportFile.value = null;
+    minutesImportPreview.value = null;
+    toast.push({
+      title: t('projectManagement.meeting.fromMinutesDocxOnly'),
+      message: t('projectManagement.meeting.fromMinutesDocxOnly'),
+      severity: 'error',
+    });
+    return;
+  }
+  if (file && file.size > 20 * 1024 * 1024) {
+    minutesImportFile.value = null;
+    minutesImportPreview.value = null;
+    toast.push({
+      title: t('documentIntelligence.errors.fileTooLarge', { max: 20 }),
+      message: t('documentIntelligence.errors.fileTooLarge', { max: 20 }),
+      severity: 'error',
+    });
+    return;
+  }
+  minutesImportFile.value = file;
+  void refreshMinutesPreview();
+}
+
+async function refreshMinutesPreview() {
+  const file = minutesImportFile.value;
+  const template = selectedMinutesTemplate.value;
+  if (!file || !template) {
+    minutesImportPreview.value = null;
+    return;
+  }
+  minutesImportBusy.value = true;
+  try {
+    minutesImportPreview.value = await parseMinutesDocx(file, template.code);
+  } catch (error) {
+    minutesImportPreview.value = null;
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    minutesImportBusy.value = false;
+  }
+}
+
+function minutesWarningText(code: string): string {
+  const key = {
+    noName: 'projectManagement.meeting.fromMinutesWarnNoName',
+    noDate: 'projectManagement.meeting.fromMinutesWarnNoDate',
+    noTime: 'projectManagement.meeting.fromMinutesWarnNoTime',
+    noTopics: 'projectManagement.meeting.fromMinutesWarnNoTopics',
+    noReader: 'projectManagement.meeting.fromMinutesWarnNoReader',
+  }[code];
+  return key ? t(key) : code;
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+  return dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+}
+
+async function saveMinutesImport() {
+  const file = minutesImportFile.value;
+  const preview = minutesImportPreview.value;
+  if (!file || !preview || !selectedMinutesTemplate.value) return;
+  minutesImportBusy.value = true;
+  try {
+    const { hubId, folderId } = await ensureProjectMeetingsFolder(
+      props.projectId,
+      props.projectCode,
+      props.hubFolderId,
+    );
+    if (hubId && hubId !== (props.hubFolderId || '').trim()) emit('hubReady', hubId);
+    const stored = await diCreateFileResource({
+      parentId: folderId,
+      name: file.name,
+      originalFileName: file.name,
+      content: await fileToBase64(file),
+      mimeType: file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      extension: 'docx',
+      size: file.size,
+      tags: await resolvePmLibraryAutoTags([PM_LIBRARY_MEETINGS_FOLDER]),
+    });
+    const attendees = preview.participants
+      .map((row) => (row.organization ? `${row.name} (${row.organization})` : row.name))
+      .join(', ');
+    const created = await pmCreateMeeting(props.projectId, {
+      name: preview.name || fileTitle(file.name),
+      startAt: preview.startAt,
+      endAt: preview.endAt,
+      heldAt: preview.startAt,
+      status: 'held',
+      minutesResourceId: stored.id,
+      location: preview.location || null,
+      attendees: attendees || null,
+      agenda: preview.topics ? preview.topics.slice(0, 400) : null,
+    });
+    if (preview.participants.length) {
+      const people = await pmListProjectMeetingPeople(props.projectId);
+      const byName = new Map(people.map((row) => [row.name.toLocaleLowerCase('tr'), row]));
+      for (const row of preview.participants) {
+        let person = byName.get(row.name.toLocaleLowerCase('tr'));
+        if (!person) {
+          person = await pmCreateMeetingPerson(props.projectId, {
+            name: row.name,
+            organization: row.organization || null,
+          });
+          byName.set(person.name.toLocaleLowerCase('tr'), person);
+        }
+        await pmCreateMeetingAttendance(created.id, {
+          kind: 'external',
+          personId: person.id,
+          displayName: person.name,
+          presence: 'attended',
+          expected: true,
+          attended: true,
+        });
+      }
+    }
+    for (const row of preview.actions) {
+      await pmCreateMeetingAction(created.id, {
+        title: row.title,
+        code: row.code || null,
+        dueDate: row.dueDate ? `${row.dueDate}T00:00:00.000Z` : null,
+        status: 'open',
+        targets: row.firms.map((firm) => ({ kind: 'organization', organization: firm, name: firm })),
+      });
+    }
+    minutesImportOpen.value = false;
+    resetMinutesImport();
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: t('projectManagement.meeting.fromMinutesSaved'),
+      severity: 'success',
+    });
+    notifyChanged();
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.saveFailed');
+  } finally {
+    minutesImportBusy.value = false;
+  }
 }
 
 function openCreateSeries(start?: Date, end?: Date) {
@@ -1574,6 +1800,10 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
           <PlusIcon size="18" class="mr-1" />
           {{ t('projectManagement.meeting.new') }}
         </v-btn>
+        <v-btn variant="tonal" @click="openMinutesImport()">
+          <FileTextIcon size="18" class="mr-1" />
+          {{ t('projectManagement.meeting.fromMinutes') }}
+        </v-btn>
       </div>
     </div>
 
@@ -1935,6 +2165,80 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="occurrenceDialog = false">{{ t('projectManagement.cancel') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="minutesImportOpen" max-width="720" scrollable>
+      <v-card>
+        <v-card-title class="text-h6">{{ t('projectManagement.meeting.fromMinutesTitle') }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 text-medium-emphasis mb-4">{{ t('projectManagement.meeting.fromMinutesHint') }}</p>
+          <v-file-input
+            :model-value="minutesImportFile ? [minutesImportFile] : []"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            :label="t('projectManagement.meeting.fromMinutesFile')"
+            variant="outlined"
+            density="comfortable"
+            prepend-icon=""
+            prepend-inner-icon="mdi-file-word-outline"
+            hide-details="auto"
+            class="mb-4"
+            @update:model-value="onMinutesFile"
+          />
+          <v-select
+            :model-value="minutesImportTemplateId"
+            :items="minutesImportItems"
+            :loading="minutesImportTemplatesLoading"
+            :label="t('projectManagement.meeting.fromMinutesTemplate')"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :no-data-text="t('projectManagement.meeting.fromMinutesNoTemplates')"
+            @update:model-value="onMinutesTemplate"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+            </template>
+          </v-select>
+          <v-alert
+            v-if="minutesImportPreview && !minutesImportPreview.readable"
+            type="info"
+            variant="tonal"
+            class="mt-4"
+            density="comfortable"
+          >
+            {{ t('projectManagement.meeting.fromMinutesNoReader') }}
+          </v-alert>
+          <v-sheet v-else-if="minutesImportPreview" border rounded class="pa-4 mt-4">
+            <div class="text-subtitle-2 mb-2">{{ t('projectManagement.meeting.fromMinutesPreview') }}</div>
+            <div class="font-weight-medium">{{ minutesImportPreview.name }}</div>
+            <div class="text-body-2 text-medium-emphasis">
+              {{ minutesImportPreview.startAt ? formatPmDateTime(minutesImportPreview.startAt) : t('projectManagement.meeting.noDate') }}
+              <span v-if="minutesImportPreview.location"> · {{ minutesImportPreview.location }}</span>
+            </div>
+            <div class="text-body-2 mt-2">
+              {{ t('projectManagement.meeting.fromMinutesParticipants') }} · {{ minutesImportPreview.participants.length }}
+              · {{ t('projectManagement.meeting.fromMinutesActions') }} · {{ minutesImportPreview.actions.length }}
+            </div>
+            <ul v-if="minutesImportPreview.warnings.length" class="text-body-2 mt-2 pl-4">
+              <li v-for="code in minutesImportPreview.warnings" :key="code">{{ minutesWarningText(code) }}</li>
+            </ul>
+          </v-sheet>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="minutesImportOpen = false">{{ t('projectManagement.cancel') }}</v-btn>
+          <v-btn
+            color="primary"
+            :loading="minutesImportBusy"
+            :disabled="!minutesImportFile || !minutesImportTemplateId || !minutesImportPreview"
+            @click="saveMinutesImport"
+          >
+            {{ t('projectManagement.meeting.fromMinutesSave') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

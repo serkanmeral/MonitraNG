@@ -571,6 +571,70 @@ function mapSummary(raw: unknown): DiResourceSummaryResult {
   };
 }
 
+export interface DiBulkIndexItem {
+  id: string;
+  name: string;
+  error: string | null;
+}
+
+export interface DiBulkIndexJob {
+  status: string;
+  folderId: string | null;
+  folderName: string | null;
+  currentName: string | null;
+  total: number;
+  indexedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  indexedItems: DiBulkIndexItem[];
+  skippedItems: DiBulkIndexItem[];
+  failedItems: DiBulkIndexItem[];
+}
+
+function mapBulkItems(raw: unknown): DiBulkIndexItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    const o = asRecord(item);
+    return {
+      id: str(o, 'id') ?? '',
+      name: str(o, 'name') ?? '',
+      error: str(o, 'error'),
+    };
+  });
+}
+
+function mapBulkJob(raw: unknown): DiBulkIndexJob {
+  const o = asRecord(raw);
+  return {
+    status: str(o, 'status') ?? 'none',
+    folderId: str(o, 'folderId'),
+    folderName: str(o, 'folderName'),
+    currentName: str(o, 'currentName'),
+    total: num(o, 'total') ?? 0,
+    indexedCount: num(o, 'indexedCount') ?? 0,
+    skippedCount: num(o, 'skippedCount') ?? 0,
+    failedCount: num(o, 'failedCount') ?? 0,
+    indexedItems: mapBulkItems(o.indexedItems),
+    skippedItems: mapBulkItems(o.skippedItems),
+    failedItems: mapBulkItems(o.failedItems),
+  };
+}
+
+export async function diStartBulkIndex(folderId: string): Promise<DiBulkIndexJob> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/index-batch`, 'POST');
+  return mapBulkJob(raw);
+}
+
+export async function diGetBulkIndex(folderId: string): Promise<DiBulkIndexJob> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/index-batch`, 'GET');
+  return mapBulkJob(raw);
+}
+
+export async function diCancelBulkIndex(folderId: string): Promise<DiBulkIndexJob> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/index-batch/cancel`, 'POST');
+  return mapBulkJob(raw);
+}
+
 export async function diIndexResource(id: string): Promise<DiResourceIndexResult> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/index`, 'POST');
   const o = asRecord(raw);

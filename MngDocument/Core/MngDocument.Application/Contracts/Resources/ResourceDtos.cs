@@ -267,6 +267,29 @@ public sealed record ResourceIndexResultDto
     public ResourceDto Resource { get; init; } = new();
 }
 
+/// <summary>Klasör ağacındaki toplu indeks işi. Kapatmak işi iptal etmez.</summary>
+public sealed record BulkIndexJobDto
+{
+    public string Status { get; init; } = "none";
+    public string? FolderId { get; init; }
+    public string? FolderName { get; init; }
+    public string? CurrentName { get; init; }
+    public int Total { get; init; }
+    public int IndexedCount { get; init; }
+    public int SkippedCount { get; init; }
+    public int FailedCount { get; init; }
+    public IReadOnlyList<BulkIndexItemDto> IndexedItems { get; init; } = Array.Empty<BulkIndexItemDto>();
+    public IReadOnlyList<BulkIndexItemDto> SkippedItems { get; init; } = Array.Empty<BulkIndexItemDto>();
+    public IReadOnlyList<BulkIndexItemDto> FailedItems { get; init; } = Array.Empty<BulkIndexItemDto>();
+}
+
+public sealed record BulkIndexItemDto
+{
+    public string Id { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string? Error { get; init; }
+}
+
 public sealed record MarkdownContentDto
 {
     public string Id { get; init; } = string.Empty;

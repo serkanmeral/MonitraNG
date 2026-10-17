@@ -46,6 +46,16 @@
     ]
   },
   {
+    "name": "Toplantı",
+    "description": "Toplantı tutanağı şablonları. Başlıklar sabit kaldığı sürece katılımcı ve görevlendirme okunabilir.",
+    "children": [
+      {
+        "name": "Tutanaklar",
+        "description": "BV toplantı tutanağı ve aynı iskeleti kullanan tutanaklar"
+      }
+    ]
+  },
+  {
     "name": "Genel Şablonlar",
     "description": "Domain geneli tekrar kullanılabilir antet ve metin şablonları",
     "children": []

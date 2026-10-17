@@ -185,6 +185,20 @@ export function isDiOfficePdfExportable(resource: DiResource): boolean {
   return isDiOfficeEditable(resource);
 }
 
+const INDEX_EXTS = ['docx', 'txt', 'csv', 'md', 'markdown', 'xlsx', 'pptx', 'pdf'];
+
+/** Düz metin indeksi: markdown sayfası veya metin katmanı okunabilen dosya. Eski doc/xls/ppt yok. */
+export function isDiIndexable(resource: Pick<DiResource, 'type' | 'extension' | 'fileName' | 'name'>): boolean {
+  if (resource.type === 'markdown') return true;
+  if (resource.type !== 'file') return false;
+  const fromField = (resource.extension ?? '').toLowerCase().replace(/^\./, '').trim();
+  if (fromField) return INDEX_EXTS.includes(fromField);
+  const name = resource.fileName ?? resource.name ?? '';
+  const dot = name.lastIndexOf('.');
+  const ext = dot >= 0 ? name.slice(dot + 1).toLowerCase().trim() : '';
+  return INDEX_EXTS.includes(ext);
+}
+
 /** Klonlanabilir kaynak mı? (markdown veya yönetilen DOCX — upload hariç) */
 export function isDiCloneable(resource: DiResource): boolean {
   if (resource.type === 'markdown') return true;

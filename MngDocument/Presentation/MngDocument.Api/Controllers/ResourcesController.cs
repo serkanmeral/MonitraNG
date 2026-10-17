@@ -134,11 +134,29 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetIndex(string id, CancellationToken ct) =>
         Ok(await _index.GetStatusAsync(id, ct));
 
-    /// <summary>Docx veya markdown belgenin düz metnini indeksler. Aynı anda tek iş.</summary>
+    /// <summary>Belgenin düz metnini indeksler. Aynı anda tek iş. Model kullanmaz.</summary>
     [HttpPost("{id}/index")]
     [ProducesResponseType(typeof(ResourceIndexResultDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Index(string id, CancellationToken ct) =>
         Ok(await _index.IndexAsync(id, ct));
+
+    /// <summary>Klasör ağacındaki uygun dosyaları sırayla indeksler.</summary>
+    [HttpPost("{id}/index-batch")]
+    [ProducesResponseType(typeof(BulkIndexJobDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> StartIndexBatch(string id, CancellationToken ct) =>
+        Ok(await _index.StartBatchAsync(id, ct));
+
+    /// <summary>Açık toplu indeks işi. Başka klasörün işi bu klasöre ait değilse none döner.</summary>
+    [HttpGet("{id}/index-batch")]
+    [ProducesResponseType(typeof(BulkIndexJobDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetIndexBatch(string id, CancellationToken ct) =>
+        Ok(await _index.GetBatchAsync(id, ct));
+
+    /// <summary>Sırayı durdurur. Bitmiş dosyalar kalır. Süren dosya tamamlanır.</summary>
+    [HttpPost("{id}/index-batch/cancel")]
+    [ProducesResponseType(typeof(BulkIndexJobDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CancelIndexBatch(string id, CancellationToken ct) =>
+        Ok(await _index.CancelBatchAsync(id, ct));
 
     /// <summary>Saklanan özet. Üretim sürüyorsa adımı döner.</summary>
     [HttpGet("{id}/summary")]
