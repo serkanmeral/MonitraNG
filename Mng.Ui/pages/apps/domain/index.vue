@@ -2,13 +2,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useDomain, type Domain, type UpdateDomainRequest, type DirectoryLdapSettings, type DirectoryPrivilegeSettings } from '@/composables/useDomain';
+import { useDomain, type Domain, type UpdateDomainRequest, type DirectoryLdapSettings, type DirectoryPrivilegeSettings, type DomainMailSettings } from '@/composables/useDomain';
 import { useGroupStore } from '@/stores/apps/group';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DomainBackupCard from '@/components/apps/domain/DomainBackupCard.vue';
 import DomainDirectorySyncCard from '@/components/apps/domain/DomainDirectorySyncCard.vue';
-import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon, ServerIcon } from 'vue-tabler-icons';
+import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon, ServerIcon, MailIcon } from 'vue-tabler-icons';
 
 const emptyDirectoryLdap = (): DirectoryLdapSettings => ({
   enabled: false,
@@ -18,6 +18,34 @@ const emptyDirectoryLdap = (): DirectoryLdapSettings => ({
   baseDn: '',
   bindUsername: '',
   bindPassword: '',
+});
+
+const mailSecureModes = ['Auto', 'StartTls', 'SslOnConnect', 'None'] as const;
+
+const emptyDomainMail = (): DomainMailSettings => ({
+  enabled: false,
+  host: '',
+  port: 587,
+  username: '',
+  password: '',
+  enableSsl: true,
+  secureSocketMode: 'Auto',
+  fromEmail: '',
+  fromName: '',
+  passwordConfigured: false,
+});
+
+const mapDomainMail = (mail?: DomainMailSettings | null): DomainMailSettings => ({
+  enabled: mail?.enabled ?? false,
+  host: mail?.host || '',
+  port: mail?.port && mail.port > 0 ? mail.port : 587,
+  username: mail?.username || '',
+  password: '',
+  enableSsl: mail?.enableSsl ?? true,
+  secureSocketMode: mail?.secureSocketMode || 'Auto',
+  fromEmail: mail?.fromEmail || '',
+  fromName: mail?.fromName || '',
+  passwordConfigured: mail?.passwordConfigured ?? false,
 });
 
 const mapDirectoryLdap = (ldap?: DirectoryLdapSettings | null): DirectoryLdapSettings => ({
@@ -152,6 +180,7 @@ const formData = ref<UpdateDomainRequest>({
     enableMqtt: true,
     directoryPrivileges: mapManagerPrivileges(null),
     directoryLdap: emptyDirectoryLdap(),
+    mail: emptyDomainMail(),
   },
 });
 
@@ -303,6 +332,7 @@ const loadDomain = async () => {
         enableMqtt: domainData.settings?.enableMqtt ?? true,
         directoryPrivileges: mapManagerPrivileges(domainData.settings?.directoryPrivileges),
         directoryLdap: mapDirectoryLdap(domainData.settings?.directoryLdap),
+        mail: mapDomainMail(domainData.settings?.mail),
       },
     };
 
@@ -447,6 +477,7 @@ const cancelEdit = () => {
       enableMqtt: domain.value.settings?.enableMqtt ?? true,
       directoryPrivileges: mapManagerPrivileges(domain.value.settings?.directoryPrivileges),
       directoryLdap: mapDirectoryLdap(domain.value.settings?.directoryLdap),
+      mail: mapDomainMail(domain.value.settings?.mail),
     },
   };
   
@@ -553,6 +584,16 @@ onMounted(async () => {
                 @click="refreshDomain"
               >
                 <RefreshIcon size="20" />
+              </v-btn>
+              <v-btn
+                v-if="!isEditing && authStore.isManager"
+                class="mr-2"
+                prepend-icon="mdi-email-outline"
+                variant="outlined"
+                size="small"
+                to="/apps/domain/mail-log"
+              >
+                {{ t('domain.buttons.mailLog') }}
               </v-btn>
               <v-btn
                 v-if="!isEditing && authStore.isManager"
@@ -1429,6 +1470,198 @@ onMounted(async () => {
                   density="comfortable"
                   type="password"
                   autocomplete="new-password"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
+        <!-- Domain SMTP -->
+        <v-card elevation="10" class="mb-4">
+          <v-card-title class="d-flex align-center">
+            <MailIcon size="20" class="mr-2" />
+            {{ t('domain.cards.mail') }}
+          </v-card-title>
+
+          <v-divider />
+
+          <v-card-text>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              {{ t('domain.mail.description') }}
+            </p>
+
+            <v-row>
+              <v-col cols="12" md="4">
+                <v-switch
+                  v-if="!isEditing"
+                  :label="t('domain.mail.enabled')"
+                  :model-value="domain.settings?.mail?.enabled ?? false"
+                  readonly
+                  disabled
+                  color="primary"
+                />
+                <v-switch
+                  v-else
+                  v-model="formData.settings!.mail!.enabled"
+                  :label="t('domain.mail.enabled')"
+                  color="primary"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-switch
+                  v-if="!isEditing"
+                  :label="t('domain.mail.enableSsl')"
+                  :model-value="domain.settings?.mail?.enableSsl ?? true"
+                  readonly
+                  disabled
+                  color="primary"
+                />
+                <v-switch
+                  v-else
+                  v-model="formData.settings!.mail!.enableSsl"
+                  :label="t('domain.mail.enableSsl')"
+                  color="primary"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.port')"
+                  :model-value="domain.settings?.mail?.port || 587"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                />
+                <v-text-field
+                  v-else
+                  v-model.number="formData.settings!.mail!.port"
+                  :label="t('domain.mail.port')"
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                  min="1"
+                  max="65535"
+                />
+              </v-col>
+
+              <v-col cols="12" md="8">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.host')"
+                  :model-value="domain.settings?.mail?.host || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.mail!.host"
+                  :label="t('domain.mail.host')"
+                  :placeholder="t('domain.mail.hostPlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.secureSocketMode')"
+                  :model-value="domain.settings?.mail?.secureSocketMode || 'Auto'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-select
+                  v-else
+                  v-model="formData.settings!.mail!.secureSocketMode"
+                  :items="mailSecureModes"
+                  :label="t('domain.mail.secureSocketMode')"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.username')"
+                  :model-value="domain.settings?.mail?.username || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.mail!.username"
+                  :label="t('domain.mail.username')"
+                  variant="outlined"
+                  density="comfortable"
+                  autocomplete="off"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.password')"
+                  :model-value="domain.settings?.mail?.passwordConfigured ? '••••••••' : '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  type="password"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.mail!.password"
+                  :label="t('domain.mail.password')"
+                  :hint="t('domain.mail.passwordHint')"
+                  persistent-hint
+                  variant="outlined"
+                  density="comfortable"
+                  type="password"
+                  autocomplete="new-password"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.fromEmail')"
+                  :model-value="domain.settings?.mail?.fromEmail || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.mail!.fromEmail"
+                  :label="t('domain.mail.fromEmail')"
+                  :placeholder="t('domain.mail.fromEmailPlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.mail.fromName')"
+                  :model-value="domain.settings?.mail?.fromName || '-'"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.mail!.fromName"
+                  :label="t('domain.mail.fromName')"
+                  variant="outlined"
+                  density="comfortable"
                 />
               </v-col>
             </v-row>

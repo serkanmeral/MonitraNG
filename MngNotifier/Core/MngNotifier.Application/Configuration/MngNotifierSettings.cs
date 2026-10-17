@@ -5,6 +5,7 @@ public class MngNotifierSettings
     public ServerSettings Server { get; set; } = new();
     public RabbitMQSettings RabbitMQ { get; set; } = new();
     public MailSettings Mail { get; set; } = new();
+    public OpenSearchSettings OpenSearch { get; set; } = new();
     public DataGatewaySettings DataGateway { get; set; } = new();
     public TelegramSettings Telegram { get; set; } = new();
 
@@ -28,6 +29,12 @@ public class RabbitMQSettings
     public string Username { get; set; } = "admin";
     public string Password { get; set; } = "admin123";
     public string VirtualHost { get; set; } = "/";
+}
+
+public class OpenSearchSettings
+{
+    public bool Enabled { get; set; } = true;
+    public string BaseUrl { get; set; } = "http://opensearch:9200";
 }
 
 public class MailSettings

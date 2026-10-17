@@ -11,4 +11,7 @@ public class SendTemplateRequest
     /// <summary>Boş/null ise template subject kullanılır (placeholder render).</summary>
     public string? Subject { get; set; }
     public JsonElement Context { get; set; }
+
+    /// <summary>Tenant name. When empty, domain_name is read from the Bearer token.</summary>
+    public string? DomainName { get; set; }
 }

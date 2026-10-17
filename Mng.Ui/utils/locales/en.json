@@ -1015,6 +1015,7 @@
       "domainSettings": "Domain Settings",
       "managerGroups": "Manager Privilege Groups",
       "directoryLdap": "Directory / LDAP (AD)",
+      "mail": "Email (SMTP)",
       "licenseInfo": "License Information"
     },
     "managerGroups": {
@@ -1036,6 +1037,21 @@
       "bindUsernamePlaceholder": "CN=svc-ldap,OU=Service,DC=corp,DC=local",
       "bindPassword": "Bind password",
       "bindPasswordHint": "Leave blank to keep the current password."
+    },
+    "mail": {
+      "description": "Mail sent for this domain uses this SMTP server. When disabled, the system default mail settings are used.",
+      "enabled": "Domain SMTP enabled",
+      "host": "SMTP host",
+      "hostPlaceholder": "smtp.company.com",
+      "port": "Port",
+      "enableSsl": "SSL / TLS",
+      "secureSocketMode": "Secure connection",
+      "username": "Username",
+      "password": "Password",
+      "passwordHint": "Leave blank to keep the current password.",
+      "fromEmail": "From address",
+      "fromEmailPlaceholder": "noreply@company.com",
+      "fromName": "From name"
     },
     "directorySync": {
       "title": "LDAP / Directory Sync",
@@ -1080,7 +1096,23 @@
       "cancel": "Cancel",
       "refresh": "Refresh",
       "uploadLogo": "Upload Logo",
-      "removeLogo": "Remove Logo"
+      "removeLogo": "Remove Logo",
+      "mailLog": "Sent email"
+    },
+    "mailLog": {
+      "title": "Sent email",
+      "empty": "No email has been recorded.",
+      "loadError": "Email records could not be loaded.",
+      "search": "Subject or recipient",
+      "resultAll": "All results",
+      "sent": "Sent",
+      "failed": "Failed",
+      "columns": {
+        "sentAt": "Time",
+        "subject": "Subject",
+        "recipients": "Recipients",
+        "success": "Result"
+      }
     },
     "edit": {
       "title": "Edit Domain",

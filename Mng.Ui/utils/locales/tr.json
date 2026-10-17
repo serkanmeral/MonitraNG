@@ -1049,6 +1049,7 @@
       "domainSettings": "Domain Ayarları",
       "managerGroups": "Manager Yetki Grupları",
       "directoryLdap": "Dizin / LDAP (AD)",
+      "mail": "E-posta (SMTP)",
       "licenseInfo": "Lisans Bilgileri",
       "backupInfo": "Yedek Bilgileri"
     },
@@ -1071,6 +1072,21 @@
       "bindUsernamePlaceholder": "CN=svc-ldap,OU=Service,DC=corp,DC=local",
       "bindPassword": "Bind parola",
       "bindPasswordHint": "Boş bırakırsanız mevcut parola korunur."
+    },
+    "mail": {
+      "description": "Bu domain adına giden e-postalar bu SMTP sunucusundan gönderilir. Kayıt kapalıysa sistem varsayılan mail ayarı kullanılır.",
+      "enabled": "Domain SMTP etkin",
+      "host": "SMTP sunucusu",
+      "hostPlaceholder": "smtp.sirket.com",
+      "port": "Port",
+      "enableSsl": "SSL / TLS",
+      "secureSocketMode": "Güvenli bağlantı",
+      "username": "Kullanıcı adı",
+      "password": "Parola",
+      "passwordHint": "Boş bırakırsanız mevcut parola korunur.",
+      "fromEmail": "Gönderen adresi",
+      "fromEmailPlaceholder": "noreply@sirket.com",
+      "fromName": "Gönderen adı"
     },
     "directorySync": {
       "title": "LDAP / Dizin Senkronu",
@@ -1166,7 +1182,23 @@
       "refresh": "Yenile",
       "uploadLogo": "Logo Yükle",
       "removeLogo": "Logoyu Kaldır",
-      "refreshLicense": "Lisans Bilgilerini Yenile"
+      "refreshLicense": "Lisans Bilgilerini Yenile",
+      "mailLog": "Gönderilen e-postalar"
+    },
+    "mailLog": {
+      "title": "Gönderilen e-postalar",
+      "empty": "Kayıtlı e-posta yok.",
+      "loadError": "E-posta kayıtları okunamadı.",
+      "search": "Başlık veya alıcı",
+      "resultAll": "Tüm sonuçlar",
+      "sent": "Gönderildi",
+      "failed": "Başarısız",
+      "columns": {
+        "sentAt": "Zaman",
+        "subject": "Başlık",
+        "recipients": "Alıcılar",
+        "success": "Sonuç"
+      }
     },
     "edit": {
       "title": "Domain Düzenle",

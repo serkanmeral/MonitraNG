@@ -427,7 +427,8 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                     To = emails.ToList(),
                     TemplateKey = templateKey.Trim(),
                     Subject = string.IsNullOrWhiteSpace(subjectOverride) ? null : subjectOverride.Trim(),
-                    Context = context
+                    Context = context,
+                    DomainName = request.DomainName
                 },
                 request.Token,
                 cancellationToken);
@@ -439,7 +440,8 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                 To = emails.ToList(),
                 Subject = subject,
                 Body = htmlBody,
-                IsHtml = true
+                IsHtml = true,
+                DomainName = request.DomainName
             }, cancellationToken);
         }
 

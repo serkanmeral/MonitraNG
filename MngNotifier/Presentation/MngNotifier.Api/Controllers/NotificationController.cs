@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +25,7 @@ public class NotificationController : ControllerBase
     public const string NotifyApiKeyHeaderName = "X-Monitra-Notify-Key";
 
     private readonly IMailProvider _mailProvider;
+    private readonly IMailDeliveryLog _mailDeliveryLog;
     private readonly ITelegramMessageSender _telegramMessageSender;
     private readonly ITemplateRenderService _templateRenderService;
     private readonly IMessageTemplateRenderService _messageTemplateRenderService;
@@ -31,6 +34,7 @@ public class NotificationController : ControllerBase
 
     public NotificationController(
         IMailProvider mailProvider,
+        IMailDeliveryLog mailDeliveryLog,
         ITelegramMessageSender telegramMessageSender,
         ITemplateRenderService templateRenderService,
         IMessageTemplateRenderService messageTemplateRenderService,
@@ -38,6 +42,7 @@ public class NotificationController : ControllerBase
         IOptions<MngNotifierSettings> notifierSettings)
     {
         _mailProvider = mailProvider ?? throw new ArgumentNullException(nameof(mailProvider));
+        _mailDeliveryLog = mailDeliveryLog ?? throw new ArgumentNullException(nameof(mailDeliveryLog));
         _telegramMessageSender = telegramMessageSender ?? throw new ArgumentNullException(nameof(telegramMessageSender));
         _templateRenderService = templateRenderService ?? throw new ArgumentNullException(nameof(templateRenderService));
         _messageTemplateRenderService = messageTemplateRenderService ?? throw new ArgumentNullException(nameof(messageTemplateRenderService));
@@ -69,6 +74,7 @@ public class NotificationController : ControllerBase
                 return BadRequest(new { error = "Body is required" });
 
             var notificationId = Guid.NewGuid().ToString();
+            EnsureDomainName(request);
             await _mailProvider.SendMailAsync(request, cancellationToken);
 
             _logger.LogInformation("Mail notification sent successfully. NotificationId: {NotificationId}, To: {To}, Subject: {Subject}",
@@ -128,7 +134,8 @@ public class NotificationController : ControllerBase
                 From = request.From,
                 Subject = rendered.Subject,
                 Body = rendered.HtmlBody,
-                IsHtml = true
+                IsHtml = true,
+                DomainName = ResolveDomainName(request.DomainName)
             }, cancellationToken);
 
             var notificationId = Guid.NewGuid().ToString();
@@ -202,6 +209,55 @@ public class NotificationController : ControllerBase
         {
             _logger.LogError(ex, "Failed to preview template. TemplateKey={TemplateKey}", request.TemplateKey);
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Failed to preview template", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Recent mail deliveries for the caller's domain. Manager or admin only.
+    /// </summary>
+    [HttpGet("mail-log")]
+    [ProducesResponseType(typeof(MailDeliveryLogPage), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> MailLog(
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 25,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDesc = true,
+        [FromQuery] string? search = null,
+        [FromQuery] bool? success = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryGetBearerToken(out var token))
+            return Unauthorized(new { error = "Authorization Bearer token is required" });
+
+        if (!TryReadJwtPayload(token, out var payload))
+            return Unauthorized(new { error = "Bearer token could not be read" });
+
+        if (!IsManagerClaim(payload))
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Manager privilege is required" });
+
+        var domainName = ReadStringClaim(payload, "domain_name");
+        if (string.IsNullOrWhiteSpace(domainName))
+            return BadRequest(new { error = "domain_name claim is required" });
+
+        try
+        {
+            var page = await _mailDeliveryLog.SearchAsync(domainName, new MailDeliveryLogQuery
+            {
+                Skip = skip,
+                Take = take,
+                SortBy = sortBy,
+                SortDescending = sortDesc,
+                Search = search,
+                Success = success
+            }, cancellationToken);
+            return Ok(page);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Mail log query failed for {Domain}", domainName);
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = "Mail log could not be read" });
         }
     }
 
@@ -372,6 +428,86 @@ public class NotificationController : ControllerBase
             Status = "accepted",
             AcceptedAt = DateTime.UtcNow
         });
+    }
+
+    private void EnsureDomainName(SendMailRequest request)
+    {
+        request.DomainName = ResolveDomainName(request.DomainName);
+    }
+
+    private string? ResolveDomainName(string? explicitName)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitName))
+            return explicitName.Trim();
+
+        return TryGetBearerToken(out var token) ? ReadDomainNameClaim(token) : null;
+    }
+
+    private static string? ReadDomainNameClaim(string jwt)
+    {
+        return TryReadJwtPayload(jwt, out var payload) ? ReadStringClaim(payload, "domain_name") : null;
+    }
+
+    private static bool TryReadJwtPayload(string jwt, out JsonElement payload)
+    {
+        payload = default;
+        var parts = jwt.Split('.');
+        if (parts.Length < 2)
+            return false;
+
+        try
+        {
+            var encoded = parts[1].Replace('-', '+').Replace('_', '/');
+            switch (encoded.Length % 4)
+            {
+                case 2: encoded += "=="; break;
+                case 3: encoded += "="; break;
+            }
+
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+            using var doc = JsonDocument.Parse(json);
+            payload = doc.RootElement.Clone();
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static string? ReadStringClaim(JsonElement payload, string name)
+    {
+        if (!payload.TryGetProperty(name, out var claim) || claim.ValueKind != JsonValueKind.String)
+            return null;
+
+        var value = claim.GetString();
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static bool IsManagerClaim(JsonElement payload)
+    {
+        return ReadBoolClaim(payload, "is_admin")
+            || ReadBoolClaim(payload, "isAdmin")
+            || ReadBoolClaim(payload, "is_manager")
+            || ReadBoolClaim(payload, "isManager");
+    }
+
+    private static bool ReadBoolClaim(JsonElement payload, string name)
+    {
+        if (!payload.TryGetProperty(name, out var claim))
+            return false;
+
+        return claim.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String => bool.TryParse(claim.GetString(), out var parsed) && parsed,
+            _ => false
+        };
     }
 
     private bool TryGetBearerToken(out string token)

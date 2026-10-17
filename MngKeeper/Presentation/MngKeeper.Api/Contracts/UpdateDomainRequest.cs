@@ -27,6 +27,9 @@ public class UpdateDomainSettingsRequest
 
     /// <summary>When null/absent, existing directoryLdap is kept.</summary>
     public DirectoryLdapSettings? DirectoryLdap { get; set; }
+
+    /// <summary>When null/absent, existing mail settings are kept.</summary>
+    public DomainMailSettings? Mail { get; set; }
 }
 
 public class UpdateDirectoryPrivilegeSettingsRequest

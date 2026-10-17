@@ -109,6 +109,14 @@ namespace MngKeeper.Domain.Entities
         public DirectoryLdapSettings? DirectoryLdap { get; set; }
 
         /// <summary>
+        /// SMTP used when this domain sends mail. Null when not configured.
+        /// Omit from partial update payloads to leave unchanged.
+        /// </summary>
+        [BsonElement("mail")]
+        [BsonIgnoreIfNull]
+        public DomainMailSettings? Mail { get; set; }
+
+        /// <summary>
         /// Manuel Mongo güncellemelerinde yanlışlıkla settings altına düz yazılmış alanlar.
         /// </summary>
         [BsonElement("adminGroupNames")]

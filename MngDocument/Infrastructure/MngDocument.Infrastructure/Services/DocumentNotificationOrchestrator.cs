@@ -20,15 +20,18 @@ public sealed class DocumentNotificationOrchestrator : IDocumentNotificationOrch
     };
 
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IRequestContext _requestContext;
     private readonly MngDocumentSettings _settings;
     private readonly ILogger<DocumentNotificationOrchestrator> _logger;
 
     public DocumentNotificationOrchestrator(
         IHttpClientFactory httpClientFactory,
+        IRequestContext requestContext,
         IOptions<MngDocumentSettings> settings,
         ILogger<DocumentNotificationOrchestrator> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _requestContext = requestContext;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -111,7 +114,10 @@ public sealed class DocumentNotificationOrchestrator : IDocumentNotificationOrch
                 to = recipients.ToList(),
                 subject,
                 body,
-                isHtml = true
+                isHtml = true,
+                domainName = string.IsNullOrWhiteSpace(_requestContext.DomainName)
+                    ? null
+                    : _requestContext.DomainName.Trim()
             };
 
             using var response = await client.PostAsJsonAsync(uri, payload, JsonOptions, ct);
