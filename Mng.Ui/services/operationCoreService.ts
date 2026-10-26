@@ -186,6 +186,8 @@ function mapWorkspace(raw: Record<string, unknown>): OpWorkspace {
     description: raw.description != null ? String(raw.description) : undefined,
     workspaceType: raw.workspaceType != null ? String(raw.workspaceType) : undefined,
     workItemKeyPrefix: raw.workItemKeyPrefix != null ? String(raw.workItemKeyPrefix) : undefined,
+    folderId: resolveRelationId(raw.folderId ?? raw.FolderId),
+    diFolderId: resolveRelationId(raw.diFolderId ?? raw.DiFolderId),
   };
 }
 

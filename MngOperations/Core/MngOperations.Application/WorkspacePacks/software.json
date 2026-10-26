@@ -1,0 +1,66 @@
+{
+  "code": "software",
+  "version": "1.0.0",
+  "name": "Yazılım geliştirme",
+  "description": "Üst iş ve iş tipleri, tek durum akışı.",
+  "suggestedWorkspaceType": "team",
+  "suggestedPrefix": "YZG",
+  "states": [
+    { "key": "state.new", "name": "Yeni", "category": "open", "isInitial": true },
+    { "key": "state.dev", "name": "Geliştirmede", "category": "in_progress" },
+    { "key": "state.review", "name": "İncelemede", "category": "in_progress" },
+    { "key": "state.done", "name": "Tamamlandı", "category": "closed" }
+  ],
+  "flows": [
+    {
+      "key": "flow.default",
+      "name": "Yazılım akışı",
+      "isDefault": true,
+      "initialStateKey": "state.new",
+      "transitions": [
+        { "key": "transition.start", "fromStateKey": "state.new", "toStateKey": "state.dev", "label": "Başlat" },
+        { "key": "transition.review", "fromStateKey": "state.dev", "toStateKey": "state.review", "label": "İncelemeye gönder" },
+        { "key": "transition.back", "fromStateKey": "state.review", "toStateKey": "state.dev", "label": "Geri gönder" },
+        { "key": "transition.complete", "fromStateKey": "state.review", "toStateKey": "state.done", "label": "Tamamla" },
+        { "key": "transition.reopen", "fromStateKey": "state.done", "toStateKey": "state.new", "label": "Yeniden aç" }
+      ]
+    }
+  ],
+  "types": [
+    { "key": "type.epic", "name": "Üst iş", "flowKey": "flow.default", "requiresParent": false, "childTypeKeys": ["type.work"] },
+    { "key": "type.work", "name": "İş", "flowKey": "flow.default", "requiresParent": false, "childTypeKeys": [] }
+  ],
+  "forms": [
+    {
+      "key": "form.default",
+      "name": "Oluşturma formu",
+      "isDefault": true,
+      "flowKey": "flow.default",
+      "typeKey": "type.work",
+      "fields": ["title", "description", "typeId", "assignee", "priorityId"]
+    }
+  ],
+  "boards": [
+    {
+      "key": "board.default",
+      "name": "Pano",
+      "isDefault": true,
+      "flowKey": "flow.default",
+      "formKey": "form.default",
+      "typeKey": "type.work",
+      "columnStateKeys": ["state.new", "state.dev", "state.review", "state.done"]
+    }
+  ],
+  "profiles": [
+    {
+      "key": "profile.default",
+      "name": "Profil",
+      "isDefault": true,
+      "flowKey": "flow.default",
+      "typeKey": "type.work",
+      "fields": ["title", "description", "typeId", "assignee", "priorityId", "key"],
+      "actionKeys": ["transition.start", "transition.review", "transition.back", "transition.complete", "transition.reopen"]
+    }
+  ],
+  "libraryFolders": []
+}

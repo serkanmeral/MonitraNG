@@ -3,6 +3,7 @@ namespace MngOperations.Domain.Constants;
 public static class OcDatasets
 {
     public const string Workspaces = "op_workspaces";
+    public const string WorkspaceFolders = "op_workspace_folders";
     public const string Boards = "op_boards";
     public const string WorkItemTypes = "op_work_item_types";
     public const string StateFlows = "op_state_flows";

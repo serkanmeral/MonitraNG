@@ -8,6 +8,7 @@ import {
   ocListWorkspaces,
   ocOperationsLive,
 } from '@/services/operationCoreService';
+import { ocListWorkspaceFolders } from '@/services/operationCore/workspaceFolders';
 import type {
   OcBoardColumn,
   OcBoardListRequest,
@@ -17,6 +18,7 @@ import type {
   OcWorkItemCard,
   OpBoard,
   OpWorkspace,
+  OpWorkspaceFolder,
 } from '@/types/apps/operationCore';
 
 const emptyColumnState = (): OcColumnItemsState => ({ items: [], total: 0, error: null });
@@ -24,6 +26,7 @@ const emptyColumnState = (): OcColumnItemsState => ({ items: [], total: 0, error
 export const useOperationCoreStore = defineStore('operationCore', {
   state: () => ({
     workspaces: [] as OpWorkspace[],
+    folders: [] as OpWorkspaceFolder[],
     boardsByWorkspace: {} as Record<string, OpBoard[]>,
     loadingWorkspaces: false,
     loadingBoards: {} as Record<string, boolean>,
@@ -94,6 +97,14 @@ export const useOperationCoreStore = defineStore('operationCore', {
         this.workspacesLoadedAt = 0;
       } finally {
         this.loadingWorkspaces = false;
+      }
+    },
+
+    async loadFolders() {
+      try {
+        this.folders = await ocListWorkspaceFolders();
+      } catch {
+        this.folders = [];
       }
     },
 

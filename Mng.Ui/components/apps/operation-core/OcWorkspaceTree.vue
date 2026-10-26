@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ChevronDownIcon, ChevronRightIcon, FoldersIcon, FolderIcon, LayoutKanbanIcon } from 'vue-tabler-icons';
-import type { OcWorkspaceTreeNode } from '@/types/apps/operationCore';
+import { ChevronDownIcon, ChevronRightIcon, DotsVerticalIcon, FoldersIcon } from 'vue-tabler-icons';
+import type { OcNavNode, OpWorkspace, OpWorkspaceFolder } from '@/types/apps/operationCore';
 import { OC_ROOT_WORKSPACES } from '@/types/apps/operationCore';
+import OcWorkspaceTreeBranch from '@/components/apps/operation-core/OcWorkspaceTreeBranch.vue';
+import { useAppI18n } from '@/composables/useAppI18n';
+
+const { t } = useAppI18n();
 
 const props = defineProps<{
-  workspaceNodes: OcWorkspaceTreeNode[];
+  nodes: OcNavNode[];
   selectedWorkspaceId: string | null;
   selectedBoardId: string | null;
+  canManage: boolean;
+  revealIds?: string[];
   emptyLabel?: string;
   labelWorkspacesRoot: string;
 }>();
@@ -17,38 +23,24 @@ const emit = defineEmits<{
   'select-board': [workspaceId: string, boardId: string];
   'expand-workspace': [workspaceId: string];
   'expand-all-workspaces': [];
+  'create-folder': [parentFolderId: string | null];
+  'rename-folder': [folder: OpWorkspaceFolder];
+  'move-folder': [folder: OpWorkspaceFolder];
+  'delete-folder': [folder: OpWorkspaceFolder];
+  'move-workspace': [workspace: OpWorkspace];
 }>();
 
-const expandedIds = ref<Set<string>>(new Set());
+const expandedIds = ref<Set<string>>(new Set([OC_ROOT_WORKSPACES]));
 
-function defaultExpanded(): Set<string> {
-  return new Set<string>([OC_ROOT_WORKSPACES]);
-}
-
-watch(
-  () => props.workspaceNodes,
-  () => {
-    const next = defaultExpanded();
-    if (props.selectedWorkspaceId) next.add(props.selectedWorkspaceId);
-    expandedIds.value = next;
-  },
-  { immediate: true }
-);
-
-watch(
-  () => props.selectedWorkspaceId,
-  (id) => {
-    if (!id) return;
-    const next = new Set(expandedIds.value);
-    next.add(OC_ROOT_WORKSPACES);
-    next.add(id);
-    expandedIds.value = next;
-  },
-  { immediate: true }
-);
-
-function isWorkspaceId(id: string): boolean {
-  return id !== OC_ROOT_WORKSPACES && props.workspaceNodes.some((n) => n.data.__dataId === id);
+function collectIds(nodes: OcNavNode[], into: Set<string>) {
+  for (const node of nodes) {
+    if (node.type === 'folder') {
+      into.add(node.folder.__dataId);
+      collectIds(node.children, into);
+    } else {
+      into.add(node.data.__dataId);
+    }
+  }
 }
 
 function toggleExpand(id: string) {
@@ -57,14 +49,23 @@ function toggleExpand(id: string) {
   if (willExpand) next.add(id);
   else next.delete(id);
   expandedIds.value = next;
-  if (willExpand && isWorkspaceId(id)) {
-    emit('expand-workspace', id);
+  if (willExpand && id !== OC_ROOT_WORKSPACES) {
+    const workspace = findWorkspace(props.nodes, id);
+    if (workspace) emit('expand-workspace', id);
   }
 }
 
+function findWorkspace(nodes: OcNavNode[], id: string): boolean {
+  for (const node of nodes) {
+    if (node.type === 'workspace' && node.data.__dataId === id) return true;
+    if (node.type === 'folder' && findWorkspace(node.children, id)) return true;
+  }
+  return false;
+}
+
 function expandAll() {
-  const next = defaultExpanded();
-  props.workspaceNodes.forEach((n) => next.add(n.data.__dataId));
+  const next = new Set<string>([OC_ROOT_WORKSPACES]);
+  collectIds(props.nodes, next);
   expandedIds.value = next;
   emit('expand-all-workspaces');
 }
@@ -73,30 +74,17 @@ function collapseAll() {
   expandedIds.value = new Set();
 }
 
-function onRootWorkspacesClick(e: MouseEvent) {
-  const t = e.target as HTMLElement | null;
-  if (t?.closest?.('.oc-wst-chevron')) return;
-  toggleExpand(OC_ROOT_WORKSPACES);
-}
-
-function onWorkspaceClick(node: OcWorkspaceTreeNode, e: MouseEvent) {
-  const t = e.target as HTMLElement | null;
-  if (t?.closest?.('.oc-wst-chevron')) return;
-  emit('select-workspace', node.data.__dataId);
-}
-
-function onBoardClick(workspaceId: string, boardId: string, e: Event) {
-  e.stopPropagation();
-  emit('select-board', workspaceId, boardId);
-}
-
-function workspaceSelected(wid: string) {
-  return props.selectedWorkspaceId === wid && !props.selectedBoardId;
-}
-
-function boardSelected(bid: string) {
-  return props.selectedBoardId === bid;
-}
+watch(
+  () => [props.selectedWorkspaceId, props.revealIds?.join('|') ?? ''] as const,
+  () => {
+    const next = new Set(expandedIds.value);
+    next.add(OC_ROOT_WORKSPACES);
+    if (props.selectedWorkspaceId) next.add(props.selectedWorkspaceId);
+    for (const id of props.revealIds ?? []) next.add(id);
+    expandedIds.value = next;
+  },
+  { immediate: true }
+);
 
 defineExpose({ expandAll, collapseAll });
 </script>
@@ -104,7 +92,7 @@ defineExpose({ expandAll, collapseAll });
 <template>
   <div class="oc-workspace-tree">
     <div class="oc-wst-node">
-      <div class="oc-wst-row oc-wst-root" @click="onRootWorkspacesClick">
+      <div class="oc-wst-row oc-wst-root" @click="toggleExpand(OC_ROOT_WORKSPACES)">
         <v-btn
           class="oc-wst-chevron mr-1"
           icon
@@ -117,48 +105,39 @@ defineExpose({ expandAll, collapseAll });
         </v-btn>
         <FoldersIcon size="20" class="mr-2 oc-wst-icon-root flex-shrink-0" />
         <span class="text-body-2 font-weight-bold flex-grow-1 text-truncate">{{ labelWorkspacesRoot }}</span>
-      </div>
-      <div v-show="expandedIds.has(OC_ROOT_WORKSPACES)" class="oc-wst-children oc-wst-depth-1">
-        <template v-if="!workspaceNodes.length">
-          <div class="oc-wst-empty py-1 text-caption text-medium-emphasis">
-            {{ emptyLabel || '—' }}
-          </div>
-        </template>
-        <div v-for="node in workspaceNodes" :key="node.data.__dataId" class="oc-wst-node">
-          <div
-            :class="['oc-wst-row oc-wst-workspace', { 'oc-wst-row-selected': workspaceSelected(node.data.__dataId) }]"
-            @click="onWorkspaceClick(node, $event)"
-          >
-            <v-btn
-              class="oc-wst-chevron mr-1"
-              icon
-              size="x-small"
-              variant="text"
-              @click.stop="toggleExpand(node.data.__dataId)"
-            >
-              <ChevronDownIcon v-if="expandedIds.has(node.data.__dataId)" size="18" />
-              <ChevronRightIcon v-else size="18" />
+        <v-menu v-if="canManage" location="bottom end">
+          <template #activator="{ props: menuProps }">
+            <v-btn v-bind="menuProps" class="oc-wst-menu" icon size="x-small" variant="text" @click.stop>
+              <DotsVerticalIcon size="16" />
             </v-btn>
-            <FolderIcon size="20" class="mr-2 oc-wst-icon-workspace flex-shrink-0" />
-            <span class="text-body-2 text-truncate flex-grow-1 font-weight-medium">{{ node.data.name }}</span>
-            <span
-              v-if="node.data.workItemKeyPrefix"
-              class="text-caption text-medium-emphasis ml-1 flex-shrink-0"
-            >{{ node.data.workItemKeyPrefix }}</span>
-          </div>
-          <div v-show="expandedIds.has(node.data.__dataId)" class="oc-wst-children oc-wst-depth-2">
-            <div
-              v-for="ch in node.children"
-              :key="ch.data.__dataId"
-              :class="['oc-wst-row oc-wst-board', { 'oc-wst-row-selected': boardSelected(ch.data.__dataId) }]"
-              @click="onBoardClick(node.data.__dataId, ch.data.__dataId, $event)"
-            >
-              <LayoutKanbanIcon size="18" class="mr-2 oc-wst-icon-board flex-shrink-0" />
-              <span class="text-body-2 text-truncate">{{ ch.data.name }}</span>
-            </div>
-            <div v-if="!node.children.length" class="oc-wst-empty py-1 text-caption text-medium-emphasis">—</div>
-          </div>
-        </div>
+          </template>
+          <v-list density="compact" min-width="180">
+            <v-list-item :title="t('operationCore.workspace.folders.newRoot')" @click="emit('create-folder', null)" />
+          </v-list>
+        </v-menu>
+      </div>
+      <OcWorkspaceTreeBranch
+        v-show="expandedIds.has(OC_ROOT_WORKSPACES)"
+        :nodes="nodes"
+        :depth="1"
+        :expanded-ids="expandedIds"
+        :selected-workspace-id="selectedWorkspaceId"
+        :selected-board-id="selectedBoardId"
+        :can-manage="canManage"
+        @toggle="toggleExpand"
+        @select-workspace="emit('select-workspace', $event)"
+        @select-board="(workspaceId, boardId) => emit('select-board', workspaceId, boardId)"
+        @create-folder="emit('create-folder', $event)"
+        @rename-folder="emit('rename-folder', $event)"
+        @move-folder="emit('move-folder', $event)"
+        @delete-folder="emit('delete-folder', $event)"
+        @move-workspace="emit('move-workspace', $event)"
+      />
+      <div
+        v-if="expandedIds.has(OC_ROOT_WORKSPACES) && !nodes.length"
+        class="oc-wst-empty py-1 text-caption text-medium-emphasis oc-wst-depth-1"
+      >
+        {{ emptyLabel || '—' }}
       </div>
     </div>
   </div>
@@ -171,7 +150,7 @@ defineExpose({ expandAll, collapseAll });
   --oc-wst-board-indent: calc(var(--oc-wst-chevron) + 10px);
 }
 
-.oc-wst-row {
+.oc-workspace-tree :deep(.oc-wst-row) {
   display: flex;
   align-items: center;
   min-height: 40px;
@@ -181,10 +160,10 @@ defineExpose({ expandAll, collapseAll });
   user-select: none;
   transition: background-color 0.15s ease;
 }
-.oc-wst-row:hover {
+.oc-workspace-tree :deep(.oc-wst-row:hover) {
   background-color: rgba(var(--v-theme-primary), 0.08);
 }
-.oc-wst-row-selected {
+.oc-workspace-tree :deep(.oc-wst-row-selected) {
   background-color: rgba(var(--v-theme-primary), 0.14);
   font-weight: 500;
 }
@@ -192,40 +171,39 @@ defineExpose({ expandAll, collapseAll });
   cursor: pointer;
   padding-left: 4px;
 }
-
-/* Workspace satırları: kök altında girinti + sol çizgi */
-.oc-wst-depth-1 {
+.oc-workspace-tree :deep(.oc-wst-depth-1) {
   margin: 2px 0 6px 0;
   padding: 4px 0 4px var(--oc-wst-gap1);
   border-left: 2px solid rgba(var(--v-theme-on-surface), 0.12);
 }
-
-/* Board satırları: workspace altında ek girinti */
-.oc-wst-depth-2 {
+.oc-workspace-tree :deep(.oc-wst-depth-n) {
+  margin: 2px 0 4px 8px;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid rgba(var(--v-theme-on-surface), 0.12);
+}
+.oc-workspace-tree :deep(.oc-wst-depth-board) {
   margin-top: 4px;
   margin-bottom: 6px;
-  margin-left: 2px;
+  margin-left: 8px;
   padding: 4px 0 4px var(--oc-wst-board-indent);
   border-left: 2px solid rgba(var(--v-theme-primary), 0.22);
 }
-
-.oc-wst-board {
+.oc-workspace-tree :deep(.oc-wst-board) {
   padding-left: 6px;
 }
-
-.oc-wst-empty {
+.oc-workspace-tree :deep(.oc-wst-empty) {
   opacity: 0.7;
-  padding-left: 2px;
+  padding-left: 8px;
 }
-
-.oc-wst-icon-root {
+.oc-wst-icon-root,
+.oc-workspace-tree :deep(.oc-wst-icon-folder) {
   color: rgb(var(--v-theme-primary));
   opacity: 0.95;
 }
-.oc-wst-icon-workspace {
+.oc-workspace-tree :deep(.oc-wst-icon-workspace) {
   color: rgba(var(--v-theme-on-surface), 0.75);
 }
-.oc-wst-icon-board {
+.oc-workspace-tree :deep(.oc-wst-icon-board) {
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 </style>

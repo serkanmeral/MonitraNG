@@ -41,6 +41,7 @@ import {
   diRename,
   diReplaceFileContent,
   diSearchTreeFolders,
+  diContentSearch,
   diGetBrowseContext,
   diGetById,
   diDiffResource,
@@ -54,11 +55,10 @@ import {
   diGetMarkdownContent,
   diGetTreeChildren,
   diListLetterheads,
-  diSearch,
   diUpdateMarkdown,
   diUpdateResourceMetadata,
 } from '@/services/documentIntelligenceService';
-import type { DiBulkIndexJob, DiResourceDiffResult, DiResourceIndexResult, DiResourceSummaryResult } from '@/services/documentIntelligenceService';
+import type { DiBulkIndexJob, DiContentSearchHit, DiResourceDiffResult, DiResourceIndexResult, DiResourceSummaryResult } from '@/services/documentIntelligenceService';
 import type {
   DiBreadcrumb,
   DiGenerateDocumentResult,
@@ -84,9 +84,11 @@ import {
 } from '@/utils/pmProjectLibrary';
 
 const props = defineProps<{
-  projectId: string;
-  projectCode: string;
+  projectId?: string;
+  projectCode?: string;
   hubFolderId?: string | null;
+  /** Workspace library. Skips project folder setup and stays inside this folder. */
+  lockedHubId?: string | null;
   focusResourceId?: string | null;
   wbs?: PmWbsItem[];
 }>();
@@ -104,6 +106,17 @@ const authStore = useAuthStore();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const toast = useAppToast();
 
+const libraryHint = computed(() =>
+  props.lockedHubId
+    ? t('operationCore.workspace.library.hint')
+    : t('projectManagement.library.hint'),
+);
+const libraryRootLabel = computed(() =>
+  props.lockedHubId
+    ? t('operationCore.workspace.library.rootLabel')
+    : t('projectManagement.library.rootLabel'),
+);
+
 const booting = ref(false);
 const missingRoot = ref(false);
 const hubId = ref<string | null>(null);
@@ -120,6 +133,39 @@ const treeNodes = ref<DiTreeNode[]>([]);
 const treeLoading = ref(false);
 const listingLoading = ref(false);
 const searchQuery = ref('');
+const searchScope = ref<'folder' | 'library' | 'all'>('library');
+const searchMatch = ref<'all' | 'name' | 'content'>('all');
+const searchSort = ref<'relevance' | 'updated'>('relevance');
+const searchExtension = ref('');
+const searchHits = ref<DiContentSearchHit[]>([]);
+const searchTotal = ref(0);
+const searchCapped = ref(false);
+const searchLoading = ref(false);
+const searchExpanded = ref<Record<string, boolean>>({});
+const searchView = ref<'cards' | 'table'>('cards');
+const searchTablePage = ref(1);
+const searchTablePageSize = ref(DI_CHILDREN_PAGE_SIZE);
+let searchToken = 0;
+const libraryBeforeSearch = ref<{ folderId: string; page: number; pageSize: number } | null>(null);
+function searchText(): string {
+  return (searchQuery.value ?? '').trim();
+}
+
+const contentSearchActive = computed(() => searchText().length >= 3);
+const searchTooShort = computed(() => {
+  const length = searchText().length;
+  return length > 0 && length < 3;
+});
+const searchTypeItems = computed(() => [
+  { title: t('projectManagement.library.searchTypeAll'), value: '' },
+  { title: 'PDF', value: 'pdf' },
+  { title: 'Word', value: 'docx' },
+  { title: 'Excel', value: 'xlsx' },
+  { title: 'PowerPoint', value: 'pptx' },
+  { title: 'Markdown', value: 'md' },
+  { title: 'TXT', value: 'txt' },
+  { title: 'CSV', value: 'csv' },
+]);
 const indexListFilter = ref<'all' | 'done' | 'missing'>('all');
 const indexingId = ref<string | null>(null);
 const indexResult = ref<DiResourceIndexResult | null>(null);
@@ -317,9 +363,23 @@ const scopedCrumbs = computed(() => {
   const hub = hubId.value;
   if (!hub) return [];
   const idx = breadcrumb.value.findIndex((row) => row.id === hub);
-  if (idx < 0) return [{ id: hub, name: t('projectManagement.library.rootLabel') }];
+  if (idx < 0) return [{ id: hub, name: libraryRootLabel.value }];
   return breadcrumb.value.slice(idx);
 });
+const searchHeaders = computed(() => [
+  { title: t('projectManagement.library.colName'), key: 'name', sortable: false, minWidth: 220 },
+  { title: t('projectManagement.library.searchColMatch'), key: 'match', sortable: false, width: 140 },
+  { title: t('projectManagement.library.searchColPath'), key: 'path', sortable: false, minWidth: 180 },
+  { title: t('projectManagement.library.searchColSnippet'), key: 'snippet', sortable: false, minWidth: 240 },
+  { title: t('projectManagement.library.colUpdated'), key: 'updatedAt', sortable: false, width: 160 },
+  {
+    title: t('projectManagement.actions'),
+    key: 'actions',
+    width: 88,
+    sortable: false,
+    align: 'end' as const,
+  },
+]);
 const listingHeaders = computed(() => [
   { title: t('projectManagement.library.colName'), key: 'name', minWidth: 240 },
   { title: t('projectManagement.library.colType'), key: 'type', width: 140 },
@@ -934,10 +994,6 @@ async function currentAutoTags(): Promise<string[] | undefined> {
   ]);
 }
 
-function isInSelectedFolder(row: DiResource, folderId: string): boolean {
-  return row.parentId === folderId;
-}
-
 async function loadTree() {
   if (!hubId.value) {
     treeNodes.value = [];
@@ -955,17 +1011,10 @@ async function loadTree() {
 }
 
 async function loadListing(folderId: string) {
+  if (contentSearchActive.value) return;
   const token = ++listingToken;
   listingLoading.value = true;
   try {
-    const query = searchQuery.value.trim();
-    if (query.length >= 2) {
-      const result = await diSearch(query, 0, 200);
-      if (token !== listingToken) return;
-      pageFiltered((result.items || []).filter((row) => isInSelectedFolder(row, folderId)));
-      return;
-    }
-
     const filteringIndex = indexListFilter.value !== 'all';
     const skip = filteringIndex ? 0 : (listingPage.value - 1) * listingPageSize.value;
     const limit = filteringIndex ? 200 : listingPageSize.value;
@@ -1018,6 +1067,8 @@ async function selectFolder(folderId: string | null) {
   openDoc.value = null;
   docMode.value = 'view';
   if (searchTimer) clearTimeout(searchTimer);
+  libraryBeforeSearch.value = null;
+  searchToken += 1;
   suppressListingWatch.value = true;
   listingPage.value = 1;
   searchQuery.value = '';
@@ -1034,16 +1085,14 @@ async function loadLibraryFolders(parentId: string | null): Promise<DiTreeNode[]
   const hub = hubId.value;
   if (!hub) return [];
   if (!parentId) {
-    let name = t('projectManagement.library.rootLabel');
-    let parent: string | null = null;
+    let name = libraryRootLabel.value;
     try {
       const folder = await diGetById(hub);
       name = folder.name || name;
-      parent = folder.parentId;
     } catch {
       // The hub id is enough to root the picker.
     }
-    return [{ id: hub, name, parentId: parent, hasChildren: true, children: [] }];
+    return [{ id: hub, name, parentId: null, hasChildren: true, children: [] }];
   }
   return diGetTreeChildren(parentId);
 }
@@ -1309,12 +1358,15 @@ async function refreshAll() {
 }
 
 async function boot() {
-  if (!props.projectId || !props.projectCode.trim()) return;
+  const locked = (props.lockedHubId || '').trim();
+  if (!locked && (!props.projectId || !(props.projectCode || '').trim())) return;
   const token = ++bootToken;
   booting.value = true;
   missingRoot.value = false;
   try {
-    const nextHub = await ensureProjectLibrary(props.projectId, props.projectCode, props.hubFolderId);
+    const nextHub = locked
+      ? locked
+      : await ensureProjectLibrary(props.projectId!, props.projectCode!, props.hubFolderId);
     if (token !== bootToken) return;
     hubId.value = nextHub;
     selectedFolderId.value = nextHub;
@@ -1892,15 +1944,115 @@ watch(indexListFilter, () => {
   void loadListing(selectedFolderId.value);
 });
 
+function searchHitLabel(match: string): string {
+  if (match === 'name') return t('projectManagement.library.searchHitName');
+  if (match === 'both') return t('projectManagement.library.searchHitBoth');
+  return t('projectManagement.library.searchHitContent');
+}
+
+function searchPath(hit: DiContentSearchHit): string {
+  return hit.folders.map((folder) => folder.name).filter(Boolean).join(' / ');
+}
+
+function rememberLibrary() {
+  if (libraryBeforeSearch.value || !selectedFolderId.value) return;
+  libraryBeforeSearch.value = {
+    folderId: selectedFolderId.value,
+    page: listingPage.value,
+    pageSize: listingPageSize.value,
+  };
+}
+
+function restoreLibrary() {
+  const snap = libraryBeforeSearch.value;
+  libraryBeforeSearch.value = null;
+  if (!snap) return;
+  suppressListingWatch.value = true;
+  listingPage.value = snap.page;
+  listingPageSize.value = snap.pageSize;
+  selectedFolderId.value = snap.folderId;
+  suppressListingWatch.value = false;
+  void loadListing(snap.folderId);
+}
+
+function searchNow() {
+  if (searchTimer) clearTimeout(searchTimer);
+  if (!contentSearchActive.value) return;
+  rememberLibrary();
+  void runContentSearch();
+}
+
+async function runContentSearch() {
+  const query = searchText();
+  if (query.length < 3) {
+    searchHits.value = [];
+    searchTotal.value = 0;
+    searchCapped.value = false;
+    return;
+  }
+  const scopeId = searchScope.value === 'folder'
+    ? selectedFolderId.value
+    : searchScope.value === 'library'
+      ? hubId.value
+      : null;
+  const token = ++searchToken;
+  searchLoading.value = true;
+  try {
+    const result = await diContentSearch({
+      q: query,
+      scope: searchScope.value,
+      scopeId,
+      extension: searchExtension.value || null,
+      match: searchMatch.value,
+      sort: searchSort.value,
+    });
+    if (token !== searchToken) return;
+    searchHits.value = result.items;
+    searchTotal.value = result.total;
+    searchCapped.value = result.capped;
+    searchExpanded.value = {};
+    searchTablePage.value = 1;
+  } catch (error) {
+    if (token !== searchToken) return;
+    searchHits.value = [];
+    searchTotal.value = 0;
+    searchCapped.value = false;
+    panelError(error, 'projectManagement.library.ensureFailed');
+  } finally {
+    if (token === searchToken) searchLoading.value = false;
+  }
+}
+
+function onSearchRowClick(_event: Event, ctx: { item: DiContentSearchHit }) {
+  void openResource(ctx.item.resource);
+}
+
+async function revealSearchHit(hit: DiContentSearchHit) {
+  const folderId = hit.resource.parentId || hubId.value;
+  searchQuery.value = '';
+  if (folderId) await selectFolder(folderId);
+}
+
 watch(searchQuery, () => {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
-    if (!selectedFolderId.value) return;
-    suppressListingWatch.value = true;
-    listingPage.value = 1;
-    suppressListingWatch.value = false;
-    void loadListing(selectedFolderId.value);
-  }, 350);
+    if (contentSearchActive.value) {
+      rememberLibrary();
+      void runContentSearch();
+      return;
+    }
+    searchToken += 1;
+    searchLoading.value = false;
+    searchHits.value = [];
+    searchTotal.value = 0;
+    searchCapped.value = false;
+    restoreLibrary();
+  }, 400);
+});
+
+watch([searchScope, searchMatch, searchSort, searchExtension], () => {
+  if (!contentSearchActive.value) return;
+  void runContentSearch();
 });
 
 watch([listingPage, listingPageSize], () => {
@@ -1909,7 +2061,7 @@ watch([listingPage, listingPageSize], () => {
 });
 
 watch(
-  () => [props.projectId, props.projectCode] as const,
+  () => [props.projectId, props.projectCode, props.lockedHubId] as const,
   () => {
     void boot();
   },
@@ -1930,7 +2082,7 @@ watch(
   <div class="pm-library">
     <div class="d-flex align-start justify-space-between flex-wrap ga-2 px-6 pt-4 pb-2">
       <p class="text-body-2 text-medium-emphasis mb-0" style="max-width: 720px">
-        {{ t('projectManagement.library.hint') }}
+        {{ libraryHint }}
       </p>
       <v-btn
         v-if="hubId"
@@ -1974,7 +2126,7 @@ watch(
           <DiResourceTree
             :nodes="treeNodes"
             :selected-id="treeSelectedId"
-            :root-label="t('projectManagement.library.rootLabel')"
+            :root-label="libraryRootLabel"
             :empty-label="t('documentIntelligence.noFolders')"
             :load-children="loadTreeChildren"
             @select="selectFolder"
@@ -2087,6 +2239,7 @@ watch(
             prepend-inner-icon="mdi-magnify"
             :placeholder="t('projectManagement.library.search')"
             class="pm-library__search flex-grow-1"
+            @keydown.enter.prevent="searchNow"
           />
           <v-btn
             icon
@@ -2183,6 +2336,217 @@ watch(
           <input ref="fileInputEl" type="file" class="d-none" @change="onFilePick" />
         </div>
 
+        <div v-if="searchTooShort" class="px-4 pb-2 text-caption text-medium-emphasis">
+          {{ t('projectManagement.library.searchMin') }}
+        </div>
+
+        <template v-if="contentSearchActive">
+          <div class="px-4 pt-3 d-flex align-center flex-wrap ga-2">
+            <v-chip
+              size="small"
+              :variant="searchScope === 'folder' ? 'flat' : 'outlined'"
+              :color="searchScope === 'folder' ? 'primary' : undefined"
+              @click="searchScope = 'folder'"
+            >
+              {{ t('projectManagement.library.searchScopeFolder') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchScope === 'library' ? 'flat' : 'outlined'"
+              :color="searchScope === 'library' ? 'primary' : undefined"
+              @click="searchScope = 'library'"
+            >
+              {{ t('projectManagement.library.searchScopeLibrary') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchScope === 'all' ? 'flat' : 'outlined'"
+              :color="searchScope === 'all' ? 'primary' : undefined"
+              @click="searchScope = 'all'"
+            >
+              {{ t('projectManagement.library.searchScopeAll') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchMatch === 'all' ? 'flat' : 'outlined'"
+              :color="searchMatch === 'all' ? 'primary' : undefined"
+              @click="searchMatch = 'all'"
+            >
+              {{ t('projectManagement.library.searchMatchAll') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchMatch === 'name' ? 'flat' : 'outlined'"
+              :color="searchMatch === 'name' ? 'primary' : undefined"
+              @click="searchMatch = 'name'"
+            >
+              {{ t('projectManagement.library.searchMatchName') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchMatch === 'content' ? 'flat' : 'outlined'"
+              :color="searchMatch === 'content' ? 'primary' : undefined"
+              @click="searchMatch = 'content'"
+            >
+              {{ t('projectManagement.library.searchMatchContent') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchSort === 'relevance' ? 'flat' : 'outlined'"
+              :color="searchSort === 'relevance' ? 'primary' : undefined"
+              @click="searchSort = 'relevance'"
+            >
+              {{ t('projectManagement.library.searchSortRelevance') }}
+            </v-chip>
+            <v-chip
+              size="small"
+              :variant="searchSort === 'updated' ? 'flat' : 'outlined'"
+              :color="searchSort === 'updated' ? 'primary' : undefined"
+              @click="searchSort = 'updated'"
+            >
+              {{ t('projectManagement.library.searchSortUpdated') }}
+            </v-chip>
+            <v-select
+              v-model="searchExtension"
+              :items="searchTypeItems"
+              item-title="title"
+              item-value="value"
+              density="compact"
+              variant="solo-filled"
+              flat
+              hide-details
+              class="pm-library__search-type"
+            />
+          </div>
+          <div class="px-4 pt-2 d-flex align-center flex-wrap ga-2">
+            <div class="text-caption text-medium-emphasis">
+              {{ t('projectManagement.library.searchHint') }}
+              <span v-if="!searchLoading"> · {{ t('projectManagement.library.searchCount', { n: searchTotal }) }}</span>
+            </div>
+            <v-spacer />
+            <v-btn-toggle v-model="searchView" mandatory density="compact" divided variant="outlined">
+              <v-btn value="cards" size="small" class="text-none" prepend-icon="mdi-card-text-outline">
+                {{ t('projectManagement.library.searchViewCards') }}
+              </v-btn>
+              <v-btn value="table" size="small" class="text-none" prepend-icon="mdi-table">
+                {{ t('projectManagement.library.searchViewTable') }}
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+          <div v-if="searchCapped" class="px-4 pt-1 text-caption">{{ t('projectManagement.library.searchCapped') }}</div>
+          <v-progress-linear v-if="searchLoading" indeterminate color="primary" class="mt-2" />
+          <div v-if="searchView === 'table'" class="pa-4">
+            <v-data-table
+              v-model:page="searchTablePage"
+              v-model:items-per-page="searchTablePageSize"
+              :headers="searchHeaders"
+              :items="searchHits"
+              :items-per-page-options="listingPageSizeOptions"
+              :loading="searchLoading"
+              item-value="resource.id"
+              density="comfortable"
+              hover
+              class="rounded-lg border pm-library-table"
+              @click:row="onSearchRowClick"
+            >
+              <template #item.name="{ item }">
+                <div class="d-flex align-center ga-2 min-width-0">
+                  <v-icon :icon="resourceIcon(item.resource)" color="primary" size="20" />
+                  <span class="text-body-2 font-weight-medium text-truncate">{{ resourceLabel(item.resource) }}</span>
+                </div>
+              </template>
+              <template #item.match="{ item }">
+                <v-chip size="x-small" variant="tonal">{{ searchHitLabel(item.match) }}</v-chip>
+              </template>
+              <template #item.path="{ item }">
+                <span class="text-body-2 text-truncate d-inline-block pm-search-path">{{ searchPath(item) || '—' }}</span>
+              </template>
+              <template #item.snippet="{ item }">
+                <div v-if="item.snippets[0]" class="text-body-2 pm-search-snippet pm-search-snippet--clamp" v-html="item.snippets[0]" />
+                <span v-else class="text-medium-emphasis">—</span>
+              </template>
+              <template #item.updatedAt="{ item }">
+                <span class="text-body-2">{{ formatDateTime(item.resource.updatedAt) || '—' }}</span>
+              </template>
+              <template #item.actions="{ item }">
+                <div class="d-flex justify-end" @click.stop>
+                  <v-btn icon size="small" variant="text" :title="t('projectManagement.library.searchOpen')" @click="openResource(item.resource)">
+                    <v-icon size="18">mdi-open-in-new</v-icon>
+                  </v-btn>
+                  <v-btn icon size="small" variant="text" :title="t('projectManagement.library.searchReveal')" @click="revealSearchHit(item)">
+                    <v-icon size="18">mdi-folder-open-outline</v-icon>
+                  </v-btn>
+                </div>
+              </template>
+              <template #no-data>
+                <div class="text-medium-emphasis text-body-2 py-8 text-center">
+                  {{ t('projectManagement.library.searchEmpty') }}
+                </div>
+              </template>
+            </v-data-table>
+          </div>
+          <div v-else class="pa-4 d-flex flex-column ga-3">
+            <div v-if="!searchLoading && !searchHits.length" class="text-medium-emphasis text-body-2 py-8 text-center">
+              {{ t('projectManagement.library.searchEmpty') }}
+            </div>
+            <v-card
+              v-for="hit in searchHits"
+              :key="hit.resource.id"
+              variant="outlined"
+              rounded="lg"
+            >
+              <v-card-text class="py-3">
+                <div class="d-flex align-start ga-3">
+                  <v-icon :icon="resourceIcon(hit.resource)" color="primary" class="mt-1" />
+                  <div class="min-width-0 flex-grow-1">
+                    <div class="d-flex align-center flex-wrap ga-2">
+                      <span class="text-body-2 font-weight-medium">{{ resourceLabel(hit.resource) }}</span>
+                      <v-chip size="x-small" variant="tonal">{{ searchHitLabel(hit.match) }}</v-chip>
+                      <span v-if="hit.resource.updatedAt" class="text-caption text-medium-emphasis">
+                        {{ formatDateTime(hit.resource.updatedAt) }}
+                      </span>
+                    </div>
+                    <div v-if="searchPath(hit)" class="text-caption text-medium-emphasis text-truncate mt-1">
+                      {{ searchPath(hit) }}
+                    </div>
+                    <div
+                      v-if="hit.snippets[0]"
+                      class="text-body-2 mt-2 pm-search-snippet"
+                      v-html="hit.snippets[0]"
+                    />
+                    <div v-if="searchExpanded[hit.resource.id]" class="mt-2 d-flex flex-column ga-2">
+                      <div
+                        v-for="(snippet, index) in hit.snippets.slice(1)"
+                        :key="`${hit.resource.id}-${index}`"
+                        class="text-body-2 pm-search-snippet"
+                        v-html="snippet"
+                      />
+                    </div>
+                    <v-btn
+                      v-if="hit.snippets.length > 1"
+                      variant="text"
+                      size="small"
+                      class="text-none px-0 mt-1"
+                      @click="searchExpanded[hit.resource.id] = !searchExpanded[hit.resource.id]"
+                    >
+                      {{ t('projectManagement.library.searchMore') }}
+                    </v-btn>
+                  </div>
+                  <div class="d-flex flex-column ga-1">
+                    <v-btn size="small" variant="flat" color="primary" class="text-none" @click="openResource(hit.resource)">
+                      {{ t('projectManagement.library.searchOpen') }}
+                    </v-btn>
+                    <v-btn size="small" variant="text" class="text-none" @click="revealSearchHit(hit)">
+                      {{ t('projectManagement.library.searchReveal') }}
+                    </v-btn>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+        </template>
+
+        <template v-else>
         <div class="px-4 py-2 d-flex align-center flex-wrap ga-1">
           <a
             v-for="(crumb, index) in scopedCrumbs"
@@ -2192,7 +2556,7 @@ watch(
             @click="index === scopedCrumbs.length - 1 ? undefined : selectFolder(crumb.id)"
           >
             <span v-if="index > 0" class="text-medium-emphasis mr-1">/</span>
-            {{ index === 0 ? t('projectManagement.library.rootLabel') : crumb.name }}
+            {{ index === 0 ? libraryRootLabel : crumb.name }}
           </a>
         </div>
 
@@ -2451,12 +2815,13 @@ watch(
               </template>
               <template #no-data>
                 <div class="text-medium-emphasis text-body-2 py-8 text-center">
-                  {{ searchQuery.trim() ? t('projectManagement.library.emptySearch') : t('projectManagement.library.empty') }}
+                  {{ searchText() ? t('projectManagement.library.emptySearch') : t('projectManagement.library.empty') }}
                 </div>
               </template>
             </v-data-table-server>
           </div>
         </div>
+        </template>
         </template>
       </div>
     </div>
@@ -3364,6 +3729,24 @@ watch(
 .pm-library__search {
   max-width: 360px;
   min-width: 160px;
+}
+.pm-library__search-type {
+  max-width: 160px;
+}
+.pm-search-snippet :deep(mark) {
+  background: rgba(var(--v-theme-primary), 0.18);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+.pm-search-snippet--clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pm-search-path {
+  max-width: 280px;
 }
 .pm-library__crumb {
   cursor: pointer;

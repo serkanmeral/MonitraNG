@@ -231,6 +231,26 @@
         "isArray": true,
         "relationDataset": "op_fields",
         "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "folderId",
+        "title": "Üst klasör",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "diFolderId",
+        "title": "Belge Zekâsı kütüphane klasörü",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
       }
     ],
     "validations": [],
@@ -4835,6 +4855,67 @@
           "name": 1
         },
         "unique": true
+      }
+    ],
+    "queries": []
+  },
+  {
+    "__dataId": null,
+    "name": "op_workspace_folders",
+    "description": "Operational Core - Workspace folders (ağaç gruplama; workspace değildir)",
+    "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "forceSchema": false,
+    "logging": "none",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Klasör adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "parentFolderId",
+        "title": "Üst klasör",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "viewGroups",
+        "title": "Görüntüleme grupları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_parentFolderId",
+        "fields": {
+          "parentFolderId": 1
+        },
+        "unique": false
       }
     ],
     "queries": []

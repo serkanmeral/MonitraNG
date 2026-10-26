@@ -4,7 +4,23 @@ export interface OpWorkspace {
   description?: string;
   workspaceType?: string;
   workItemKeyPrefix?: string;
+  /** op_workspace_folders kaydı; boşsa ağaç kökünde durur. */
+  folderId?: string | null;
+  /** Belge Zekâsı klasörü. Proje bağında asıl kimlik projededir. */
+  diFolderId?: string | null;
 }
+
+export interface OpWorkspaceFolder {
+  __dataId: string;
+  name: string;
+  parentFolderId: string | null;
+  viewGroups: string[];
+  sortOrder: number;
+}
+
+export type OcNavNode =
+  | { type: 'folder'; folder: OpWorkspaceFolder; children: OcNavNode[] }
+  | { type: 'workspace'; data: OpWorkspace; children: { type: 'board'; data: OpBoard }[] };
 
 /** op_workspaces — yapılandırma ekranı için genişletilmiş model */
 export interface OpWorkspaceDetail extends OpWorkspace {

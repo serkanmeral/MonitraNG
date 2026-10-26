@@ -10,7 +10,19 @@ import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBread
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocGetDashboardRecord } from '@/services/operationCoreService';
-import type { OcWorkspaceTreeNode, OpBoard } from '@/types/apps/operationCore';
+import {
+  ocCreateWorkspaceFolder,
+  ocDeleteWorkspaceFolder,
+  ocMoveWorkspaceFolder,
+  ocMoveWorkspaceToFolder,
+  ocUpdateWorkspaceFolder,
+} from '@/services/operationCore/workspaceFolders';
+import { useAuthStore } from '@/stores/auth';
+import type { OcFolderDialogMode } from '@/components/apps/operation-core/OcWorkspaceFolderDialog.vue';
+import OcWorkspaceFolderDialog from '@/components/apps/operation-core/OcWorkspaceFolderDialog.vue';
+import OcWorkspaceLibraryPanel from '@/components/apps/operation-core/OcWorkspaceLibraryPanel.vue';
+import { buildOcNavTree, collectFolderDescendantIds, folderAncestorIds } from '@/utils/ocWorkspaceTree';
+import type { OcNavNode, OpBoard, OpWorkspace, OpWorkspaceFolder } from '@/types/apps/operationCore';
 import {
   LayoutSidebarLeftCollapseIcon,
   LayoutSidebarLeftExpandIcon,
@@ -24,6 +36,8 @@ const { t } = useAppI18n();
 const router = useRouter();
 const route = useRoute();
 const store = useOperationCoreStore();
+const auth = useAuthStore();
+const canManageFolders = computed(() => auth.isManager || auth.isAdmin);
 
 const {
   treeWidth,
@@ -40,6 +54,7 @@ const {
 const treeRef = ref<InstanceType<typeof OcWorkspaceTree> | null>(null);
 const selectedWorkspaceId = ref<string | null>(null);
 const selectedBoardId = ref<string | null>(null);
+const workspacePane = ref<'home' | 'library'>('home');
 const treeLoading = ref(false);
 
 const dashboardNameById = ref<Record<string, string>>({});
@@ -111,22 +126,140 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
   showWorkspaceExplorer: computed(() => !selectedWorkspaceId.value && !selectedBoardId.value),
 });
 
-const treeNodes = computed((): OcWorkspaceTreeNode[] =>
-  store.workspaces.map((w) => ({
-    type: 'workspace' as const,
-    data: w,
-    children: store.boardsForWorkspace(w.__dataId).map((b) => ({
-      type: 'board' as const,
-      data: b,
-    })),
-  }))
+const navNodes = computed((): OcNavNode[] =>
+  buildOcNavTree(store.folders, store.workspaces, (workspaceId) => store.boardsForWorkspace(workspaceId))
 );
+
+const revealIds = computed(() => {
+  const workspace = selectedWorkspace.value;
+  if (!workspace?.folderId) return [];
+  return folderAncestorIds(store.folders, workspace.folderId);
+});
+
+type FolderAction =
+  | { mode: 'create'; parentFolderId: string | null }
+  | { mode: 'rename'; folder: OpWorkspaceFolder }
+  | { mode: 'move-folder'; folder: OpWorkspaceFolder }
+  | { mode: 'move-workspace'; workspace: OpWorkspace }
+  | { mode: 'delete'; folder: OpWorkspaceFolder };
+
+const folderAction = ref<FolderAction | null>(null);
+const folderDialogOpen = ref(false);
+const folderSaving = ref(false);
+const folderError = ref<string | null>(null);
+
+const folderDialogMode = computed((): OcFolderDialogMode => {
+  const action = folderAction.value;
+  if (!action || action.mode === 'create') return 'create';
+  if (action.mode === 'rename') return 'rename';
+  if (action.mode === 'delete') return 'delete';
+  return 'move';
+});
+
+const folderDialogName = computed(() => {
+  const action = folderAction.value;
+  if (action?.mode === 'rename') return action.folder.name;
+  return '';
+});
+
+const folderDialogTarget = computed(() => {
+  const action = folderAction.value;
+  if (action?.mode === 'move-folder') return action.folder.parentFolderId || '__root__';
+  if (action?.mode === 'move-workspace') return action.workspace.folderId || '__root__';
+  return '__root__';
+});
+
+const folderDialogGroups = computed(() => {
+  const action = folderAction.value;
+  if (action?.mode === 'rename') return action.folder.viewGroups;
+  return [];
+});
+
+const moveTargets = computed(() => {
+  const action = folderAction.value;
+  const blocked =
+    action?.mode === 'move-folder' ? collectFolderDescendantIds(store.folders, action.folder.__dataId) : new Set<string>();
+  const currentParent =
+    action?.mode === 'move-folder'
+      ? action.folder.parentFolderId
+      : action?.mode === 'move-workspace'
+        ? action.workspace.folderId ?? null
+        : null;
+  const rows: { id: string; title: string; disabled?: boolean }[] = [
+    { id: '__root__', title: t('operationCore.workspace.folders.rootTarget'), disabled: currentParent == null },
+  ];
+  const byParent = new Map<string | null, OpWorkspaceFolder[]>();
+  for (const folder of store.folders) {
+    const key = folder.parentFolderId;
+    const list = byParent.get(key) ?? [];
+    list.push(folder);
+    byParent.set(key, list);
+  }
+  const walk = (parentId: string | null, prefix: string) => {
+    const children = [...(byParent.get(parentId) ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    for (const folder of children) {
+      rows.push({
+        id: folder.__dataId,
+        title: `${prefix}${folder.name}`,
+        disabled: blocked.has(folder.__dataId) || folder.__dataId === currentParent,
+      });
+      walk(folder.__dataId, `${prefix}${folder.name} / `);
+    }
+  };
+  walk(null, '');
+  return rows;
+});
+
+function openFolderAction(action: FolderAction) {
+  folderAction.value = action;
+  folderError.value = null;
+  folderDialogOpen.value = true;
+}
+
+async function refreshTree() {
+  await store.loadWorkspaces(true);
+  await store.loadFolders();
+}
+
+async function onFolderSave(payload: { name: string; viewGroups: string[]; targetId: string | null }) {
+  const action = folderAction.value;
+  if (!action) return;
+  folderSaving.value = true;
+  folderError.value = null;
+  try {
+    if (action.mode === 'create') {
+      await ocCreateWorkspaceFolder({
+        name: payload.name,
+        parentFolderId: action.parentFolderId,
+        viewGroups: payload.viewGroups,
+      });
+    } else if (action.mode === 'rename') {
+      await ocUpdateWorkspaceFolder(action.folder.__dataId, {
+        name: payload.name,
+        viewGroups: payload.viewGroups,
+      });
+    } else if (action.mode === 'move-folder') {
+      await ocMoveWorkspaceFolder(action.folder.__dataId, payload.targetId === '__root__' ? null : payload.targetId);
+    } else if (action.mode === 'move-workspace') {
+      await ocMoveWorkspaceToFolder(action.workspace.__dataId, payload.targetId === '__root__' ? null : payload.targetId);
+    } else {
+      await ocDeleteWorkspaceFolder(action.folder.__dataId);
+    }
+    folderDialogOpen.value = false;
+    await refreshTree();
+  } catch (e: unknown) {
+    folderError.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    folderSaving.value = false;
+  }
+}
 
 function syncFromRoute() {
   const ws = typeof route.query.workspaceId === 'string' ? route.query.workspaceId : null;
   const bd = typeof route.query.boardId === 'string' ? route.query.boardId : null;
   selectedWorkspaceId.value = ws;
   selectedBoardId.value = bd;
+  workspacePane.value = ws && !bd && route.query.view === 'library' ? 'library' : 'home';
   if (bd) centerView.value = 'board';
 }
 
@@ -134,6 +267,7 @@ async function loadTreeData() {
   treeLoading.value = true;
   try {
     await store.loadWorkspaces();
+    await store.loadFolders();
   } finally {
     treeLoading.value = false;
   }
@@ -151,9 +285,30 @@ async function onExpandAllWorkspaces() {
   }
 }
 
+// Library pane is separate from the board view.
+function openLibrary() {
+  if (!selectedWorkspaceId.value) return;
+  workspacePane.value = 'library';
+  selectedBoardId.value = null;
+  router.replace({
+    path: '/apps/operation-core/workspace',
+    query: { workspaceId: selectedWorkspaceId.value, view: 'library' },
+  });
+}
+
+function openWorkspaceHome() {
+  if (!selectedWorkspaceId.value) return;
+  workspacePane.value = 'home';
+  router.replace({
+    path: '/apps/operation-core/workspace',
+    query: { workspaceId: selectedWorkspaceId.value },
+  });
+}
+
 function onSelectWorkspace(workspaceId: string) {
   selectedWorkspaceId.value = workspaceId;
   selectedBoardId.value = null;
+  workspacePane.value = 'home';
   router.replace({
     path: '/apps/operation-core/workspace',
     query: { workspaceId },
@@ -282,15 +437,22 @@ onMounted(async () => {
               <OcWorkspaceTree
                 v-else
                 ref="treeRef"
-                :workspace-nodes="treeNodes"
+                :nodes="navNodes"
                 :selected-workspace-id="selectedWorkspaceId"
                 :selected-board-id="selectedBoardId"
+                :can-manage="canManageFolders"
+                :reveal-ids="revealIds"
                 :empty-label="t('operationCore.workspace.noWorkspaces')"
                 :label-workspaces-root="t('operationCore.workspace.workspacesRoot')"
                 @select-workspace="onSelectWorkspace"
                 @select-board="onSelectBoard"
                 @expand-workspace="onExpandWorkspace"
                 @expand-all-workspaces="onExpandAllWorkspaces"
+                @create-folder="openFolderAction({ mode: 'create', parentFolderId: $event })"
+                @rename-folder="openFolderAction({ mode: 'rename', folder: $event })"
+                @move-folder="openFolderAction({ mode: 'move-folder', folder: $event })"
+                @delete-folder="openFolderAction({ mode: 'delete', folder: $event })"
+                @move-workspace="openFolderAction({ mode: 'move-workspace', workspace: $event })"
               />
             </v-card-text>
           </v-card>
@@ -327,6 +489,16 @@ onMounted(async () => {
                 {{ t('operationCore.workspace.mainTitle') }}
               </template>
             </span>
+            <v-btn
+              v-if="selectedWorkspace && selectedBoard"
+              size="small"
+              class="text-none"
+              variant="text"
+              prepend-icon="mdi-bookshelf"
+              @click="openLibrary"
+            >
+              {{ t('operationCore.workspace.library.open') }}
+            </v-btn>
             <template v-if="selectedBoard">
               <v-spacer />
               <v-btn-toggle
@@ -408,6 +580,29 @@ onMounted(async () => {
                 </div>
               </div>
 
+              <v-btn-toggle
+                :model-value="workspacePane"
+                mandatory
+                density="comfortable"
+                color="primary"
+                variant="outlined"
+                divided
+                class="mb-4"
+              >
+                <v-btn value="home" size="small" class="text-none" @click="openWorkspaceHome">
+                  {{ t('operationCore.workspace.library.boards') }}
+                </v-btn>
+                <v-btn value="library" size="small" class="text-none" prepend-icon="mdi-bookshelf" @click="openLibrary">
+                  {{ t('operationCore.workspace.library.open') }}
+                </v-btn>
+              </v-btn-toggle>
+
+              <OcWorkspaceLibraryPanel
+                v-if="workspacePane === 'library'"
+                :workspace-id="selectedWorkspace.__dataId"
+              />
+
+              <template v-else>
               <p class="text-subtitle-2 font-weight-bold mb-3">
                 {{ t('operationCore.workspace.boardsList') }}
               </p>
@@ -442,6 +637,7 @@ onMounted(async () => {
                   </v-card>
                 </v-col>
               </v-row>
+              </template>
             </div>
 
             <!-- Board seçili + inline board -->
@@ -487,6 +683,17 @@ onMounted(async () => {
         </v-card>
       </div>
     </div>
+    <OcWorkspaceFolderDialog
+      v-model="folderDialogOpen"
+      :mode="folderDialogMode"
+      :name="folderDialogName"
+      :view-groups="folderDialogGroups"
+      :target-id="folderDialogTarget"
+      :targets="moveTargets"
+      :saving="folderSaving"
+      :error="folderError"
+      @save="onFolderSave"
+    />
   </div>
 </template>
 

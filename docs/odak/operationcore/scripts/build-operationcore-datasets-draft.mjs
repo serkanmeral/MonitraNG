@@ -219,6 +219,47 @@ function fieldNumber(name, title, opts = {}) {
   };
 }
 
+const OP_WORKSPACE_FOLDERS = 'op_workspace_folders';
+
+function fieldPersonGroups(name, title) {
+  return {
+    fieldType: 'personGroups',
+    name,
+    title,
+    mandatory: false,
+    unique: false,
+    isArray: true,
+    relationDataset: null,
+    incrementalOptions: null,
+  };
+}
+
+function buildOpWorkspaceFoldersDataset() {
+  return {
+    __dataId: null,
+    name: OP_WORKSPACE_FOLDERS,
+    description: 'Operational Core - Workspace folders (ağaç gruplama; workspace değildir)',
+    category: OPERATION_CORE_CATEGORY_ID,
+    forceSchema: false,
+    logging: 'none',
+    publish_mode: 'none',
+    fields: [
+      fieldText('name', 'Klasör adı', { mandatory: true }),
+      fieldText('parentFolderId', 'Üst klasör'),
+      fieldPersonGroups('viewGroups', 'Görüntüleme grupları'),
+      fieldNumber('sortOrder', 'Sıra'),
+    ],
+    indexList: [
+      {
+        name: 'idx_parentFolderId',
+        fields: { parentFolderId: 1 },
+        unique: false,
+      },
+    ],
+    queries: [],
+  };
+}
+
 const OP_TAGS = 'op_tags';
 
 function buildOpTagsDataset() {
@@ -380,6 +421,12 @@ function patchDataset(ds) {
           fieldRelation('enabledFieldIds', 'Aktif alan havuzu', 'op_fields', { isArray: true })
         );
       }
+      if (!fields.some((f) => f.name === 'folderId')) {
+        fields.push(fieldText('folderId', 'Üst klasör'));
+      }
+      if (!fields.some((f) => f.name === 'diFolderId')) {
+        fields.push(fieldText('diFolderId', 'Belge Zekâsı kütüphane klasörü'));
+      }
       break;
     }
     case 'op_state_flows': {
@@ -500,6 +547,9 @@ if (!patched.some((d) => d.name === OP_WORKSPACE_AUTOMATIONS)) {
 }
 if (!patched.some((d) => d.name === OP_TAGS)) {
   patched.push(buildOpTagsDataset());
+}
+if (!patched.some((d) => d.name === OP_WORKSPACE_FOLDERS)) {
+  patched.push(buildOpWorkspaceFoldersDataset());
 }
 fs.writeFileSync(outPath, JSON.stringify(patched, null, 2) + '\n', 'utf8');
 console.log(`Wrote ${patched.length} datasets -> ${outPath}`);

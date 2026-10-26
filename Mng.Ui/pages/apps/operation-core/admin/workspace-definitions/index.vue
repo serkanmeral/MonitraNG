@@ -153,7 +153,7 @@ watch(
 );
 
 onMounted(() => {
-  if (!auth.isManager) {
+  if (!auth.isManager && !auth.isAdmin) {
     void navigateTo('/unauthorized');
     return;
   }
