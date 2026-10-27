@@ -336,6 +336,7 @@
     "form": {
       "username": "用户名",
       "usernamePlaceholder": "用户名或 domain{'@'}username",
+      "usernameOnlyPlaceholder": "username",
       "password": "密码",
       "passwordPlaceholder": "请输入您的密码",
       "submit": "登录",
@@ -942,6 +943,8 @@
       "expiresAt": "过期时间",
       "relatedPersonPhone": "相关联系人电话",
       "logo": "徽标",
+      "logoDark": "深色徽标",
+      "logoLight": "浅色徽标",
       "logoUrl": "徽标 URL",
       "maxUsers": "最大用户数",
       "maxAssets": "最大资产数",
@@ -1040,6 +1043,8 @@
     "logo": {
       "uploaded": "徽标已上传",
       "noImage": "无徽标",
+      "darkHint": "在深色主题中显示。请上传浅色徽标。",
+      "lightHint": "在浅色主题中显示。请上传深色徽标。",
       "errors": {
         "invalidFormat": "无效的文件格式。仅接受 JPEG、PNG、WebP 或 GIF 文件。",
         "maxSize": "文件太大。最大允许 2MB。",

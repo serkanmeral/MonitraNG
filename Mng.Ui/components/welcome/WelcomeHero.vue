@@ -3,10 +3,12 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useUserStore } from '@/stores/apps/user';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { resolveDomainLogoSrc } from '@/composables/useDomain';
+import { useCustomizerStore } from '@/stores/customizer';
+import { resolveThemedDomainLogoSrc } from '@/composables/useDomain';
 import { ClockIcon } from 'vue-tabler-icons';
 
 const authStore = useAuthStore();
+const customizer = useCustomizerStore();
 const userStore = useUserStore();
 const { locale } = useAppI18n();
 const config = useRuntimeConfig();
@@ -38,7 +40,9 @@ const domainLabel = computed(
   () => authStore.domainInfo?.displayName || authStore.domainName || authStore.userInfo?.domain_name || '',
 );
 
-const domainLogoUrl = computed(() => resolveDomainLogoSrc(authStore.domainInfo));
+const domainLogoUrl = computed(() =>
+  resolveThemedDomainLogoSrc(authStore.domainInfo, customizer.actTheme),
+);
 
 const roleLabelKey = computed(() => {
   if (authStore.isAdmin) return 'welcome.banner.roleAdmin';

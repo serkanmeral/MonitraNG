@@ -1,0 +1,87 @@
+# Ankara BT — altyapı override (doğrudan hostname, Nginx yok)
+# Kullanım (portal.ankarabt.com, kullanıcı abtapps):
+#   cd ApplicationResources/mng_common
+#   cp .env.ankarabt.example .env
+#   docker compose -f docker-compose.yml -f docker-compose.ankarabt.yml up -d
+#
+# Bu hostta başka yığınlar çalışıyor. Dokunulmayanlar:
+#   elasticsearch :9200, kibana :5601, redmine :8383/:8384, postgres konteyner adı "postgres"
+# Devre dışı servisler "ankarabt-disabled" profilinde; bu profil verilmeden başlamazlar.
+
+services:
+  # Docker Hub ve Quay minio/minio 2026'da kapandı. Chainguard aynı sunucu komutunu çalıştırır.
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    user: "0:0"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # Redmine'ın postgres konteyneri "postgres" adını kullanıyor. Servis adı postgres kalır
+  # (Keycloak JDBC hostname'i); yalnızca konteyner adı değişir.
+  postgres:
+    container_name: mng_postgres
+
+  # Elasticsearch 9200'ü tutuyor. Konteyner içi 9200 aynı kalır; host yayını 9210.
+  opensearch:
+    ports: !override
+      - "9210:9200"
+
+  # Sağlık kontrolü anonim yayın yapıyor; broker allow_anonymous false.
+  mosquitto:
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-u", "monitrang", "-P", "!2345qawsedrf", "-t", "health", "-m", "ping"]
+
+  # İmaj node-red (uid 1000) ile çalışıyor. Docker'ın root olarak açtığı ./data yazılamıyor.
+  nodered:
+    user: "1007:1008"
+    volumes: !override
+      - ./nodered-data:/data
+
+  keycloak:
+    ports:
+      - "8080:8080"
+    environment:
+      KC_HOSTNAME: ${ANKARABT_KEYCLOAK_HOSTNAME:-portal.ankarabt.com}
+      KC_HOSTNAME_PORT: ${ANKARABT_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: passthrough
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME_PATH: /keycloak
+
+  gitlab:
+    profiles: ["ankarabt-disabled"]
+
+  gitlab-postgres:
+    profiles: ["ankarabt-disabled"]
+
+  gitlab-redis:
+    profiles: ["ankarabt-disabled"]
+
+  gitlab-runner:
+    profiles: ["ankarabt-disabled"]
+
+  mkdocs:
+    profiles: ["ankarabt-disabled"]
+
+  nginx:
+    profiles: ["ankarabt-disabled"]
+
+  # Geliştirme arayüzleri. İnternete açık hostta yayınlanmaz ve başlatılmaz.
+  mongo-express:
+    profiles: ["ankarabt-disabled"]
+    ports: !override []
+
+  redis-commander:
+    profiles: ["ankarabt-disabled"]
+    ports: !override []
+
+# Base compose Mailu ağını external ister; bu sunucuda Mailu yok.
+networks:
+  mailu_default:
+    name: mng_ankarabt_mailu_placeholder
+    driver: bridge

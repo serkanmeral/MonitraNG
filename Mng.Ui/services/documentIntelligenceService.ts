@@ -407,6 +407,66 @@ export async function diSearch(q: string, skip = 0, limit = 50): Promise<DiResou
   return mapListResult(raw);
 }
 
+export interface DiContentSearchHit {
+  resource: DiResource;
+  match: string;
+  snippets: string[];
+  folders: { id: string; name: string }[];
+  score: number;
+}
+
+export interface DiContentSearchResult {
+  items: DiContentSearchHit[];
+  total: number;
+  capped: boolean;
+}
+
+export interface DiContentSearchQuery {
+  q: string;
+  scope: 'folder' | 'library' | 'all';
+  scopeId?: string | null;
+  extension?: string | null;
+  match: 'all' | 'name' | 'content';
+  sort: 'relevance' | 'updated';
+}
+
+/** İndeksli belgelerde ad ve içerik. */
+export async function diContentSearch(query: DiContentSearchQuery): Promise<DiContentSearchResult> {
+  const params = new URLSearchParams({
+    q: query.q,
+    scope: query.scope,
+    match: query.match,
+    sort: query.sort,
+  });
+  if (query.scopeId) params.set('scopeId', query.scopeId);
+  if (query.extension) params.set('extension', query.extension);
+  const raw = await fetchFromDocuments(`${BASE}/content-search?${params.toString()}`, 'GET');
+  const o = asRecord(raw);
+  const items = Array.isArray(o.items)
+    ? o.items.map((row) => {
+        const hit = asRecord(row);
+        const folders = Array.isArray(hit.folders)
+          ? hit.folders.map((folder) => {
+              const crumb = asRecord(folder);
+              return { id: str(crumb, 'id') ?? '', name: str(crumb, 'name') ?? '' };
+            })
+          : [];
+        return {
+          resource: mapResource(hit.resource),
+          match: str(hit, 'match') ?? 'content',
+          snippets: strArray(hit.snippets),
+          folders,
+          score: num(hit, 'score') ?? 0,
+        };
+      })
+    : [];
+  return {
+    items,
+    total: num(o, 'total') ?? items.length,
+    capped: Boolean(o.capped),
+  };
+}
+
 /** Son güncellenen yayınlanmış markdown kayıtları. */
 export async function diGetRecent(limit = 10): Promise<DiResourceListResult> {
   const params = new URLSearchParams({ limit: String(limit) });

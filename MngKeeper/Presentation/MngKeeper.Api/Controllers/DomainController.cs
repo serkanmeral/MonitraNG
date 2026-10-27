@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using MngKeeper.Api.Contracts;
@@ -126,6 +127,46 @@ namespace MngKeeper.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Public branding for a tenant login host. Returns display name and logos only.
+        /// </summary>
+        [HttpGet("branding/{name}")]
+        [ProducesResponseType(typeof(DomainBrandingResponse), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<DomainBrandingResponse>> GetDomainBranding(string name)
+        {
+            var normalized = (name ?? string.Empty).Trim().ToLowerInvariant();
+            if (!BrandingNamePattern.IsMatch(normalized))
+                return NotFound();
+
+            try
+            {
+                var domain = await _domainRepository.GetByNameAsync(normalized);
+                if (domain == null || domain.Status == DomainStatus.Deleted)
+                    return NotFound();
+
+                return Ok(new DomainBrandingResponse
+                {
+                    Name = domain.Name,
+                    DisplayName = string.IsNullOrWhiteSpace(domain.DisplayName) ? domain.Name : domain.DisplayName,
+                    Logo = domain.Logo,
+                    LogoDark = domain.LogoDark,
+                    LogoLight = domain.LogoLight,
+                    LogoUrl = domain.LogoUrl,
+                    UpdatedAt = domain.UpdatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting domain branding: {Name}", normalized);
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        private static readonly Regex BrandingNamePattern = new(
+            "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
         [HttpGet("name/{name}")]
         public async Task<ActionResult<MngKeeper.Domain.Entities.Domain>> GetDomainByName(string name)
         {
@@ -180,8 +221,20 @@ namespace MngKeeper.Api.Controllers
                 // (UI always sends these today; keep defensive for partial clients).
                 if (request.RelatedPersonPhone != null)
                     existingDomain.RelatedPersonPhone = request.RelatedPersonPhone;
-                if (request.Logo != null)
-                    existingDomain.Logo = request.Logo;
+                if (request.LogoDark != null)
+                {
+                    existingDomain.LogoDark = BlankToNull(request.LogoDark);
+                    existingDomain.Logo = existingDomain.LogoDark;
+                }
+                else if (request.Logo != null)
+                {
+                    existingDomain.Logo = BlankToNull(request.Logo);
+                    if (string.IsNullOrWhiteSpace(existingDomain.LogoDark))
+                        existingDomain.LogoDark = existingDomain.Logo;
+                }
+
+                if (request.LogoLight != null)
+                    existingDomain.LogoLight = BlankToNull(request.LogoLight);
                 if (request.LogoUrl != null)
                     existingDomain.LogoUrl = request.LogoUrl;
 
@@ -317,16 +370,47 @@ namespace MngKeeper.Api.Controllers
 
             if (incoming.Mail != null)
                 MergeMail(target, incoming.Mail);
+
+            if (incoming.Password != null)
+                MergePassword(target, incoming.Password);
         }
 
         private static void RedactMailPassword(MngKeeper.Domain.Entities.Domain domain)
         {
             var mail = domain.Settings?.Mail;
-            if (mail == null)
+            if (mail != null)
+            {
+                mail.PasswordConfigured = !string.IsNullOrEmpty(mail.Password);
+                mail.Password = string.Empty;
+            }
+
+            RedactPasswordSettings(domain);
+        }
+
+        private static void RedactPasswordSettings(MngKeeper.Domain.Entities.Domain domain)
+        {
+            var password = domain.Settings?.Password;
+            if (password == null)
                 return;
 
-            mail.PasswordConfigured = !string.IsNullOrEmpty(mail.Password);
-            mail.Password = string.Empty;
+            password.ResetBindPasswordConfigured = !string.IsNullOrEmpty(password.ResetBindPassword);
+            password.ResetBindPassword = string.Empty;
+        }
+
+        private static void MergePassword(DomainSettings target, DomainPasswordSettings incoming)
+        {
+            target.Password ??= new DomainPasswordSettings();
+            var password = target.Password;
+
+            password.Mode = string.Equals(incoming.Mode?.Trim(), DomainPasswordModes.KeycloakAndAd, StringComparison.OrdinalIgnoreCase)
+                ? DomainPasswordModes.KeycloakAndAd
+                : DomainPasswordModes.Keycloak;
+            password.PersonnelDn = incoming.PersonnelDn?.Trim() ?? string.Empty;
+            password.ResetBindUsername = incoming.ResetBindUsername?.Trim() ?? string.Empty;
+            password.ServerCertificateThumbprint = incoming.ServerCertificateThumbprint?.Trim() ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(incoming.ResetBindPassword))
+                password.ResetBindPassword = incoming.ResetBindPassword;
         }
 
         private static void MergeMail(DomainSettings target, DomainMailSettings incoming)
@@ -348,6 +432,9 @@ namespace MngKeeper.Api.Controllers
             if (!string.IsNullOrEmpty(incoming.Password))
                 mail.Password = incoming.Password;
         }
+
+        private static string? BlankToNull(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value;
 
         private static void MergeDirectoryPrivileges(
             DomainSettings target,

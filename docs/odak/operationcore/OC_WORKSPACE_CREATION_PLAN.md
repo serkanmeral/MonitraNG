@@ -1,7 +1,7 @@
 # OC workspace oluşturma planı
 
 **Tarih:** 26 Ekim 2026  
-**Durum:** İlk beş madde kodda. Sıradaki madde iş kaydı belge bağıdır.  
+**Durum:** İş kaydı belge bağı kodda. Sıradaki kesit, iş kaydındaki dosya ekini kapatmaktır.  
 **Kapsam:** Workspace kütüphanesi, iş kaydı belgeleri, oluşturma sihirbazı, workspace paketleri, görsel durum akışı, alt iş.
 
 Bu plan bir şablon marketi değildir. Kütüphane, Belge Zekâsında workspace’e ait klasördür. Paket, proje iş paketinin workspace karşılığıdır.
@@ -33,8 +33,10 @@ Bu plan bir şablon marketi değildir. Kütüphane, Belge Zekâsında workspace�
 - İşten düşürmek bağı siler. Belge kütüphanede kalır.
 - Kütüphaneden silinen belge, işte kopuk bağ olarak görünür.
 - Yorum ekleri dosya olarak kalır. Kütüphane kuralına girmez.
-- Daha önce yüklenmiş iş ekleri durur ve açılır. Yeni belgeler kütüphaneye gider.
-- Ekler sekmesi iki liste gösterir. Eski dosya ekleri ayrı durur. Yeni bağ, kütüphane belgesinin kimliğidir.
+- İş kaydına dosya eklenmez. Belge Belge Zekâsında kalır. İş kaydı yalnızca belge kimliğini tutar.
+- Belge Zekâsı, markdown ve indekslenebilir dosyayı kayıt bitince kendisi indeksler. İş kaydı ayrıca indeks tetiklemez.
+- Ekler sekmesi dosya yükleme listesini kaldırır. Yalnızca kütüphane bağı kalır.
+- Daha önce iş kaydına yüklenmiş dosyalar yeni yol değildir. Bu planda o liste kapanır.
 - Kök, çözülen kütüphane klasörüdür. Kök sonradan proje klasörüne dönerse, Operasyon klasörüne bağlanmış belgeler işte durur ve kopuk sayılmaz. Yeni seçim ve yeni belge yalnızca güncel kökün altına gider.
 
 ### Sihirbazın sordukları
@@ -170,4 +172,4 @@ Konuşma sırası kolaydan zora idi. Kod, bağımlılık sırasıyla gider. Üst
 
 `mngoperations` bu kurulum ve pano adı davranışıyla yayındadır. Sihirbaz arayüzü yerel geliştirme sunucusundadır.
 
-Sıradaki madde iş kaydı belge bağıdır. Alt iş ve görsel durum akışı ondan sonradır.
+İş kaydı belge bağı kodda: ekler sekmesi kütüphane belgesi seçer veya yeni belgeyi köke yazar. Sıradaki kesit, iş kaydındaki dosya ekini kapatmaktır. Belgeler Belge Zekâsında kalır ve mevcut otomatik indeks onları alır. Alt iş ve görsel durum akışı ondan sonradır.

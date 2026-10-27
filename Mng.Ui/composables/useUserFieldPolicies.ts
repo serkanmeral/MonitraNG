@@ -22,9 +22,10 @@ export function useUserFieldPolicies(user: Ref<User | null | undefined>) {
     if (capabilities.value?.canDelete === false) return false;
     return !isDirectory.value;
   });
-  const canChangePassword = computed(
-    () => capabilities.value?.canChangePassword !== false && !isDirectory.value
-  );
+  const canChangePassword = computed(() => {
+    if (isDirectory.value) return capabilities.value?.canChangePassword === true;
+    return capabilities.value?.canChangePassword !== false;
+  });
 
   function fieldEditable(field: string, defaultWhenMissing = true): boolean {
     return isFieldEditable(user.value, field, defaultWhenMissing);

@@ -1853,6 +1853,15 @@ public class WorkItemCommandService : IWorkItemCommandService
 
         foreach (var key in incoming.Keys)
         {
+            if (string.Equals(key, "attachments", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new OperationCoreException(
+                    "ATTACHMENTS_NOT_ALLOWED",
+                    "Work item file attachments are not accepted. Store the document in the library.",
+                    "İş kaydına dosya eklenmez. Belgeyi kütüphaneye yazın.",
+                    400);
+            }
+
             if (WorkItemCoreFields.IsWritable(key) || catalog.ContainsKey(key))
                 continue;
 

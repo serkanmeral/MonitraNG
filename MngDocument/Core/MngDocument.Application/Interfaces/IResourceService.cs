@@ -128,6 +128,14 @@ public interface IResourceService
 
     Task<ResourceListResult> SearchAsync(string query, int skip, int limit, CancellationToken ct = default);
 
+    /// <summary>
+    /// Verilen kimliklerden görülebilen, klasör olmayan kayıtları giriş sırasıyla döner.
+    /// Yayınlanmamış markdown elenir. Klasör yolu ata adlarından kurulur.
+    /// </summary>
+    Task<IReadOnlyList<IndexedHitContextDto>> LoadVisibleIndexedAsync(
+        IReadOnlyList<string> ids,
+        CancellationToken ct = default);
+
     /// <summary>Son güncellenen yayınlanmış markdown kayıtları (widget P2).</summary>
     Task<ResourceListResult> GetRecentAsync(int limit, CancellationToken ct = default);
 

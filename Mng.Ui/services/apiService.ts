@@ -293,7 +293,10 @@ export function fetchFromMngKeeper(
       if (error.data) {
         const errorData = error.data;
         if (typeof errorData === 'object') {
-          errorMessage = errorData.errorDescription || errorData.error || errorMessage;
+          const nested = errorData.data && typeof errorData.data === 'object' ? errorData.data : errorData;
+          const description = nested.errorDescription || nested.ErrorDescription;
+          const code = typeof nested.error === 'string' ? nested.error : (typeof nested.Error === 'string' ? nested.Error : '');
+          errorMessage = description || code || errorMessage;
         } else if (typeof errorData === 'string') {
           errorMessage = errorData;
         }
@@ -873,7 +876,12 @@ export function fetchFromOperations(
         if (typeof errorData === "object" && errorData.error && typeof errorData.error === "object") {
           errorMessage = errorData.error.message || errorData.error.code || errorMessage;
         } else if (typeof errorData === "object") {
-          errorMessage = errorData.errorDescription || errorData.error || errorData.message || errorMessage;
+          errorMessage =
+            errorData.messageTr ||
+            errorData.errorDescription ||
+            errorData.message ||
+            errorData.error ||
+            errorMessage;
         } else if (typeof errorData === "string") {
           errorMessage = errorData;
         }

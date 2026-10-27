@@ -2,6 +2,7 @@ using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
 using MngKeeper.Application.Common.Mappers;
+using MngKeeper.Application.Directory;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -13,17 +14,20 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
         private readonly ILogger<GetUserQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUserFieldPolicyService _fieldPolicyService;
+        private readonly IDomainRepository _domainRepository;
 
         public GetUserQueryHandler(
             IUserRepository userRepository,
             ILogger<GetUserQueryHandler> logger,
             IHttpContextAccessor httpContextAccessor,
-            IUserFieldPolicyService fieldPolicyService)
+            IUserFieldPolicyService fieldPolicyService,
+            IDomainRepository domainRepository)
         {
             _userRepository = userRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
             _fieldPolicyService = fieldPolicyService;
+            _domainRepository = domainRepository;
         }
 
         public async Task<GetUserResponse> Handle(GetUserQuery request, CancellationToken cancellationToken)
@@ -67,7 +71,9 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
                     };
                 }
 
-                var userDto = UserDtoMapper.ToDto(user, _fieldPolicyService);
+                var domain = await _domainRepository.GetByIdAsync(claims.DomainId);
+                var directoryPasswordChangeEnabled = DirectoryPasswordPolicy.IsAdWriteEnabled(domain?.Settings);
+                var userDto = UserDtoMapper.ToDto(user, _fieldPolicyService, directoryPasswordChangeEnabled);
 
                 return new GetUserResponse
                 {

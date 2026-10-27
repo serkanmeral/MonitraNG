@@ -35,7 +35,7 @@ public sealed partial class ProjectPlanningService
         var acknowledgements = BuildAcknowledgements(detail.Acknowledgements);
         var obligations = BuildObligations(detail.Obligations);
         var auditPacks = BuildAuditPacks(detail.AuditPacks);
-        var meetingActions = BuildMeetingActions(detail.Meetings);
+        var meetingActions = BuildMeetingActions(await LoadProjectActionDtosAsync(projectId, token, ct));
         var packRows = (await packsTask).Select(ToInstallDto).ToList();
 
         var delayedLeaves = new List<WbsItemDto>();
@@ -329,7 +329,7 @@ public sealed partial class ProjectPlanningService
         {
             actions.Add(new ProjectPulseActionDto
             {
-                Tab = "meetings",
+                Tab = "assignments",
                 Flag = ProjectTraceFlags.OverdueMeetingAction,
                 Title = row.Title,
                 Due = row.DueDate,

@@ -1,4 +1,5 @@
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
 
@@ -6,7 +7,10 @@ namespace MngKeeper.Application.Common.Mappers;
 
 public static class UserDtoMapper
 {
-  public static UserDto ToDto(User user, IUserFieldPolicyService fieldPolicyService)
+  public static UserDto ToDto(
+    User user,
+    IUserFieldPolicyService fieldPolicyService,
+    bool directoryPasswordChangeEnabled = false)
   {
     return new UserDto
     {
@@ -36,7 +40,7 @@ public static class UserDtoMapper
       UpdatedBy = user.UpdatedBy,
       ProvisioningSource = user.ProvisioningSource.ToString(),
       DirectorySyncedAt = user.DirectorySyncedAt,
-      Capabilities = fieldPolicyService.GetCapabilities(user),
+      Capabilities = fieldPolicyService.GetCapabilities(user, directoryPasswordChangeEnabled),
       FieldPolicies = fieldPolicyService.GetFieldPolicies(user)
         .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase),
     };

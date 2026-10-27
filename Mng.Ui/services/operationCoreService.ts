@@ -55,11 +55,7 @@ import type {
 import { buildBoardDgPayload } from '@/utils/ocBoardDgPayload';
 import { buildOcFormLayoutPayload, normalizeOcGridCol, parseOpFormLayout } from '@/utils/ocFormLayout';
 import { validateOcFormModel } from '@/utils/ocFormValidation';
-import {
-  collectNewFileUploadsFromChangedFields,
-  collectWorkItemAttachmentsFromFormModel,
-  resolveOcFormFileFieldKeys,
-} from '@/utils/ocWorkItemFileFields';
+import { resolveOcFormFileFieldKeys } from '@/utils/ocWorkItemFileFields';
 
 export const OC_DATASETS = {
   workspaces: 'op_workspaces',
@@ -631,9 +627,6 @@ export function buildCreateWorkItemRequest(
   const fileFieldKeys = new Set(
     formContext ? resolveOcFormFileFieldKeys(formContext).map((k) => k.toLowerCase()) : []
   );
-  const attachmentUploads = formContext
-    ? collectWorkItemAttachmentsFromFormModel(model, formContext)
-    : [];
 
   const fields: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(model)) {
@@ -642,9 +635,6 @@ export function buildCreateWorkItemRequest(
     if (value === undefined || value === null || value === '') continue;
     if (Array.isArray(value) && value.length === 0) continue;
     fields[key] = value;
-  }
-  if (attachmentUploads.length) {
-    fields.attachments = attachmentUploads;
   }
   if (Object.keys(fields).length) body.fields = fields;
 
@@ -819,7 +809,22 @@ function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
     groups: parsePeopleMap(raw.groups ?? raw.Groups),
     createdBy: pickStr(wiRaw, 'createdBy', 'CreatedBy') ?? null,
     attachments: parseAttachments(raw.attachments ?? raw.Attachments),
+    libraryDocumentIds: parseStringIds(raw.libraryDocumentIds ?? raw.LibraryDocumentIds),
   };
+}
+
+function parseStringIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const item of raw) {
+    const id = String(item ?? '').trim();
+    const key = id.toLowerCase();
+    if (!id || seen.has(key)) continue;
+    seen.add(key);
+    ids.push(id);
+  }
+  return ids;
 }
 
 /** DG saklı file nesnesini (path/file_name/...) OcAttachment'a çevirir; ham nesneyi `raw`'da saklar. */
@@ -1273,14 +1278,10 @@ export function buildUpdateWorkItemRequest(changed: Record<string, unknown>): Oc
   return body;
 }
 
-/**
- * Profil düzenle PATCH — yeni file yüklemeleri mevcut `attachments` ile birleştirilir;
- * file alan anahtarları extraFields'a yazılmaz.
- */
+/** Profil düzenle PATCH. Dosya alanları iş kaydına yazılmaz; belge kütüphaneye gider. */
 export function buildUpdateWorkItemRequestFromFormEdit(
   changed: Record<string, unknown>,
-  formContext: OcFormRuntimeContext,
-  existingAttachments: OcAttachment[] = []
+  formContext: OcFormRuntimeContext
 ): OcUpdateWorkItemRequest {
   const fileFieldKeys = new Set(resolveOcFormFileFieldKeys(formContext).map((k) => k.toLowerCase()));
   const nonFileChanged: Record<string, unknown> = {};
@@ -1290,16 +1291,7 @@ export function buildUpdateWorkItemRequestFromFormEdit(
     }
   }
 
-  const body = buildUpdateWorkItemRequest(nonFileChanged);
-  const newUploads = collectNewFileUploadsFromChangedFields(changed, formContext);
-  if (newUploads.length) {
-    const attachmentRows: unknown[] = [
-      ...existingAttachments.map((a) => a.raw),
-      ...newUploads,
-    ];
-    body.fields = { ...(body.fields ?? {}), attachments: attachmentRows };
-  }
-  return body;
+  return buildUpdateWorkItemRequest(nonFileChanged);
 }
 
 export function hasUpdateWorkItemChanges(patch: OcUpdateWorkItemRequest): boolean {

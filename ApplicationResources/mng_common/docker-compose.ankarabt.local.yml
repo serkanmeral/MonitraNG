@@ -1,0 +1,97 @@
+# AbtAppServer — altyapı override (doğrudan IP)
+# Kullanım (192.168.1.249, kullanıcı abt, repo /data/MonitraNG):
+#   cd ApplicationResources/mng_common
+#   docker compose -f docker-compose.yml -f docker-compose.ankarabt.local.yml up -d
+#
+# Portal override'ı (docker-compose.ankarabt.yml) bu makinede kullanılmaz.
+# Üretim Nginx'i (admin.monitrang.com, Let's Encrypt) kapalı kalır.
+# Admin panosu HTTP: http://192.168.1.249
+# Uygulama HTTPS: https://192.168.1.249
+# GitLab ve MkDocs "ankarabt-local-disabled" profilindedir.
+
+services:
+  keycloak:
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "dc01.ankarabt.local:192.168.1.254"
+    volumes:
+      - ./certs/dc01-ldaps.crt:/opt/keycloak/conf/truststores/dc01-ldaps.crt:ro
+      - ./certs/dc01-truststore.p12:/opt/keycloak/conf/truststores/dc01-truststore.p12:ro
+    environment:
+      KC_SPI_TRUSTSTORE_FILE_FILE: /opt/keycloak/conf/truststores/dc01-truststore.p12
+      KC_SPI_TRUSTSTORE_FILE_PASSWORD: changeit
+      KC_SPI_TRUSTSTORE_FILE_HOSTNAME_VERIFICATION_POLICY: WILDCARD
+      KC_HOSTNAME: ${ANKARABT_LOCAL_KEYCLOAK_HOSTNAME:-192.168.1.249}
+      KC_HOSTNAME_PORT: ${ANKARABT_LOCAL_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: passthrough
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME_PATH: /keycloak
+
+  redis:
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+
+  # Sağlık kontrolü anonim yayın yapıyor; broker allow_anonymous false.
+  mosquitto:
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-u", "monitrang", "-P", "!2345qawsedrf", "-t", "health", "-m", "ping"]
+
+  # İmaj node-red (uid 1000) ile çalışıyor. Docker'ın root olarak açtığı ./data yazılamıyor.
+  nodered:
+    user: "1000:1000"
+    volumes: !override
+      - ./nodered-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:1880/nodered/"]
+
+  gitlab:
+    profiles: ["ankarabt-local-disabled"]
+
+  gitlab-postgres:
+    profiles: ["ankarabt-local-disabled"]
+
+  gitlab-redis:
+    profiles: ["ankarabt-local-disabled"]
+
+  gitlab-runner:
+    profiles: ["ankarabt-local-disabled"]
+
+  mkdocs:
+    profiles: ["ankarabt-local-disabled"]
+
+  nginx:
+    profiles: ["ankarabt-local-disabled"]
+
+  # monitrang.com sertifikası ve GitLab bağı olmadan, aynı admin panosu.
+  # Sertifika sunucuda nginx/certs altında üretilir; repoya girmez.
+  admin-nginx:
+    image: nginx:alpine
+    container_name: admin-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/local:/etc/nginx/conf.d:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - mng_network
+      - mng_common_mng_network
+    restart: unless-stopped
+    depends_on:
+      - keycloak
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# Base compose Mailu ağını external ister; bu sunucuda Mailu yok.
+networks:
+  mailu_default:
+    name: mng_ankarabt_local_mailu_placeholder
+    driver: bridge

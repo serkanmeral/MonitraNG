@@ -327,6 +327,7 @@
     "form": {
       "username": "Nom d'utilisateur",
       "usernamePlaceholder": "Nom d'utilisateur ou domaine{'@'}nomutilisateur",
+      "usernameOnlyPlaceholder": "nomutilisateur",
       "password": "Mot de passe",
       "passwordPlaceholder": "Entrez votre mot de passe",
       "submit": "Se connecter",
@@ -933,6 +934,8 @@
       "expiresAt": "Date d'Expiration",
       "relatedPersonPhone": "Téléphone de la Personne de Contact",
       "logo": "Logo",
+      "logoDark": "Logo sombre",
+      "logoLight": "Logo clair",
       "logoUrl": "URL du Logo",
       "maxUsers": "Nombre Maximum d'Utilisateurs",
       "maxAssets": "Nombre Maximum d'Actifs",
@@ -1031,6 +1034,8 @@
     "logo": {
       "uploaded": "Logo téléchargé",
       "noImage": "Aucun logo",
+      "darkHint": "Affiché sur le thème sombre. Utilisez un logo clair.",
+      "lightHint": "Affiché sur le thème clair. Utilisez un logo foncé.",
       "errors": {
         "invalidFormat": "Format de fichier invalide. Seuls les fichiers JPEG, PNG, WebP ou GIF sont acceptés.",
         "maxSize": "La taille du fichier est trop grande. Maximum 2 MO autorisé.",

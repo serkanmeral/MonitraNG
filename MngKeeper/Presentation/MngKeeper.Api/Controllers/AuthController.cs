@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Helpers;
 using MngKeeper.Application.Services;
+using MngKeeper.Application.Directory;
+using MngKeeper.Domain.Entities;
+using MngKeeper.Domain.Enums;
 using MngKeeper.Api.Attributes;
 using MediatR;
 using MngKeeper.Application.Features.Auth.Commands.GetToken;
@@ -19,6 +22,7 @@ public class AuthController : ControllerBase
     private readonly IDomainRepository _domainRepository;
     private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
     private readonly ITokenCredentialResolver _tokenCredentialResolver;
+    private readonly IActiveDirectoryPasswordWriter _directoryPasswordWriter;
     private readonly IMediator _mediator;
     private readonly ILogger<AuthController> _logger;
 
@@ -28,6 +32,7 @@ public class AuthController : ControllerBase
         IDomainRepository domainRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
         ITokenCredentialResolver tokenCredentialResolver,
+        IActiveDirectoryPasswordWriter directoryPasswordWriter,
         IMediator mediator,
         ILogger<AuthController> logger)
     {
@@ -36,6 +41,7 @@ public class AuthController : ControllerBase
         _domainRepository = domainRepository;
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _tokenCredentialResolver = tokenCredentialResolver;
+        _directoryPasswordWriter = directoryPasswordWriter;
         _mediator = mediator;
         _logger = logger;
     }
@@ -332,14 +338,23 @@ public class AuthController : ControllerBase
                 });
             }
 
-            // Update password in Keycloak
+            var directoryWrite = await WriteDirectoryPasswordAsync(
+                domain,
+                user,
+                request.NewPassword,
+                request.CurrentPassword,
+                reset: false);
+            if (directoryWrite != null)
+                return directoryWrite;
+
+            var directoryUser = user.ProvisioningSource == UserProvisioningSource.Directory;
             var passwordUpdated = await _keycloakService.UpdateUserPasswordAsync(
                 domain.RealmName,
                 user.KeycloakUserId,
                 request.NewPassword,
                 temporary: false);
 
-            if (!passwordUpdated)
+            if (!passwordUpdated && !directoryUser)
             {
                 _logger.LogError("Failed to update password in Keycloak for user: {Username} in domain: {Domain}", 
                     claims.Username, claims.DomainName);
@@ -349,6 +364,13 @@ public class AuthController : ControllerBase
                     Error = "password_update_failed",
                     ErrorDescription = "Failed to update password. Please try again later."
                 });
+            }
+
+            if (!passwordUpdated)
+            {
+                _logger.LogWarning(
+                    "Active Directory password changed but Keycloak rejected the copy for user {Username}. Login uses the directory password.",
+                    claims.Username);
             }
 
             _logger.LogInformation("Password changed successfully for user: {Username} in domain: {Domain}", 
@@ -449,14 +471,23 @@ public class AuthController : ControllerBase
                 });
             }
 
-            // Update password in Keycloak
+            var directoryWrite = await WriteDirectoryPasswordAsync(
+                domain,
+                user,
+                request.NewPassword,
+                currentPassword: null,
+                reset: true);
+            if (directoryWrite != null)
+                return directoryWrite;
+
+            var directoryUser = user.ProvisioningSource == UserProvisioningSource.Directory;
             var passwordUpdated = await _keycloakService.UpdateUserPasswordAsync(
                 domain.RealmName,
                 user.KeycloakUserId,
                 request.NewPassword,
                 temporary: false);
 
-            if (!passwordUpdated)
+            if (!passwordUpdated && !directoryUser)
             {
                 _logger.LogError("Failed to update password in Keycloak for user: {UserId} in domain: {Domain}", 
                     user.Id, domain.Name);
@@ -468,7 +499,13 @@ public class AuthController : ControllerBase
                 });
             }
 
-            // Mark token as used
+            if (!passwordUpdated)
+            {
+                _logger.LogWarning(
+                    "Active Directory password reset but Keycloak rejected the copy for user {UserId}. Login uses the directory password.",
+                    user.Id);
+            }
+
             await _passwordResetTokenRepository.MarkTokenAsUsedAsync(request.Token);
 
             _logger.LogInformation("Password reset successfully for user: {UserId} in domain: {Domain}", 
@@ -580,6 +617,58 @@ public class AuthController : ControllerBase
             {
                 Error = "server_error",
                 ErrorDescription = "An error occurred while processing your request"
+            });
+        }
+    }
+
+    /// <summary>
+    /// Directory users write Active Directory before Keycloak.
+    /// A failure here leaves Keycloak and the reset token unchanged.
+    /// Local users skip this step.
+    /// </summary>
+    private async Task<IActionResult?> WriteDirectoryPasswordAsync(
+        MngKeeper.Domain.Entities.Domain domain,
+        MngKeeper.Domain.Entities.User user,
+        string newPassword,
+        string? currentPassword,
+        bool reset)
+    {
+        if (user.ProvisioningSource != UserProvisioningSource.Directory)
+            return null;
+
+        var enabled = reset
+            ? DirectoryPasswordPolicy.IsAdminResetEnabled(domain.Settings)
+            : DirectoryPasswordPolicy.IsAdWriteEnabled(domain.Settings);
+        if (!enabled)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Error = "password_change_disabled",
+                ErrorDescription = reset
+                    ? "Directory password reset stays with the directory administrator."
+                    : "Directory users cannot change a password until the domain writes passwords to Active Directory."
+            });
+        }
+
+        try
+        {
+            if (reset)
+                await _directoryPasswordWriter.ResetPasswordAsync(domain, user.Username, newPassword);
+            else
+                await _directoryPasswordWriter.ChangeOwnPasswordAsync(
+                    domain,
+                    user.Username,
+                    currentPassword ?? string.Empty,
+                    newPassword);
+
+            return null;
+        }
+        catch (DirectoryPasswordException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Error = ex.Code,
+                ErrorDescription = ex.Message
             });
         }
     }

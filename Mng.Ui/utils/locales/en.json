@@ -657,6 +657,7 @@
     },
     "security": {
       "directoryPasswordManaged": "Your corporate (Active Directory) account password is managed by the directory. Contact your IT administrator to change your password.",
+      "directoryPasswordSelfService": "The new password is written to your Active Directory account using your current password. An administrator reset is not done from this screen.",
       "changePassword": {
         "title": "Change Password",
         "description": "It is recommended to change your password regularly for the security of your account.",
@@ -1016,6 +1017,7 @@
       "domainSettings": "Domain Settings",
       "managerGroups": "Manager Privilege Groups",
       "directoryLdap": "Directory / LDAP (AD)",
+      "directoryPassword": "Directory password",
       "mail": "Email (SMTP)",
       "licenseInfo": "License Information"
     },
@@ -1038,6 +1040,20 @@
       "bindUsernamePlaceholder": "CN=svc-ldap,OU=Service,DC=corp,DC=local",
       "bindPassword": "Bind password",
       "bindPasswordHint": "Leave blank to keep the current password."
+    },
+    "directoryPassword": {
+      "description": "The default store is Keycloak. Keycloak and Active Directory lets a signed-in directory user change their own password from the profile. The new password is written to Active Directory with that user's current password. LDAPS, the directory connection, and the certificate thumbprint are enough. A personnel container and a reset account are not required. A forgotten password is set by an administrator in Active Directory.",
+      "mode": "Password store",
+      "modeKeycloak": "Keycloak only",
+      "modeKeycloakAndAd": "Keycloak and Active Directory",
+      "personnelDn": "Personnel DN",
+      "personnelDnPlaceholder": "OU=Personnel,DC=ankarabt,DC=local",
+      "resetBindUsername": "Reset account",
+      "resetBindUsernamePlaceholder": "CN=svc-reset,OU=Service,DC=ankarabt,DC=local",
+      "resetBindPassword": "Reset password",
+      "resetBindPasswordHint": "Leave blank to keep the current password.",
+      "thumbprint": "LDAPS certificate thumbprint",
+      "thumbprintHint": "SHA-1 thumbprint of the domain controller certificate. The connection is pinned to this certificate."
     },
     "mail": {
       "description": "Mail sent for this domain uses this SMTP server. When disabled, the system default mail settings are used.",
@@ -7491,9 +7507,10 @@
       "required": "Required",
       "fieldRequired": "This field is required",
       "previewDraftChip": "Draft preview",
-      "fileFieldHint": "Files appear under the profile Attachments tab after the record is created.",
+      "fileFieldHint": "Documents stay in the library. Link them from the Attachments tab.",
       "fileUpload": {
         "dropHint": "Drag and drop a file here, or click to browse",
+        "libraryInstead": "A file is not attached to the work item. Add it to the library from the Attachments tab, or choose one there.",
         "hintAnyType": "Up to {max} MB · all file types",
         "hintWithTypes": "Up to {max} MB · {types}",
         "tooLarge": "File is too large (max {max} MB).",
@@ -7870,6 +7887,25 @@
         "uploadError": "Could not upload the file.",
         "downloadError": "Could not download the file.",
         "removeError": "Could not remove the attachment."
+      },
+      "libraryLinks": {
+        "title": "Library documents",
+        "hint": "The document stays in the library. The work item keeps only its id.",
+        "pick": "Choose from library",
+        "upload": "New document",
+        "empty": "No library document is linked.",
+        "missingRoot": "This workspace has no library root. A new link cannot be added.",
+        "broken": "Broken link",
+        "unlink": "Remove link",
+        "open": "Open",
+        "saveError": "Could not save the document link.",
+        "pickerTitle": "Library document",
+        "pickerHint": "Only this workspace library can be chosen.",
+        "root": "Root",
+        "back": "Parent folder",
+        "folderEmpty": "This folder has no documents.",
+        "use": "Link",
+        "cancel": "Cancel"
       },
       "transitions": {
         "title": "Move to:",

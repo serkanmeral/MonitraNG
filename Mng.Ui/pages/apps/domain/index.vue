@@ -2,13 +2,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useDomain, type Domain, type UpdateDomainRequest, type DirectoryLdapSettings, type DirectoryPrivilegeSettings, type DomainMailSettings } from '@/composables/useDomain';
+import { useDomain, type Domain, type UpdateDomainRequest, type DirectoryLdapSettings, type DirectoryPrivilegeSettings, type DomainMailSettings, type DomainPasswordSettings } from '@/composables/useDomain';
 import { useGroupStore } from '@/stores/apps/group';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DomainBackupCard from '@/components/apps/domain/DomainBackupCard.vue';
 import DomainDirectorySyncCard from '@/components/apps/domain/DomainDirectorySyncCard.vue';
-import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon, ServerIcon, MailIcon } from 'vue-tabler-icons';
+import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon, ServerIcon, MailIcon, LockIcon } from 'vue-tabler-icons';
 
 const emptyDirectoryLdap = (): DirectoryLdapSettings => ({
   enabled: false,
@@ -46,6 +46,24 @@ const mapDomainMail = (mail?: DomainMailSettings | null): DomainMailSettings => 
   fromEmail: mail?.fromEmail || '',
   fromName: mail?.fromName || '',
   passwordConfigured: mail?.passwordConfigured ?? false,
+});
+
+const emptyDomainPassword = (): DomainPasswordSettings => ({
+  mode: 'keycloak',
+  personnelDn: '',
+  resetBindUsername: '',
+  resetBindPassword: '',
+  serverCertificateThumbprint: '',
+  resetBindPasswordConfigured: false,
+});
+
+const mapDomainPassword = (password?: DomainPasswordSettings | null): DomainPasswordSettings => ({
+  mode: password?.mode === 'keycloak-and-ad' ? 'keycloak-and-ad' : 'keycloak',
+  personnelDn: password?.personnelDn || '',
+  resetBindUsername: password?.resetBindUsername || '',
+  resetBindPassword: '',
+  serverCertificateThumbprint: password?.serverCertificateThumbprint || '',
+  resetBindPasswordConfigured: password?.resetBindPasswordConfigured ?? false,
 });
 
 const mapDirectoryLdap = (ldap?: DirectoryLdapSettings | null): DirectoryLdapSettings => ({
@@ -173,6 +191,8 @@ const formData = ref<UpdateDomainRequest>({
   discoveryRootLabel: '',
   relatedPersonPhone: '',
   logo: '',
+  logoDark: '',
+  logoLight: '',
   logoUrl: '',
   settings: {
     maxUsers: 100,
@@ -180,14 +200,20 @@ const formData = ref<UpdateDomainRequest>({
     enableMqtt: true,
     directoryPrivileges: mapManagerPrivileges(null),
     directoryLdap: emptyDirectoryLdap(),
+    password: emptyDomainPassword(),
     mail: emptyDomainMail(),
   },
 });
 
-// Logo preview and file handling
-const logoPreview = ref<string | null>(null);
-const logoFileInput = ref<HTMLInputElement | null>(null);
-const logoError = ref<string | null>(null);
+const logoDarkPreview = ref<string | null>(null);
+const logoLightPreview = ref<string | null>(null);
+const logoDarkFileInput = ref<HTMLInputElement | null>(null);
+const logoLightFileInput = ref<HTMLInputElement | null>(null);
+const logoDarkError = ref<string | null>(null);
+const logoLightError = ref<string | null>(null);
+
+const darkLogoOf = (value?: { logoDark?: string; logo?: string } | null) =>
+  value?.logoDark?.trim() || value?.logo?.trim() || '';
 
 // Format storage size
 const formatStorageSize = (bytes: number): string => {
@@ -310,21 +336,18 @@ const loadDomain = async () => {
 
     domain.value = domainData;
     
-    // Set logo preview if logo exists
-    if (domainData.logo) {
-      logoPreview.value = domainData.logo;
-    } else if (domainData.logoUrl) {
-      logoPreview.value = domainData.logoUrl;
-    } else {
-      logoPreview.value = null;
-    }
+    const darkLogo = darkLogoOf(domainData);
+    logoDarkPreview.value = darkLogo || domainData.logoUrl || null;
+    logoLightPreview.value = domainData.logoLight || null;
     
     // Populate form with current domain data
     formData.value = {
       displayName: domainData.displayName || '',
       discoveryRootLabel: domainData.discoveryRootLabel || '',
       relatedPersonPhone: domainData.relatedPersonPhone || '',
-      logo: domainData.logo || '',
+      logo: darkLogo,
+      logoDark: darkLogo,
+      logoLight: domainData.logoLight || '',
       logoUrl: domainData.logoUrl || '',
       settings: {
         maxUsers: domainData.settings?.maxUsers || 100,
@@ -332,6 +355,7 @@ const loadDomain = async () => {
         enableMqtt: domainData.settings?.enableMqtt ?? true,
         directoryPrivileges: mapManagerPrivileges(domainData.settings?.directoryPrivileges),
         directoryLdap: mapDirectoryLdap(domainData.settings?.directoryLdap),
+        password: mapDomainPassword(domainData.settings?.password),
         mail: mapDomainMail(domainData.settings?.mail),
       },
     };
@@ -366,14 +390,9 @@ const saveDomain = async () => {
     if (updatedDomain) {
       domain.value = updatedDomain;
       
-      // Update logo preview
-      if (updatedDomain.logo) {
-        logoPreview.value = updatedDomain.logo;
-      } else if (updatedDomain.logoUrl) {
-        logoPreview.value = updatedDomain.logoUrl;
-      } else {
-        logoPreview.value = null;
-      }
+      const darkLogo = darkLogoOf(updatedDomain);
+      logoDarkPreview.value = darkLogo || updatedDomain.logoUrl || null;
+      logoLightPreview.value = updatedDomain.logoLight || null;
       
       isEditing.value = false;
       authStore.domainInfo = updatedDomain;
@@ -392,84 +411,79 @@ const saveDomain = async () => {
   }
 };
 
-// Handle logo file selection
-const handleLogoFileSelect = (event: Event) => {
+const onLogoFile = (event: Event, slot: 'dark' | 'light') => {
   const target = event.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    handleLogoFile(target.files[0]);
-  }
+  const file = target.files?.[0];
+  if (file) readLogoFile(file, slot);
 };
 
-// Handle logo file
-const handleLogoFile = (file: File) => {
-  logoError.value = null;
-  
-  // Validate file type
+const readLogoFile = (file: File, slot: 'dark' | 'light') => {
+  const errorRef = slot === 'dark' ? logoDarkError : logoLightError;
+  errorRef.value = null;
+
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
   if (!allowedTypes.includes(file.type)) {
-    logoError.value = t('domain.logo.errors.invalidFormat');
+    errorRef.value = t('domain.logo.errors.invalidFormat');
     return;
   }
-  
-  // Validate file size (max 2MB)
-  const maxSize = 2 * 1024 * 1024; // 2MB
+
+  const maxSize = 2 * 1024 * 1024;
   if (file.size > maxSize) {
-    logoError.value = t('domain.logo.errors.maxSize');
+    errorRef.value = t('domain.logo.errors.maxSize');
     return;
   }
-  
-  // Read file as base64
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const result = e.target?.result as string;
-    if (result) {
+    if (!result) return;
+    if (slot === 'dark') {
+      formData.value.logoDark = result;
       formData.value.logo = result;
-      formData.value.logoUrl = '';
-      logoPreview.value = result;
-      logoError.value = null;
+      logoDarkPreview.value = result;
+    } else {
+      formData.value.logoLight = result;
+      logoLightPreview.value = result;
     }
+    errorRef.value = null;
   };
   reader.onerror = () => {
-    logoError.value = t('domain.logo.errors.readError');
+    errorRef.value = t('domain.logo.errors.readError');
   };
   reader.readAsDataURL(file);
 };
 
-// Clear logo
-const clearLogo = () => {
-  formData.value.logo = '';
-  formData.value.logoUrl = '';
-  logoPreview.value = null;
-  logoError.value = null;
-  if (logoFileInput.value) {
-    logoFileInput.value.value = '';
+const clearLogoSlot = (slot: 'dark' | 'light') => {
+  if (slot === 'dark') {
+    formData.value.logoDark = '';
+    formData.value.logo = '';
+    logoDarkPreview.value = null;
+    logoDarkError.value = null;
+    if (logoDarkFileInput.value) logoDarkFileInput.value.value = '';
+  } else {
+    formData.value.logoLight = '';
+    logoLightPreview.value = null;
+    logoLightError.value = null;
+    if (logoLightFileInput.value) logoLightFileInput.value.value = '';
   }
-};
-
-// Trigger logo file input
-const triggerLogoFileInput = () => {
-  logoFileInput.value?.click();
 };
 
 // Cancel editing
 const cancelEdit = () => {
   if (!domain.value) return;
   
-  // Reset logo preview
-  if (domain.value.logo) {
-    logoPreview.value = domain.value.logo;
-  } else if (domain.value.logoUrl) {
-    logoPreview.value = domain.value.logoUrl;
-  } else {
-    logoPreview.value = null;
-  }
+  const darkLogo = darkLogoOf(domain.value);
+  logoDarkPreview.value = darkLogo || domain.value.logoUrl || null;
+  logoLightPreview.value = domain.value.logoLight || null;
   
   // Reset form to original values
   formData.value = {
     displayName: domain.value.displayName || '',
     discoveryRootLabel: domain.value.discoveryRootLabel || '',
     relatedPersonPhone: domain.value.relatedPersonPhone || '',
-    logo: domain.value.logo || '',
+    logo: darkLogo,
+    logoDark: darkLogo,
+    logoLight: domain.value.logoLight || '',
     logoUrl: domain.value.logoUrl || '',
     settings: {
       maxUsers: domain.value.settings?.maxUsers || 100,
@@ -477,11 +491,13 @@ const cancelEdit = () => {
       enableMqtt: domain.value.settings?.enableMqtt ?? true,
       directoryPrivileges: mapManagerPrivileges(domain.value.settings?.directoryPrivileges),
       directoryLdap: mapDirectoryLdap(domain.value.settings?.directoryLdap),
+      password: mapDomainPassword(domain.value.settings?.password),
       mail: mapDomainMail(domain.value.settings?.mail),
     },
   };
   
-  logoError.value = null;
+  logoDarkError.value = null;
+  logoLightError.value = null;
   isEditing.value = false;
   error.value = null;
 };
@@ -732,81 +748,70 @@ onMounted(async () => {
                 />
               </v-col>
 
-              <!-- Logo Field -->
               <v-col cols="12" md="6">
-                <div v-if="!isEditing">
-                  <v-text-field
-                    :label="t('domain.fields.logo')"
-                    :model-value="domain.logo ? t('domain.logo.uploaded') : (domain.logoUrl || '-')"
-                    readonly
-                    variant="outlined"
-                    density="comfortable"
-                  />
-                  <div v-if="logoPreview || domain.logo || domain.logoUrl" class="mt-2">
-                    <v-img
-                      :src="logoPreview || domain.logo || domain.logoUrl"
-                      max-width="150"
-                      max-height="150"
-                      contain
-                      class="border rounded"
-                    />
-                  </div>
+                <div class="text-subtitle-2 mb-1">{{ t('domain.fields.logoDark') }}</div>
+                <p class="text-caption text-medium-emphasis mb-2">{{ t('domain.logo.darkHint') }}</p>
+                <div v-if="logoDarkPreview" class="domain-logo-well domain-logo-well--dark">
+                  <v-img :src="logoDarkPreview" max-height="88" contain />
                 </div>
-                <div v-else>
+                <span v-else class="text-medium-emphasis">{{ t('domain.logo.noImage') }}</span>
+                <div v-if="isEditing" class="d-flex align-center ga-2 mt-2">
                   <input
-                    ref="logoFileInput"
+                    ref="logoDarkFileInput"
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                     class="d-none"
-                    @change="handleLogoFileSelect"
+                    @change="onLogoFile($event, 'dark')"
                   />
-                  <v-text-field
-                    :label="t('domain.fields.logo')"
-                    :model-value="logoPreview ? t('domain.logo.uploaded') : (formData.logoUrl || t('domain.logo.noImage'))"
-                    readonly
+                  <v-btn variant="outlined" color="primary" size="small" @click="logoDarkFileInput?.click()">
+                    {{ t('domain.buttons.uploadLogo') }}
+                  </v-btn>
+                  <v-btn
+                    v-if="formData.logoDark"
                     variant="outlined"
-                    density="comfortable"
-                    append-inner-icon="mdi-upload"
-                    @click:append-inner="triggerLogoFileInput"
-                  />
-                  <div class="d-flex align-center gap-2 mt-2">
-                    <v-btn
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      @click="triggerLogoFileInput"
-                    >
-                      {{ t('domain.buttons.uploadLogo') }}
-                    </v-btn>
-                    <v-btn
-                      v-if="logoPreview || formData.logo"
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      @click="clearLogo"
-                    >
-                      {{ t('domain.buttons.removeLogo') }}
-                    </v-btn>
-                  </div>
-                  <div v-if="logoPreview" class="mt-2">
-                    <v-img
-                      :src="logoPreview"
-                      max-width="150"
-                      max-height="150"
-                      contain
-                      class="border rounded"
-                    />
-                  </div>
-                  <v-alert
-                    v-if="logoError"
-                    type="error"
-                    variant="tonal"
-                    density="compact"
-                    class="mt-2"
+                    color="error"
+                    size="small"
+                    @click="clearLogoSlot('dark')"
                   >
-                    {{ logoError }}
-                  </v-alert>
+                    {{ t('domain.buttons.removeLogo') }}
+                  </v-btn>
                 </div>
+                <v-alert v-if="logoDarkError" type="error" variant="tonal" density="compact" class="mt-2">
+                  {{ logoDarkError }}
+                </v-alert>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <div class="text-subtitle-2 mb-1">{{ t('domain.fields.logoLight') }}</div>
+                <p class="text-caption text-medium-emphasis mb-2">{{ t('domain.logo.lightHint') }}</p>
+                <div v-if="logoLightPreview" class="domain-logo-well domain-logo-well--light">
+                  <v-img :src="logoLightPreview" max-height="88" contain />
+                </div>
+                <span v-else class="text-medium-emphasis">{{ t('domain.logo.noImage') }}</span>
+                <div v-if="isEditing" class="d-flex align-center ga-2 mt-2">
+                  <input
+                    ref="logoLightFileInput"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    class="d-none"
+                    @change="onLogoFile($event, 'light')"
+                  />
+                  <v-btn variant="outlined" color="primary" size="small" @click="logoLightFileInput?.click()">
+                    {{ t('domain.buttons.uploadLogo') }}
+                  </v-btn>
+                  <v-btn
+                    v-if="formData.logoLight"
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    @click="clearLogoSlot('light')"
+                  >
+                    {{ t('domain.buttons.removeLogo') }}
+                  </v-btn>
+                </div>
+                <v-alert v-if="logoLightError" type="error" variant="tonal" density="compact" class="mt-2">
+                  {{ logoLightError }}
+                </v-alert>
               </v-col>
 
               <v-col cols="12" md="6">
@@ -1476,6 +1481,125 @@ onMounted(async () => {
           </v-card-text>
         </v-card>
 
+        <!-- Directory password store -->
+        <v-card elevation="10" class="mb-4">
+          <v-card-title class="d-flex align-center">
+            <LockIcon size="20" class="mr-2" />
+            {{ t('domain.cards.directoryPassword') }}
+          </v-card-title>
+          <v-divider />
+          <v-card-text>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              {{ t('domain.directoryPassword.description') }}
+            </p>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-if="!isEditing"
+                  :label="t('domain.directoryPassword.mode')"
+                  :model-value="domain.settings?.password?.mode || 'keycloak'"
+                  :items="[
+                    { title: t('domain.directoryPassword.modeKeycloak'), value: 'keycloak' },
+                    { title: t('domain.directoryPassword.modeKeycloakAndAd'), value: 'keycloak-and-ad' },
+                  ]"
+                  readonly
+                  disabled
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-select
+                  v-else
+                  v-model="formData.settings!.password!.mode"
+                  :label="t('domain.directoryPassword.mode')"
+                  :items="[
+                    { title: t('domain.directoryPassword.modeKeycloak'), value: 'keycloak' },
+                    { title: t('domain.directoryPassword.modeKeycloakAndAd'), value: 'keycloak-and-ad' },
+                  ]"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryPassword.personnelDn')"
+                  :model-value="domain.settings?.password?.personnelDn || ''"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.password!.personnelDn"
+                  :label="t('domain.directoryPassword.personnelDn')"
+                  :placeholder="t('domain.directoryPassword.personnelDnPlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryPassword.resetBindUsername')"
+                  :model-value="domain.settings?.password?.resetBindUsername || ''"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.password!.resetBindUsername"
+                  :label="t('domain.directoryPassword.resetBindUsername')"
+                  :placeholder="t('domain.directoryPassword.resetBindUsernamePlaceholder')"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryPassword.resetBindPassword')"
+                  :model-value="domain.settings?.password?.resetBindPasswordConfigured ? '********' : ''"
+                  readonly
+                  type="password"
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.password!.resetBindPassword"
+                  :label="t('domain.directoryPassword.resetBindPassword')"
+                  :hint="t('domain.directoryPassword.resetBindPasswordHint')"
+                  persistent-hint
+                  type="password"
+                  autocomplete="new-password"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.directoryPassword.thumbprint')"
+                  :model-value="domain.settings?.password?.serverCertificateThumbprint || ''"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+                <v-text-field
+                  v-else
+                  v-model="formData.settings!.password!.serverCertificateThumbprint"
+                  :label="t('domain.directoryPassword.thumbprint')"
+                  :hint="t('domain.directoryPassword.thumbprintHint')"
+                  persistent-hint
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
         <!-- Domain SMTP -->
         <v-card elevation="10" class="mb-4">
           <v-card-title class="d-flex align-center">
@@ -1682,3 +1806,21 @@ onMounted(async () => {
     </v-col>
   </v-row>
 </template>
+
+<style scoped>
+.domain-logo-well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 104px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.domain-logo-well--dark {
+  background: #2a3447;
+}
+.domain-logo-well--light {
+  background: #ffffff;
+}
+</style>

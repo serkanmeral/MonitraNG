@@ -692,6 +692,7 @@ export interface PmMeetingAction {
   id: string;
   projectId: string;
   meetingId: string;
+  meetingName?: string | null;
   title: string;
   code?: string | null;
   targets?: PmMeetingActionTarget[];

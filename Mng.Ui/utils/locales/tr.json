@@ -691,6 +691,7 @@
     },
     "security": {
       "directoryPasswordManaged": "Kurumsal (Active Directory) hesabınızın şifresi dizin tarafından yönetilir. Şifre değişikliği için BT / sistem yöneticinize başvurun.",
+      "directoryPasswordSelfService": "Yeni parola Active Directory hesabınıza, sizin mevcut parolanızla yazılır. Yönetici sıfırlaması bu ekrandan yapılmaz.",
       "changePassword": {
         "title": "Şifre Değiştir",
         "description": "Hesabınızın güvenliği için düzenli olarak şifrenizi değiştirmeniz önerilir.",
@@ -1050,6 +1051,7 @@
       "domainSettings": "Domain Ayarları",
       "managerGroups": "Manager Yetki Grupları",
       "directoryLdap": "Dizin / LDAP (AD)",
+      "directoryPassword": "Dizin parolası",
       "mail": "E-posta (SMTP)",
       "licenseInfo": "Lisans Bilgileri",
       "backupInfo": "Yedek Bilgileri"
@@ -1073,6 +1075,20 @@
       "bindUsernamePlaceholder": "CN=svc-ldap,OU=Service,DC=corp,DC=local",
       "bindPassword": "Bind parola",
       "bindPasswordHint": "Boş bırakırsanız mevcut parola korunur."
+    },
+    "directoryPassword": {
+      "description": "Varsayılan kayıt Keycloak’tır. Keycloak ve Active Directory seçilince giriş yapmış dizin kullanıcısı profilinden kendi parolasını değiştirir. Yeni parola, kullanıcının mevcut parolasıyla Active Directory’ye yazılır. LDAPS, dizin bağlantısı ve sertifika parmak izi yeterlidir. Personel kabini ve sıfırlama hesabı gerekmez. Unutulan parolayı yönetici Active Directory’den verir.",
+      "mode": "Parola kaydı",
+      "modeKeycloak": "Yalnızca Keycloak",
+      "modeKeycloakAndAd": "Keycloak ve Active Directory",
+      "personnelDn": "Personel DN",
+      "personnelDnPlaceholder": "OU=Personel,DC=ankarabt,DC=local",
+      "resetBindUsername": "Sıfırlama hesabı",
+      "resetBindUsernamePlaceholder": "CN=svc-reset,OU=Service,DC=ankarabt,DC=local",
+      "resetBindPassword": "Sıfırlama parolası",
+      "resetBindPasswordHint": "Boş bırakırsanız mevcut parola korunur.",
+      "thumbprint": "LDAPS sertifika parmak izi",
+      "thumbprintHint": "DC sertifikasının SHA-1 parmak izi. Bağlantı bu sertifikaya sabitlenir."
     },
     "mail": {
       "description": "Bu domain adına giden e-postalar bu SMTP sunucusundan gönderilir. Kayıt kapalıysa sistem varsayılan mail ayarı kullanılır.",
@@ -7585,9 +7601,10 @@
       "required": "Zorunlu",
       "fieldRequired": "Bu alan zorunludur",
       "previewDraftChip": "Taslak önizleme",
-      "fileFieldHint": "Dosyalar kayıt oluşturulduktan sonra profil «Ekler» sekmesinde görünür.",
+      "fileFieldHint": "Belgeler kütüphanede kalır. Ekler sekmesinden bağlanır.",
       "fileUpload": {
         "dropHint": "Dosyayı sürükleyip bırakın veya tıklayarak seçin",
+        "libraryInstead": "Belge iş kaydına eklenmez. Ekler sekmesinden kütüphaneye yazın veya oradan seçin.",
         "hintAnyType": "En fazla {max} MB · tüm dosya türleri",
         "hintWithTypes": "En fazla {max} MB · {types}",
         "tooLarge": "Dosya çok büyük (en fazla {max} MB).",
@@ -7964,6 +7981,25 @@
         "uploadError": "Dosya yüklenemedi.",
         "downloadError": "Dosya indirilemedi.",
         "removeError": "Ek kaldırılamadı."
+      },
+      "libraryLinks": {
+        "title": "Kütüphane belgeleri",
+        "hint": "Belge kütüphanede durur. İş kaydı yalnızca kimliğini tutar.",
+        "pick": "Kütüphaneden seç",
+        "upload": "Yeni belge",
+        "empty": "Bağlı kütüphane belgesi yok.",
+        "missingRoot": "Bu workspace için kütüphane kökü yok. Yeni bağ açılamaz.",
+        "broken": "Kopuk bağ",
+        "unlink": "Bağı kaldır",
+        "open": "Aç",
+        "saveError": "Belge bağı yazılamadı.",
+        "pickerTitle": "Kütüphane belgesi",
+        "pickerHint": "Yalnızca bu workspace kütüphanesinden seçilir.",
+        "root": "Kök",
+        "back": "Üst klasör",
+        "folderEmpty": "Bu klasörde belge yok.",
+        "use": "Bağla",
+        "cancel": "Vazgeç"
       },
       "transitions": {
         "title": "Geçiş:",

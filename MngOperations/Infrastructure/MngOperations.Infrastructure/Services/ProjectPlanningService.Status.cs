@@ -88,7 +88,7 @@ public sealed partial class ProjectPlanningService
             .Where(p => p.Overdue && !string.IsNullOrWhiteSpace(p.WbsId))
             .Select(p => p.WbsId!)
             .ToHashSet(StringComparer.Ordinal);
-        var meetingActions = BuildMeetingActions(detail.Meetings);
+        var meetingActions = BuildMeetingActions(await LoadProjectActionDtosAsync(projectId, token, ct));
         var meetingById = detail.Meetings.ToDictionary(m => m.Id, StringComparer.Ordinal);
         var openMeetingWbs = new HashSet<string>(StringComparer.Ordinal);
         var overdueMeetingWbs = new HashSet<string>(StringComparer.Ordinal);

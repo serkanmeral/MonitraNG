@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Planning;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Models;
@@ -178,9 +179,13 @@ public sealed partial class ProjectPlanningService
         var actions = await LoadMeetingActionRowsAsync(existing.projectId!, token, ct);
         foreach (var action in actions)
         {
-            if (!string.IsNullOrWhiteSpace(action.__dataId)
-                && string.Equals(action.meetingId, id, StringComparison.Ordinal))
-                await _dg.DeleteAsync(PmDatasets.MeetingActions, action.__dataId, token, ct);
+            if (string.IsNullOrWhiteSpace(action.__dataId)
+                || !string.Equals(action.meetingId, id, StringComparison.Ordinal))
+                continue;
+            await _dg.UpdateAsync(PmDatasets.MeetingActions, action.__dataId, new Dictionary<string, object?>
+            {
+                ["meetingId"] = null
+            }, token, ct);
         }
         await DeleteAttendanceForMeetingsAsync(existing.projectId!, new HashSet<string>(StringComparer.Ordinal) { id }, token, ct);
         await _dg.DeleteAsync(PmDatasets.Meetings, id, token, ct);
@@ -199,7 +204,96 @@ public sealed partial class ProjectPlanningService
                 "Cancelled meetings do not take assignments.",
                 "İptal edilen toplantıya görev yazılmaz.",
                 400);
-        var projectId = meeting.projectId!;
+        return await CreateActionCoreAsync(meeting.projectId!, meetingId, request, token, ct);
+    }
+
+    public async Task<MeetingActionDto> CreateAssignmentAsync(
+        string projectId,
+        CreateMeetingActionRequest request,
+        CancellationToken ct = default)
+    {
+        var token = RequireToken();
+        await LoadProjectOrThrowAsync(projectId, token, ct);
+        return await CreateActionCoreAsync(projectId, meetingId: null, request, token, ct);
+    }
+
+    public async Task<MeetingDto> GetMeetingAsync(string id, CancellationToken ct = default)
+    {
+        var token = RequireToken();
+        return await LoadMeetingDtoAsync(id, token, ct);
+    }
+
+    public async Task<ProjectMeetingActionsDto> ListAssignmentsAsync(
+        string? projectId,
+        AssignmentListQuery? query,
+        CancellationToken ct = default)
+    {
+        var token = RequireToken();
+        query ??= new AssignmentListQuery();
+        var key = NormalizeAssignmentTarget(query.Kind, query.Target);
+        List<PmMeetingActionRow> rows;
+        Dictionary<string, string> meetingNames;
+        if (!string.IsNullOrWhiteSpace(projectId))
+        {
+            await LoadProjectOrThrowAsync(projectId, token, ct);
+            rows = await LoadMeetingActionRowsAsync(projectId, token, ct, MeetingScanQuery);
+            await BackfillTargetKeysAsync(rows, token, ct);
+            meetingNames = (await LoadMeetingRowsAsync(projectId, token, ct, MeetingScanQuery))
+                .Where(row => !string.IsNullOrWhiteSpace(row.__dataId))
+                .ToDictionary(row => row.__dataId!, row => (row.name ?? string.Empty).Trim(), StringComparer.Ordinal);
+        }
+        else
+        {
+            if (key is null)
+                throw new OperationCoreException(
+                    "TARGET_REQUIRED",
+                    "A person or firm is required when the project is omitted.",
+                    "Proje verilmeden kişi veya firma seçilmelidir.",
+                    400);
+            var page = await _dg.QueryPageAsync(
+                PmDatasets.MeetingActions,
+                new Dictionary<string, object?> { ["targetKeys"] = key },
+                MeetingScanQuery,
+                token,
+                ct);
+            rows = page.Items.Select(Map<PmMeetingActionRow>).ToList();
+            meetingNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        }
+
+        var items = rows
+            .Where(row => key is null || KeysForRow(row).Any(item => string.Equals(item, key, StringComparison.OrdinalIgnoreCase)))
+            .Select(row =>
+            {
+                var dto = ToMeetingActionDto(row);
+                if (!string.IsNullOrWhiteSpace(dto.MeetingId)
+                    && meetingNames.TryGetValue(dto.MeetingId, out var name))
+                    dto.MeetingName = name;
+                return dto;
+            })
+            .Where(dto => MatchesAssignmentStatus(dto, query.Status))
+            .Where(dto => MatchesAssignmentText(dto, query.Q))
+            .OrderByDescending(dto => dto.Overdue)
+            .ThenByDescending(dto => dto.Open)
+            .ThenBy(dto => dto.DueDate)
+            .ThenBy(dto => dto.Title, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return new ProjectMeetingActionsDto
+        {
+            OpenCount = items.Count(item => item.Open),
+            OverdueCount = items.Count(item => item.Overdue),
+            UnboundCount = 0,
+            Items = items
+        };
+    }
+
+    private async Task<MeetingActionDto> CreateActionCoreAsync(
+        string projectId,
+        string? meetingId,
+        CreateMeetingActionRequest request,
+        string token,
+        CancellationToken ct)
+    {
         var title = RequireActionTitle(request.Title);
         var code = NormalizeActionCode(request.Code);
         var wbsId = await NormalizeOptionalWbsIdAsync(projectId, request.WbsId, token, ct);
@@ -225,6 +319,7 @@ public sealed partial class ProjectPlanningService
             ["title"] = title,
             ["code"] = code,
             ["targets"] = targets.Stored,
+            ["targetKeys"] = targets.TargetKeys,
             ["ownerName"] = targets.OwnerName,
             ["ownerKind"] = targets.OwnerKind,
             ["ownerUserId"] = targets.OwnerUserId,
@@ -241,7 +336,7 @@ public sealed partial class ProjectPlanningService
         var created = await _dg.CreateAsync(PmDatasets.MeetingActions, payload, token, ct);
         var id = ReadId(created);
         if (string.IsNullOrWhiteSpace(id))
-            throw new OperationCoreException("CREATE_FAILED", "Meeting action create did not return an id.", "Aksiyon oluşturulamadı.", 500);
+            throw new OperationCoreException("CREATE_FAILED", "Assignment create did not return an id.", "Görevlendirme oluşturulamadı.", 500);
         return await LoadMeetingActionDtoAsync(id, token, ct);
     }
 
@@ -253,8 +348,9 @@ public sealed partial class ProjectPlanningService
         var token = RequireToken();
         var existing = await LoadMeetingActionRowOrThrowAsync(id, token, ct);
         var projectId = existing.projectId!;
-        var meetingId = existing.meetingId!;
-        await LoadMeetingRowOrThrowAsync(meetingId, token, ct);
+        var meetingId = EmptyToNull(existing.meetingId);
+        if (meetingId is not null)
+            await LoadMeetingRowOrThrowAsync(meetingId, token, ct);
         var title = request.Title is not null ? RequireActionTitle(request.Title) : RequireActionTitle(existing.title);
         var wbsId = request.WbsId is not null
             ? await NormalizeOptionalWbsIdAsync(projectId, request.WbsId, token, ct)
@@ -282,6 +378,7 @@ public sealed partial class ProjectPlanningService
                 token,
                 ct);
             payload["targets"] = targets.Stored;
+            payload["targetKeys"] = targets.TargetKeys;
             payload["ownerName"] = targets.OwnerName;
             payload["ownerKind"] = targets.OwnerKind;
             payload["ownerUserId"] = targets.OwnerUserId;
@@ -299,6 +396,7 @@ public sealed partial class ProjectPlanningService
                 token,
                 ct);
             payload["targets"] = targets.Stored;
+            payload["targetKeys"] = targets.TargetKeys;
             payload["ownerName"] = targets.OwnerName;
             payload["ownerKind"] = targets.OwnerKind;
             payload["ownerUserId"] = targets.OwnerUserId;
@@ -450,24 +548,32 @@ public sealed partial class ProjectPlanningService
 
     private async Task AssertMeetingActionUniqueAsync(
         string projectId,
-        string meetingId,
+        string? meetingId,
         string title,
         string? excludeId,
         string token,
         CancellationToken ct)
     {
         var rows = await LoadMeetingActionRowsAsync(projectId, token, ct);
+        var linked = !string.IsNullOrWhiteSpace(meetingId);
         foreach (var row in rows)
         {
-            if (!string.Equals(row.meetingId, meetingId, StringComparison.Ordinal))
+            var sameLink = linked
+                ? string.Equals(row.meetingId, meetingId, StringComparison.Ordinal)
+                : string.IsNullOrWhiteSpace(row.meetingId);
+            if (!sameLink)
                 continue;
             if (!string.IsNullOrWhiteSpace(excludeId) && string.Equals(row.__dataId, excludeId, StringComparison.Ordinal))
                 continue;
             if (string.Equals((row.title ?? string.Empty).Trim(), title, StringComparison.OrdinalIgnoreCase))
                 throw new OperationCoreException(
                     "MEETING_ACTION_EXISTS",
-                    "This action already exists on the meeting.",
-                    "Bu aksiyon bu toplantıda zaten var.",
+                    linked
+                        ? "This action already exists on the meeting."
+                        : "This assignment already exists on the project.",
+                    linked
+                        ? "Bu aksiyon bu toplantıda zaten var."
+                        : "Bu görevlendirme bu projede zaten var.",
                     409);
         }
     }
@@ -641,9 +747,11 @@ public sealed partial class ProjectPlanningService
         };
     }
 
-    internal static ProjectMeetingActionsDto BuildMeetingActions(IReadOnlyList<MeetingDto> meetings)
+    internal static ProjectMeetingActionsDto BuildMeetingActions(IReadOnlyList<MeetingDto> meetings) =>
+        BuildMeetingActions(meetings.SelectMany(m => m.Actions).ToList());
+
+    internal static ProjectMeetingActionsDto BuildMeetingActions(IReadOnlyList<MeetingActionDto> items)
     {
-        var items = meetings.SelectMany(m => m.Actions).ToList();
         return new ProjectMeetingActionsDto
         {
             OpenCount = items.Count(a => a.Open),
@@ -651,6 +759,92 @@ public sealed partial class ProjectPlanningService
             UnboundCount = items.Count(a => a.Unbound),
             Items = items
         };
+    }
+
+    private async Task<List<MeetingActionDto>> LoadProjectActionDtosAsync(
+        string projectId,
+        string token,
+        CancellationToken ct)
+    {
+        var rows = await LoadMeetingActionRowsAsync(projectId, token, ct);
+        await BackfillTargetKeysAsync(rows, token, ct);
+        return rows.Select(ToMeetingActionDto).ToList();
+    }
+
+    private async Task BackfillTargetKeysAsync(
+        IReadOnlyList<PmMeetingActionRow> rows,
+        string token,
+        CancellationToken ct)
+    {
+        foreach (var row in rows)
+        {
+            if (row.targetKeys is { Count: > 0 } || string.IsNullOrWhiteSpace(row.__dataId))
+                continue;
+            var keys = BuildTargetKeys(ReadActionTargets(row));
+            if (keys.Count == 0)
+                continue;
+            try
+            {
+                await _dg.UpdateAsync(PmDatasets.MeetingActions, row.__dataId, new Dictionary<string, object?>
+                {
+                    ["targetKeys"] = keys
+                }, token, ct);
+                row.targetKeys = keys;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Assignment target keys were not stored for {ActionId}", row.__dataId);
+                row.targetKeys = keys;
+            }
+        }
+    }
+
+    private static List<string> KeysForRow(PmMeetingActionRow row)
+    {
+        if (row.targetKeys is { Count: > 0 })
+            return row.targetKeys;
+        return BuildTargetKeys(ReadActionTargets(row));
+    }
+
+    private static string? NormalizeAssignmentTarget(string? kind, string? target)
+    {
+        var keyKind = (kind ?? string.Empty).Trim();
+        var value = (target ?? string.Empty).Trim();
+        if (keyKind.Length == 0 && value.Length == 0)
+            return null;
+        if (keyKind.Length == 0 || value.Length == 0)
+            throw new OperationCoreException(
+                "TARGET_REQUIRED",
+                "Target kind and value are both required.",
+                "Hedef türü ve değeri birlikte verilmelidir.",
+                400);
+        var key = TargetKey(keyKind, value, value, value);
+        if (key is null)
+            throw new OperationCoreException("TARGET_KIND", "Target kind is invalid.", "Görev hedefinin türü geçersiz.", 400);
+        return key;
+    }
+
+    private static bool MatchesAssignmentStatus(MeetingActionDto row, string? status)
+    {
+        var filter = (status ?? string.Empty).Trim().ToLowerInvariant();
+        if (filter.Length == 0 || filter is "all")
+            return true;
+        if (filter == "open")
+            return row.Open;
+        if (filter == "overdue")
+            return row.Overdue;
+        return string.Equals(row.Status, filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool MatchesAssignmentText(MeetingActionDto row, string? query)
+    {
+        var text = (query ?? string.Empty).Trim();
+        if (text.Length == 0)
+            return true;
+        return (row.Title ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase)
+            || (row.Code ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase)
+            || (row.OwnerName ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase)
+            || (row.MeetingName ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string RequireMeetingName(string? value)

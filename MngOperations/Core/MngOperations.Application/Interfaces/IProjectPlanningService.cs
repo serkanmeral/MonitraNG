@@ -156,7 +156,13 @@ public interface IProjectPlanningService
 
     Task DeleteMeetingSeriesAsync(string id, CancellationToken ct = default);
 
+    Task<MeetingDto> GetMeetingAsync(string id, CancellationToken ct = default);
+
     Task<MeetingActionDto> CreateMeetingActionAsync(string meetingId, CreateMeetingActionRequest request, CancellationToken ct = default);
+
+    Task<MeetingActionDto> CreateAssignmentAsync(string projectId, CreateMeetingActionRequest request, CancellationToken ct = default);
+
+    Task<ProjectMeetingActionsDto> ListAssignmentsAsync(string? projectId, AssignmentListQuery? query, CancellationToken ct = default);
 
     Task<MeetingActionDto> UpdateMeetingActionAsync(string id, UpdateMeetingActionRequest request, CancellationToken ct = default);
 

@@ -15,13 +15,13 @@ public class UserFieldPolicyService : IUserFieldPolicyService
     "telegramUsername", "telegramChatId", "includeInApplication",
   };
 
-  public UserCapabilitiesDto GetCapabilities(User user)
+  public UserCapabilitiesDto GetCapabilities(User user, bool directoryPasswordChangeEnabled = false)
   {
     if (user.ProvisioningSource == UserProvisioningSource.Directory)
     {
       return new UserCapabilitiesDto
       {
-        CanChangePassword = false,
+        CanChangePassword = directoryPasswordChangeEnabled,
         CanManageGroups = false,
         CanDeactivate = false,
         CanDelete = false,

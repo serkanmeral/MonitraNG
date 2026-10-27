@@ -793,6 +793,8 @@ export interface OcWorkItemProfile {
   createdBy?: string | null;
   /** İş kaydı ekleri (op_work_items.attachments). */
   attachments: OcAttachment[];
+  /** Kütüphane belge kimlikleri. Dosya ekinden ayrıdır. */
+  libraryDocumentIds: string[];
 }
 
 /** Aktivite alan değişikliği — eski/yeni görünen değer MO'da çözülmüş (UI ham veri işlemez). */

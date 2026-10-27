@@ -435,7 +435,45 @@ public sealed partial class ProjectPlanningService
             return row;
         }).ToList();
 
-        return new ResolvedActionTargets(ownerName, kind, userId, personId, stored);
+        return new ResolvedActionTargets(ownerName, kind, userId, personId, stored, BuildTargetKeys(items));
+    }
+
+    private static List<string> BuildTargetKeys(IEnumerable<MeetingActionTargetDto> items)
+    {
+        var keys = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in items)
+        {
+            var key = TargetKey(item.Kind, item.UserId, item.PersonId, item.Organization ?? item.Name);
+            if (key is not null && seen.Add(key))
+                keys.Add(key);
+        }
+
+        return keys;
+    }
+
+    private static string? TargetKey(string? kind, string? userId, string? personId, string? organization)
+    {
+        var normalized = (kind ?? string.Empty).Trim().ToLowerInvariant();
+        if (normalized == "user")
+        {
+            var id = EmptyToNull(userId);
+            return id is null ? null : "user:" + id;
+        }
+
+        if (normalized is "external" or "person")
+        {
+            var id = EmptyToNull(personId);
+            return id is null ? null : "person:" + id;
+        }
+
+        if (normalized is "organization" or "org" or "firm")
+        {
+            var firm = EmptyToNull(organization);
+            return firm is null ? null : "org:" + firm.ToLowerInvariant();
+        }
+
+        return null;
     }
 
     private sealed record ResolvedActionTargets(
@@ -443,7 +481,8 @@ public sealed partial class ProjectPlanningService
         string? OwnerKind,
         string? OwnerUserId,
         string? OwnerPersonId,
-        List<Dictionary<string, object?>> Stored);
+        List<Dictionary<string, object?>> Stored,
+        List<string> TargetKeys);
 
     private static MeetingPersonDto ToMeetingPersonDto(PmMeetingPersonRow row) => new()
     {

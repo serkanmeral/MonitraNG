@@ -79,6 +79,9 @@ import {
 const PmMeetingsPanel = defineAsyncComponent(
   () => import('@/components/apps/project-management/PmMeetingsPanel.vue'),
 );
+const PmAssignmentsPanel = defineAsyncComponent(
+  () => import('@/components/apps/project-management/PmAssignmentsPanel.vue'),
+);
 const PmProjectSettingsPanel = defineAsyncComponent(
   () => import('@/components/apps/project-management/PmProjectSettingsPanel.vue'),
 );
@@ -162,6 +165,7 @@ type PmViewTab =
   | 'obligations'
   | 'audit'
   | 'meetings'
+  | 'assignments'
   | 'settings'
   | 'stakeholders'
   | 'processMaps'
@@ -172,6 +176,9 @@ type PmViewTab =
   | 'status';
 
 const viewTab = ref<PmViewTab>('gantt');
+const meetingFocus = ref<{ id: string; n: number } | null>(null);
+const dutiesAlive = ref(false);
+const dutiesRevision = ref(0);
 const libraryFocusId = ref<string | null>(null);
 const { mdAndUp } = useDisplay();
 const statusPack = ref<PmProjectStatusPack | null>(null);
@@ -246,6 +253,7 @@ const navGroups = computed(() => [
     title: t('projectManagement.nav.people'),
     items: [
       { value: 'meetings' as const, title: t('projectManagement.meeting.title'), icon: 'mdi-calendar-account-outline' },
+      { value: 'assignments' as const, title: t('projectManagement.assignment.title'), icon: 'mdi-clipboard-account-outline' },
       { value: 'stakeholders' as const, title: t('projectManagement.stakeholder.title'), icon: 'mdi-account-group-outline' },
       { value: 'processMaps' as const, title: t('projectManagement.processMap.title'), icon: 'mdi-sitemap-outline' },
     ],
@@ -577,6 +585,11 @@ function openProjectTab(tab: string) {
   viewTab.value = tab as PmViewTab;
 }
 
+function openAssignmentMeeting(id: string) {
+  meetingFocus.value = { id, n: Date.now() };
+  viewTab.value = 'meetings';
+}
+
 function resetTabCache() {
   tabLoaded.value = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates']);
   statusPack.value = null;
@@ -648,7 +661,7 @@ async function ensureTabData(tab: string, force = false) {
   if (!projectId.value || !detail.value) return;
   if (!force && tabLoaded.value.has(tab)) return;
 
-  const coreTabs = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates', 'packs', 'library', 'meetings', 'settings']);
+  const coreTabs = new Set(['overview', 'gantt', 'wbs', 'deps', 'gates', 'packs', 'library', 'meetings', 'assignments', 'settings']);
   if (coreTabs.has(tab)) {
     markTabLoaded(tab);
     return;
@@ -739,6 +752,12 @@ async function onLibraryBound() {
 
 function onPanelChanged() {
   void ensureTabData(viewTab.value, true);
+}
+
+function onMeetingsChanged() {
+  dutiesAlive.value = true;
+  dutiesRevision.value += 1;
+  onPanelChanged();
 }
 
 async function saveProject() {
@@ -1108,6 +1127,7 @@ onMounted(() => {
 
 watch(viewTab, (tab) => {
   if (tab === 'overview') void loadWorkspaces();
+  if (tab === 'assignments') dutiesAlive.value = true;
   void ensureTabData(tab);
 });
 </script>
@@ -1603,7 +1623,8 @@ watch(viewTab, (tab) => {
           :hub-folder-id="detail?.project.diFolderId"
           :wbs="wbs"
           :loading="loading || tabLoading"
-          @changed="onPanelChanged"
+          :meeting-focus="meetingFocus"
+          @changed="onMeetingsChanged"
           @hub-ready="onLibraryHubReady"
           @navigate="openProjectTab"
         />
@@ -1681,6 +1702,17 @@ watch(viewTab, (tab) => {
 
       <v-card-text v-else-if="viewTab === 'status'" class="px-6 py-4">
         <PmStatusPack :pack="statusPack" :loading="statusLoading || tabLoading || loading" />
+      </v-card-text>
+
+      <v-card-text v-if="dutiesAlive" v-show="viewTab === 'assignments'" class="px-6 py-4">
+        <PmAssignmentsPanel
+          :project-id="projectId"
+          :wbs="wbs"
+          :loading="loading || tabLoading"
+          :revision="dutiesRevision"
+          @changed="onPanelChanged"
+          @open-meeting="openAssignmentMeeting"
+        />
       </v-card-text>
         </div>
       </div>

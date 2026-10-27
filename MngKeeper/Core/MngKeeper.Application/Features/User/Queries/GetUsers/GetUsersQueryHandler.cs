@@ -2,6 +2,7 @@ using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
 using MngKeeper.Application.Common.Mappers;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
@@ -15,17 +16,20 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
         private readonly ILogger<GetUsersQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUserFieldPolicyService _fieldPolicyService;
+        private readonly IDomainRepository _domainRepository;
 
         public GetUsersQueryHandler(
             IUserRepository userRepository,
             ILogger<GetUsersQueryHandler> logger,
             IHttpContextAccessor httpContextAccessor,
-            IUserFieldPolicyService fieldPolicyService)
+            IUserFieldPolicyService fieldPolicyService,
+            IDomainRepository domainRepository)
         {
             _userRepository = userRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
             _fieldPolicyService = fieldPolicyService;
+            _domainRepository = domainRepository;
         }
 
         public async Task<GetUsersResponse> Handle(GetUsersQuery request, CancellationToken cancellationToken)
@@ -61,8 +65,10 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
                     request.GroupId,
                     request.GroupIds);
 
+                var domain = await _domainRepository.GetByIdAsync(claims.DomainId);
+                var directoryPasswordChangeEnabled = DirectoryPasswordPolicy.IsAdWriteEnabled(domain?.Settings);
                 var userDtos = queryResult.Items
-                    .Select(u => UserDtoMapper.ToDto(u, _fieldPolicyService))
+                    .Select(u => UserDtoMapper.ToDto(u, _fieldPolicyService, directoryPasswordChangeEnabled))
                     .ToList();
 
                 return new GetUsersResponse

@@ -457,6 +457,19 @@ namespace MngKeeper.Api.Controllers
                     return BadRequest(new { error = "invalid_request", errorDescription = "User does not have an email address." });
                 }
 
+                if (user.ProvisioningSource == UserProvisioningSource.Directory)
+                {
+                    var domain = await _domainRepository.GetByIdAsync(claims.DomainId);
+                    if (!DirectoryPasswordPolicy.IsAdminResetEnabled(domain?.Settings))
+                    {
+                        return BadRequest(new
+                        {
+                            error = "password_change_disabled",
+                            errorDescription = "Directory password reset stays with the directory administrator."
+                        });
+                    }
+                }
+
                 // Generate secure random token
                 var tokenBytes = new byte[32];
                 using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())

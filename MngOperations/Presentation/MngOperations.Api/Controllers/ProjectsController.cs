@@ -920,6 +920,70 @@ public sealed class ProjectsController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("meetings/{id}")]
+    [ProducesResponseType(typeof(MeetingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMeeting(string id, CancellationToken cancellationToken)
+    {
+        var item = await _planning.GetMeetingAsync(id, cancellationToken);
+        return Ok(item);
+    }
+
+    [HttpGet("projects/{id}/duties")]
+    [ProducesResponseType(typeof(ProjectMeetingActionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListProjectAssignments(
+        string id,
+        [FromQuery] string? kind,
+        [FromQuery] string? target,
+        [FromQuery] string? status,
+        [FromQuery] string? q,
+        CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListAssignmentsAsync(id, new AssignmentListQuery
+        {
+            Kind = kind,
+            Target = target,
+            Status = status,
+            Q = q
+        }, cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpGet("duties")]
+    [ProducesResponseType(typeof(ProjectMeetingActionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ListAssignments(
+        [FromQuery] string? kind,
+        [FromQuery] string? target,
+        [FromQuery] string? status,
+        [FromQuery] string? q,
+        CancellationToken cancellationToken)
+    {
+        var items = await _planning.ListAssignmentsAsync(null, new AssignmentListQuery
+        {
+            Kind = kind,
+            Target = target,
+            Status = status,
+            Q = q
+        }, cancellationToken);
+        return Ok(items);
+    }
+
+    [HttpPost("projects/{id}/duties")]
+    [ProducesResponseType(typeof(MeetingActionDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateAssignment(
+        string id,
+        [FromBody] CreateMeetingActionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _planning.CreateAssignmentAsync(id, request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, created);
+    }
+
     [HttpPost("meetings/{id}/actions")]
     [ProducesResponseType(typeof(MeetingActionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

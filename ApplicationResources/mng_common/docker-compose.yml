@@ -210,9 +210,12 @@ services:
     restart: "no"
 
   # MinIO (S3-Compatible Object Storage)
+  # Docker Hub ve Quay minio/minio 2026'da kapandı. Cafe ile aynı Chainguard imajı.
+  # İmaj nonroot; veri hacmi için root. curl yok, sağlık kontrolü mc.
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: minio
+    user: "0:0"
     command: server /data --console-address ":9091"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
@@ -226,10 +229,11 @@ services:
       - mng_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 20s
 
   # Portainer (Container Management)
   portainer:

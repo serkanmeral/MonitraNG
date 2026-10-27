@@ -9,7 +9,7 @@ import { PowerIcon } from 'vue-tabler-icons';
 import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import type { menu } from './sidebarItem';
-import { resolveDomainLogoSrc } from '@/composables/useDomain';
+import { isDarkAppTheme, resolveThemedDomainLogoSrc } from '@/composables/useDomain';
 
 const customizer = useCustomizerStore();
 const authStore = useAuthStore();
@@ -275,21 +275,21 @@ const currentUser = computed(() => {
   };
 });
 
-// Get domain logo for background — uploaded `logo` wins over stale `logoUrl`
+// Profile strip loads the domain logo that matches the active theme.
 const domainLogoStyle = computed(() => {
-  const logoSrc = resolveDomainLogoSrc(authStore.domainInfo);
-  if (logoSrc) {
+  const dark = isDarkAppTheme(customizer.actTheme);
+  const logoSrc = resolveThemedDomainLogoSrc(authStore.domainInfo, customizer.actTheme);
+  const surface = dark ? '#2a3447' : '#ffffff';
+  if (!logoSrc) {
     return {
-      backgroundImage: `url("${logoSrc}")`,
-      backgroundSize: 'contain',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
+      background: 'url("/images/backgrounds/user-info.jpg") center / cover no-repeat',
     };
   }
 
   return {
-    backgroundImage: 'url("/images/backgrounds/user-info.jpg")',
-    backgroundSize: 'cover',
+    backgroundColor: surface,
+    backgroundImage: `url("${logoSrc}")`,
+    backgroundSize: 'contain',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   };

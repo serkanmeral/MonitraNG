@@ -45,32 +45,51 @@
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
-          Logo
+          Dark logo
         </label>
         <div class="space-y-2">
           <input
-            ref="logoFileInput"
+            ref="logoDarkFileInput"
             type="file"
             accept="image/*"
             :disabled="loading"
-            @change="handleLogoFileChange"
+            @change="handleLogoFileChange($event, 'dark')"
             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
           />
-          <div v-if="logoPreview" class="mt-2">
-            <img :src="logoPreview" alt="Logo preview" class="max-h-32 rounded border border-gray-200" />
-            <UButton
-              color="red"
-              variant="ghost"
-              size="xs"
-              class="mt-1"
-              @click="clearLogo"
-            >
+          <div v-if="logoDarkPreview" class="mt-2 inline-block rounded p-3" style="background:#2a3447">
+            <img :src="logoDarkPreview" alt="Dark logo preview" class="max-h-24" />
+            <UButton color="red" variant="ghost" size="xs" class="mt-1" @click="clearLogo('dark')">
               Remove
             </UButton>
           </div>
         </div>
         <p class="mt-1 text-xs text-gray-500">
-          Upload a logo image (PNG, JPG, etc.). Will be converted to base64.
+          Shown on the dark theme. Use a light-colored logo.
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Light logo
+        </label>
+        <div class="space-y-2">
+          <input
+            ref="logoLightFileInput"
+            type="file"
+            accept="image/*"
+            :disabled="loading"
+            @change="handleLogoFileChange($event, 'light')"
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+          />
+          <div v-if="logoLightPreview" class="mt-2 inline-block rounded border border-gray-200 bg-white p-3">
+            <img :src="logoLightPreview" alt="Light logo preview" class="max-h-24" />
+            <UButton color="red" variant="ghost" size="xs" class="mt-1" @click="clearLogo('light')">
+              Remove
+            </UButton>
+          </div>
+        </div>
+        <p class="mt-1 text-xs text-gray-500">
+          Shown on the light theme. Use a dark-colored logo.
         </p>
       </div>
 
@@ -187,13 +206,17 @@ const { updateDomain } = useDomain()
 const loading = ref(false)
 const error = ref<string | null>(null)
 const showAdvanced = ref(false)
-const logoFileInput = ref<HTMLInputElement | null>(null)
-const logoPreview = ref<string | null>(props.domain.logo || null)
+const logoDarkFileInput = ref<HTMLInputElement | null>(null)
+const logoLightFileInput = ref<HTMLInputElement | null>(null)
+const initialDarkLogo = props.domain.logoDark || props.domain.logo || ''
+const logoDarkPreview = ref<string | null>(initialDarkLogo || null)
+const logoLightPreview = ref<string | null>(props.domain.logoLight || null)
 
 const formState = reactive({
   displayName: props.domain.displayName,
   relatedPersonPhone: props.domain.relatedPersonPhone || '',
-  logo: props.domain.logo || '',
+  logoDark: initialDarkLogo,
+  logoLight: props.domain.logoLight || '',
   logoUrl: props.domain.logoUrl || '',
   settings: {
     maxUsers: props.domain.settings?.maxUsers || 100,
@@ -202,7 +225,7 @@ const formState = reactive({
   }
 })
 
-const handleLogoFileChange = (event: Event) => {
+const handleLogoFileChange = (event: Event, slot: 'dark' | 'light') => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   
@@ -210,25 +233,27 @@ const handleLogoFileChange = (event: Event) => {
     return
   }
 
-  // Validate file type
   if (!file.type.startsWith('image/')) {
     error.value = 'Please select an image file'
     return
   }
 
-  // Validate file size (max 5MB)
-  const maxSize = 5 * 1024 * 1024 // 5MB
+  const maxSize = 5 * 1024 * 1024
   if (file.size > maxSize) {
     error.value = 'Image size must be less than 5MB'
     return
   }
 
-  // Read file as base64
   const reader = new FileReader()
   reader.onload = (e) => {
     const result = e.target?.result as string
-    formState.logo = result
-    logoPreview.value = result
+    if (slot === 'dark') {
+      formState.logoDark = result
+      logoDarkPreview.value = result
+    } else {
+      formState.logoLight = result
+      logoLightPreview.value = result
+    }
     error.value = null
   }
   reader.onerror = () => {
@@ -237,11 +262,15 @@ const handleLogoFileChange = (event: Event) => {
   reader.readAsDataURL(file)
 }
 
-const clearLogo = () => {
-  formState.logo = ''
-  logoPreview.value = null
-  if (logoFileInput.value) {
-    logoFileInput.value.value = ''
+const clearLogo = (slot: 'dark' | 'light') => {
+  if (slot === 'dark') {
+    formState.logoDark = ''
+    logoDarkPreview.value = null
+    if (logoDarkFileInput.value) logoDarkFileInput.value.value = ''
+  } else {
+    formState.logoLight = ''
+    logoLightPreview.value = null
+    if (logoLightFileInput.value) logoLightFileInput.value.value = ''
   }
 }
 
@@ -268,7 +297,9 @@ const handleSubmit = async () => {
     await updateDomain(props.domain.id, {
       displayName: formState.displayName,
       relatedPersonPhone: formState.relatedPersonPhone || undefined,
-      logo: formState.logo || undefined,
+      logo: formState.logoDark,
+      logoDark: formState.logoDark,
+      logoLight: formState.logoLight,
       logoUrl: formState.logoUrl || undefined,
       settings: {
         maxUsers: formState.settings.maxUsers,

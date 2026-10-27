@@ -1108,6 +1108,7 @@ public sealed class MeetingActionDto
     public string Id { get; set; } = string.Empty;
     public string ProjectId { get; set; } = string.Empty;
     public string MeetingId { get; set; } = string.Empty;
+    public string? MeetingName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Code { get; set; }
     public IReadOnlyList<MeetingActionTargetDto> Targets { get; set; } = Array.Empty<MeetingActionTargetDto>();
@@ -1251,6 +1252,14 @@ public sealed class ProjectMeetingActionsDto
     public int OverdueCount { get; set; }
     public int UnboundCount { get; set; }
     public IReadOnlyList<MeetingActionDto> Items { get; set; } = Array.Empty<MeetingActionDto>();
+}
+
+public sealed class AssignmentListQuery
+{
+    public string? Kind { get; set; }
+    public string? Target { get; set; }
+    public string? Status { get; set; }
+    public string? Q { get; set; }
 }
 
 public sealed class StakeholderDto

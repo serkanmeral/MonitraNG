@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useLocaleStore } from '@/stores/locale';
-import { computed, watch, nextTick, ref } from 'vue';
+import { useCustomizerStore } from '@/stores/customizer';
+import { computed, watch, nextTick, ref, onMounted } from 'vue';
+import { isDarkAppTheme, resolveThemedDomainLogoSrc } from '@/composables/useDomain';
+import { currentLoginHostDomain, fetchDomainBranding, type DomainBranding } from '@/utils/loginHostDomain';
 
 // Import flag images
 import flagTR from '/images/flag/icon-flag-tr.svg';
@@ -14,6 +17,18 @@ definePageMeta({
 });
 
 const localeStore = useLocaleStore();
+const customizer = useCustomizerStore();
+const lockedDomain = currentLoginHostDomain();
+const branding = ref<DomainBranding | null>(null);
+
+const brandTitle = computed(() => branding.value?.displayName || lockedDomain || '');
+const logoSrc = computed(() => resolveThemedDomainLogoSrc(branding.value, customizer.actTheme));
+const logoSurface = computed(() => (isDarkAppTheme(customizer.actTheme) ? '#2a3447' : '#ffffff'));
+
+onMounted(async () => {
+  if (!lockedDomain) return;
+  branding.value = await fetchDomainBranding(lockedDomain);
+});
 
 // Initialize locale on mount (for login page, before authentication)
 if (process.client) {
@@ -158,12 +173,38 @@ if (process.client) {
             </v-select>
           </div>
           
+          <div v-if="lockedDomain" class="login-brand mb-6 text-center">
+            <div class="login-domain-logo mx-auto" :style="{ backgroundColor: logoSurface }">
+              <img v-if="logoSrc" :src="logoSrc" :alt="brandTitle" />
+            </div>
+            <div class="text-subtitle-1 font-weight-medium mt-3">{{ brandTitle }}</div>
+          </div>
           <h2 :key="`title-${localeKey}`" class="text-h3 font-weight-semibold mb-2">{{ $t('login.title') }}</h2>
           <div :key="`subtitle-${localeKey}`" class="text-subtitle-1 mb-6">{{ $t('login.subtitle') }}</div>
-          <AuthLoginForm :key="`form-${localeKey}`" />
+          <AuthLoginForm :key="`form-${localeKey}`" :locked-domain="lockedDomain" />
         </div>
       </v-col>
     </v-row>
     </div>
   </v-locale-provider>
 </template>
+
+<style scoped>
+.login-domain-logo {
+  width: 100%;
+  max-width: 280px;
+  height: 88px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+}
+
+.login-domain-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+</style>

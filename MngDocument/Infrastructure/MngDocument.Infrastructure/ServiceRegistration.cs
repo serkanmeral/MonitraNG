@@ -40,7 +40,7 @@ public static class ServiceRegistration
 
         services.AddHttpClient("OpenSearch", client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(60);
+            client.Timeout = TimeSpan.FromMinutes(5);
         });
 
         services.AddHttpClient("Ollama", client =>
@@ -56,10 +56,12 @@ public static class ServiceRegistration
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IDocumentIndexService, DocumentIndexService>();
+        services.AddScoped<IDocumentContentSearchService, DocumentContentSearchService>();
         services.AddScoped<IDocumentSummaryService, DocumentSummaryService>();
         services.AddScoped<IDocumentDiffService, DocumentDiffService>();
         services.AddScoped<DocumentSummaryRunner>();
         services.AddScoped<DocumentIndexBatchRunner>();
+        services.AddScoped<IDocumentAutoIndex, DocumentAutoIndex>();
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();

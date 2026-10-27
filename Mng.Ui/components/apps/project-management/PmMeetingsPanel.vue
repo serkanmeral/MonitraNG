@@ -38,6 +38,7 @@ import {
   pmDeleteMeetingAction,
   pmDeleteMeetingAttendance,
   pmDeleteMeetingSeries,
+  pmGetMeeting,
   pmGetProjectMeetings,
   pmListProjectMeetingPeople,
   pmUpdateMeeting,
@@ -87,6 +88,7 @@ const props = defineProps<{
   hubFolderId?: string | null;
   wbs: PmWbsItem[];
   loading?: boolean;
+  meetingFocus?: { id: string; n: number } | null;
 }>();
 
 const emit = defineEmits<{
@@ -367,7 +369,8 @@ function rememberAttendance(meetingId: string, rows: PmMeetingAttendance[]) {
 }
 
 const editingMeeting = computed(() => findMeeting(editingMeetingId.value));
-const visibleActions = computed(() => editingMeeting.value?.actions ?? draftActions.value);
+const sessionActions = ref<PmMeetingAction[]>([]);
+const visibleActions = computed(() => (editingMeetingId.value ? sessionActions.value : draftActions.value));
 const firmOptions = computed(() => {
   const names = new Map<string, string>();
   const remember = (value: string | null | undefined) => {
@@ -693,9 +696,57 @@ async function reloadViews() {
   ]);
 }
 
+function patchMeetingActions(meetingId: string, actions: PmMeetingAction[]) {
+  const openActionCount = actions.filter((row) => row.open).length;
+  const apply = (row: PmMeeting): PmMeeting => (
+    row.id === meetingId
+      ? { ...row, actions, actionCount: actions.length, openActionCount }
+      : row
+  );
+  if (loadedMeeting.value?.id === meetingId) loadedMeeting.value = apply(loadedMeeting.value);
+  calendarItems.value = calendarItems.value.map(apply);
+  adhocItems.value = adhocItems.value.map(apply);
+  occurrenceItems.value = occurrenceItems.value.map(apply);
+  minutesItems.value = minutesItems.value.map(apply);
+}
+
+function showSessionActions(actions: PmMeetingAction[]) {
+  sessionActions.value = actions;
+  const id = editingMeetingId.value;
+  if (id) patchMeetingActions(id, actions);
+}
+
+function upsertSessionAction(action: PmMeetingAction) {
+  const index = sessionActions.value.findIndex((row) => row.id === action.id);
+  const next = sessionActions.value.slice();
+  if (index >= 0) next[index] = action;
+  else next.unshift(action);
+  showSessionActions(next);
+}
+
+function removeSessionAction(id: string) {
+  showSessionActions(sessionActions.value.filter((row) => row.id !== id));
+}
+
+async function refreshOpenMeetingActions() {
+  const id = editingMeetingId.value;
+  if (!meetingDialog.value || !id) return;
+  const meeting = await pmGetMeeting(id);
+  if (!meetingDialog.value || editingMeetingId.value !== id) return;
+  const server = meeting.actions ?? [];
+  const merged = server.slice();
+  for (const row of sessionActions.value) {
+    if (!merged.some((item) => item.id === row.id)) merged.unshift(row);
+  }
+  showSessionActions(merged);
+}
+
 function notifyChanged() {
   emit('changed');
   void reloadViews();
+  void refreshOpenMeetingActions().catch((error) => {
+    panelError(error, 'projectManagement.errors.loadFailed');
+  });
 }
 
 function handleDatesSet(info: DatesSetArg) {
@@ -1008,6 +1059,7 @@ async function openEditMeeting(row: PmMeeting, tab: MeetingDialogTab = 'event') 
   agendaDoc.value = emptyMeetingDoc(row.agenda || '');
   minutesDoc.value = emptyMeetingDoc();
   draftActions.value = [];
+  sessionActions.value = [...(row.actions ?? [])];
   void seedAttendance(row.attendance || []);
   meetingDialog.value = true;
   await Promise.all([
@@ -1549,8 +1601,10 @@ async function saveAction() {
   saving.value = true;
   try {
     const payload = await actionPayload();
-    if (editingActionId.value) await pmUpdateMeetingAction(editingActionId.value, payload);
-    else await pmCreateMeetingAction(actionMeetingId.value, payload);
+    const saved = editingActionId.value
+      ? await pmUpdateMeetingAction(editingActionId.value, payload)
+      : await pmCreateMeetingAction(actionMeetingId.value, payload);
+    upsertSessionAction(saved);
     actionDialog.value = false;
     toast.push({
       title: t('projectManagement.notify.successTitle'),
@@ -1574,7 +1628,8 @@ async function markDone(row: PmMeetingAction) {
   }
   closingId.value = row.id;
   try {
-    await pmUpdateMeetingAction(row.id, { status: 'done' });
+    const saved = await pmUpdateMeetingAction(row.id, { status: 'done' });
+    upsertSessionAction(saved);
     toast.push({
       title: t('projectManagement.notify.successTitle'),
       message: t('projectManagement.notify.meetingActionSaved'),
@@ -1718,7 +1773,9 @@ async function executeDeleteAction() {
   }
   deleting.value = true;
   try {
-    await pmDeleteMeetingAction(deleteActionTarget.value.id);
+    const removedId = deleteActionTarget.value.id;
+    await pmDeleteMeetingAction(removedId);
+    removeSessionAction(removedId);
     deleteActionTarget.value = null;
     toast.push({
       title: t('projectManagement.notify.successTitle'),
@@ -1733,11 +1790,29 @@ async function executeDeleteAction() {
   }
 }
 
+async function openFocusedMeeting(focus: { id: string; n: number } | null | undefined) {
+  if (!focus?.id) return;
+  try {
+    const meeting = await pmGetMeeting(focus.id);
+    await openEditMeeting(meeting, 'actions');
+  } catch (error) {
+    panelError(error, 'projectManagement.errors.loadFailed');
+  }
+}
+
 onMounted(() => {
   void loadSummary();
   if (surface.value === 'list') void loadAdhoc();
   if (surface.value === 'minutes') void loadMinutes();
+  void openFocusedMeeting(props.meetingFocus);
 });
+
+watch(
+  () => props.meetingFocus?.n,
+  () => {
+    void openFocusedMeeting(props.meetingFocus);
+  },
+);
 
 watch(
   () => props.projectId,
@@ -2488,7 +2563,7 @@ watch([minutesSearch, minutesFrom, minutesTo, minutesPile, minutesSeriesId], () 
                 <p v-if="meetingForm.status === 'cancelled'" class="text-caption text-medium-emphasis mb-2">
                   {{ t('projectManagement.meeting.noActionWhenCancelled') }}
                 </p>
-                <v-table density="comfortable" class="rounded-lg border">
+                <v-table :key="visibleActions.map((row) => row.id).join('|')" density="comfortable" class="rounded-lg border">
                   <thead>
                     <tr>
                       <th>{{ t('projectManagement.meeting.action') }}</th>

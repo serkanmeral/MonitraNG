@@ -45,6 +45,7 @@ public class ResourceService : IResourceService
     private readonly IDocumentRenderService _render;
     private readonly MngDocumentSettings _settings;
     private readonly DocumentIndexCleaner _indexCleaner;
+    private readonly IDocumentAutoIndex _autoIndex;
     private readonly ILogger<ResourceService> _logger;
 
     public ResourceService(
@@ -59,6 +60,7 @@ public class ResourceService : IResourceService
         LetterheadHeaderValueEnricher headerEnricher,
         IDocumentRenderService render,
         DocumentIndexCleaner indexCleaner,
+        IDocumentAutoIndex autoIndex,
         IOptions<MngDocumentSettings> settings,
         ILogger<ResourceService> logger)
     {
@@ -73,6 +75,7 @@ public class ResourceService : IResourceService
         _headerEnricher = headerEnricher;
         _render = render;
         _indexCleaner = indexCleaner;
+        _autoIndex = autoIndex;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -527,7 +530,9 @@ public class ResourceService : IResourceService
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
         await WriteVersionAsync(created.__dataId!, 1, request.Content ?? string.Empty, "initial", ct);
-        return await ToDtoWithEffectiveAsync(created, ct);
+        var dto = await ToDtoWithEffectiveAsync(created, ct);
+        ScheduleIndex(dto);
+        return dto;
     }
 
     public async Task<ResourceDto> UpdateMarkdownAsync(string id, UpdateMarkdownRequest request, CancellationToken ct = default)
@@ -586,7 +591,9 @@ public class ResourceService : IResourceService
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteVersionAsync(id, newVersion, request.Content ?? string.Empty, ResolveChangeNote(request.ChangeNote, "update"), ct);
-        return ToDto(updated, snapshot.Resolve(updated));
+        var dto = ToDto(updated, snapshot.Resolve(updated));
+        ScheduleIndex(dto);
+        return dto;
     }
 
     public async Task<MarkdownContentDto> GetMarkdownContentAsync(string id, CancellationToken ct = default)
@@ -717,7 +724,9 @@ public class ResourceService : IResourceService
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteVersionAsync(id, newVersion, content, $"restore from v{versionNumber}", ct);
-        return ToDto(updated, snapshot.Resolve(updated));
+        var dto = ToDto(updated, snapshot.Resolve(updated));
+        ScheduleIndex(dto);
+        return dto;
     }
 
     public async Task<IReadOnlyList<MarkdownVersionDto>> GetFileVersionsAsync(string id, CancellationToken ct = default)
@@ -839,7 +848,9 @@ public class ResourceService : IResourceService
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteFileVersionAsync(id, newVersion, bytes, fileName, $"restore from v{versionNumber}", ct, mimeType: mimeForVersion);
-        return ToDto(updated, snapshot.Resolve(updated));
+        var dto = ToDto(updated, snapshot.Resolve(updated));
+        ScheduleIndex(dto);
+        return dto;
     }
 
     public async Task<MarkdownVersionDto> UpdateFileVersionChangeNoteAsync(
@@ -926,6 +937,8 @@ public class ResourceService : IResourceService
         await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, dataGatewayToken, ct);
         await _indexCleaner.DeleteSearchAsync(id, ct);
         await WriteFileVersionAsync(id, newVersion, content, fileName, "save", ct, dataGatewayToken);
+        if (IndexPlainText.IsIndexableExtension(profile.Extension, fileName))
+            _autoIndex.Schedule(id, dataGatewayToken);
         return newVersion;
     }
 
@@ -1056,7 +1069,9 @@ public class ResourceService : IResourceService
             ResolveChangeNote(request.ChangeNote, "replace"),
             ct,
             mimeType: mime);
-        return ToDto(updated, snapshot.Resolve(updated));
+        var dto = ToDto(updated, snapshot.Resolve(updated));
+        ScheduleIndex(dto);
+        return dto;
     }
 
     private async Task<ResourceDto> CreateFileResourceCoreAsync(
@@ -1165,7 +1180,9 @@ public class ResourceService : IResourceService
                 mimeType: VisualEvidence.GuessContentType(request.Extension, storedFileName, request.MimeType));
         }
 
-        return await ToDtoWithEffectiveAsync(created, ct);
+        var dto = await ToDtoWithEffectiveAsync(created, ct);
+        ScheduleIndex(dto);
+        return dto;
     }
 
     public async Task<ResourceDto> CloneResourceAsync(string id, CloneResourceRequest request, CancellationToken ct = default)
@@ -1221,7 +1238,9 @@ public class ResourceService : IResourceService
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
         await WriteVersionAsync(created.__dataId!, 1, content, $"clone from {sourceLabel}", ct);
-        return ToDto(created, snapshot.Resolve(created));
+        var dto = ToDto(created, snapshot.Resolve(created));
+        ScheduleIndex(dto);
+        return dto;
     }
 
     private async Task<ResourceDto> CloneManagedDocxResourceAsync(
@@ -1625,6 +1644,79 @@ public class ResourceService : IResourceService
             .Select(r => ToDto(r, snapshot.Resolve(r)))
             .ToList();
         return new ResourceListResult { Items = items, Total = items.Count };
+    }
+
+    public async Task<IReadOnlyList<IndexedHitContextDto>> LoadVisibleIndexedAsync(
+        IReadOnlyList<string> ids,
+        CancellationToken ct = default)
+    {
+        var wanted = ids
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (wanted.Count == 0)
+            return Array.Empty<IndexedHitContextDto>();
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var match = new Dictionary<string, object?>
+        {
+            ["__dataId"] = new Dictionary<string, object?> { ["$in"] = wanted }
+        };
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+        var visible = page.Items
+            .Select(MapRow)
+            .Where(r => r.__dataId != null)
+            .Where(r => !string.Equals(r.type, ResourceType.Folder, StringComparison.OrdinalIgnoreCase))
+            .Where(r => snapshot.Resolve(r).CanView)
+            .Where(r => r.type != ResourceType.Markdown || ResourceStatus.IsPublished(r.status))
+            .ToDictionary(r => r.__dataId!, r => r, StringComparer.OrdinalIgnoreCase);
+
+        var ancestorIds = visible.Values
+            .SelectMany(r => r.ancestorIds ?? new List<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (ancestorIds.Count > 0)
+        {
+            var ancestorMatch = new Dictionary<string, object?>
+            {
+                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ancestorIds }
+            };
+            var ancestors = await _dg.QueryPageAsync(
+                DmDatasets.Resources,
+                ancestorMatch,
+                "limit=1000&expand=false&showHistory=false",
+                Token,
+                ct);
+            foreach (var row in ancestors.Items.Select(MapRow))
+            {
+                if (!string.IsNullOrWhiteSpace(row.__dataId))
+                    names[row.__dataId] = row.name ?? string.Empty;
+            }
+        }
+
+        var result = new List<IndexedHitContextDto>();
+        foreach (var id in ids)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !visible.TryGetValue(id.Trim(), out var row))
+                continue;
+            var folders = new List<BreadcrumbDto>();
+            foreach (var ancestorId in row.ancestorIds ?? new List<string>())
+            {
+                if (names.TryGetValue(ancestorId, out var name))
+                    folders.Add(new BreadcrumbDto { Id = ancestorId, Name = name });
+            }
+
+            result.Add(new IndexedHitContextDto
+            {
+                Resource = ToDto(row, snapshot.Resolve(row)),
+                Folders = folders
+            });
+        }
+
+        return result;
     }
 
     public async Task<ResourceListResult> GetRecentAsync(int limit, CancellationToken ct = default)
@@ -2256,6 +2348,19 @@ public class ResourceService : IResourceService
             return null;
         return history.FirstOrDefault(h => string.Equals(h.operation, "create", StringComparison.OrdinalIgnoreCase))
             ?? history[0];
+    }
+
+    private void ScheduleIndex(ResourceDto resource)
+    {
+        if (string.IsNullOrWhiteSpace(resource.Id))
+            return;
+
+        if (string.Equals(resource.Type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase)
+            || (string.Equals(resource.Type, ResourceType.File, StringComparison.OrdinalIgnoreCase)
+                && IndexPlainText.IsIndexableExtension(resource.Extension, resource.FileName ?? resource.Name)))
+        {
+            _autoIndex.Schedule(resource.Id);
+        }
     }
 
     /// <summary>Son güncelleme audit girdisi: en son <c>update</c>; hiç güncelleme yoksa null.</summary>

@@ -62,6 +62,14 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("logo")]
         public string? Logo { get; set; }
 
+        /// <summary>Logo drawn on dark surfaces. Falls back to <see cref="Logo"/> for older domains.</summary>
+        [BsonElement("logoDark")]
+        public string? LogoDark { get; set; }
+
+        /// <summary>Logo drawn on light surfaces.</summary>
+        [BsonElement("logoLight")]
+        public string? LogoLight { get; set; }
+
         [BsonElement("logoUrl")]
         public string? LogoUrl { get; set; }
 
@@ -115,6 +123,15 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("mail")]
         [BsonIgnoreIfNull]
         public DomainMailSettings? Mail { get; set; }
+
+        /// <summary>
+        /// Password store. Default is Keycloak only.
+        /// keycloak-and-ad writes directory users' passwords to Active Directory
+        /// and opens the password screen for those users.
+        /// </summary>
+        [BsonElement("password")]
+        [BsonIgnoreIfNull]
+        public DomainPasswordSettings? Password { get; set; }
 
         /// <summary>
         /// Manuel Mongo güncellemelerinde yanlışlıkla settings altına düz yazılmış alanlar.

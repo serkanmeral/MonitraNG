@@ -39,6 +39,8 @@ export interface Domain {
   updatedBy?: string
   relatedPersonPhone?: string
   logo?: string
+  logoDark?: string
+  logoLight?: string
   logoUrl?: string
 }
 
@@ -51,6 +53,8 @@ export interface CreateDomainRequest {
   relatedPersonPhone?: string
   relatedPersonEmail?: string
   logo?: string
+  logoDark?: string
+  logoLight?: string
   logoUrl?: string
   initialDataTemplateName?: string
 }

@@ -23,6 +23,7 @@ public class ResourcesController : ControllerBase
     private readonly IPermissionService _permissions;
     private readonly IResourceEditorService _resourceEditor;
     private readonly IDocumentIndexService _index;
+    private readonly IDocumentContentSearchService _contentSearch;
     private readonly IDocumentSummaryService _summary;
     private readonly IDocumentDiffService _diff;
 
@@ -31,6 +32,7 @@ public class ResourcesController : ControllerBase
         IPermissionService permissions,
         IResourceEditorService resourceEditor,
         IDocumentIndexService index,
+        IDocumentContentSearchService contentSearch,
         IDocumentSummaryService summary,
         IDocumentDiffService diff)
     {
@@ -38,6 +40,7 @@ public class ResourcesController : ControllerBase
         _permissions = permissions;
         _resourceEditor = resourceEditor;
         _index = index;
+        _contentSearch = contentSearch;
         _summary = summary;
         _diff = diff;
     }
@@ -115,6 +118,19 @@ public class ResourcesController : ControllerBase
         [FromQuery] int limit = 50,
         CancellationToken ct = default) =>
         Ok(await _resources.SearchAsync(q, skip, limit, ct));
+
+    /// <summary>İndeksli belgelerde ad ve içerik. Kapsam ve tür sonuçtan elenir.</summary>
+    [HttpGet("content-search")]
+    [ProducesResponseType(typeof(ContentSearchResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ContentSearch(
+        [FromQuery] string q,
+        [FromQuery] string scope = "library",
+        [FromQuery] string? scopeId = null,
+        [FromQuery] string? extension = null,
+        [FromQuery] string match = "all",
+        [FromQuery] string sort = "relevance",
+        CancellationToken ct = default) =>
+        Ok(await _contentSearch.SearchAsync(q, scope, scopeId, extension, match, sort, ct));
 
     /// <summary>Son güncellenen yayınlanmış markdown kayıtları.</summary>
     [HttpGet("recent")]

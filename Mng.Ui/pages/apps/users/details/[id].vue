@@ -5,6 +5,7 @@ import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import { useUserStore } from '@/stores/apps/user';
+import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
 import { EditIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -23,6 +24,8 @@ const t = (key: string, params?: any) => {
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const viewingUserRef = computed(() => userStore.viewingUser);
+const { canChangePassword, isDirectory } = useUserFieldPolicies(viewingUserRef);
 const localeStore = useLocaleStore();
 
 const userId = route.params.id as string;
@@ -238,6 +241,7 @@ const handleResetPassword = async () => {
         </div>
         <div class="d-flex ga-2">
           <v-btn 
+            v-if="canChangePassword && !isDirectory"
             color="warning" 
             @click="handleResetPassword" 
             flat

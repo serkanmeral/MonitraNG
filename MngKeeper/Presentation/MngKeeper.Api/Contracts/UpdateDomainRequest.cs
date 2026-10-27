@@ -12,6 +12,8 @@ public class UpdateDomainRequest
     public string? DiscoveryRootLabel { get; set; }
     public string? RelatedPersonPhone { get; set; }
     public string? Logo { get; set; }
+    public string? LogoDark { get; set; }
+    public string? LogoLight { get; set; }
     public string? LogoUrl { get; set; }
     public UpdateDomainSettingsRequest? Settings { get; set; }
 }
@@ -30,6 +32,9 @@ public class UpdateDomainSettingsRequest
 
     /// <summary>When null/absent, existing mail settings are kept.</summary>
     public DomainMailSettings? Mail { get; set; }
+
+    /// <summary>When null/absent, existing password settings are kept.</summary>
+    public DomainPasswordSettings? Password { get; set; }
 }
 
 public class UpdateDirectoryPrivilegeSettingsRequest

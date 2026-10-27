@@ -14,6 +14,8 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
         public string? RelatedPersonPhone { get; set; }
         public string? RelatedPersonEmail { get; set; }
         public string? Logo { get; set; }
+        public string? LogoDark { get; set; }
+        public string? LogoLight { get; set; }
         public string? LogoUrl { get; set; }
         
         [JsonPropertyName("initialDataTemplateName")]

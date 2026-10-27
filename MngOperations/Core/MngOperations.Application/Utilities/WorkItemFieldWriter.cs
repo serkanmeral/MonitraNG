@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Models;
 
@@ -28,7 +29,9 @@ public static class WorkItemFieldWriter
 
             if (WorkItemCoreFields.IsWritable(key))
             {
-                target[key] = value;
+                target[key] = string.Equals(key, "libraryDocumentIds", StringComparison.OrdinalIgnoreCase)
+                    ? CoerceStringList(value)
+                    : value;
                 extraFields.Remove(key);
                 continue;
             }
@@ -55,6 +58,44 @@ public static class WorkItemFieldWriter
             target.Remove(WorkItemCoreFields.ExtraFieldsKey);
         else
             target[WorkItemCoreFields.ExtraFieldsKey] = extraFields;
+    }
+
+    private static List<string> CoerceStringList(object? value)
+    {
+        if (value is null) return [];
+        if (value is JsonElement el)
+        {
+            if (el.ValueKind == JsonValueKind.Array)
+            {
+                return el.EnumerateArray()
+                    .Select(item => item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString())
+                    .Where(item => !string.IsNullOrWhiteSpace(item))
+                    .Select(item => item!.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
+            if (el.ValueKind == JsonValueKind.String)
+            {
+                var single = el.GetString()?.Trim();
+                return string.IsNullOrWhiteSpace(single) ? [] : [single];
+            }
+        }
+
+        if (value is IEnumerable<object?> list && value is not string)
+        {
+            return list
+                .Select(item => item?.ToString()?.Trim())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Select(item => item!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        if (value is string text && !string.IsNullOrWhiteSpace(text))
+            return [text.Trim()];
+
+        return [];
     }
 
     private static bool IsEmptyValue(object? value) =>

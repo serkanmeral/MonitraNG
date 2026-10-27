@@ -42,6 +42,18 @@ public class UserFieldPolicyServiceTests
     Assert.False(caps.CanManageGroups);
     Assert.False(caps.CanChangePassword);
   }
+
+  [Fact]
+  public void Directory_user_can_change_password_only_when_ad_write_is_enabled()
+  {
+    var user = new User { ProvisioningSource = UserProvisioningSource.Directory };
+    var closed = _service.GetCapabilities(user, directoryPasswordChangeEnabled: false);
+    var open = _service.GetCapabilities(user, directoryPasswordChangeEnabled: true);
+
+    Assert.False(closed.CanChangePassword);
+    Assert.True(open.CanChangePassword);
+    Assert.False(open.CanManageGroups);
+  }
 }
 
 public class DirectoryUserUpdateValidatorTests

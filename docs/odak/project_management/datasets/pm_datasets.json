@@ -1655,7 +1655,7 @@
   },
   {
     "name": "pm_meeting_actions",
-    "description": "Toplantı görevlendirmesi. Hedef kurum kullanıcısı, kurum dışı kişi veya firmadır. Bir satırda birden fazla hedef olabilir. OC iş kaydı olarak yazılmaz.",
+    "description": "Görevlendirme. Toplantıdan doğabilir; tutanaksız da durur. Hedef kurum kullanıcısı, kurum dışı kişi veya firmadır. OC iş kaydı olarak yazılmaz.",
     "forceSchema": true,
     "logging": "self",
     "publish_mode": "none",
@@ -1673,7 +1673,7 @@
         "fieldType": "text",
         "name": "meetingId",
         "title": "Meeting id",
-        "mandatory": true,
+        "mandatory": false,
         "unique": false,
         "isArray": false,
         "validation": { "maxLength": 64 }
@@ -1700,6 +1700,14 @@
         "fieldType": "object",
         "name": "targets",
         "title": "Targets (user | external | organization)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "text",
+        "name": "targetKeys",
+        "title": "Queryable target keys (user: | person: | org:)",
         "mandatory": false,
         "unique": false,
         "isArray": true
@@ -1811,6 +1819,11 @@
       {
         "name": "idx_mact_meeting",
         "fields": { "meetingId": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_mact_target",
+        "fields": { "targetKeys": 1 },
         "unique": false
       },
       {

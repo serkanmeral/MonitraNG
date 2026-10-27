@@ -246,6 +246,7 @@ public sealed class PmMeetingActionRow
     public string? title { get; set; }
     public string? code { get; set; }
     public List<PmMeetingActionTarget>? targets { get; set; }
+    public List<string>? targetKeys { get; set; }
     public string? ownerName { get; set; }
     public string? ownerKind { get; set; }
     public string? ownerUserId { get; set; }

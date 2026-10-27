@@ -171,6 +171,39 @@ public sealed record ResourceListResult
     public long Total { get; init; }
 }
 
+/// <summary>OpenSearch adayı, görüntüleme izni geçtikten sonra yol ile birlikte.</summary>
+public sealed record IndexedHitContextDto
+{
+    public ResourceDto Resource { get; init; } = new();
+
+    /// <summary>Kökten üst klasöre klasör adları. Belgenin kendi adı yoktur.</summary>
+    public IReadOnlyList<BreadcrumbDto> Folders { get; init; } = Array.Empty<BreadcrumbDto>();
+}
+
+/// <summary>İndeksli belge aramasının bir satırı.</summary>
+public sealed record ContentSearchHitDto
+{
+    public ResourceDto Resource { get; init; } = new();
+
+    /// <summary><c>name</c>, <c>content</c> veya <c>both</c>.</summary>
+    public string Match { get; init; } = "content";
+
+    /// <summary>İşaretli parçalar. Yalnızca <c>mark</c> etiketi taşır.</summary>
+    public IReadOnlyList<string> Snippets { get; init; } = Array.Empty<string>();
+
+    public IReadOnlyList<BreadcrumbDto> Folders { get; init; } = Array.Empty<BreadcrumbDto>();
+    public double Score { get; init; }
+}
+
+public sealed record ContentSearchResultDto
+{
+    public IReadOnlyList<ContentSearchHitDto> Items { get; init; } = Array.Empty<ContentSearchHitDto>();
+    public int Total { get; init; }
+
+    /// <summary>Aday penceresi doldu. Daha dar bir sorgu eksik kalanı getirebilir.</summary>
+    public bool Capped { get; init; }
+}
+
 /// <summary>
 /// Ana ekran ilk yükleme / yenileme: ağaç + geçerli klasör içeriği (tek snapshot).
 /// <paramref name="FolderId"/> verilirse breadcrumb + seçili klasör metadata'sı da döner.

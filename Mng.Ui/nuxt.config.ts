@@ -69,6 +69,10 @@ export default defineNuxtConfig({
     ssr: {
       noExternal: ["vuetify"], // add the vuetify vite plugin
     },
+    server: {
+      // abt.localhost:3000 is the local tenant-login host.
+      allowedHosts: ['.localhost'],
+    },
   },
   runtimeConfig: {
     public: {

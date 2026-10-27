@@ -253,7 +253,8 @@ public partial class RuntimeContextService : IRuntimeContextService
             StateSegments = stateSegments,
             People = profilePeople,
             Groups = profileGroups,
-            Attachments = attachments
+            Attachments = attachments,
+            LibraryDocumentIds = WorkItemDataHelper.GetStringList(workItem, "libraryDocumentIds")
         };
 
         if (perfSw != null)

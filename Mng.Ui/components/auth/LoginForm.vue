@@ -3,6 +3,11 @@ import { ref, onMounted } from "vue";
 import { Form } from "vee-validate";
 import { useAuthStore } from "@/stores/auth";
 
+const props = defineProps<{
+  /** Set when the host is a tenant login address, e.g. abt.localhost. */
+  lockedDomain?: string | null;
+}>();
+
 const router = useRouter();
 const authStore = useAuthStore();
 
@@ -24,11 +29,11 @@ const usernameRules = ref([
   (v: string) => !!v || "Kullanıcı adı gereklidir", // Fallback
 ]);
 
-// Development: Odak sunucu pilot girişi (domain@kullanıcı → auth store domain ayrıştırır)
+// Development: AbtApp domain. domain@username is split by the auth store.
 onMounted(() => {
+  if (props.lockedDomain) return;
   if (process.env.NODE_ENV === 'development') {
-    username.value = 'odak@odak_admin';
-    password.value = 'Admin123!';
+    username.value = 'abt@smeral';
   }
 });
 
@@ -38,14 +43,14 @@ async function validate() {
   isLoading.value = true;
 
     try {
-    // Parse domain from username if format is "domain@username"
-    let selectedDomain: string | undefined = undefined;
-    let selectedUsername = username.value;
+    // Host tenant wins. domain@username still supplies the username, not another domain.
+    let selectedDomain: string | undefined = props.lockedDomain || undefined;
+    let selectedUsername = username.value.trim();
 
-    if (username.value.includes("@")) {
-      const parts = username.value.split("@");
-      if (parts.length === 2) {
-        selectedDomain = parts[0];
+    if (selectedUsername.includes("@")) {
+      const parts = selectedUsername.split("@");
+      if (parts.length === 2 && parts[1]) {
+        if (!selectedDomain) selectedDomain = parts[0];
         selectedUsername = parts[1];
       }
     }
@@ -82,7 +87,9 @@ async function validate() {
       class="mb-4"
       required
       hide-details="auto"
-      :placeholder="String($t('login.form.usernamePlaceholder')).replace(/\{'@'\}/g, '@')"
+      :placeholder="props.lockedDomain
+        ? String($t('login.form.usernameOnlyPlaceholder'))
+        : String($t('login.form.usernamePlaceholder')).replace(/\{'@'\}/g, '@')"
       variant="outlined"
       density="comfortable"
     ></VTextField>

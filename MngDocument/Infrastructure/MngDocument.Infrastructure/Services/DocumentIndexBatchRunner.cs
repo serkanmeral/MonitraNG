@@ -79,7 +79,7 @@ public sealed class DocumentIndexBatchRunner
     }
 
     /// <returns>done, skipped, or a short failure reason.</returns>
-    private async Task<string> IndexOneAsync(
+    public async Task<string> IndexOneAsync(
         string id,
         string name,
         string token,
@@ -89,6 +89,13 @@ public sealed class DocumentIndexBatchRunner
         var resource = await _dg.GetByIdAsync<DmResource>(DmDatasets.Resources, id, token, ct);
         if (resource is null || string.IsNullOrWhiteSpace(resource.__dataId))
             return "Dosya bulunamadı.";
+
+        if (!CanIndex(resource))
+            return "skipped";
+
+        var displayName = string.IsNullOrWhiteSpace(name)
+            ? (resource.name ?? resource.title ?? id)
+            : name;
 
         var version = resource.currentVersionNumber ?? 1;
         if (IsCurrent(resource))
@@ -117,7 +124,7 @@ public sealed class DocumentIndexBatchRunner
         var stored = text.Length > MaxChars ? text[..MaxChars] : text;
         try
         {
-            await WriteSearchAsync(resource, name, stored, token, domain, ct);
+            await WriteSearchAsync(resource, displayName, stored, token, domain, ct);
             await WriteStatusAsync(id, "done", null, stored.Length, version, token, ct);
             return "done";
         }
@@ -140,6 +147,15 @@ public sealed class DocumentIndexBatchRunner
 
         var bytes = await _dg.DownloadFileAsync(path, token, ct);
         return IndexPlainText.ExtractFile(resource.extension, fileName ?? resource.name, bytes);
+    }
+
+    private static bool CanIndex(DmResource resource)
+    {
+        if (string.Equals(resource.type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase)
+            && IndexPlainText.IsIndexableExtension(resource.extension, resource.name);
     }
 
     private static bool IsCurrent(DmResource resource)
@@ -165,29 +181,7 @@ public sealed class DocumentIndexBatchRunner
 
         var index = DiSearchIndex.Name(domain);
         var client = _httpClientFactory.CreateClient("OpenSearch");
-        using (var create = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/{index}"))
-        {
-            create.Content = JsonContent.Create(new
-            {
-                mappings = new
-                {
-                    properties = new
-                    {
-                        resourceId = new { type = "keyword" },
-                        title = new { type = "text" },
-                        name = new { type = "text" },
-                        text = new { type = "text" },
-                        indexedAt = new { type = "date" }
-                    }
-                }
-            });
-            using var created = await client.SendAsync(create, ct);
-            if (!created.IsSuccessStatusCode && (int)created.StatusCode != 400)
-            {
-                var body = await created.Content.ReadAsStringAsync(ct);
-                throw new InvalidOperationException($"OpenSearch index create failed: {(int)created.StatusCode} {body}");
-            }
-        }
+        await DiSearchIndex.EnsureAsync(client, baseUrl, index, ct);
 
         using var put = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/{index}/_doc/{resource.__dataId}");
         put.Content = JsonContent.Create(new
@@ -196,7 +190,9 @@ public sealed class DocumentIndexBatchRunner
             title = resource.title ?? name,
             name,
             text,
-            indexedAt = DateTime.UtcNow
+            indexedAt = DateTime.UtcNow,
+            extension = (resource.extension ?? string.Empty).Trim().TrimStart('.').ToLowerInvariant(),
+            ancestorIds = resource.ancestorIds ?? new List<string>()
         });
         using var written = await client.SendAsync(put, ct);
         if (!written.IsSuccessStatusCode)

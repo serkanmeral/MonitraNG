@@ -257,29 +257,7 @@ public sealed class DocumentIndexService : IDocumentIndexService
 
         var index = DiSearchIndex.Name(DomainKey());
         var client = _httpClientFactory.CreateClient("OpenSearch");
-        using (var create = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/{index}"))
-        {
-            create.Content = JsonContent.Create(new
-            {
-                mappings = new
-                {
-                    properties = new
-                    {
-                        resourceId = new { type = "keyword" },
-                        title = new { type = "text" },
-                        name = new { type = "text" },
-                        text = new { type = "text" },
-                        indexedAt = new { type = "date" }
-                    }
-                }
-            });
-            using var created = await client.SendAsync(create, ct);
-            if (!created.IsSuccessStatusCode && (int)created.StatusCode != 400)
-            {
-                var body = await created.Content.ReadAsStringAsync(ct);
-                throw new InvalidOperationException($"OpenSearch index create failed: {(int)created.StatusCode} {body}");
-            }
-        }
+        await DiSearchIndex.EnsureAsync(client, baseUrl, index, ct);
 
         var now = DateTime.UtcNow;
         using var put = new HttpRequestMessage(HttpMethod.Put, $"{baseUrl}/{index}/_doc/{resource.Id}");
@@ -289,7 +267,10 @@ public sealed class DocumentIndexService : IDocumentIndexService
             title = resource.Title ?? resource.Name,
             name = resource.Name,
             text,
-            indexedAt = now
+            indexedAt = now,
+            extension = (resource.Extension ?? string.Empty).Trim().TrimStart('.').ToLowerInvariant(),
+            ancestorIds = resource.AncestorIds,
+            updatedAt = resource.UpdatedAt
         });
         using var written = await client.SendAsync(put, ct);
         if (!written.IsSuccessStatusCode)

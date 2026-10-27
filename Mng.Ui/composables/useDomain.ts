@@ -21,6 +21,15 @@ export interface DirectoryLdapSettings {
   bindPassword?: string;
 }
 
+export interface DomainPasswordSettings {
+  mode?: string;
+  personnelDn?: string;
+  resetBindUsername?: string;
+  resetBindPassword?: string;
+  serverCertificateThumbprint?: string;
+  resetBindPasswordConfigured?: boolean;
+}
+
 export interface DomainMailSettings {
   enabled?: boolean;
   host?: string;
@@ -53,6 +62,7 @@ export interface Domain {
     customSettings?: Record<string, any>;
     directoryPrivileges?: UpdateDirectoryPrivilegeSettingsRequest | null;
     directoryLdap?: DirectoryLdapSettings | null;
+    password?: DomainPasswordSettings | null;
     mail?: DomainMailSettings | null;
   };
   createdAt?: string;
@@ -61,7 +71,10 @@ export interface Domain {
   updatedAt?: string;
   updatedBy?: string;
   relatedPersonPhone?: string;
+  /** Legacy single logo. Treated as the dark-theme logo when logoDark is empty. */
   logo?: string;
+  logoDark?: string;
+  logoLight?: string;
   logoUrl?: string;
   [key: string]: any;
 }
@@ -101,11 +114,36 @@ export function resolveDomainLogoSrc(
   return url.includes('?') ? `${url}&v=${stamp}` : `${url}?v=${stamp}`;
 }
 
+export function isDarkAppTheme(themeName?: string | null): boolean {
+  return !!themeName?.startsWith('DARK_');
+}
+
+/** Dark theme uses logoDark (or the legacy logo). Light theme uses logoLight. */
+export function resolveThemedDomainLogoSrc(
+  domain?: Pick<Domain, 'logo' | 'logoDark' | 'logoLight' | 'logoUrl' | 'updatedAt'> | null,
+  themeName?: string | null
+): string {
+  const darkSrc = resolveDomainLogoSrc({
+    logo: domain?.logoDark || domain?.logo,
+    logoUrl: domain?.logoUrl,
+    updatedAt: domain?.updatedAt,
+  });
+  const lightSrc = resolveDomainLogoSrc({
+    logo: domain?.logoLight,
+    updatedAt: domain?.updatedAt,
+  });
+
+  if (isDarkAppTheme(themeName)) return darkSrc || lightSrc;
+  return lightSrc || darkSrc;
+}
+
 export interface UpdateDomainRequest {
   displayName?: string;
   discoveryRootLabel?: string;
   relatedPersonPhone?: string;
-  logo?: string; // Base64 encoded image
+  logo?: string; // Kept equal to logoDark for older readers
+  logoDark?: string;
+  logoLight?: string;
   logoUrl?: string;
   settings?: {
     maxUsers?: number;
@@ -115,6 +153,7 @@ export interface UpdateDomainRequest {
     customSettings?: Record<string, any>;
     directoryPrivileges?: DirectoryPrivilegeSettings | null;
     directoryLdap?: DirectoryLdapSettings | null;
+    password?: DomainPasswordSettings | null;
     mail?: DomainMailSettings | null;
   };
 }

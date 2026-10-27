@@ -35,6 +35,9 @@ public sealed class ProfileRuntimeContext
 
     /// <summary>op_work_items.attachments (file isArray) ham değeri — { path, file_name, file_ext, file_size, upload_person, upload_time }[].</summary>
     public JsonElement? Attachments { get; init; }
+
+    /// <summary>Kütüphane belge kimlikleri. Dosya ekinden ayrıdır. Aynı kimlik birden fazla işte durabilir.</summary>
+    public IReadOnlyList<string> LibraryDocumentIds { get; init; } = Array.Empty<string>();
 }
 
 public sealed class WorkItemSummaryDto

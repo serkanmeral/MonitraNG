@@ -21,7 +21,7 @@ const t = (key: string, params?: any) => {
 
 const userStore = useUserStore();
 const profileUser = computed(() => userStore.currentUser);
-const { canChangePassword } = useUserFieldPolicies(profileUser);
+const { canChangePassword, isDirectory } = useUserFieldPolicies(profileUser);
 
 // Form data
 const formData = ref({
@@ -190,7 +190,7 @@ const handleCancel = () => {
             {{ t('profile.security.changePassword.title') }}
           </h5>
           <p class="text-body-2 text-medium-emphasis mb-6">
-            {{ t('profile.security.changePassword.description') }}
+            {{ isDirectory ? t('profile.security.directoryPasswordSelfService') : t('profile.security.changePassword.description') }}
           </p>
           
           <v-form @submit.prevent="handleSave">

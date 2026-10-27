@@ -11,6 +11,7 @@ import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTrans
 import OcAttachmentPreviewDialog from '@/components/apps/operation-core/OcAttachmentPreviewDialog.vue';
 import OcWorkItemRelationsCard from '@/components/apps/operation-core/OcWorkItemRelationsCard.vue';
 import OcWorkItemDocumentsTab from '@/components/apps/operation-core/OcWorkItemDocumentsTab.vue';
+import OcWorkItemLibraryLinks from '@/components/apps/operation-core/OcWorkItemLibraryLinks.vue';
 import { diGetLinkedResourcesForWorkItem } from '@/services/documentIntelligenceService';
 import { isPreviewable } from '@/utils/ocAttachmentPreview';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
@@ -23,7 +24,6 @@ import {
   collectOcFormValidationIssues,
   hasUpdateWorkItemChanges,
   initialFormModelFromContext,
-  ocAddWorkItemAttachment,
   ocAddWorkItemComment,
   ocApplyTransition,
   ocDeleteWorkItemComment,
@@ -31,7 +31,6 @@ import {
 
   ocGetWorkItemProfileView,
   ocGetWorkItemTimeline,
-  ocRemoveWorkItemAttachment,
   ocUpdateWorkItem,
   ocUpdateWorkItemComment,
 } from '@/services/operationCoreService';
@@ -287,9 +286,7 @@ const canEdit = computed(
 // --- Detaylar sekmesi düzenleme (in-place) ---
 const editValidationIssues = computed(() => {
   if (!editMode.value || !formContext.value) return [];
-  return collectOcFormValidationIssues(formContext.value, formModel.value, {
-    existingAttachmentCount: profile.value?.attachments?.length ?? 0,
-  });
+  return collectOcFormValidationIssues(formContext.value, formModel.value);
 });
 
 const editFieldErrors = computed(() => {
@@ -336,11 +333,7 @@ async function saveFormEdit() {
     editError.value = t('operationCore.create.validationRequired');
     return;
   }
-  const patch = buildUpdateWorkItemRequestFromFormEdit(
-    collectFormChanges(),
-    formContext.value,
-    profile.value?.attachments ?? []
-  );
+  const patch = buildUpdateWorkItemRequestFromFormEdit(collectFormChanges(), formContext.value);
   if (!hasUpdateWorkItemChanges(patch)) {
     editMode.value = false;
     return;
@@ -380,55 +373,14 @@ function onDocumentsChanged() {
 }
 
 // --- Ekler ---
-const attachments = computed<OcAttachment[]>(() => profile.value?.attachments ?? []);
-const fileInput = ref<HTMLInputElement | null>(null);
-const attachUploading = ref(false);
-const attachError = ref<string | null>(null);
-const removingPath = ref<string | null>(null);
-
-function fmtFileSize(kb: number | null | undefined): string {
-  if (kb == null || !Number.isFinite(kb)) return '';
-  if (kb < 1024) return `${Math.max(1, Math.round(kb))} KB`;
-  return `${(kb / 1024).toFixed(1)} MB`;
-}
-
-function attachmentIcon(att: OcAttachment): string {
-  const ext = (att.fileExt ?? '').toLowerCase();
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'mdi-file-image-outline';
-  if (ext === 'pdf') return 'mdi-file-pdf-box';
-  if (['doc', 'docx'].includes(ext)) return 'mdi-file-word-outline';
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'mdi-file-excel-outline';
-  if (['zip', 'rar', '7z', 'gz'].includes(ext)) return 'mdi-folder-zip-outline';
-  return 'mdi-file-outline';
-}
-
-function triggerFilePick() {
-  attachError.value = null;
-  fileInput.value?.click();
-}
-
-async function onFileSelected(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file) return;
-  attachUploading.value = true;
-  attachError.value = null;
-  try {
-    profile.value = await ocAddWorkItemAttachment(workItemId.value, attachments.value, file);
-  } catch (e: unknown) {
-    attachError.value = panelError(e, 'operationCore.profile.attachments.uploadError');
-  } finally {
-    attachUploading.value = false;
-  }
-}
+const libraryDocumentIds = computed<string[]>(() => profile.value?.libraryDocumentIds ?? []);
+const attachmentChipCount = computed(() => libraryDocumentIds.value.length);
 
 async function downloadAttachment(att: OcAttachment) {
-  attachError.value = null;
   try {
     await ocDownloadAttachment(att);
   } catch (e: unknown) {
-    attachError.value = panelError(e, 'operationCore.profile.attachments.downloadError');
+    errorLocal.value = panelError(e, 'operationCore.profile.attachments.downloadError');
   }
 }
 
@@ -449,18 +401,6 @@ function openPreview(att: OcAttachment) {
 function previewOrDownload(att: OcAttachment) {
   if (canPreview(att)) openPreview(att);
   else void downloadAttachment(att);
-}
-
-async function removeAttachment(att: OcAttachment) {
-  removingPath.value = att.path;
-  attachError.value = null;
-  try {
-    profile.value = await ocRemoveWorkItemAttachment(workItemId.value, attachments.value, att.path);
-  } catch (e: unknown) {
-    attachError.value = panelError(e, 'operationCore.profile.attachments.removeError');
-  } finally {
-    removingPath.value = null;
-  }
 }
 
 function fmtDate(value: string | null | undefined): string {
@@ -919,8 +859,8 @@ watch(workItemId, () => {
             <v-tab value="attachments" class="text-none">
               <v-icon icon="mdi-paperclip" start size="18" />
               {{ t('operationCore.profile.tabs.attachments') }}
-              <v-chip v-if="attachments.length" size="x-small" class="ml-2" color="primary" variant="tonal">
-                {{ attachments.length }}
+              <v-chip v-if="attachmentChipCount" size="x-small" class="ml-2" color="primary" variant="tonal">
+                {{ attachmentChipCount }}
               </v-chip>
             </v-tab>
             <v-tab value="documents" class="text-none">
@@ -1230,88 +1170,14 @@ watch(workItemId, () => {
 
             <v-window-item value="attachments">
               <v-card-text class="pa-4">
-                <input
-                  ref="fileInput"
-                  type="file"
-                  class="d-none"
-                  @change="onFileSelected"
+                <OcWorkItemLibraryLinks
+                  v-if="profile?.workspaceId"
+                  :work-item-id="workItemId"
+                  :workspace-id="profile.workspaceId"
+                  :document-ids="libraryDocumentIds"
+                  :can-edit="canEdit"
+                  @changed="loadProfile(true)"
                 />
-                <div class="d-flex align-center justify-space-between mb-3">
-                  <span class="text-body-2 text-medium-emphasis">
-                    {{ t('operationCore.profile.attachments.hint') }}
-                  </span>
-                  <v-btn
-                    v-if="canEdit"
-                    color="primary"
-                    size="small"
-                    variant="flat"
-                    rounded="lg"
-                    class="text-none"
-                    :loading="attachUploading"
-                    prepend-icon="mdi-upload"
-                    @click="triggerFilePick"
-                  >
-                    {{ t('operationCore.profile.attachments.add') }}
-                  </v-btn>
-                </div>
-
-                <v-alert v-if="attachError" type="error" variant="tonal" density="compact" class="mb-3 rounded-lg">
-                  {{ attachError }}
-                </v-alert>
-
-                <div v-if="!attachments.length" class="text-body-2 text-medium-emphasis text-center py-6">
-                  {{ t('operationCore.profile.attachments.empty') }}
-                </div>
-                <v-list v-else class="py-0" density="comfortable">
-                  <v-list-item
-                    v-for="att in attachments"
-                    :key="att.path"
-                    class="px-2 rounded-lg oc-attach-row"
-                  >
-                    <template #prepend>
-                      <v-icon :icon="attachmentIcon(att)" color="primary" />
-                    </template>
-                    <v-list-item-title
-                      class="text-body-2 font-weight-medium text-truncate"
-                      :class="{ 'oc-attach-name-link': canPreview(att) }"
-                      @click="canPreview(att) && openPreview(att)"
-                    >
-                      {{ att.fileName }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle class="text-caption">
-                      <span v-if="att.fileSizeKb">{{ fmtFileSize(att.fileSizeKb) }}</span>
-                      <span v-if="att.uploadTime"> · {{ fmtDate(att.uploadTime) }}</span>
-                      <span v-if="att.uploadPerson"> · {{ att.uploadPerson }}</span>
-                    </v-list-item-subtitle>
-                    <template #append>
-                      <v-btn
-                        v-if="canPreview(att)"
-                        icon="mdi-eye-outline"
-                        variant="text"
-                        size="small"
-                        :title="t('operationCore.profile.attachments.preview')"
-                        @click="openPreview(att)"
-                      />
-                      <v-btn
-                        icon="mdi-download"
-                        variant="text"
-                        size="small"
-                        :title="t('operationCore.profile.attachments.download')"
-                        @click="downloadAttachment(att)"
-                      />
-                      <v-btn
-                        v-if="canEdit"
-                        icon="mdi-delete-outline"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        :loading="removingPath === att.path"
-                        :title="t('operationCore.profile.attachments.remove')"
-                        @click="removeAttachment(att)"
-                      />
-                    </template>
-                  </v-list-item>
-                </v-list>
               </v-card-text>
             </v-window-item>
 

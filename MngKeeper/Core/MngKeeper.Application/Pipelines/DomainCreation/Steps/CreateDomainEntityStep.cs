@@ -62,7 +62,9 @@ public class CreateDomainEntityStep : IPipelineStep<DomainCreationContext>
                 CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,  // TODO: Get from JWT context in future
                 CreatedAt = DateTime.UtcNow,
                 RelatedPersonPhone = context.RelatedPersonPhone,
-                Logo = context.Logo,
+                Logo = context.LogoDark ?? context.Logo,
+                LogoDark = context.LogoDark ?? context.Logo,
+                LogoLight = context.LogoLight,
                 LogoUrl = context.LogoUrl
             };
             

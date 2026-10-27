@@ -74,6 +74,7 @@ import type {
   PmUpdateMeetingSeriesRequest,
   PmCreateMeetingActionRequest,
   PmUpdateMeetingActionRequest,
+  PmProjectMeetingActions,
   PmProjectMeetings,
   PmMeetingListQuery,
   PmStakeholder,
@@ -707,6 +708,37 @@ export async function pmUpdateMeetingSeries(id: string, body: PmUpdateMeetingSer
 
 export async function pmDeleteMeetingSeries(id: string): Promise<void> {
   await fetchFromOperations(`/api/v1/meeting-series/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export async function pmGetMeeting(id: string): Promise<PmMeeting> {
+  return (await fetchFromOperations(`/api/v1/meetings/${encodeURIComponent(id)}`, 'GET')) as PmMeeting;
+}
+
+export async function pmListDuties(
+  projectId: string,
+  query: { kind?: string; target?: string; status?: string; q?: string } = {},
+): Promise<PmProjectMeetingActions> {
+  const params = new URLSearchParams();
+  if (query.kind) params.set('kind', query.kind);
+  if (query.target) params.set('target', query.target);
+  if (query.status) params.set('status', query.status);
+  if (query.q) params.set('q', query.q);
+  const qs = params.toString();
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/duties${qs ? `?${qs}` : ''}`,
+    'GET',
+  )) as PmProjectMeetingActions;
+}
+
+export async function pmCreateDuty(
+  projectId: string,
+  body: PmCreateMeetingActionRequest,
+): Promise<PmMeetingAction> {
+  return (await fetchFromOperations(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/duties`,
+    'POST',
+    body,
+  )) as PmMeetingAction;
 }
 
 export async function pmCreateMeetingAction(

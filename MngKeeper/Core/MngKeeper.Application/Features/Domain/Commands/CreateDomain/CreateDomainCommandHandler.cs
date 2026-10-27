@@ -33,6 +33,8 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
                 RelatedPersonPhone = request.RelatedPersonPhone,
                 RelatedPersonEmail = request.RelatedPersonEmail,
                 Logo = request.Logo,
+                LogoDark = request.LogoDark,
+                LogoLight = request.LogoLight,
                 LogoUrl = request.LogoUrl,
                 TemplateName = request.TemplateName
             };

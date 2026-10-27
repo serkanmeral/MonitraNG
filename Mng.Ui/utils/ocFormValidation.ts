@@ -1,6 +1,5 @@
 import type { OcFormFieldRuntimeDto, OcFormRuntimeContext } from '@/types/apps/operationCore';
 import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
-import { isOcFileFieldValueFilled } from '@/utils/ocWorkItemFileFields';
 import { isOcRichTextEmpty } from '@/utils/ocRichText';
 
 export interface OcFormValidationIssue {
@@ -32,9 +31,8 @@ export function isOcFieldValueFilled(
   const fieldKey = options?.fieldKey ?? meta?.key ?? '';
   const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
   if (ft === 'file') {
-    return isOcFileFieldValueFilled(value, meta, fieldKey, {
-      existingAttachmentCount: options?.existingAttachmentCount,
-    });
+    // İş kaydı dosya eki kapalı. Zorunlu dosya alanı formu kilitlemez; belge kütüphaneye gider.
+    return true;
   }
   if (ft === 'bool' && options?.required) {
     return value === true;

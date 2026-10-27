@@ -327,6 +327,7 @@
     "form": {
       "username": "اسم المستخدم",
       "usernamePlaceholder": "اسم المستخدم أو domain{'@'}username",
+      "usernameOnlyPlaceholder": "username",
       "password": "كلمة المرور",
       "passwordPlaceholder": "أدخل كلمة المرور",
       "submit": "تسجيل الدخول",
@@ -933,6 +934,8 @@
       "expiresAt": "تاريخ الانتهاء",
       "relatedPersonPhone": "هاتف الشخص ذي الصلة",
       "logo": "الشعار",
+      "logoDark": "شعار الوضع الداكن",
+      "logoLight": "شعار الوضع الفاتح",
       "logoUrl": "رابط الشعار",
       "maxUsers": "الحد الأقصى للمستخدمين",
       "maxAssets": "الحد الأقصى للأصول",
@@ -1031,6 +1034,8 @@
     "logo": {
       "uploaded": "تم رفع الشعار",
       "noImage": "لا يوجد شعار",
+      "darkHint": "يظهر في الوضع الداكن. استخدم شعارًا فاتحًا.",
+      "lightHint": "يظهر في الوضع الفاتح. استخدم شعارًا داكنًا.",
       "errors": {
         "invalidFormat": "تنسيق الملف غير صالح. يتم قبول ملفات JPEG و PNG و WebP أو GIF فقط.",
         "maxSize": "حجم الملف كبير جدًا. الحد الأقصى المسموح به 2 ميجابايت.",

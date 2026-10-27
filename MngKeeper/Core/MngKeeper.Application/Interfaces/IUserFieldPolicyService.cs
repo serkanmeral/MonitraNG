@@ -5,6 +5,6 @@ namespace MngKeeper.Application.Interfaces;
 
 public interface IUserFieldPolicyService
 {
-  UserCapabilitiesDto GetCapabilities(User user);
-  IReadOnlyDictionary<string, UserFieldPolicyItemDto> GetFieldPolicies(User user);
+    UserCapabilitiesDto GetCapabilities(User user, bool directoryPasswordChangeEnabled = false);
+    IReadOnlyDictionary<string, UserFieldPolicyItemDto> GetFieldPolicies(User user);
 }

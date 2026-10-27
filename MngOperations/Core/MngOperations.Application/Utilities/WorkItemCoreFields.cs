@@ -27,7 +27,7 @@ public static class WorkItemCoreFields
         "sla",
         "slaPolicyId",
         "parentItemId",
-        "attachments"
+        "libraryDocumentIds"
     };
 
     /// <summary>Sistem yönetimli veya doğrudan değiştirilemeyen kolonlar.</summary>
