@@ -94,6 +94,32 @@ public static class StateFlowCatalog
         return list;
     }
 
+    public static bool RequiresComment(JsonElement transition)
+    {
+        if (!transition.TryGetProperty("requireComment", out var flag))
+            return false;
+
+        return flag.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String => bool.TryParse(flag.GetString(), out var parsed) && parsed,
+            _ => false
+        };
+    }
+
+    public static void EnsureComment(JsonElement transition, string? comment)
+    {
+        if (!RequiresComment(transition) || !string.IsNullOrWhiteSpace(comment))
+            return;
+
+        throw new OperationCoreException(
+            "TRANSITION_COMMENT_REQUIRED",
+            "A note is required for this transition.",
+            "Bu geçiş için not zorunludur.",
+            400);
+    }
+
     public static void EnsureRequiredFields(
         JsonElement transition,
         IReadOnlyDictionary<string, object?> workItem)

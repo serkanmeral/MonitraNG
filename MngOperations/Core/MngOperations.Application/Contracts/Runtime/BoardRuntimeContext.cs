@@ -80,6 +80,11 @@ public sealed class BoardListRequest
     public BoardSortDto? Sort { get; init; }
     public IReadOnlyList<BoardListFilterDto>? Filters { get; init; }
     public string? Search { get; init; }
+
+    /// <summary>
+    /// all veya boş: süzgeç yok. backlog: sprinti olmayan işler. Aksi halde sprint kimliği.
+    /// </summary>
+    public string? SprintScope { get; init; }
 }
 
 public sealed class BoardCatalogsDto
@@ -124,6 +129,9 @@ public sealed class BoardColumnTransitionDto
 
     /// <summary>Bu geçiş için zorunlu alanlar (varsa UI DnD'yi engelleyip profile yönlendirir).</summary>
     public IReadOnlyList<string> RequiredFields { get; init; } = Array.Empty<string>();
+
+    /// <summary>Not zorunluysa pano sürüklemesi profilde tamamlanır.</summary>
+    public bool RequireComment { get; init; }
 }
 
 public sealed class ExecuteQueryRequest
@@ -183,6 +191,15 @@ public sealed class WorkItemCardDto
     public string? Assignee { get; init; }
     public string? PriorityId { get; init; }
     public string? TypeId { get; init; }
+
+    /// <summary>İşin bağlı olduğu sprint. Boşsa backlog.</summary>
+    public string? SprintId { get; init; }
+
+    /// <summary>Bu kaydın alt iş sayısı. Sıfırsa kartta gösterilmez.</summary>
+    public int ChildCount { get; set; }
+
+    /// <summary>Vade. Takvim bu günü kullanır.</summary>
+    public string? DueDate { get; init; }
 
     /// <summary>Oluşturulma zamanı (sistem alanı).</summary>
     public DateTime? CreatedAt { get; init; }

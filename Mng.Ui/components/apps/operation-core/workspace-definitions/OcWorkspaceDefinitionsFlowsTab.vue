@@ -113,6 +113,7 @@ function buildPayload(): Record<string, unknown> {
     label: tr.label?.trim() || null,
     order: tr.order != null && Number.isFinite(tr.order) ? tr.order : idx,
     requiredFields: Array.isArray(tr.requiredFields) ? [...tr.requiredFields] : [],
+    requireComment: tr.requireComment === true,
     permissions: { groups: Array.isArray(tr.permissionGroups) ? [...tr.permissionGroups] : [] },
   }));
 
@@ -203,6 +204,7 @@ function addTransition() {
     label: '',
     order,
     requiredFields: [],
+    requireComment: false,
     permissionGroups: [],
   });
 }
@@ -535,6 +537,14 @@ async function confirmDelete() {
                   closable-chips
                   clearable
                   density="compact"
+                />
+              </v-col>
+              <v-col cols="12" md="6" class="d-flex align-center">
+                <v-checkbox
+                  v-model="tr.requireComment"
+                  :label="t('operationCore.workspaceDefinitions.flows.fieldRequireComment')"
+                  density="compact"
+                  hide-details
                 />
               </v-col>
               <v-col cols="12" md="6">

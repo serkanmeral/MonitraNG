@@ -17,6 +17,7 @@ public sealed class WorkspacePackDefinition
     public List<WorkspacePackForm> Forms { get; set; } = [];
     public List<WorkspacePackBoard> Boards { get; set; } = [];
     public List<WorkspacePackProfile> Profiles { get; set; } = [];
+    public List<WorkspacePackPoolField> PoolFields { get; set; } = [];
     public List<string> LibraryFolders { get; set; } = [];
 
     [JsonIgnore]
@@ -29,6 +30,8 @@ public sealed class WorkspacePackState
     public string Name { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public bool IsInitial { get; set; }
+    /// <summary>Vuetify tema anahtarı. Dolu bir durum renginin üzerine yazılmaz.</summary>
+    public string? Color { get; set; }
 }
 
 public sealed class WorkspacePackFlow
@@ -46,6 +49,8 @@ public sealed class WorkspacePackTransition
     public string FromStateKey { get; set; } = string.Empty;
     public string ToStateKey { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
+    public List<string> RequiredFields { get; set; } = [];
+    public bool RequireComment { get; set; }
 }
 
 public sealed class WorkspacePackType
@@ -78,6 +83,20 @@ public sealed class WorkspacePackBoard
     public List<string> ColumnStateKeys { get; set; } = [];
 }
 
+public sealed class WorkspacePackPoolField
+{
+    public string Key { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string FieldType { get; set; } = "text";
+}
+
+public sealed class WorkspacePackProfileSection
+{
+    public string Key { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public List<string> Fields { get; set; } = [];
+}
+
 public sealed class WorkspacePackProfile
 {
     public string Key { get; set; } = string.Empty;
@@ -86,6 +105,7 @@ public sealed class WorkspacePackProfile
     public string FlowKey { get; set; } = string.Empty;
     public string TypeKey { get; set; } = string.Empty;
     public List<string> Fields { get; set; } = [];
+    public List<WorkspacePackProfileSection> Sections { get; set; } = [];
     public List<string> ActionKeys { get; set; } = [];
 }
 

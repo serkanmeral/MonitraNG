@@ -10,6 +10,7 @@ import {
   buildCreateWorkItemRequest,
   collectOcFormValidationIssues,
   initialFormModelFromContext,
+  applyOcCreateReporterDefault,
   ocCreateWorkItem,
 
   ocGetFormCreateContext,
@@ -17,6 +18,7 @@ import {
   ocListPoolFieldsForWorkspace,
 } from '@/services/operationCoreService';
 import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
+import { useAuthStore } from '@/stores/auth';
 import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
 import { normalizeOcDialogMaxWidthPx } from '@/utils/ocFormLayout';
 
@@ -27,6 +29,7 @@ const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 const router = useRouter();
 const store = useOperationCoreStore();
+const authStore = useAuthStore();
 
 const workspaceId = computed(() =>
   typeof route.query.workspaceId === 'string' ? route.query.workspaceId.trim() : ''
@@ -136,6 +139,7 @@ async function loadForm() {
       ctx.poolFields?.length ? ctx.poolFields : await ocListPoolFieldsForWorkspace(ws);
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     formModel.value = initialFormModelFromContext(ctx);
+    applyOcCreateReporterDefault(formModel.value, ctx, authStore.userInfo?.mng_person_id);
     if (typeIdQuery.value) {
       formModel.value.typeId = typeIdQuery.value;
     }
@@ -181,8 +185,13 @@ async function submit() {
       return;
     }
     const qs = new URLSearchParams();
-    if (boardId.value) qs.set('from', 'board');
-    if (boardId.value) qs.set('boardId', boardId.value);
+    if (workspaceId.value) qs.set('workspaceId', workspaceId.value);
+    if (boardId.value) {
+      qs.set('from', 'board');
+      qs.set('boardId', boardId.value);
+    } else if (workspaceId.value) {
+      qs.set('from', 'workspace');
+    }
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
     await router.push(
       `/apps/operation-core/work-items/${encodeURIComponent(created.id)}/profile${suffix}`

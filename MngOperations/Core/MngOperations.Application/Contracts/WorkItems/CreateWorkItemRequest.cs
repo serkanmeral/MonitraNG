@@ -12,4 +12,5 @@ public sealed class CreateWorkItemRequest
     public string? BoardId { get; init; }
     public string? Assignee { get; init; }
     public string? PriorityId { get; init; }
+    public string? ParentItemId { get; init; }
 }

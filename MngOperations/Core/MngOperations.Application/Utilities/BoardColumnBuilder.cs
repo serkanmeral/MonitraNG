@@ -126,7 +126,8 @@ public static class BoardColumnBuilder
             {
                 TransitionKey = key,
                 FromStateId = StateFlowCatalog.GetStringProperty(t, "fromStateId") ?? string.Empty,
-                RequiredFields = StateFlowCatalog.GetRequiredFields(t)
+                RequiredFields = StateFlowCatalog.GetRequiredFields(t),
+                RequireComment = StateFlowCatalog.RequiresComment(t)
             });
         }
 

@@ -5,6 +5,7 @@ import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
+import { mergeOcWorkspaceViews, readOcWorkspaceViews } from '@/utils/ocWorkspaceViews';
 import type { OpWorkspaceDetail } from '@/types/apps/operationCore';
 import { OC_WORKSPACE_TYPE_VALUES } from '@/types/apps/operationCore';
 
@@ -39,6 +40,9 @@ const form = ref({
   viewGroups: [] as string[],
   editGroups: [] as string[],
   adminGroups: [] as string[],
+  sprints: false,
+  calendar: false,
+  gantt: false,
 });
 
 const workspaceTypeItems = computed(() =>
@@ -67,6 +71,7 @@ async function loadWorkspace() {
         viewGroups: [...(ws.viewGroups ?? [])],
         editGroups: [...(ws.editGroups ?? [])],
         adminGroups: [...(ws.adminGroups ?? [])],
+        ...readOcWorkspaceViews(ws.settings),
       };
     }
   } catch (e: unknown) {
@@ -102,6 +107,11 @@ async function saveGeneral() {
       viewGroups: form.value.viewGroups,
       editGroups: form.value.editGroups,
       adminGroups: form.value.adminGroups,
+      settings: mergeOcWorkspaceViews(workspace.value?.settings, {
+        sprints: form.value.sprints,
+        calendar: form.value.calendar,
+        gantt: form.value.gantt,
+      }),
     });
     await catalog.refresh();
     await loadWorkspace();
@@ -199,6 +209,38 @@ async function saveGeneral() {
         :label="t('operationCore.workspaceDefinitions.general.fieldSequenceStart')"
         density="comfortable"
       />
+
+      <v-divider class="my-5" />
+
+      <div class="text-subtitle-2 font-weight-medium mb-1">
+        {{ t('operationCore.workspaceDefinitions.general.viewsSection') }}
+      </div>
+      <p class="text-caption text-medium-emphasis mb-3">
+        {{ t('operationCore.workspaceDefinitions.general.viewsHint') }}
+      </p>
+      <div class="d-flex flex-column ga-1 mb-2">
+        <v-switch
+          v-model="form.sprints"
+          :label="t('operationCore.workspaceDefinitions.general.viewSprints')"
+          color="primary"
+          density="compact"
+          hide-details
+        />
+        <v-switch
+          v-model="form.calendar"
+          :label="t('operationCore.workspaceDefinitions.general.viewCalendar')"
+          color="primary"
+          density="compact"
+          hide-details
+        />
+        <v-switch
+          v-model="form.gantt"
+          :label="t('operationCore.workspaceDefinitions.general.viewGantt')"
+          color="primary"
+          density="compact"
+          hide-details
+        />
+      </div>
 
       <v-divider class="my-5" />
 

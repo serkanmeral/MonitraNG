@@ -4,15 +4,13 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import OcLinkWorkItemDialog from '@/components/apps/operation-core/OcLinkWorkItemDialog.vue';
 import { ocDeleteWorkItemLink } from '@/services/operationCoreService';
-import type { OcWorkItemLinkSummary, OcWorkItemRelationSummary } from '@/types/apps/operationCore';
+import type { OcWorkItemLinkSummary } from '@/types/apps/operationCore';
 import { buildWorkItemProfilePath } from '@/utils/ocWorkItemProfileNav';
 
 const props = defineProps<{
   workItemId: string;
   workspaceId: string;
   canEdit?: boolean;
-  parent?: OcWorkItemRelationSummary | null;
-  children?: OcWorkItemRelationSummary[];
   links?: OcWorkItemLinkSummary[];
   boardId?: string | null;
   workspaceIdQuery?: string | null;
@@ -29,12 +27,11 @@ const linkDialogOpen = ref(false);
 const deleteBusyId = ref<string | null>(null);
 const actionError = ref<string | null>(null);
 
-const hasTree = computed(() => !!props.parent || (props.children?.length ?? 0) > 0);
 const hasLinks = computed(() => (props.links?.length ?? 0) > 0);
-const visible = computed(() => hasTree.value || hasLinks.value || props.canEdit);
+const visible = computed(() => hasLinks.value || props.canEdit);
 
-function profilePath(relation: OcWorkItemRelationSummary | OcWorkItemLinkSummary, otherId?: string) {
-  const id = 'id' in relation && relation.id ? relation.id : otherId ?? '';
+function profilePath(link: OcWorkItemLinkSummary, otherId?: string) {
+  const id = otherId?.trim() || link.otherWorkItemId || '';
   return buildWorkItemProfilePath(id, {
     boardId: props.boardId,
     workspaceId: props.workspaceIdQuery ?? props.workspaceId,
@@ -107,30 +104,8 @@ function onLinked() {
         {{ actionError }}
       </v-alert>
 
-      <div v-if="parent" class="mb-3">
-        <div class="text-caption text-medium-emphasis mb-1">
-          {{ t('operationCore.profile.relations.parent') }}
-        </div>
-        <NuxtLink :to="profilePath(parent)" class="text-primary text-decoration-none text-body-2">
-          <span class="font-weight-medium">{{ parent.key }}</span>
-          <span v-if="parent.title" class="text-medium-emphasis"> — {{ parent.title }}</span>
-        </NuxtLink>
-      </div>
-
-      <div v-if="children?.length" class="mb-3">
-        <div class="text-caption text-medium-emphasis mb-1">
-          {{ t('operationCore.profile.relations.children') }}
-        </div>
-        <div v-for="child in children" :key="child.id" class="oc-relation-row">
-          <NuxtLink :to="profilePath(child)" class="text-primary text-decoration-none text-body-2">
-            <span class="font-weight-medium">{{ child.key }}</span>
-            <span v-if="child.title" class="text-medium-emphasis"> — {{ child.title }}</span>
-          </NuxtLink>
-        </div>
-      </div>
-
       <div v-if="hasLinks">
-        <div v-if="hasTree" class="text-caption text-medium-emphasis mb-1">
+        <div v-if="hasLinks" class="text-caption text-medium-emphasis mb-1">
           {{ t('operationCore.profile.relations.linksSection') }}
         </div>
         <div v-for="link in links" :key="link.id" class="oc-relation-row d-flex align-center ga-2">
@@ -159,7 +134,7 @@ function onLinked() {
       </div>
 
       <div
-        v-if="!hasTree && !hasLinks && canEdit"
+        v-if="!hasLinks && canEdit"
         class="text-caption text-medium-emphasis"
       >
         {{ t('operationCore.profile.relations.empty') }}

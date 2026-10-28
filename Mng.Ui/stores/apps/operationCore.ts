@@ -49,6 +49,8 @@ export const useOperationCoreStore = defineStore('operationCore', {
     listTotal: 0,
     listLoading: false,
     listError: null as string | null,
+    /** all, backlog veya sprint kimliği. Liste ve kanban aynı süzgeci kullanır. */
+    boardSprintScope: 'all' as string,
     /** Board geçişinde geciken API yanıtlarının state'e yazılmasını engeller. */
     boardDataEpoch: 0,
   }),
@@ -152,6 +154,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.listItems = [];
       this.listTotal = 0;
       this.listError = null;
+      this.boardSprintScope = 'all';
     },
 
     async loadBoard(boardId: string, force = false) {
@@ -170,6 +173,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       // Board değişiminde eski board verisini hemen kaldır (yanlış board flash'ını önler).
       if (switchingBoard) {
         this.boardContext = null;
+        this.boardSprintScope = 'all';
       }
 
       this.columnItems = {};
@@ -200,6 +204,16 @@ export const useOperationCoreStore = defineStore('operationCore', {
           this.loadingBoardContext = false;
         }
       }
+    },
+
+    columnQuery(column: OcBoardColumn) {
+      const request = ocBuildColumnQueryRequest(column);
+      const scope = this.boardSprintScope?.trim();
+      if (!scope || scope === 'all') return request;
+      return {
+        ...request,
+        parameters: { ...request.parameters, sprintScope: scope },
+      };
     },
 
     async loadBoardListPage(request: OcBoardListRequest, expectedBoardId?: string) {
@@ -244,7 +258,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       };
 
       try {
-        const res = await ocExecuteQuery(column.queryKey, ocBuildColumnQueryRequest(column));
+        const res = await ocExecuteQuery(column.queryKey, this.columnQuery(column));
         if (this.boardDataEpoch !== generation || this.activeBoardId !== boardId) return;
         this.columnItems = {
           ...this.columnItems,
@@ -282,7 +296,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
 
       this.columnLoadingMore = { ...this.columnLoadingMore, [stateId]: true };
       try {
-        const base = ocBuildColumnQueryRequest(column);
+        const base = this.columnQuery(column);
         const res = await ocExecuteQuery(column.queryKey, { ...base, skip: bucket.items.length });
 
         const existing = new Set(bucket.items.map((i) => i.id));

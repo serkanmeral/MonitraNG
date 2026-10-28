@@ -52,6 +52,8 @@ function isFieldValueEmpty(value: unknown): boolean {
 
 function fieldHasReadonlyContent(fieldKey: string): boolean {
   if (!behaviorFor(fieldKey).visible) return false;
+  // Açıklama işin metnidir; boş olsa da Kimlik bölümünde yerini korur.
+  if (fieldKey.toLowerCase() === 'description') return true;
   const display = props.fieldDisplays?.[fieldKey];
   if (display != null && String(display).trim().length > 0) return true;
   return !isFieldValueEmpty(model.value[fieldKey]);

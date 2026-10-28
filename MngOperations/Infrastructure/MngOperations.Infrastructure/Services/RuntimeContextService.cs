@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -149,7 +150,8 @@ public partial class RuntimeContextService : IRuntimeContextService
                     ToStateId = StateFlowCatalog.GetStringProperty(transition, "toStateId") ?? string.Empty,
                     Enabled = _permissions.CanApplyTransition(workspace, transition),
                     Order = order++,
-                    RequiredFields = StateFlowCatalog.GetRequiredFields(transition)
+                    RequiredFields = StateFlowCatalog.GetRequiredFields(transition),
+                    RequireComment = StateFlowCatalog.RequiresComment(transition)
                 });
             }
         }
@@ -180,6 +182,7 @@ public partial class RuntimeContextService : IRuntimeContextService
         var links = await EnrichLinkSummariesAsync(linksTask.Result, token, cancellationToken);
         var parent = parentTask.Result;
         var children = childrenTask.Result;
+        var (canHaveChildren, childTypeId) = await ResolveChildTypeAsync(workItem, workspaceId, token, cancellationToken);
 
         var stateSegments = segmentsTask.Result
             .Select(ProfileRuntimeMapper.MapStateSegment)
@@ -250,11 +253,14 @@ public partial class RuntimeContextService : IRuntimeContextService
             Links = links,
             Parent = parent,
             Children = children,
+            CanHaveChildren = canHaveChildren,
+            ChildTypeId = childTypeId,
             StateSegments = stateSegments,
             People = profilePeople,
             Groups = profileGroups,
             Attachments = attachments,
-            LibraryDocumentIds = WorkItemDataHelper.GetStringList(workItem, "libraryDocumentIds")
+            LibraryDocumentIds = WorkItemDataHelper.GetStringList(workItem, "libraryDocumentIds"),
+            CanJoinSprint = await CanJoinSprintAsync(workItem, token, cancellationToken)
         };
 
         if (perfSw != null)
@@ -264,6 +270,57 @@ public partial class RuntimeContextService : IRuntimeContextService
         }
 
         return result;
+    }
+
+    private async Task<(bool CanHaveChildren, string? ChildTypeId)> ResolveChildTypeAsync(
+        IReadOnlyDictionary<string, object?> workItem,
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var typeId = WorkItemDataHelper.GetString(workItem, "typeId");
+        if (string.IsNullOrWhiteSpace(typeId))
+            return (false, null);
+
+        Dictionary<string, object?>? type;
+        try
+        {
+            type = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItemTypes, typeId, token, cancellationToken, expand: false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Child type lookup failed for type {TypeId}.", typeId);
+            return (false, null);
+        }
+
+        var allowed = type == null ? new List<string>() : WorkItemDataHelper.GetStringList(type, "childTypeKeys");
+        if (allowed.Count == 0)
+            return (false, null);
+
+        try
+        {
+            var rows = await _dg.GetAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItemTypes,
+                $"filter={Uri.EscapeDataString($"workspaceId:eq:{workspaceId}")}&limit=100&expand=false",
+                token,
+                cancellationToken);
+            foreach (var key in allowed)
+            {
+                var match = rows.FirstOrDefault(row =>
+                    string.Equals(WorkItemDataHelper.GetString(row, "packKey"), key, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(WorkItemDataHelper.GetDataId(row), key, StringComparison.OrdinalIgnoreCase));
+                var id = match == null ? null : WorkItemDataHelper.GetDataId(match);
+                if (!string.IsNullOrWhiteSpace(id))
+                    return (true, id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Allowed child type lookup failed for workspace {WorkspaceId}.", workspaceId);
+        }
+
+        return (true, null);
     }
 
     private async Task<WorkItemRelationSummaryDto?> LoadProfileParentAsync(
@@ -951,6 +1008,8 @@ public partial class RuntimeContextService : IRuntimeContextService
         else if (scopeStateIds.Count > 1)
             and.Add(new Dictionary<string, object?> { ["stateId"] = new Dictionary<string, object?> { ["$in"] = scopeStateIds.Cast<object?>().ToList() } });
 
+        AddSprintScope(and, request.SprintScope);
+
         if (request.Filters != null)
         {
             foreach (var f in request.Filters)
@@ -994,8 +1053,21 @@ public partial class RuntimeContextService : IRuntimeContextService
             sort = null;
         sort ??= defaultSort;
 
+        // Sprint adı kayıtta durmaz. Kimliğe göre sıralamak listeyi karıştırır;
+        // süzülmüş küme ad sırasına burada dizilir.
+        var sprintNameSort = sort != null
+            && string.Equals(sort.Field, "sprintId", StringComparison.OrdinalIgnoreCase);
+
         string sortExpr;
-        if (sort != null && !string.IsNullOrWhiteSpace(sort.Field))
+        var querySkip = skip;
+        var queryTake = take;
+        if (sprintNameSort)
+        {
+            sortExpr = "key";
+            querySkip = 0;
+            queryTake = 1000;
+        }
+        else if (sort != null && !string.IsNullOrWhiteSpace(sort.Field))
         {
             var (path, invert) = MapSortField(sort.Field);
             var desc = string.Equals(sort.Direction, "desc", StringComparison.OrdinalIgnoreCase);
@@ -1010,8 +1082,8 @@ public partial class RuntimeContextService : IRuntimeContextService
         var queryParts = new List<string>
         {
             $"sort={Uri.EscapeDataString(sortExpr)}",
-            $"skip={skip}",
-            $"limit={take}",
+            $"skip={querySkip}",
+            $"limit={queryTake}",
             "expand=false"
         };
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -1020,8 +1092,23 @@ public partial class RuntimeContextService : IRuntimeContextService
         var page = await _dg.QueryPageAsync(OcDatasets.WorkItems, match, string.Join("&", queryParts), token, cancellationToken);
 
         var cards = page.Items.Select(MapWorkItemCard).ToList();
+        if (sprintNameSort)
+        {
+            var sprintNames = await LoadSprintNamesAsync(workspaceId, token, cancellationToken);
+            var descending = string.Equals(sort!.Direction, "desc", StringComparison.OrdinalIgnoreCase);
+            var nameComparer = StringComparer.Create(new CultureInfo("tr-TR"), ignoreCase: true);
+            cards = cards
+                .OrderBy(card => SprintNameSortKey(card.SprintId, sprintNames), nameComparer)
+                .ThenBy(card => card.Key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (descending)
+                cards.Reverse();
+            cards = cards.Skip(skip).Take(take).ToList();
+        }
+
         var poolFields = await _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
         cards = (await EnrichBoardListCardsAsync(cards, listColumns, poolFields, token, cancellationToken)).ToList();
+        await AttachChildCountsAsync(cards, token, cancellationToken);
         var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
         var groups = await ResolveGroupsForCardsAsync(cards, token, cancellationToken);
 
@@ -1047,11 +1134,44 @@ public partial class RuntimeContextService : IRuntimeContextService
     // Çekirdek (top-level) kart alanları; bunun dışı pool alanı kabul edilir (extraFields.<key>).
     private static readonly HashSet<string> CoreCardFieldKeys = new(StringComparer.Ordinal)
     {
-        "key", "title", "stateId", "assignee", "priorityId", "typeId",
+        "key", "title", "stateId", "assignee", "priorityId", "typeId", "sprintId",
         "createdAt", "createdBy", "updatedAt", "lastStateChangeAt", "description",
         "boardId", "workspaceId", "stateFlowId", "watchers", "order",
         "firstClosedAt", "closedAt", "currentStateDurationMs"
     };
+
+    private async Task<Dictionary<string, string>> LoadSprintNamesAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var page = await _dg.QueryPageAsync(
+            OcDatasets.Sprints,
+            new Dictionary<string, object?> { ["workspaceId"] = workspaceId },
+            "limit=200&expand=false",
+            token,
+            cancellationToken);
+        var names = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var row in page.Items)
+        {
+            var id = WorkItemDataHelper.GetDataId(row);
+            var name = WorkItemDataHelper.GetString(row, "name");
+            if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(name))
+                names[id] = name.Trim();
+        }
+
+        return names;
+    }
+
+    /// <summary>Boş sprint (backlog) ad sırasının başında durur.</summary>
+    private static string SprintNameSortKey(string? sprintId, IReadOnlyDictionary<string, string> names)
+    {
+        if (string.IsNullOrWhiteSpace(sprintId))
+            return "";
+        if (names.TryGetValue(sprintId, out var name) && !string.IsNullOrWhiteSpace(name))
+            return "\u0001" + name;
+        return "\u0001" + sprintId;
+    }
 
     private static string MapBoardFieldToDgPath(string fieldKey)
         => CoreCardFieldKeys.Contains(fieldKey) ? fieldKey : $"extraFields.{fieldKey}";
@@ -1196,6 +1316,8 @@ public partial class RuntimeContextService : IRuntimeContextService
         }
 
         var mergedParams = new Dictionary<string, object?>(rawParams, StringComparer.OrdinalIgnoreCase);
+        var sprintScope = mergedParams.TryGetValue("sprintScope", out var scopeValue) ? scopeValue?.ToString() : null;
+        mergedParams.Remove("sprintScope");
         var resolved = QueryParameterResolver.Resolve(mergedParams, resolveContext);
         var workspaceId = resolved.TryGetValue("workspaceId", out var ws) ? ws?.ToString() : resolveContext.WorkspaceId;
         var boardId = resolved.TryGetValue("boardId", out var b) ? b?.ToString() : resolveContext.BoardId;
@@ -1213,8 +1335,69 @@ public partial class RuntimeContextService : IRuntimeContextService
         }
 
         var rows = await _dg.ExecuteQueryAsync(dataset, queryKey, resolved, token, cancellationToken);
-        return rows.Select(MapWorkItemCard).ToList();
+        var cards = ApplySprintScope(rows.Select(MapWorkItemCard).ToList(), sprintScope).ToList();
+        await AttachChildCountsAsync(cards, token, cancellationToken);
+        return cards;
     }
+
+    private async Task<bool> CanJoinSprintAsync(
+        IReadOnlyDictionary<string, object?> workItem,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var typeId = WorkItemDataHelper.GetString(workItem, "typeId");
+        if (string.IsNullOrWhiteSpace(typeId))
+            return false;
+
+        try
+        {
+            var type = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItemTypes, typeId, token, cancellationToken, expand: false);
+            return SprintRules.CanJoin(type);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Sprint eligibility lookup failed for type {TypeId}.", typeId);
+            return false;
+        }
+    }
+
+    private static void AddSprintScope(List<object?> and, string? scope)
+    {
+        var value = scope?.Trim();
+        if (string.IsNullOrEmpty(value) || value.Equals(SprintRules.ScopeAll, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (value.Equals(SprintRules.ScopeBacklog, StringComparison.OrdinalIgnoreCase))
+        {
+            and.Add(new Dictionary<string, object?>
+            {
+                ["$or"] = new List<object?>
+                {
+                    new Dictionary<string, object?> { ["sprintId"] = null },
+                    new Dictionary<string, object?> { ["sprintId"] = "" }
+                }
+            });
+            return;
+        }
+
+        and.Add(new Dictionary<string, object?> { ["sprintId"] = value });
+    }
+
+    private static IReadOnlyList<WorkItemCardDto> ApplySprintScope(IReadOnlyList<WorkItemCardDto> cards, string? scope)
+    {
+        var value = scope?.Trim();
+        if (string.IsNullOrEmpty(value) || value.Equals(SprintRules.ScopeAll, StringComparison.OrdinalIgnoreCase))
+            return cards;
+
+        if (value.Equals(SprintRules.ScopeBacklog, StringComparison.OrdinalIgnoreCase))
+            return cards.Where(card => string.IsNullOrEmpty(card.SprintId)).ToList();
+
+        return cards.Where(card => string.Equals(card.SprintId, value, StringComparison.Ordinal)).ToList();
+    }
+
+    private static string? EmptyToNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     /// <summary>
     /// Sayfadaki kartların person alanlarından (assignee/watchers + person tipi pool alanlar) id'leri toplar
@@ -1242,6 +1425,52 @@ public partial class RuntimeContextService : IRuntimeContextService
         return rawParams;
     }
 
+    /// <summary>Karttaki alt iş sayısı. Bağ değişince pano yeniden yüklendiğinde güncellenir.</summary>
+    private async Task AttachChildCountsAsync(
+        IList<WorkItemCardDto> cards,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (cards.Count == 0)
+            return;
+
+        var ids = cards
+            .Select(card => card.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (ids.Count == 0)
+            return;
+
+        try
+        {
+            var quoted = string.Join(',', ids.Select(id => $"\"{id}\""));
+            var rows = await _dg.GetAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItems,
+                $"filter={Uri.EscapeDataString($"parentItemId:in:[{quoted}]")}&limit=500&expand=false",
+                token,
+                cancellationToken);
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in rows)
+            {
+                var parentId = WorkItemDataHelper.GetString(row, "parentItemId");
+                if (string.IsNullOrWhiteSpace(parentId))
+                    continue;
+                counts[parentId] = counts.GetValueOrDefault(parentId) + 1;
+            }
+
+            foreach (var card in cards)
+            {
+                if (counts.TryGetValue(card.Id, out var count))
+                    card.ChildCount = count;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Child count lookup failed for {Count} cards.", ids.Count);
+        }
+    }
+
     private static WorkItemCardDto MapWorkItemCard(IReadOnlyDictionary<string, object?> row) =>
         new()
         {
@@ -1252,6 +1481,8 @@ public partial class RuntimeContextService : IRuntimeContextService
             Assignee = WorkItemDataHelper.GetString(row, "assignee"),
             PriorityId = WorkItemDataHelper.GetString(row, "priorityId"),
             TypeId = WorkItemDataHelper.GetString(row, "typeId"),
+            SprintId = EmptyToNull(WorkItemDataHelper.GetString(row, "sprintId")),
+            DueDate = EmptyToNull(WorkItemDataHelper.GetString(row, "dueDate")),
             CreatedAt = WorkItemDataHelper.GetDateTime(row, "createdAt"),
             CreatedBy = WorkItemDataHelper.GetString(row, "createdBy"),
             UpdatedAt = WorkItemDataHelper.GetDateTime(row, "updatedAt"),

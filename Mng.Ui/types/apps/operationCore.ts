@@ -61,6 +61,8 @@ export interface OpStateFlowTransition {
   order?: number | null;
   /** Geçiş öncesi dolu olması zorunlu alan key'leri (MO `EnsureRequiredFields`). */
   requiredFields?: string[];
+  /** Geçiş notu boş bırakılamaz. */
+  requireComment?: boolean;
   /** Geçişi uygulayabilecek Keeper grup id'leri; boş = kısıtlama yok (MO `permissions.groups`). */
   permissionGroups?: string[];
 }
@@ -428,6 +430,7 @@ export interface OcBoardColumnTransition {
   transitionKey: string;
   fromStateId: string;
   requiredFields: string[];
+  requireComment: boolean;
 }
 
 export interface OcBoardColumn {
@@ -506,6 +509,8 @@ export interface OcBoardListRequest {
   sort?: OpBoardSortConfig | null;
   filters?: OcBoardListFilter[];
   search?: string | null;
+  /** all, backlog veya sprint kimliği. */
+  sprintScope?: string | null;
 }
 
 /** İş kaydı SLA snapshot'ı (op_work_items.sla). */
@@ -526,6 +531,12 @@ export interface OcWorkItemCard {
   assignee?: string;
   priorityId?: string;
   typeId?: string;
+  /** Bağlı sprint. Boşsa backlog. */
+  sprintId?: string | null;
+  /** Alt iş sayısı. Sıfırsa kartta gösterilmez. */
+  childCount?: number;
+  /** Vade. Takvim bu günü kullanır. */
+  dueDate?: string | null;
   /** Sistem alanları (audit). */
   createdAt?: string | null;
   /** Oluşturan kullanıcı id'si; ad çözümü `people` map'inden. Eski kayıtlarda boş olabilir. */
@@ -707,6 +718,8 @@ export interface OcWorkItemSummary {
   createdAt?: string | null;
   lastStateChangeAt?: string | null;
   closedAt?: string | null;
+  /** Bağlı sprint. Boşsa backlog. */
+  sprintId?: string | null;
 }
 
 export interface OcWorkItemLinkSummary {
@@ -772,6 +785,8 @@ export interface OcProfileAction {
   order: number;
   /** Bu geçiş için zorunlu alan anahtarları (akış transition.requiredFields). UI dialog'da ön-toplar. */
   requiredFields: string[];
+  /** Geçiş notu zorunlu (akış transition.requireComment). */
+  requireComment: boolean;
 }
 
 /** Profil runtime context — sidebar (SLA/meta/policy) + izinler. */
@@ -786,6 +801,9 @@ export interface OcWorkItemProfile {
   links: OcWorkItemLinkSummary[];
   parent?: OcWorkItemRelationSummary | null;
   children: OcWorkItemRelationSummary[];
+  /** Tipin alt iş listesi doluysa bu kayıt alt iş açabilir. */
+  canHaveChildren?: boolean;
+  childTypeId?: string | null;
   /** Person id → görünen ad (assignee/reporter/watchers). */
   people: Record<string, OcPersonDisplay>;
   /** Grup id → grup adı (assignmentGroups + personGroups tipi pool alanlar). */
@@ -795,6 +813,8 @@ export interface OcWorkItemProfile {
   attachments: OcAttachment[];
   /** Kütüphane belge kimlikleri. Dosya ekinden ayrıdır. */
   libraryDocumentIds: string[];
+  /** Üst iş tipi sprinte giremez. */
+  canJoinSprint: boolean;
 }
 
 /** Aktivite alan değişikliği — eski/yeni görünen değer MO'da çözülmüş (UI ham veri işlemez). */

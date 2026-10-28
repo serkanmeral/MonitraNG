@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiMarkdownPreviewDialog from '@/components/apps/document-intelligence/DiMarkdownPreviewDialog.vue';
+import DiPickResourceDialog from '@/components/apps/document-intelligence/DiPickResourceDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   diCreateFileResource,
   diDownloadResource,
   diGetById,
-  diGetChildren,
 } from '@/services/documentIntelligenceService';
 import { ocUpdateWorkItem } from '@/services/operationCoreService';
 import { DI_RESOURCE_TYPE, type DiResource } from '@/types/apps/documentIntelligence';
@@ -34,11 +34,6 @@ interface LinkRow {
   resource: DiResource | null;
 }
 
-interface Crumb {
-  id: string;
-  name: string;
-}
-
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 
@@ -49,23 +44,11 @@ const errorLocal = ref<string | null>(null);
 const rootId = ref<string | null>(null);
 const rootMissing = ref(false);
 const pickerOpen = ref(false);
-const crumbs = ref<Crumb[]>([]);
-const children = ref<DiResource[]>([]);
-const childrenLoading = ref(false);
-const selectedId = ref<string | null>(null);
-const uploadInput = ref<HTMLInputElement | null>(null);
-const pickerUploadInput = ref<HTMLInputElement | null>(null);
 
 const filePreviewOpen = ref(false);
 const filePreviewResource = ref<DiResource | null>(null);
 const markdownPreviewOpen = ref(false);
 const markdownPreviewResource = ref<DiResource | null>(null);
-
-const currentFolderId = computed(() => crumbs.value[crumbs.value.length - 1]?.id ?? rootId.value);
-const folders = computed(() => children.value.filter((item) => item.type === DI_RESOURCE_TYPE.folder));
-const documents = computed(() =>
-  children.value.filter((item) => item.type === DI_RESOURCE_TYPE.file || item.type === DI_RESOURCE_TYPE.markdown)
-);
 
 function resourceName(resource: DiResource): string {
   return (resource.title || resource.name || resource.id).trim();
@@ -143,21 +126,6 @@ async function linkId(id: string) {
   pickerOpen.value = false;
 }
 
-async function loadFolder(folderId: string) {
-  childrenLoading.value = true;
-  errorLocal.value = null;
-  selectedId.value = null;
-  try {
-    const page = await diGetChildren(folderId, { limit: 200 });
-    children.value = page.items;
-  } catch (e: unknown) {
-    children.value = [];
-    errorLocal.value = panelError(e, 'operationCore.profile.libraryLinks.saveError');
-  } finally {
-    childrenLoading.value = false;
-  }
-}
-
 async function openPicker() {
   errorLocal.value = null;
   if (!rootId.value) {
@@ -167,21 +135,15 @@ async function openPicker() {
     rootMissing.value = true;
     return;
   }
-  crumbs.value = [{ id: rootId.value, name: t('operationCore.profile.libraryLinks.root') }];
   pickerOpen.value = true;
-  await loadFolder(rootId.value);
 }
 
-async function enterFolder(folder: DiResource) {
-  crumbs.value = [...crumbs.value, { id: folder.id, name: resourceName(folder) }];
-  await loadFolder(folder.id);
+function onPicked(resource: DiResource) {
+  void linkId(resource.id);
 }
 
-async function goToCrumb(index: number) {
-  const crumb = crumbs.value[index];
-  if (!crumb) return;
-  crumbs.value = crumbs.value.slice(0, index + 1);
-  await loadFolder(crumb.id);
+async function onDialogUpload(payload: { folderId: string; file: File }) {
+  await uploadInto(payload.folderId, payload.file);
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -226,29 +188,6 @@ async function uploadInto(folderId: string, file: File) {
   }
 }
 
-async function onRootUpload(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file) return;
-  if (!rootId.value) await loadRoot();
-  if (!rootId.value) {
-    rootMissing.value = true;
-    return;
-  }
-  await uploadInto(rootId.value, file);
-}
-
-async function onPickerUpload(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  const folderId = currentFolderId.value;
-  if (!file || !folderId) return;
-  await uploadInto(folderId, file);
-  if (folderId) await loadFolder(folderId);
-}
-
 function openRow(row: LinkRow) {
   if (!row.resource || row.broken) return;
   if (row.resource.type === DI_RESOURCE_TYPE.markdown) {
@@ -291,20 +230,7 @@ watch(
         <div class="text-subtitle-2">{{ t('operationCore.profile.libraryLinks.title') }}</div>
         <div class="text-body-2 text-medium-emphasis">{{ t('operationCore.profile.libraryLinks.hint') }}</div>
       </div>
-      <div v-if="canEdit" class="d-flex ga-2">
-        <input ref="uploadInput" type="file" class="d-none" @change="onRootUpload" />
-        <v-btn
-          size="small"
-          variant="tonal"
-          rounded="lg"
-          class="text-none"
-          prepend-icon="mdi-file-plus-outline"
-          :disabled="rootMissing || saving"
-          :loading="saving"
-          @click="uploadInput?.click()"
-        >
-          {{ t('operationCore.profile.libraryLinks.upload') }}
-        </v-btn>
+      <div v-if="canEdit">
         <v-btn
           size="small"
           color="primary"
@@ -365,65 +291,21 @@ watch(
       </v-list-item>
     </v-list>
 
-    <v-dialog v-model="pickerOpen" max-width="720">
-      <v-card class="rounded-lg">
-        <v-card-title class="text-subtitle-1">{{ t('operationCore.profile.libraryLinks.pickerTitle') }}</v-card-title>
-        <v-card-text>
-          <p class="text-body-2 text-medium-emphasis mb-3">{{ t('operationCore.profile.libraryLinks.pickerHint') }}</p>
-          <div class="d-flex align-center flex-wrap ga-1 mb-3">
-            <v-btn
-              v-for="(crumb, index) in crumbs"
-              :key="crumb.id"
-              size="small"
-              variant="text"
-              class="text-none px-1"
-              @click="goToCrumb(index)"
-            >
-              {{ crumb.name }}
-            </v-btn>
-            <v-spacer />
-            <input ref="pickerUploadInput" type="file" class="d-none" @change="onPickerUpload" />
-            <v-btn
-              size="small"
-              variant="tonal"
-              class="text-none"
-              prepend-icon="mdi-upload"
-              :loading="saving"
-              @click="pickerUploadInput?.click()"
-            >
-              {{ t('operationCore.profile.libraryLinks.upload') }}
-            </v-btn>
-          </div>
-          <v-progress-linear v-if="childrenLoading" indeterminate color="primary" class="mb-2" />
-          <div v-else-if="!folders.length && !documents.length" class="text-body-2 text-medium-emphasis py-4 text-center">
-            {{ t('operationCore.profile.libraryLinks.folderEmpty') }}
-          </div>
-          <v-list v-else density="comfortable" class="py-0">
-            <v-list-item v-for="folder in folders" :key="folder.id" prepend-icon="mdi-folder-outline" @click="enterFolder(folder)">
-              <v-list-item-title>{{ resourceName(folder) }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item
-              v-for="doc in documents"
-              :key="doc.id"
-              :active="selectedId === doc.id"
-              prepend-icon="mdi-file-document-outline"
-              @click="selectedId = doc.id"
-            >
-              <v-list-item-title>{{ resourceName(doc) }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-        <v-card-actions class="px-4 pb-4">
-          <v-btn variant="text" class="text-none" @click="pickerOpen = false">
-            {{ t('operationCore.profile.libraryLinks.cancel') }}
-          </v-btn>
-          <v-spacer />
-          <v-btn color="primary" class="text-none" :disabled="!selectedId || saving" :loading="saving" @click="selectedId && linkId(selectedId)">
-            {{ t('operationCore.profile.libraryLinks.use') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <DiPickResourceDialog
+      v-if="rootId"
+      v-model="pickerOpen"
+      :root-folder-id="rootId"
+      :root-label="t('operationCore.profile.libraryLinks.root')"
+      :title="t('operationCore.profile.libraryLinks.pickerTitle')"
+      :hint="t('operationCore.profile.libraryLinks.pickerHint')"
+      :confirm-label="t('operationCore.profile.libraryLinks.use')"
+      :upload-label="t('operationCore.profile.libraryLinks.upload')"
+      :exclude-resource-ids="documentIds"
+      allow-upload
+      :uploading="saving"
+      @pick="onPicked"
+      @upload="onDialogUpload"
+    />
 
     <DiFilePreviewDialog v-model="filePreviewOpen" :resource="filePreviewResource" @download="downloadResource" />
     <DiMarkdownPreviewDialog v-model="markdownPreviewOpen" :resource="markdownPreviewResource" />

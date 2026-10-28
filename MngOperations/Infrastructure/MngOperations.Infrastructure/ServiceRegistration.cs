@@ -83,6 +83,7 @@ public static class ServiceRegistration
         services.AddScoped<IWorkspaceAutomationService, WorkspaceAutomationService>();
         services.AddScoped<IWorkspaceFolderService, WorkspaceFolderService>();
         services.AddScoped<IWorkspacePackInstallService, WorkspacePackInstallService>();
+        services.AddScoped<ISprintService, SprintService>();
         services.AddScoped(sp => new Lazy<IWorkItemCommandService>(
             () => sp.GetRequiredService<IWorkItemCommandService>()));
         services.AddScoped<ISlaBreachScanService, SlaBreachScanService>();

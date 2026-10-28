@@ -41,6 +41,7 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
     label: o.label != null ? String(o.label) : o.Label != null ? String(o.Label) : null,
     order,
     requiredFields: requiredFields?.length ? requiredFields : undefined,
+    requireComment: Boolean(o.requireComment ?? o.RequireComment ?? false),
     permissionGroups: permissionGroups?.length ? permissionGroups : undefined,
   };
 }

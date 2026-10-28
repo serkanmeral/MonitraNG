@@ -48,6 +48,7 @@ import {
 import { formatCellValue, type OcFormatOptions } from '@/utils/ocColumnFormat';
 import { evaluateComputedExpr } from '@/utils/ocComputedColumns';
 import { buildWorkItemProfilePath } from '@/utils/ocWorkItemProfileNav';
+import { ocListSprints, type OcSprint } from '@/services/operationCore/sprints';
 
 defineOptions({ name: 'OcBoardPanel' });
 
@@ -169,6 +170,39 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
 });
 
 const workspaceId = computed(() => store.boardContext?.workspaceId ?? null);
+const sprintOptions = ref<OcSprint[]>([]);
+
+const sprintScopeItems = computed(() => [
+  { title: t('operationCore.sprints.scopeAll'), value: 'all' },
+  { title: t('operationCore.sprints.backlog'), value: 'backlog' },
+  ...sprintOptions.value.map((sprint) => ({ title: sprint.name, value: sprint.id })),
+]);
+
+async function loadSprintOptions(id: string | null) {
+  if (!id) {
+    sprintOptions.value = [];
+    return;
+  }
+  try {
+    sprintOptions.value = await ocListSprints(id);
+  } catch {
+    sprintOptions.value = [];
+  }
+}
+
+function onSprintScope(value: string | null) {
+  store.boardSprintScope = value || 'all';
+  if (showKanban.value) {
+    void store.refreshBoard();
+    return;
+  }
+  page.value = 1;
+  void fetchList(true);
+}
+
+watch(workspaceId, (id) => {
+  void loadSprintOptions(id);
+}, { immediate: true });
 
 const profileNavFrom = computed(() => (props.embedded ? 'workspace' as const : 'board' as const));
 
@@ -223,6 +257,14 @@ watch(
   { immediate: true }
 );
 const boardCatalogs = computed(() => store.boardContext?.catalogs ?? null);
+const priorityNames = computed(() => {
+  const map: Record<string, string> = {};
+  for (const [id, entry] of Object.entries(boardCatalogs.value?.priorities ?? {})) {
+    const name = entry?.name?.trim();
+    if (name) map[id] = name;
+  }
+  return map;
+});
 const boardPeople = computed(() => store.boardPeople);
 const boardGroups = computed(() => store.boardGroups);
 
@@ -373,6 +415,11 @@ const computedColumnByKey = computed(() => {
   return map;
 });
 
+function sprintColumnLabel(sprintId?: string | null): string {
+  if (!sprintId) return t('operationCore.sprints.backlog');
+  return sprintOptions.value.find((sprint) => sprint.id === sprintId)?.name || '—';
+}
+
 function columnLabel(key: string): string {
   const meta = listColumnsMeta.value.find((c) => c.key === key);
   if (meta?.label?.trim()) return meta.label.trim();
@@ -394,6 +441,7 @@ function buildComputedScope(item: OcWorkItemCard): Record<string, unknown> {
     assignee: item.assignee,
     priorityId: item.priorityId,
     typeId: item.typeId,
+    sprintId: item.sprintId,
     createdBy: item.createdBy,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -525,8 +573,13 @@ const listRows = computed(() =>
         row[key] = formatCellValue(systemColumnRawValue(item, key), effectiveColumnFormat(key), {
           ...listCellFormatOptions(key, item),
         });
+      } else if (key === 'dueDate') {
+        row[key] = formatCellValue(item.dueDate, 'date', { locale: locale(), dateOnly: true });
       } else if (isCoreListColumn(key)) {
-        row[key] = listTableCellValue(item, key, { stateLabel: stateLabel ?? undefined });
+        row[key] = listTableCellValue(item, key, {
+          stateLabel: stateLabel ?? undefined,
+          sprintLabel: sprintColumnLabel(item.sprintId),
+        });
       } else if (personPoolKeySet.value.has(key)) {
         row[key] = resolvePersonValue(item.fields?.[key]);
       } else if (groupPoolKeySet.value.has(key) || key === 'assignmentGroups') {
@@ -590,6 +643,7 @@ function buildListRequest(): OcBoardListRequest {
     sort,
     filters: activeFilters.value,
     search: (searchInput.value ?? '').trim() || null,
+    sprintScope: store.boardSprintScope || 'all',
   };
 }
 
@@ -779,7 +833,7 @@ async function onKanbanTransition(payload: { card: OcWorkItemCard; fromStateId: 
     return;
   }
 
-  if (transition.requiredFields.length > 0) {
+  if (transition.requiredFields.length > 0 || transition.requireComment) {
     // Board'da form yok → kartı geri al + profile yönlendir (profil zorunlu alan toplar).
     showTransitionMsg(t('operationCore.board.transition.requiredFields'), 'info', card.id);
     await store.refreshBoard();
@@ -931,6 +985,18 @@ onUnmounted(() => {
           </div>
         </div>
         <v-spacer />
+        <v-select
+          :model-value="store.boardSprintScope"
+          :items="sprintScopeItems"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          hide-details
+          variant="outlined"
+          class="oc-sprint-scope"
+          :label="t('operationCore.sprints.title')"
+          @update:model-value="onSprintScope"
+        />
         <OcBoardDashboardLink
           v-if="!embedded && hubBoard && workspaceId"
           :workspace-id="workspaceId"
@@ -1138,6 +1204,7 @@ onUnmounted(() => {
         :workspace-id="embedded ? workspaceId : null"
         :profile-from="profileNavFrom"
         :editable="canEdit"
+        :priority-names="priorityNames"
         @transition="onKanbanTransition"
         @load-more="store.loadMoreColumn($event)"
       />
@@ -1247,6 +1314,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.oc-sprint-scope {
+  max-width: 240px;
+  min-width: 180px;
+}
 .min-width-0 {
   min-width: 0;
 }

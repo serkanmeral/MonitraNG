@@ -21,6 +21,11 @@ import { useAuthStore } from '@/stores/auth';
 import type { OcFolderDialogMode } from '@/components/apps/operation-core/OcWorkspaceFolderDialog.vue';
 import OcWorkspaceFolderDialog from '@/components/apps/operation-core/OcWorkspaceFolderDialog.vue';
 import OcWorkspaceLibraryPanel from '@/components/apps/operation-core/OcWorkspaceLibraryPanel.vue';
+import OcWorkspaceSprints from '@/components/apps/operation-core/OcWorkspaceSprints.vue';
+import OcWorkspaceCalendar from '@/components/apps/operation-core/OcWorkspaceCalendar.vue';
+import OcWorkspaceGantt from '@/components/apps/operation-core/OcWorkspaceGantt.vue';
+import { ocGetWorkspace } from '@/services/operationCoreService';
+import { readOcWorkspaceViews, type OcWorkspaceViews } from '@/utils/ocWorkspaceViews';
 import { buildOcNavTree, collectFolderDescendantIds, folderAncestorIds } from '@/utils/ocWorkspaceTree';
 import type { OcNavNode, OpBoard, OpWorkspace, OpWorkspaceFolder } from '@/types/apps/operationCore';
 import {
@@ -54,7 +59,10 @@ const {
 const treeRef = ref<InstanceType<typeof OcWorkspaceTree> | null>(null);
 const selectedWorkspaceId = ref<string | null>(null);
 const selectedBoardId = ref<string | null>(null);
-const workspacePane = ref<'home' | 'library'>('home');
+const workspacePane = ref<'home' | 'library' | 'sprints' | 'calendar' | 'gantt'>('home');
+const boardsReady = ref(false);
+const viewsReady = ref(false);
+const viewFlags = ref<OcWorkspaceViews>({ sprints: false, calendar: false, gantt: false });
 const treeLoading = ref(false);
 
 const dashboardNameById = ref<Record<string, string>>({});
@@ -259,7 +267,17 @@ function syncFromRoute() {
   const bd = typeof route.query.boardId === 'string' ? route.query.boardId : null;
   selectedWorkspaceId.value = ws;
   selectedBoardId.value = bd;
-  workspacePane.value = ws && !bd && route.query.view === 'library' ? 'library' : 'home';
+  const view = typeof route.query.view === 'string' ? route.query.view : '';
+  workspacePane.value =
+    ws && !bd && view === 'library'
+      ? 'library'
+      : ws && !bd && view === 'sprints'
+        ? 'sprints'
+        : ws && !bd && view === 'calendar'
+          ? 'calendar'
+          : ws && !bd && view === 'gantt'
+            ? 'gantt'
+            : 'home';
   if (bd) centerView.value = 'board';
 }
 
@@ -296,6 +314,48 @@ function openLibrary() {
   });
 }
 
+function openSprints() {
+  if (!selectedWorkspaceId.value || !viewFlags.value.sprints) return;
+  workspacePane.value = 'sprints';
+  selectedBoardId.value = null;
+  router.replace({
+    path: '/apps/operation-core/workspace',
+    query: { workspaceId: selectedWorkspaceId.value, view: 'sprints' },
+  });
+}
+
+function openGantt() {
+  if (!selectedWorkspaceId.value || !viewFlags.value.gantt) return;
+  workspacePane.value = 'gantt';
+  selectedBoardId.value = null;
+  router.replace({
+    path: '/apps/operation-core/workspace',
+    query: { workspaceId: selectedWorkspaceId.value, view: 'gantt' },
+  });
+}
+
+async function loadViewFlags(workspaceId: string) {
+  viewsReady.value = false;
+  try {
+    const detail = await ocGetWorkspace(workspaceId);
+    viewFlags.value = readOcWorkspaceViews(detail?.settings);
+  } catch {
+    viewFlags.value = { sprints: false, calendar: false, gantt: false };
+  } finally {
+    viewsReady.value = true;
+  }
+}
+
+function openCalendar() {
+  if (!selectedWorkspaceId.value || !viewFlags.value.calendar) return;
+  workspacePane.value = 'calendar';
+  selectedBoardId.value = null;
+  router.replace({
+    path: '/apps/operation-core/workspace',
+    query: { workspaceId: selectedWorkspaceId.value, view: 'calendar' },
+  });
+}
+
 function openWorkspaceHome() {
   if (!selectedWorkspaceId.value) return;
   workspacePane.value = 'home';
@@ -309,13 +369,17 @@ function onSelectWorkspace(workspaceId: string) {
   selectedWorkspaceId.value = workspaceId;
   selectedBoardId.value = null;
   workspacePane.value = 'home';
+  boardsReady.value = false;
+  viewsReady.value = false;
   router.replace({
     path: '/apps/operation-core/workspace',
     query: { workspaceId },
   });
-  void store.loadBoardsForWorkspace(workspaceId).then(() =>
-    ensureDashboardNamesForBoards(store.boardsForWorkspace(workspaceId))
-  );
+  void loadViewFlags(workspaceId);
+  void store.loadBoardsForWorkspace(workspaceId).then(async () => {
+    await ensureDashboardNamesForBoards(store.boardsForWorkspace(workspaceId));
+    boardsReady.value = true;
+  });
 }
 
 function onSelectBoard(workspaceId: string, boardId: string) {
@@ -356,14 +420,24 @@ watch(
   { deep: true }
 );
 
+watch([viewsReady, viewFlags, workspacePane], () => {
+  if (!viewsReady.value) return;
+  const pane = workspacePane.value;
+  if (pane === 'sprints' && !viewFlags.value.sprints) openWorkspaceHome();
+  if (pane === 'calendar' && !viewFlags.value.calendar) openWorkspaceHome();
+  if (pane === 'gantt' && !viewFlags.value.gantt) openWorkspaceHome();
+});
+
 onMounted(async () => {
   syncFromRoute();
   await loadTreeData();
   await store.pingOperations();
   if (selectedWorkspaceId.value) {
+    await loadViewFlags(selectedWorkspaceId.value);
     await store.loadBoardsForWorkspace(selectedWorkspaceId.value);
     await ensureDashboardNamesForBoards(store.boardsForWorkspace(selectedWorkspaceId.value));
   }
+  boardsReady.value = true;
 });
 </script>
 
@@ -595,10 +669,54 @@ onMounted(async () => {
                 <v-btn value="library" size="small" class="text-none" prepend-icon="mdi-bookshelf" @click="openLibrary">
                   {{ t('operationCore.workspace.library.open') }}
                 </v-btn>
+                <v-btn
+                  v-if="viewsReady && viewFlags.calendar"
+                  value="calendar"
+                  size="small"
+                  class="text-none"
+                  prepend-icon="mdi-calendar-month"
+                  @click="openCalendar"
+                >
+                  {{ t('operationCore.calendar.title') }}
+                </v-btn>
+                <v-btn
+                  v-if="viewsReady && viewFlags.gantt"
+                  value="gantt"
+                  size="small"
+                  class="text-none"
+                  prepend-icon="mdi-chart-gantt"
+                  @click="openGantt"
+                >
+                  {{ t('operationCore.gantt.title') }}
+                </v-btn>
+                <v-btn
+                  v-if="viewsReady && viewFlags.sprints"
+                  value="sprints"
+                  size="small"
+                  class="text-none"
+                  prepend-icon="mdi-calendar-clock"
+                  @click="openSprints"
+                >
+                  {{ t('operationCore.sprints.title') }}
+                </v-btn>
               </v-btn-toggle>
 
               <OcWorkspaceLibraryPanel
                 v-if="workspacePane === 'library'"
+                :workspace-id="selectedWorkspace.__dataId"
+              />
+              <OcWorkspaceCalendar
+                v-else-if="workspacePane === 'calendar' && viewFlags.calendar"
+                :workspace-id="selectedWorkspace.__dataId"
+                :show-sprints="viewFlags.sprints"
+              />
+              <OcWorkspaceGantt
+                v-else-if="workspacePane === 'gantt' && viewFlags.gantt"
+                :workspace-id="selectedWorkspace.__dataId"
+                :show-sprints="viewFlags.sprints"
+              />
+              <OcWorkspaceSprints
+                v-else-if="workspacePane === 'sprints' && viewFlags.sprints"
                 :workspace-id="selectedWorkspace.__dataId"
               />
 

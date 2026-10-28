@@ -6,6 +6,7 @@ import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
 import OcFormHelpDialog from '@/components/apps/operation-core/OcFormHelpDialog.client.vue';
 import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import {
+  applyOcCreateReporterDefault,
   buildCreateWorkItemRequest,
   buildUpdateWorkItemRequest,
   collectOcFormValidationIssues,
@@ -18,6 +19,7 @@ import {
   ocListPoolFieldsForWorkspace,
   ocUpdateWorkItem,
 } from '@/services/operationCoreService';
+import { useAuthStore } from '@/stores/auth';
 import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
 import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
 import { normalizeOcDialogMaxWidthPx } from '@/utils/ocFormLayout';
@@ -39,6 +41,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const authStore = useAuthStore();
 const { notifyApiError } = useApiErrorNotify();
 
 const open = computed({
@@ -141,6 +144,9 @@ async function loadForm() {
         : await ocListPoolFieldsForWorkspace(ctx.workspaceId);
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     const model = initialFormModelFromContext(ctx);
+    if (!isEdit.value) {
+      applyOcCreateReporterDefault(model, ctx, authStore.userInfo?.mng_person_id);
+    }
     formModel.value = model;
     initialModel.value = JSON.parse(JSON.stringify(model));
   } catch (e: unknown) {

@@ -25,4 +25,5 @@ public static class OcDatasets
     public const string WorkItemSchedules = "op_work_item_schedules";
     public const string WorkspaceAutomations = "op_workspace_automations";
     public const string Tags = "op_tags";
+    public const string Sprints = "op_sprints";
 }

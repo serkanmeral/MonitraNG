@@ -11,12 +11,14 @@ const props = withDefaults(
     workspaceId?: string | null;
     profileFrom?: OcProfileNavFrom;
     showAssignee?: boolean;
+    priorityName?: string | null;
   }>(),
   {
     boardId: null,
     workspaceId: null,
     profileFrom: 'board',
     showAssignee: true,
+    priorityName: null,
   }
 );
 
@@ -28,6 +30,13 @@ const assigneeInitials = computed(() => {
   const parts = a.split(/[\s@._-]+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return a.slice(0, 2).toUpperCase();
+});
+
+const pointsLabel = computed(() => {
+  const raw = props.card.fields?.storyPoints;
+  if (raw == null || raw === '') return '';
+  const n = Number(raw);
+  return Number.isFinite(n) ? String(n) : String(raw);
 });
 
 const profileTo = computed(() =>
@@ -57,7 +66,13 @@ const profileTo = computed(() =>
       <div class="oc-wi-card__meta">{{ card.key }}</div>
       <div class="oc-wi-card__title">{{ card.title }}</div>
       <div class="oc-wi-card__foot">
-        <span />
+        <span class="d-flex align-center ga-1 flex-wrap">
+          <span v-if="priorityName" class="oc-wi-card__chip">{{ priorityName }}</span>
+          <span v-if="pointsLabel" class="oc-wi-card__chip">{{ pointsLabel }}</span>
+          <span v-if="card.childCount" class="oc-wi-card__chip">
+            {{ t('operationCore.board.childCount', { count: card.childCount }) }}
+          </span>
+        </span>
         <span v-if="showAssignee && assigneeInitials" class="oc-avatar-tiny">{{ assigneeInitials }}</span>
       </div>
     </NuxtLink>
@@ -99,8 +114,18 @@ const profileTo = computed(() =>
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: 10px;
   min-height: 22px;
+}
+.oc-wi-card__chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgba(var(--v-theme-on-surface), 0.72);
 }
 .oc-avatar-tiny {
   display: inline-flex;

@@ -27,6 +27,10 @@ const props = withDefaults(
     indexedOnly?: boolean;
     /** Birden fazla belge seçilir; pencere onaylanana kadar açık kalır. */
     multiple?: boolean;
+    /** Seçili klasöre dosya yükleme düğmesi. Yükleme çağırana aittir. */
+    allowUpload?: boolean;
+    uploading?: boolean;
+    uploadLabel?: string | null;
     maxSelection?: number;
     initialSelection?: DiResource[];
   }>(),
@@ -40,6 +44,9 @@ const props = withDefaults(
     rootLabel: null,
     indexedOnly: false,
     multiple: false,
+    allowUpload: false,
+    uploading: false,
+    uploadLabel: null,
     maxSelection: 4,
     initialSelection: () => [],
   }
@@ -49,6 +56,7 @@ const emit = defineEmits<{
   'update:modelValue': [boolean];
   pick: [DiResource];
   'pick-many': [DiResource[]];
+  upload: [payload: { folderId: string; file: File }];
 }>();
 
 const { t } = useAppI18n();
@@ -67,6 +75,7 @@ const childrenLoading = ref(false);
 const errorLocal = ref<string | null>(null);
 const selectedResourceId = ref<string | null>(null);
 const selectedResources = ref<DiResource[]>([]);
+const uploadInput = ref<HTMLInputElement | null>(null);
 const searchQuery = ref('');
 const searchLoading = ref(false);
 const searchResults = ref<DiResource[]>([]);
@@ -246,6 +255,15 @@ function pickRecent(r: DiResource) {
   open.value = false;
 }
 
+function onUploadPick(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  const folderId = activeFolderId(selectedFolderId.value);
+  if (!file || !folderId) return;
+  emit('upload', { folderId, file });
+}
+
 function confirmPick() {
   if (props.multiple) {
     if (!selectedResources.value.length) return;
@@ -417,6 +435,18 @@ watch(open, (v) => {
       </v-card-text>
       <v-divider />
       <v-card-actions class="pa-4">
+        <input v-if="allowUpload" ref="uploadInput" type="file" class="d-none" @change="onUploadPick" />
+        <v-btn
+          v-if="allowUpload"
+          variant="tonal"
+          class="text-none"
+          prepend-icon="mdi-upload"
+          :loading="uploading"
+          :disabled="uploading"
+          @click="uploadInput?.click()"
+        >
+          {{ uploadLabel || t('documentIntelligence.upload') }}
+        </v-btn>
         <v-spacer />
         <v-btn variant="text" class="text-none" @click="open = false">
           {{ t('documentIntelligence.cancel') }}

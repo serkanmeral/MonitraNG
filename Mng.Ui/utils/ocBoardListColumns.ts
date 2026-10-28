@@ -12,9 +12,11 @@ export const OC_BOARD_LIST_TABLE_COLUMN_KEYS = [
   'key',
   'title',
   'stateId',
+  'sprintId',
   'assignee',
   'priorityId',
   'typeId',
+  'dueDate',
 ] as const;
 
 export type OcBoardListTableColumnKey = (typeof OC_BOARD_LIST_TABLE_COLUMN_KEYS)[number];
@@ -178,6 +180,8 @@ const DEFAULT_SORTABLE_KEYS = new Set<string>([
   'title',
   'priorityId',
   'stateId',
+  'sprintId',
+  'dueDate',
   'createdAt',
   'age',
   'updatedAt',
@@ -309,7 +313,7 @@ export function suggestListScopeStateIdsFromFlow(flow: OpStateFlow): string[] {
 export function listTableCellValue(
   item: OcWorkItemCard,
   field: string,
-  context?: { stateLabel?: string }
+  context?: { stateLabel?: string; sprintLabel?: string }
 ): string {
   switch (field) {
     case 'key':
@@ -318,12 +322,16 @@ export function listTableCellValue(
       return item.title || '—';
     case 'stateId':
       return context?.stateLabel ?? item.stateId ?? '—';
+    case 'sprintId':
+      return context?.sprintLabel ?? (item.sprintId ? item.sprintId : '—');
     case 'assignee':
       return item.assignee ?? '—';
     case 'priorityId':
       return item.priorityId ?? '—';
     case 'typeId':
       return item.typeId ?? '—';
+    case 'dueDate':
+      return formatCellValue(item.dueDate, 'date', { dateOnly: true });
     default:
       return '—';
   }

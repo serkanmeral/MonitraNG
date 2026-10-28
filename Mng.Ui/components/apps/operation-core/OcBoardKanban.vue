@@ -15,6 +15,7 @@ const props = defineProps<{
   profileFrom?: 'board' | 'workspace';
   /** Sürükle-bırak (transition) etkin mi — board permissions.canEdit. */
   editable?: boolean;
+  priorityNames?: Record<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -122,6 +123,7 @@ function onColumnChange(targetStateId: string, evt: DraggableChangeEvent) {
               :board-id="boardId"
               :workspace-id="workspaceId"
               :profile-from="profileFrom ?? 'board'"
+              :priority-name="card.priorityId ? priorityNames?.[card.priorityId] : null"
             />
           </div>
         </draggable>

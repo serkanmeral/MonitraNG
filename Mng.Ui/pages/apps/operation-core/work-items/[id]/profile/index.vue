@@ -10,8 +10,10 @@ import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTransitionRequiredFields.vue';
 import OcAttachmentPreviewDialog from '@/components/apps/operation-core/OcAttachmentPreviewDialog.vue';
 import OcWorkItemRelationsCard from '@/components/apps/operation-core/OcWorkItemRelationsCard.vue';
+import OcWorkItemChildrenCard from '@/components/apps/operation-core/OcWorkItemChildrenCard.vue';
 import OcWorkItemDocumentsTab from '@/components/apps/operation-core/OcWorkItemDocumentsTab.vue';
 import OcWorkItemLibraryLinks from '@/components/apps/operation-core/OcWorkItemLibraryLinks.vue';
+import OcWorkItemSprintField from '@/components/apps/operation-core/OcWorkItemSprintField.vue';
 import { diGetLinkedResourcesForWorkItem } from '@/services/documentIntelligenceService';
 import { isPreviewable } from '@/utils/ocAttachmentPreview';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
@@ -47,8 +49,9 @@ import type {
 } from '@/types/apps/operationCore';
 import { buildTransitionRequiredFormContext, enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
 import { formatCellValue } from '@/utils/ocColumnFormat';
+import { isLegacyHexStatusColor, isTmStatusThemeColor } from '@/utils/taskManagerStatusColor';
 import { ocEnrichTransitionFields, ocSeedTransitionFieldModel } from '@/utils/ocTransitionFieldDefaults';
-import { resolveProfileBackToBoardPath } from '@/utils/ocWorkItemProfileNav';
+import { resolveProfileBackToBoardPath, resolveProfileBackToWorkspacePane } from '@/utils/ocWorkItemProfileNav';
 
 definePageMeta({ layout: 'default' });
 
@@ -66,6 +69,9 @@ const fromQuery = computed(() =>
 );
 const workspaceIdQuery = computed(() =>
   typeof route.query.workspaceId === 'string' ? route.query.workspaceId.trim() : ''
+);
+const viewQuery = computed(() =>
+  typeof route.query.view === 'string' ? route.query.view.trim() : ''
 );
 
 const loading = ref(false);
@@ -235,6 +241,10 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
 });
 
 const backToBoardTo = computed(() => {
+  if (fromQuery.value === 'workspace') {
+    const pane = resolveProfileBackToWorkspacePane(workspaceIdQuery.value, viewQuery.value);
+    if (pane) return pane;
+  }
   const bid = boardIdQuery.value;
   if (!bid) return null;
   return resolveProfileBackToBoardPath({
@@ -471,6 +481,12 @@ async function submitComment(payload: { html: string; mentions: string[]; files:
 const transitionActions = computed<OcProfileAction[]>(() =>
   [...(profile.value?.actions ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 );
+
+function transitionColor(action: OcProfileAction | null): string {
+  const color = action ? catalogs.value?.states?.[action.toStateId]?.color?.trim() : '';
+  if (color && (isTmStatusThemeColor(color) || isLegacyHexStatusColor(color))) return color;
+  return 'primary';
+}
 const transitionDialog = ref(false);
 const transitionTarget = ref<OcProfileAction | null>(null);
 const transitionComment = ref('');
@@ -495,6 +511,10 @@ function isTransitionValueEmpty(value: unknown): boolean {
 
 const transitionMissingRequired = computed<string[]>(() =>
   transitionRequiredKeys.value.filter((key) => isTransitionValueEmpty(transitionFieldModel.value[key]))
+);
+
+const transitionCommentMissing = computed(
+  () => !!transitionTarget.value?.requireComment && transitionComment.value.trim().length === 0
 );
 
 const transitionFormContext = computed<OcFormRuntimeContext | null>(() => {
@@ -533,7 +553,7 @@ function transitionRequiredKeysFor(action: OcProfileAction): string[] {
 
 async function confirmTransition() {
   const action = transitionTarget.value;
-  if (!action || transitionMissingRequired.value.length) return;
+  if (!action || transitionMissingRequired.value.length || transitionCommentMissing.value) return;
   transitionBusy.value = true;
   transitionError.value = null;
   try {
@@ -686,7 +706,7 @@ watch(workItemId, () => {
             :key="action.transitionKey"
             size="small"
             variant="flat"
-            color="primary"
+            :color="transitionColor(action)"
             rounded="lg"
             class="text-none"
             prepend-icon="mdi-swap-horizontal"
@@ -730,7 +750,9 @@ watch(workItemId, () => {
 
           <v-textarea
             v-model="transitionComment"
-            :label="t('operationCore.profile.transitions.commentLabel')"
+            :label="transitionTarget?.requireComment
+              ? t('operationCore.profile.transitions.commentRequiredLabel')
+              : t('operationCore.profile.transitions.commentLabel')"
             :placeholder="t('operationCore.profile.transitions.commentPlaceholder')"
             variant="outlined"
             rows="2"
@@ -759,11 +781,11 @@ watch(workItemId, () => {
             {{ t('operationCore.definitions.cancel') }}
           </v-btn>
           <v-btn
-            color="primary"
+            :color="transitionColor(transitionTarget)"
             variant="flat"
             class="text-none"
             :loading="transitionBusy"
-            :disabled="transitionMissingRequired.length > 0"
+            :disabled="transitionMissingRequired.length > 0 || transitionCommentMissing"
             @click="confirmTransition"
           >
             {{ t('operationCore.profile.transitions.confirm') }}
@@ -1245,6 +1267,15 @@ watch(workItemId, () => {
         <v-card v-if="summary" variant="outlined" class="rounded-lg mb-4">
           <v-card-text class="pa-4">
             <div class="text-subtitle-2 font-weight-bold mb-3">{{ t('operationCore.profile.meta.title') }}</div>
+            <OcWorkItemSprintField
+              v-if="profile && summary"
+              :workspace-id="profile.workspaceId"
+              :work-item-id="summary.id"
+              :sprint-id="summary.sprintId"
+              :can-edit="canEdit"
+              :can-join="profile.canJoinSprint"
+              @changed="loadProfile"
+            />
             <div class="oc-meta-list">
               <div class="oc-meta-row">
                 <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.stateId') }}</span>
@@ -1294,13 +1325,27 @@ watch(workItemId, () => {
           </v-card-text>
         </v-card>
 
+        <OcWorkItemChildrenCard
+          v-if="profile"
+          :work-item-id="workItemId"
+          :workspace-id="profile.workspaceId"
+          :type-id="profile.workItem.typeId"
+          :can-edit="profile.permissions.canEdit"
+          :can-have-children="profile.canHaveChildren"
+          :child-type-id="profile.childTypeId"
+          :parent="profile.parent"
+          :children="profile.children"
+          :catalogs="catalogs"
+          :board-id="boardIdQuery || profile.workItem.boardId"
+          :workspace-id-query="workspaceIdQuery || profile.workspaceId"
+          @refresh="loadProfile(true)"
+        />
+
         <OcWorkItemRelationsCard
           v-if="profile"
           :work-item-id="workItemId"
           :workspace-id="profile.workspaceId"
           :can-edit="profile.permissions.canEdit"
-          :parent="profile.parent"
-          :children="profile.children"
           :links="profile.links"
           :board-id="boardIdQuery || profile.workItem.boardId"
           :workspace-id-query="workspaceIdQuery || profile.workspaceId"

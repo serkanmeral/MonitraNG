@@ -97,6 +97,7 @@ public class WorkItemCommandService : IWorkItemCommandService
             request.BoardId,
             request.Assignee,
             request.PriorityId,
+            request.ParentItemId,
             origin: null,
             initialTransitionKey: null,
             cancellationToken);
@@ -147,6 +148,7 @@ public class WorkItemCommandService : IWorkItemCommandService
             request.BoardId,
             request.Assignee,
             request.PriorityId,
+            parentItemId: null,
             originDict,
             request.InitialTransitionKey,
             cancellationToken);
@@ -210,6 +212,8 @@ public class WorkItemCommandService : IWorkItemCommandService
             workspace,
             token,
             cancellationToken);
+
+        await EnsureParentLinkIfChangedAsync(existing, merged, workItemId, token, cancellationToken);
 
         await RunMutationRulesAsync(
             merged,
@@ -346,7 +350,10 @@ public class WorkItemCommandService : IWorkItemCommandService
             token,
             cancellationToken);
 
+        await EnsureParentLinkIfChangedAsync(existing, merged, workItemId, token, cancellationToken);
+
         StateFlowCatalog.EnsureRequiredFields(transitionElement, merged);
+        StateFlowCatalog.EnsureComment(transitionElement, request.Comment);
 
         await RunTransitionRulesAsync(
             merged,
@@ -1107,6 +1114,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         string? boardId,
         string? assignee,
         string? priorityId,
+        string? parentItemId,
         Dictionary<string, object?>? origin,
         string? initialTransitionKey,
         CancellationToken cancellationToken)
@@ -1188,6 +1196,11 @@ public class WorkItemCommandService : IWorkItemCommandService
 
         await ApplyIncomingFieldsAsync(payload, dynamicFields, workspace, token, cancellationToken);
 
+        if (!string.IsNullOrWhiteSpace(parentItemId))
+            payload["parentItemId"] = parentItemId.Trim();
+
+        await EnsureParentLinkAsync(payload, childId: null, token, cancellationToken);
+
         await RunMutationRulesAsync(
             payload,
             workspace,
@@ -1209,6 +1222,9 @@ public class WorkItemCommandService : IWorkItemCommandService
         // aynı sorun). MngPersonId, claim yoksa zaten 'sub'a düşer. Forward-only.
         if (!string.IsNullOrWhiteSpace(_requestContext.MngPersonId))
             payload.TryAdd("createdBy", _requestContext.MngPersonId);
+        if (string.IsNullOrWhiteSpace(GetString(payload, "reporter"))
+            && !string.IsNullOrWhiteSpace(_requestContext.MngPersonId))
+            payload["reporter"] = _requestContext.MngPersonId;
 
         await _slaCalculator.ApplyOnCreateAsync(
             payload,
@@ -2290,6 +2306,124 @@ public class WorkItemCommandService : IWorkItemCommandService
             "DataGateway did not return __dataId for created work item.",
             "Oluşturulan kayıt için __dataId dönmedi.",
             502);
+    }
+
+    private async Task EnsureParentLinkIfChangedAsync(
+        IReadOnlyDictionary<string, object?> before,
+        Dictionary<string, object?> after,
+        string childId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var previous = WorkItemDataHelper.GetString(before, "parentItemId") ?? string.Empty;
+        var next = WorkItemDataHelper.GetString(after, "parentItemId") ?? string.Empty;
+        if (string.Equals(previous, next, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        await EnsureParentLinkAsync(after, childId, token, cancellationToken);
+    }
+
+    /// <summary>
+    /// Alt iş bağı: aynı çalışma alanı, derinlik iki, üst tipin childTypeKeys listesi çocuğun tipini kabul eder.
+    /// </summary>
+    private async Task EnsureParentLinkAsync(
+        Dictionary<string, object?> child,
+        string? childId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var parentId = WorkItemDataHelper.GetString(child, "parentItemId");
+        if (string.IsNullOrWhiteSpace(parentId))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(childId)
+            && string.Equals(parentId, childId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new OperationCoreException(
+                "PARENT_SELF",
+                "A work item cannot be its own parent.",
+                "İş kaydı kendi üstü olamaz.",
+                400);
+        }
+
+        var parent = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+            OcDatasets.WorkItems, parentId, token, cancellationToken, expand: false);
+        if (parent == null)
+        {
+            throw new OperationCoreException(
+                "PARENT_NOT_FOUND",
+                "Parent work item was not found.",
+                "Üst iş bulunamadı.",
+                400);
+        }
+
+        var childWorkspace = WorkItemDataHelper.GetString(child, "workspaceId");
+        var parentWorkspace = WorkItemDataHelper.GetString(parent, "workspaceId");
+        if (!string.Equals(childWorkspace, parentWorkspace, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new OperationCoreException(
+                "PARENT_WORKSPACE",
+                "Parent work item belongs to another workspace.",
+                "Üst iş başka bir çalışma alanına ait.",
+                400);
+        }
+
+        if (!string.IsNullOrWhiteSpace(WorkItemDataHelper.GetString(parent, "parentItemId")))
+        {
+            throw new OperationCoreException(
+                "PARENT_DEPTH",
+                "A child work item cannot have children.",
+                "Alt işin altına iş açılamaz.",
+                400);
+        }
+
+        if (!string.IsNullOrWhiteSpace(childId))
+        {
+            var kids = await _dg.GetAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItems,
+                $"filter={Uri.EscapeDataString($"parentItemId:eq:{childId}")}&limit=1&expand=false",
+                token,
+                cancellationToken);
+            if (kids.Any())
+            {
+                throw new OperationCoreException(
+                    "PARENT_DEPTH",
+                    "A work item that already has children cannot become a child.",
+                    "Alt işi olan kayıt başka bir işin altına bağlanamaz.",
+                    400);
+            }
+        }
+
+        var parentTypeId = WorkItemDataHelper.GetString(parent, "typeId");
+        var childTypeId = WorkItemDataHelper.GetString(child, "typeId");
+        if (string.IsNullOrWhiteSpace(parentTypeId) || string.IsNullOrWhiteSpace(childTypeId))
+        {
+            throw new OperationCoreException(
+                "PARENT_TYPE",
+                "Parent and child types are required.",
+                "Üst ve alt işin tipi gerekli.",
+                400);
+        }
+
+        var parentType = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+            OcDatasets.WorkItemTypes, parentTypeId, token, cancellationToken, expand: false);
+        var childType = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+            OcDatasets.WorkItemTypes, childTypeId, token, cancellationToken, expand: false);
+        var allowed = parentType == null
+            ? new List<string>()
+            : WorkItemDataHelper.GetStringList(parentType, "childTypeKeys");
+        var childPackKey = childType == null ? null : WorkItemDataHelper.GetString(childType, "packKey");
+        var accepted = allowed.Any(key =>
+            string.Equals(key, childPackKey, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(key, childTypeId, StringComparison.OrdinalIgnoreCase));
+        if (!accepted)
+        {
+            throw new OperationCoreException(
+                "PARENT_TYPE",
+                "This type cannot be a child of the parent type.",
+                "Bu tip, seçilen üst işin altına bağlanamaz.",
+                400);
+        }
     }
 
     private static string? GetString(Dictionary<string, object?> data, string key)

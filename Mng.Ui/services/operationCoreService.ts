@@ -641,6 +641,20 @@ export function buildCreateWorkItemRequest(
   return body;
 }
 
+/** Kayıt açan kişi talep eden olarak gelsin; kullanıcı değiştirebilir. */
+export function applyOcCreateReporterDefault(
+  model: Record<string, unknown>,
+  ctx: OcFormRuntimeContext,
+  personId: string | null | undefined
+): void {
+  const id = personId?.trim();
+  if (!id || !ctx.fields.reporter) return;
+  const current = model.reporter;
+  if (current == null || (typeof current === 'string' && current.trim() === '')) {
+    model.reporter = id;
+  }
+}
+
 export function initialFormModelFromContext(ctx: OcFormRuntimeContext): Record<string, unknown> {
   const model: Record<string, unknown> = {};
   for (const [key, meta] of Object.entries(ctx.fields)) {
@@ -711,6 +725,7 @@ function mapWorkItemSummary(raw: Record<string, unknown>): OcWorkItemSummary {
     createdAt: pickStr(raw, 'createdAt', 'CreatedAt') ?? null,
     lastStateChangeAt: pickStr(raw, 'lastStateChangeAt', 'LastStateChangeAt') ?? null,
     closedAt: pickStr(raw, 'closedAt', 'ClosedAt') ?? null,
+    sprintId: pickStr(raw, 'sprintId', 'SprintId') ?? null,
   };
 }
 
@@ -767,6 +782,7 @@ function mapProfileAction(raw: Record<string, unknown>): OcProfileAction | null 
     requiredFields: Array.isArray(requiredFieldsRaw)
       ? requiredFieldsRaw.map((f) => String(f).trim()).filter((f) => f.length > 0)
       : [],
+    requireComment: Boolean(raw.requireComment ?? raw.RequireComment ?? false),
   };
 }
 
@@ -805,11 +821,14 @@ function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
           .map((c) => mapWorkItemRelation(c as Record<string, unknown>))
           .filter((c): c is OcWorkItemRelationSummary => !!c)
       : [],
+    canHaveChildren: Boolean(raw.canHaveChildren ?? raw.CanHaveChildren ?? false),
+    childTypeId: pickStr(raw, 'childTypeId', 'ChildTypeId') ?? null,
     people: parsePeopleMap(raw.people ?? raw.People),
     groups: parsePeopleMap(raw.groups ?? raw.Groups),
     createdBy: pickStr(wiRaw, 'createdBy', 'CreatedBy') ?? null,
     attachments: parseAttachments(raw.attachments ?? raw.Attachments),
     libraryDocumentIds: parseStringIds(raw.libraryDocumentIds ?? raw.LibraryDocumentIds),
+    canJoinSprint: Boolean(raw.canJoinSprint ?? raw.CanJoinSprint ?? false),
   };
 }
 
@@ -1141,37 +1160,7 @@ export async function ocApplyTransition(
 // Bildirimler (op_notifications) → services/operationCore/notifications.ts
 export * from '@/services/operationCore/notifications';
 
-/**
- * İş kaydına ek ekler. DG file alanı inline işlenir: mevcut ekler ham (path'li) nesneleriyle
- * geri gönderilir (DG korur), yeni dosya base64 `content` ile gönderilir (DG MinIO'ya yükler).
- * `file` bir tarayıcı File nesnesidir.
- */
-export async function ocAddWorkItemAttachment(
-  workItemId: string,
-  existing: OcAttachment[],
-  file: File
-): Promise<OcWorkItemProfile> {
-  const content = await fileToBase64(file);
-  const attachments: unknown[] = [
-    ...existing.map((a) => a.raw),
-    { content, originalFileName: file.name },
-  ];
-  await ocUpdateWorkItem(workItemId, { fields: { attachments } });
-  return ocGetWorkItemProfile(workItemId);
-}
-
-/** İş kaydından bir eki kaldırır (kalan ekler ham haliyle PATCH edilir). */
-export async function ocRemoveWorkItemAttachment(
-  workItemId: string,
-  attachments: OcAttachment[],
-  removePath: string
-): Promise<OcWorkItemProfile> {
-  const remaining = attachments.filter((a) => a.path !== removePath).map((a) => a.raw);
-  await ocUpdateWorkItem(workItemId, { fields: { attachments: remaining } });
-  return ocGetWorkItemProfile(workItemId);
-}
-
-/** Eki DG'den blob olarak çeker (önizleme için; indirme akışını tetiklemez). */
+/** Yorum ekini DG'den blob olarak çeker (önizleme için; indirme akışını tetiklemez). */
 export async function ocFetchAttachmentBlob(att: OcAttachment): Promise<Blob> {
   const url = `/api/v1/files/download?filePath=${encodeURIComponent(att.path)}`;
   return fetchBlobFromDataGateway(url);
@@ -2165,6 +2154,9 @@ function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
     assignee: pickStr(raw, 'assignee', 'Assignee'),
     priorityId: pickStr(raw, 'priorityId', 'PriorityId'),
     typeId: pickStr(raw, 'typeId', 'TypeId'),
+    sprintId: pickStr(raw, 'sprintId', 'SprintId') ?? null,
+    childCount: Number(raw.childCount ?? raw.ChildCount ?? 0) || 0,
+    dueDate: pickStr(raw, 'dueDate', 'DueDate') ?? null,
     createdAt: pickStr(raw, 'createdAt', 'CreatedAt') ?? null,
     createdBy: pickStr(raw, 'createdBy', 'CreatedBy') ?? null,
     updatedAt: pickStr(raw, 'updatedAt', 'UpdatedAt') ?? null,
@@ -2199,6 +2191,7 @@ function mapBoardColumnTransition(raw: Record<string, unknown>): OcBoardColumnTr
     requiredFields: Array.isArray(reqRaw)
       ? reqRaw.map((f) => String(f).trim()).filter((f) => f.length > 0)
       : [],
+    requireComment: Boolean(raw.requireComment ?? raw.RequireComment ?? false),
   };
 }
 
@@ -2406,6 +2399,10 @@ export async function ocGetBoardListPage(
   }
   if (request.search?.trim()) {
     body.search = request.search.trim();
+  }
+  const sprintScope = request.sprintScope?.trim();
+  if (sprintScope && sprintScope !== 'all') {
+    body.sprintScope = sprintScope;
   }
 
   const raw = (await fetchFromOperations(

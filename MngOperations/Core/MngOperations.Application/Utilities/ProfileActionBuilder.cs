@@ -35,7 +35,8 @@ public static class ProfileActionBuilder
                 ToStateId = action.ToStateId,
                 Enabled = action.Enabled,
                 Order = entry.Order,
-                RequiredFields = action.RequiredFields
+                RequiredFields = action.RequiredFields,
+                RequireComment = action.RequireComment
             });
         }
 

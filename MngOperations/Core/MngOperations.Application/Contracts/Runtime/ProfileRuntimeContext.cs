@@ -23,6 +23,12 @@ public sealed class ProfileRuntimeContext
     public IReadOnlyList<WorkItemLinkSummaryDto> Links { get; init; } = Array.Empty<WorkItemLinkSummaryDto>();
     public WorkItemRelationSummaryDto? Parent { get; init; }
     public IReadOnlyList<WorkItemRelationSummaryDto> Children { get; init; } = Array.Empty<WorkItemRelationSummaryDto>();
+
+    /// <summary>Tipin childTypeKeys listesi doluysa alt iş açılabilir.</summary>
+    public bool CanHaveChildren { get; init; }
+
+    /// <summary>Alt iş oluştururken kullanılacak tip. Paket tek çocuk tipi tanımladıysa doludur.</summary>
+    public string? ChildTypeId { get; init; }
     public IReadOnlyList<StateSegmentDto> StateSegments { get; init; } = Array.Empty<StateSegmentDto>();
 
     /// <summary>Person id → görünen ad (assignee/reporter/createdBy/watchers) — sidebar isim çözümü.</summary>
@@ -38,6 +44,9 @@ public sealed class ProfileRuntimeContext
 
     /// <summary>Kütüphane belge kimlikleri. Dosya ekinden ayrıdır. Aynı kimlik birden fazla işte durabilir.</summary>
     public IReadOnlyList<string> LibraryDocumentIds { get; init; } = Array.Empty<string>();
+
+    /// <summary>Bu tip sprinte girebilir. Üst iş (alt tip kabul eden tip) giremez.</summary>
+    public bool CanJoinSprint { get; init; }
 }
 
 public sealed class WorkItemSummaryDto
@@ -59,6 +68,9 @@ public sealed class WorkItemSummaryDto
     public string? CreatedBy { get; init; }
     public DateTime? LastStateChangeAt { get; init; }
     public DateTime? ClosedAt { get; init; }
+
+    /// <summary>Bağlı sprint. Boşsa backlog.</summary>
+    public string? SprintId { get; init; }
 }
 
 public sealed class WorkItemLinkSummaryDto
@@ -101,6 +113,9 @@ public sealed class ProfileActionDto
 
     /// <summary>Bu geçiş için zorunlu alan anahtarları (akış transition.requiredFields). UI ön-toplama yapar.</summary>
     public IReadOnlyList<string> RequiredFields { get; init; } = Array.Empty<string>();
+
+    /// <summary>Geçiş notu boş bırakılamaz (akış transition.requireComment).</summary>
+    public bool RequireComment { get; init; }
 }
 
 public sealed class TimelinePage

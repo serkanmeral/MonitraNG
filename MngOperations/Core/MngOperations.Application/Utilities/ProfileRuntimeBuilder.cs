@@ -61,7 +61,10 @@ public static class ProfileRuntimeBuilder
             CreatedAt = WorkItemDataHelper.GetDateTime(workItem, "createdAt"),
             CreatedBy = WorkItemDataHelper.GetString(workItem, "createdBy"),
             LastStateChangeAt = WorkItemDataHelper.GetDateTime(workItem, "lastStateChangeAt"),
-            ClosedAt = WorkItemDataHelper.GetDateTime(workItem, "closedAt")
+            ClosedAt = WorkItemDataHelper.GetDateTime(workItem, "closedAt"),
+            SprintId = string.IsNullOrWhiteSpace(WorkItemDataHelper.GetString(workItem, "sprintId"))
+                ? null
+                : WorkItemDataHelper.GetString(workItem, "sprintId")
         };
     }
 

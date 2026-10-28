@@ -165,6 +165,7 @@ public partial class RuntimeContextService
                 Assignee = card.Assignee,
                 PriorityId = card.PriorityId,
                 TypeId = card.TypeId,
+                SprintId = card.SprintId,
                 CreatedAt = card.CreatedAt,
                 CreatedBy = card.CreatedBy,
                 UpdatedAt = card.UpdatedAt,

@@ -14,3 +14,21 @@ export function isTmStatusThemeColor(s: string | null | undefined): s is TmStatu
 export function isLegacyHexStatusColor(s: string | null | undefined): boolean {
   return !!s?.trim().startsWith('#');
 }
+
+/** Durum rengi bir çubukta kullanılacak arka plan ve yazı rengi. Boş renk nötr kalır. */
+export function tmStatusBarColors(color: string | null | undefined): { background: string; color: string } {
+  const neutral = {
+    background: 'rgba(var(--v-theme-on-surface), 0.38)',
+    color: 'rgb(var(--v-theme-surface))',
+  };
+  const value = color?.trim();
+  if (!value) return neutral;
+  if (isTmStatusThemeColor(value)) {
+    return {
+      background: `rgb(var(--v-theme-${value}))`,
+      color: `rgb(var(--v-theme-on-${value}))`,
+    };
+  }
+  if (isLegacyHexStatusColor(value)) return { background: value, color: '#fff' };
+  return neutral;
+}
