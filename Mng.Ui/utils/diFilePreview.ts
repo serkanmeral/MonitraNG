@@ -149,6 +149,19 @@ export function diPreviewKind(resource: DiResource): DiFilePreviewKind {
   return kind;
 }
 
+/** Yüklenen dosyada tarama boş veya none ise eski kayıttır; erişim açıktır. */
+export function diScanBlocksContent(resource: {
+  type?: string | null;
+  origin?: string | null;
+  scanStatus?: string | null;
+}): boolean {
+  if (resource.type !== 'file') return false;
+  if ((resource.origin || '').toLowerCase() !== 'upload') return false;
+  const status = (resource.scanStatus || '').trim().toLowerCase();
+  if (!status || status === 'none') return false;
+  return status !== 'clean';
+}
+
 /** Dosya inline önizlenebilir mi? */
 export function isDiPreviewable(resource: DiResource): boolean {
   return diPreviewKind(resource) !== 'none';

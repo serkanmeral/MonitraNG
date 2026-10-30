@@ -144,4 +144,7 @@ public interface IResourceService
 
     /// <summary>Markdown içeriğinde bu sayfaya DI iç linki veren kaynaklar (backlink).</summary>
     Task<ResourceListResult> GetMarkdownBacklinksAsync(string id, CancellationToken ct = default);
+
+    /// <summary>Yüklenmiş dosyayı yeniden tarar. Sonuç gelene kadar içerik kapalı kalır.</summary>
+    Task<ResourceDto> RequestScanAsync(string id, CancellationToken ct = default);
 }

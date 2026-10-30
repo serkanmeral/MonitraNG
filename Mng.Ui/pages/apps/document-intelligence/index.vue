@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onActivated, watch } from 'vue';
+import { ref, computed, onMounted, onActivated, onBeforeUnmount, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import DiBrowseToolbar from '@/components/apps/document-intelligence/DiBrowseToolbar.vue';
@@ -29,7 +29,8 @@ import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligenc
 import DiEditorLockDialog from '@/components/apps/document-intelligence/DiEditorLockDialog.vue';
 import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
-import { isDiPreviewable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiCloneable, isDiSheet, isDiPresentation, isDiUploadedFile, isDiDrawioFile, isDiVisualEvidenceFile } from '@/utils/diFilePreview';
+import { diScanBlocksContent, isDiPreviewable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiCloneable, isDiSheet, isDiPresentation, isDiUploadedFile, isDiDrawioFile, isDiVisualEvidenceFile } from '@/utils/diFilePreview';
+import { useDomainFileLimit } from '@/utils/domainFileLimit';
 import { useDiLazyFolderTree } from '@/composables/useDiLazyFolderTree';
 import {
   DI_HOME_PATH,
@@ -65,6 +66,8 @@ import {
   diMove,
   diDelete,
   diSearch,
+  diAwaitScan,
+  diRequestScan,
   diCreateFileResource,
   diReplaceFileContent,
   diCreateNativeDocument,
@@ -265,7 +268,7 @@ const permTargetId = ref<string | null>(null);
 const permTargetName = ref('');
 
 // Dosya yükleme
-const MAX_FILE_MB = 20;
+const { maxBytes: maxFileBytes, maxMb: maxFileMb } = useDomainFileLimit();
 const fileDialog = ref(false);
 const fileInputEl = ref<HTMLInputElement | null>(null);
 const pickedFile = ref<File | null>(null);
@@ -273,6 +276,7 @@ const fileDisplayName = ref('');
 const fileKind = ref<string | null>(null);
 const replaceTarget = ref<DiResource | null>(null);
 const downloadingId = ref<string | null>(null);
+const scanningId = ref<string | null>(null);
 
 // Dosya inline önizleme
 const filePreviewOpen = ref(false);
@@ -327,6 +331,68 @@ function indexChipLabel(status: string | null | undefined): string {
   if (status === 'failed') return t('documentIntelligence.indexFailed');
   if (status === 'running') return t('documentIntelligence.indexRunning');
   return t('documentIntelligence.indexNone');
+}
+
+function scanChipVisible(resource: DiResource): boolean {
+  if (resource.type !== 'file' || (resource.origin || '').toLowerCase() !== 'upload') return false;
+  return ['scanning', 'clean', 'threat', 'failed'].includes(resource.scanStatus);
+}
+
+function scanChipLabel(resource: DiResource): string {
+  if (resource.scanStatus === 'clean') return t('documentIntelligence.scanClean');
+  if (resource.scanStatus === 'threat') return t('documentIntelligence.scanThreat');
+  if (resource.scanStatus === 'failed') return t('documentIntelligence.scanFailed');
+  return t('documentIntelligence.scanScanning');
+}
+
+function scanChipColor(status: string | null | undefined): string {
+  if (status === 'clean') return 'success';
+  if (status === 'threat' || status === 'failed') return 'error';
+  if (status === 'scanning') return 'info';
+  return 'default';
+}
+
+function scanBlockMessage(status: string | null | undefined): string {
+  if (status === 'threat') return t('documentIntelligence.scanThreatMessage');
+  if (status === 'failed') return t('documentIntelligence.scanFailedMessage');
+  return t('documentIntelligence.scanPendingMessage');
+}
+
+function scanResultMessage(resource: DiResource): string {
+  if (resource.scanStatus === 'clean') return t('documentIntelligence.scanClean');
+  if (resource.scanStatus === 'threat') return t('documentIntelligence.scanThreatMessage');
+  if (resource.scanStatus === 'failed') return t('documentIntelligence.scanFailedMessage');
+  if (resource.scanStatus === 'scanning') return t('documentIntelligence.scanStillRunning');
+  return t('documentIntelligence.fileUploaded');
+}
+
+function canOfferScan(resource: DiResource): boolean {
+  return resource.type === 'file' && (resource.origin || '').toLowerCase() === 'upload';
+}
+
+function patchListingRow(resource: DiResource) {
+  const row = children.value.findIndex((item) => item.id === resource.id);
+  if (row >= 0) children.value[row] = resource;
+  if (openDoc.value?.id === resource.id) openDoc.value = resource;
+}
+
+async function scanDocument(resource: DiResource) {
+  if (!canOfferScan(resource) || resource.scanStatus === 'scanning' || scanningId.value) return;
+  scanningId.value = resource.id;
+  try {
+    const queued = await diRequestScan(resource.id);
+    patchListingRow(queued);
+    const scanned = await diAwaitScan(queued);
+    patchListingRow(scanned);
+    notify(
+      scanResultMessage(scanned),
+      scanned.scanStatus === 'threat' || scanned.scanStatus === 'failed' ? 'error' : 'success',
+    );
+  } catch (error) {
+    notifyError(error, 'documentIntelligence.scanRequestFailed');
+  } finally {
+    scanningId.value = null;
+  }
 }
 
 function indexChipColor(status: string | null | undefined): string {
@@ -501,6 +567,35 @@ async function refreshWorkspace() {
 }
 
 /** Yalnızca liste/breadcrumb (ağaç değişmediyse). */
+async function refreshListingQuiet() {
+  try {
+    applyBrowseContext(await diGetBrowseContext(selectedFolderId.value, resolveChildrenListingOptions()));
+  } catch {
+    // Keep the visible list while a scan poll fails.
+  }
+}
+
+let scanPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+function armScanPoll() {
+  if (scanPollTimer) {
+    clearTimeout(scanPollTimer);
+    scanPollTimer = null;
+  }
+  const folderId = selectedFolderId.value;
+  if (!folderId || !children.value.some((item) => item.scanStatus === 'scanning')) return;
+  scanPollTimer = setTimeout(() => {
+    scanPollTimer = null;
+    if (selectedFolderId.value !== folderId) return;
+    void refreshListingQuiet().finally(() => armScanPoll());
+  }, 3000);
+}
+
+watch(children, () => armScanPoll());
+onBeforeUnmount(() => {
+  if (scanPollTimer) clearTimeout(scanPollTimer);
+});
+
 async function refreshListing() {
   childrenLoading.value = true;
   try {
@@ -591,6 +686,10 @@ function buildResourceNavUrl(resourceId: string): string {
 async function openResource(resource: DiResource) {
   if (resource.type === 'folder') {
     await selectFolder(resource.id);
+    return;
+  }
+  if (diScanBlocksContent(resource)) {
+    notify(scanBlockMessage(resource.scanStatus), resource.scanStatus === 'threat' ? 'error' : 'info');
     return;
   }
   const fromFolder = selectedFolderId.value;
@@ -1248,8 +1347,8 @@ function fileExtension(name: string): string {
 async function submitFile() {
   const file = pickedFile.value;
   if (!file) return;
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
-    notify(t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }), 'error');
+  if (file.size > maxFileBytes.value) {
+    notify(t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb.value }), 'error');
     return;
   }
   const name = (fileDisplayName.value.trim() || file.name).trim();
@@ -1258,16 +1357,20 @@ async function submitFile() {
     const content = await fileToBase64(file);
     const extension = fileExtension(file.name) || null;
     if (replaceTarget.value) {
-      await diReplaceFileContent(replaceTarget.value.id, {
+      const replaced = await diReplaceFileContent(replaceTarget.value.id, {
         content,
         originalFileName: file.name,
         mimeType: file.type || null,
         extension,
         changeNote: 'replace',
       });
-      notify(t('documentIntelligence.fileReplaced'), 'success');
+      const scanned = await diAwaitScan(replaced);
+      notify(
+        scanResultMessage(scanned),
+        scanned.scanStatus === 'threat' || scanned.scanStatus === 'failed' ? 'error' : 'success',
+      );
     } else {
-      await diCreateFileResource({
+      const created = await diCreateFileResource({
         parentId: selectedFolderId.value,
         name,
         originalFileName: file.name,
@@ -1277,7 +1380,11 @@ async function submitFile() {
         size: file.size,
         kind: fileKind.value,
       });
-      notify(t('documentIntelligence.fileUploaded'), 'success');
+      const scanned = await diAwaitScan(created);
+      notify(
+        scanResultMessage(scanned),
+        scanned.scanStatus === 'threat' || scanned.scanStatus === 'failed' ? 'error' : 'success',
+      );
     }
     fileDialog.value = false;
     await refreshListing();
@@ -1289,6 +1396,10 @@ async function submitFile() {
 }
 
 async function downloadFile(resource: DiResource) {
+  if (diScanBlocksContent(resource)) {
+    notify(scanBlockMessage(resource.scanStatus), resource.scanStatus === 'threat' ? 'error' : 'info');
+    return;
+  }
   if (!resource.filePath) {
     notifyError(null, 'documentIntelligence.errors.download');
     return;
@@ -1922,6 +2033,16 @@ watch(
                             {{ indexChipLabel(d.indexStatus) }}
                           </v-chip>
                           <v-chip
+                            v-if="scanChipVisible(d)"
+                            size="x-small"
+                            variant="tonal"
+                            :color="scanChipColor(d.scanStatus)"
+                            class="ml-1"
+                            :title="d.scanThreat || d.scanError || ''"
+                          >
+                            {{ scanChipLabel(d) }}
+                          </v-chip>
+                          <v-chip
                             v-if="d.type !== 'folder' && d.status && d.status !== 'published'"
                             size="x-small"
                             variant="flat"
@@ -1982,6 +2103,13 @@ watch(
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficePdfExportable(d)" prepend-icon="mdi-file-pdf-box" :title="t('documentIntelligence.exportPdf')" @click="downloadPdfExport(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
+                              <v-list-item
+                                v-if="canOfferScan(d)"
+                                prepend-icon="mdi-shield-search"
+                                :title="t('documentIntelligence.scan')"
+                                :disabled="d.scanStatus === 'scanning' || scanningId === d.id"
+                                @click="scanDocument(d)"
+                              />
                               <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
                               <v-list-item v-if="d.permissions.canMove" prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(d)" />
                               <v-list-item v-if="d.permissions.canDelete" prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(d)" />
@@ -2312,7 +2440,7 @@ watch(
           >
             <v-icon size="40" class="text-medium-emphasis mb-2">mdi-cloud-upload-outline</v-icon>
             <div v-if="!pickedFile" class="text-body-2 text-medium-emphasis">
-              {{ t('documentIntelligence.selectFileHint', { max: MAX_FILE_MB }) }}
+              {{ t('documentIntelligence.selectFileHint', { max: maxFileMb }) }}
             </div>
             <div v-else class="d-flex align-center ga-2">
               <v-icon size="20" color="primary">mdi-file-outline</v-icon>

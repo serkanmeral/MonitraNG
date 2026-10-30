@@ -150,6 +150,12 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetIndex(string id, CancellationToken ct) =>
         Ok(await _index.GetStatusAsync(id, ct));
 
+    /// <summary>Yüklenmiş dosyayı yeniden tarar. Bitene kadar indirme ve önizleme kapalıdır.</summary>
+    [HttpPost("{id}/scan")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RequestScan(string id, CancellationToken ct) =>
+        Ok(await _resources.RequestScanAsync(id, ct));
+
     /// <summary>Belgenin düz metnini indeksler. Aynı anda tek iş. Model kullanmaz.</summary>
     [HttpPost("{id}/index")]
     [ProducesResponseType(typeof(ResourceIndexResultDto), StatusCodes.Status200OK)]

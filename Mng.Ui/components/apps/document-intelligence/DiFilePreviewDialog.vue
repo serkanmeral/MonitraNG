@@ -21,8 +21,9 @@ import {
   isDiUploadedFile,
 } from '@/utils/diFilePreview';
 import type { DiResource } from '@/types/apps/documentIntelligence';
+import { useDomainFileLimit } from '@/utils/domainFileLimit';
 
-const MAX_FILE_MB = 20;
+const { maxBytes: maxFileBytes, maxMb: maxFileMb } = useDomainFileLimit();
 
 const props = defineProps<{
   modelValue: boolean;
@@ -153,10 +154,10 @@ async function onReplacePick(event: Event) {
   const file = input.files && input.files.length ? input.files[0] : null;
   if (input) input.value = '';
   if (!file || !current.value) return;
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+  if (file.size > maxFileBytes.value) {
     push({
       title: t('errors.dg.toastTitle'),
-      message: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
+      message: t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb.value }),
       severity: 'error',
     });
     return;

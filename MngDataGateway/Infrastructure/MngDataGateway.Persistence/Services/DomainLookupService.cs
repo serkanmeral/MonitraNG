@@ -148,6 +148,42 @@ namespace MngDataGateway.Persistence.Services
             }
         }
 
+        public async Task<long?> GetMaxFileSizeBytesAsync(string domainName)
+        {
+            if (string.IsNullOrWhiteSpace(domainName))
+                return null;
+
+            var cacheKey = $"{CacheKeyPrefix}maxfile_{domainName.Trim().ToLowerInvariant()}";
+            if (_cache.TryGetValue(cacheKey, out long cached))
+                return cached > 0 ? cached : null;
+
+            try
+            {
+                var mngKeeperDbName = _settings.MongoDB.MngKeeperDatabaseName ?? "mngkeeper";
+                var database = _mongoClient.GetDatabase(mngKeeperDbName);
+                var collection = database.GetCollection<BsonDocument>("domains");
+                var filter = Builders<BsonDocument>.Filter.Eq("name", domainName.Trim());
+                var domain = await collection.Find(filter).FirstOrDefaultAsync();
+                long value = 0;
+                if (domain != null
+                    && domain.TryGetValue("settings", out var settingsValue)
+                    && settingsValue.IsBsonDocument
+                    && settingsValue.AsBsonDocument.TryGetValue("maxFileSizeBytes", out var sizeValue)
+                    && sizeValue.IsNumeric)
+                {
+                    value = sizeValue.ToInt64();
+                }
+
+                _cache.Set(cacheKey, value, TimeSpan.FromMinutes(1));
+                return value > 0 ? value : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting domain file size limit: Domain={Domain}", domainName);
+                return null;
+            }
+        }
+
         public Task ClearCacheAsync()
         {
             // MemoryCache doesn't have a direct way to clear all entries with a prefix

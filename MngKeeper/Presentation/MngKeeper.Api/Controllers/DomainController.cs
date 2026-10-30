@@ -359,6 +359,8 @@ namespace MngKeeper.Api.Controllers
                 target.MaxUsers = incoming.MaxUsers.Value;
             if (incoming.MaxAssets.HasValue)
                 target.MaxAssets = incoming.MaxAssets.Value;
+            if (incoming.MaxFileSizeBytes.HasValue)
+                target.MaxFileSizeBytes = incoming.MaxFileSizeBytes.Value < 0 ? 0 : incoming.MaxFileSizeBytes.Value;
             if (incoming.EnableMqtt.HasValue)
                 target.EnableMqtt = incoming.EnableMqtt.Value;
 

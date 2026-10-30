@@ -197,11 +197,26 @@ const formData = ref<UpdateDomainRequest>({
   settings: {
     maxUsers: 100,
     maxAssets: 1000,
+    maxFileSizeBytes: 0,
     enableMqtt: true,
     directoryPrivileges: mapManagerPrivileges(null),
     directoryLdap: emptyDirectoryLdap(),
     password: emptyDomainPassword(),
     mail: emptyDomainMail(),
+  },
+});
+
+const maxFileSizeMb = computed({
+  get(): number | null {
+    const bytes = formData.value.settings?.maxFileSizeBytes ?? 0;
+    return bytes > 0 ? Math.round(bytes / (1024 * 1024)) : null;
+  },
+  set(mb: number | null) {
+    if (!formData.value.settings) return;
+    const value = Number(mb);
+    formData.value.settings.maxFileSizeBytes = Number.isFinite(value) && value > 0
+      ? Math.round(value * 1024 * 1024)
+      : 0;
   },
 });
 
@@ -489,6 +504,7 @@ const cancelEdit = () => {
       maxUsers: domain.value.settings?.maxUsers || 100,
       maxAssets: domain.value.settings?.maxAssets || 1000,
       enableMqtt: domain.value.settings?.enableMqtt ?? true,
+      maxFileSizeBytes: domain.value.settings?.maxFileSizeBytes || 0,
       directoryPrivileges: mapManagerPrivileges(domain.value.settings?.directoryPrivileges),
       directoryLdap: mapDirectoryLdap(domain.value.settings?.directoryLdap),
       password: mapDomainPassword(domain.value.settings?.password),
@@ -1238,6 +1254,31 @@ onMounted(async () => {
                   v-else
                   v-model.number="formData.settings!.maxAssets"
                   :label="t('domain.fields.maxAssets')"
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                  min="1"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-if="!isEditing"
+                  :label="t('domain.fields.maxFileSize')"
+                  :model-value="domain.settings?.maxFileSizeBytes ? Math.round(domain.settings.maxFileSizeBytes / (1024 * 1024)) : ''"
+                  :hint="t('domain.fields.maxFileSizeHint')"
+                  persistent-hint
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                />
+                <v-text-field
+                  v-else
+                  v-model.number="maxFileSizeMb"
+                  :label="t('domain.fields.maxFileSize')"
+                  :hint="t('domain.fields.maxFileSizeHint')"
+                  persistent-hint
                   variant="outlined"
                   density="comfortable"
                   type="number"

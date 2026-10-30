@@ -22,7 +22,12 @@ public static class ServiceRegistration
             s.EditorLock = settings.EditorLock;
             s.Keeper = settings.Keeper;
             s.FooterProfile = settings.FooterProfile;
+            s.LegacyOdakFooterEnabled = settings.LegacyOdakFooterEnabled;
             s.DocumentGeneration = settings.DocumentGeneration;
+            s.Notifications = settings.Notifications;
+            s.OpenSearch = settings.OpenSearch;
+            s.Summary = settings.Summary;
+            s.Antivirus = settings.Antivirus;
         });
 
         return services;

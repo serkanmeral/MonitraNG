@@ -27,6 +27,7 @@ const props = defineProps<{
   emailTemplateItems: { value: string; title: string }[];
   inAppTemplateItems: { value: string; title: string }[];
   saving?: boolean;
+  error?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -38,7 +39,13 @@ const { t } = useAppI18n();
 const draft = ref<OcNotificationPolicyDraft>(newNotificationPolicyDraft());
 
 const isEdit = computed(() => !!props.policy?.__dataId);
-const canSave = computed(() => validateNotificationPolicyDraft(draft.value) === null);
+const canSave = computed(() => {
+  try {
+    return validateNotificationPolicyDraft(draft.value) === null;
+  } catch {
+    return false;
+  }
+});
 const isTransitionEvent = computed(() => draft.value.eventType === 'WorkItemTransitioned');
 const wantsEmail = computed(() => draft.value.channels.includes('email'));
 const wantsInApp = computed(() => draft.value.channels.includes('inApp'));
@@ -135,7 +142,13 @@ function close() {
 
 function submit() {
   if (!canSave.value) return;
-  emit('save', buildNotificationPolicyPayload(draft.value, props.workspaceId));
+  emit(
+    'save',
+    buildNotificationPolicyPayload(draft.value, props.workspaceId, {
+      email: props.emailTemplateItems,
+      inApp: props.inAppTemplateItems,
+    })
+  );
 }
 </script>
 
@@ -156,6 +169,9 @@ function submit() {
       <v-card-text class="pt-4">
         <v-alert type="info" variant="tonal" density="compact" class="mb-4 rounded-lg">
           {{ t('operationCore.workspaceDefinitions.mail.dialogHint') }}
+        </v-alert>
+        <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-4 rounded-lg">
+          {{ error }}
         </v-alert>
 
         <v-text-field

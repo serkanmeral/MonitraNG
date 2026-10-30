@@ -78,6 +78,13 @@ public class DmResource
     public int? indexCharCount { get; set; }
     public int? indexedVersionNumber { get; set; }
 
+    /// <summary>Antivirüs: scanning, clean, threat, failed. Boş = bu özellikten önceki kayıt.</summary>
+    public string? scanStatus { get; set; }
+    public string? scanThreat { get; set; }
+    public string? scanError { get; set; }
+    public DateTime? scannedAt { get; set; }
+    public int? scannedVersionNumber { get; set; }
+
     /// <summary>Özet durumu: none, running, done, failed. stale okumada hesaplanır.</summary>
     public string? summaryStatus { get; set; }
     public string? summaryText { get; set; }

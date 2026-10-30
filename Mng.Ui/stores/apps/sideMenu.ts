@@ -80,6 +80,31 @@ interface SideMenuState {
 }
 
 const scenarioStudioRoute = '/apps/alarm-center/scenario-studio';
+const meetingsRoute = '/apps/meetings';
+
+function ensureMeetingsMenuItem(items: SideMenuItem[]): SideMenuItem[] {
+  if (items.some((item) => item.to === meetingsRoute)) return items;
+
+  const projectsItem = items.find((item) => item.to === '/apps/project-management');
+  return [
+    ...items,
+    {
+      __dataId: 'ui-org-meetings',
+      order: (projectsItem?.order ?? 500) + 1,
+      itemType: 'item',
+      pageType: 'user',
+      title: 'Toplantılar',
+      pageCode: 'meetings.menuTitle',
+      icon: 'CalendarIcon',
+      iconType: 'tabler',
+      to: meetingsRoute,
+      type: 'internal',
+      parentId: projectsItem?.parentId ?? null,
+      level: projectsItem?.level ?? 0,
+      disabled: false,
+    },
+  ];
+}
 
 function ensureScenarioStudioMenuItem(items: SideMenuItem[]): SideMenuItem[] {
   if (items.some(item => item.to === scenarioStudioRoute)) return items;
@@ -168,9 +193,9 @@ export const useSideMenuStore = defineStore('sideMenu', {
               
               // TTL kontrolü (10 dakika)
               if (now - timestamp < (ttl || 600000)) {
-                const items = ensureScenarioStudioMenuItem(
-                  JSON.parse(cachedData) as SideMenuItem[],
-                );
+                const items = ensureMeetingsMenuItem(
+                ensureScenarioStudioMenuItem(JSON.parse(cachedData) as SideMenuItem[]),
+              );
                 this.menuItems = items;
                 this.menuItemsTree = this.buildMenuTree(items);
                 this.lastUpdated = timestamp;
@@ -216,7 +241,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
         }
 
         // Map items to SideMenuItem format (handle different field name cases)
-        this.menuItems = ensureScenarioStudioMenuItem(items.map((item: any) => ({
+        this.menuItems = ensureMeetingsMenuItem(ensureScenarioStudioMenuItem(items.map((item: any) => ({
           __dataId: item.__dataId ?? item.DataId ?? item.dataId,
           dataId: item.__dataId ?? item.DataId ?? item.dataId,
           itemType: item.itemType ?? item.ItemType ?? 'item',
@@ -240,7 +265,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
           chipVariant: item.chipVariant ?? item.ChipVariant,
           chipIcon: item.chipIcon ?? item.ChipIcon,
           permissions: item.permissions ?? item.Permissions,
-        })) as SideMenuItem[]);
+        })) as SideMenuItem[]));
         this.menuItemsTree = this.buildMenuTree(this.menuItems);
         this.lastUpdated = Date.now();
 

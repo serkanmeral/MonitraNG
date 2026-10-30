@@ -57,6 +57,7 @@ export interface Domain {
   settings?: {
     maxUsers?: number;
     maxAssets?: number;
+    maxFileSizeBytes?: number;
     enableMqtt?: boolean;
     mqttSettings?: any;
     customSettings?: Record<string, any>;
@@ -148,6 +149,7 @@ export interface UpdateDomainRequest {
   settings?: {
     maxUsers?: number;
     maxAssets?: number;
+    maxFileSizeBytes?: number;
     enableMqtt?: boolean;
     mqttSettings?: any;
     customSettings?: Record<string, any>;

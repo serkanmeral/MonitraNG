@@ -46,6 +46,7 @@ public class ResourceService : IResourceService
     private readonly MngDocumentSettings _settings;
     private readonly DocumentIndexCleaner _indexCleaner;
     private readonly IDocumentAutoIndex _autoIndex;
+    private readonly IDocumentAutoScan _autoScan;
     private readonly ILogger<ResourceService> _logger;
 
     public ResourceService(
@@ -77,6 +78,7 @@ public class ResourceService : IResourceService
         _indexCleaner = indexCleaner;
         _autoIndex = autoIndex;
         _settings = settings.Value;
+        _autoScan = autoScan;
         _logger = logger;
     }
 
@@ -231,6 +233,38 @@ public class ResourceService : IResourceService
     }
 
     public async Task<IReadOnlyList<BreadcrumbDto>> GetBreadcrumbAsync(string id, CancellationToken ct = default)
+    public async Task<ResourceDto> RequestScanAsync(string id, CancellationToken ct = default)
+    {
+        if (!_settings.Antivirus.Enabled)
+        {
+            throw DocumentException.Validation(
+                "SCAN_DISABLED",
+                "Antivirus scanning is disabled.",
+                "Virüs taraması bu ortamda kapalı.");
+        }
+
+        var resource = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        if (!ResourceScanStatus.IsUploadFile(resource.type, resource.origin))
+        {
+            throw DocumentException.Validation(
+                "SCAN_NOT_UPLOAD",
+                "Only uploaded files are scanned.",
+                "Yalnızca yüklenen dosyalar taranır.");
+        }
+
+        if (string.Equals(resource.scanStatus?.Trim(), ResourceScanStatus.Scanning, StringComparison.OrdinalIgnoreCase))
+            return ToDto(resource, snapshot.Resolve(resource));
+
+        var payload = new Dictionary<string, object?>();
+        MarkScanning(payload);
+        var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, resource.__dataId!, payload, Token, ct);
+        var dto = ToDto(updated, snapshot.Resolve(updated));
+        PublishContent(dto);
+        return dto;
+    }
+
     {
         var resource = await LoadOrThrowAsync(id, ct);
         var snapshot = await _perms.LoadSnapshotAsync(ct);
@@ -770,6 +804,7 @@ public class ResourceService : IResourceService
         if (!snapshot.Resolve(resource).CanDownload)
             throw DocumentException.Forbidden("Dosyayı indirmek için yetki gerekir.");
 
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         var (path, storedName) = ReadFileField(resource.file);
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -832,6 +867,8 @@ public class ResourceService : IResourceService
         };
         DocumentIndexCleaner.Apply(payload);
 
+        if (QueueScan(existing.origin))
+            MarkScanning(payload);
         string mimeForVersion;
         if (ResourceOrigin.IsManagedDocument(existing.origin)
             && ManagedOfficeProfiles.TryResolve(existing.extension, existing.mimeType, out var profile))
@@ -850,6 +887,7 @@ public class ResourceService : IResourceService
         await WriteFileVersionAsync(id, newVersion, bytes, fileName, $"restore from v{versionNumber}", ct, mimeType: mimeForVersion);
         var dto = ToDto(updated, snapshot.Resolve(updated));
         ScheduleIndex(dto);
+        PublishContent(dto);
         return dto;
     }
 
@@ -1052,7 +1090,8 @@ public class ResourceService : IResourceService
             payload["extension"] = request.Extension.Trim();
 
         DocumentIndexCleaner.Apply(payload);
-
+        if (QueueScan(existing.origin))
+            MarkScanning(payload);
         if (string.IsNullOrWhiteSpace(existing.kind)
             && VisualEvidence.IsVisualEvidence(request.Extension, originalName, mime))
         {
@@ -1071,7 +1110,7 @@ public class ResourceService : IResourceService
             mimeType: mime);
         var dto = ToDto(updated, snapshot.Resolve(updated));
         ScheduleIndex(dto);
-        return dto;
+        PublishContent(dto);
     }
 
     private async Task<ResourceDto> CreateFileResourceCoreAsync(
@@ -1133,10 +1172,8 @@ public class ResourceService : IResourceService
             payload["kind"] = await _kinds.NormalizeAsync(kindCode, ct);
 
         if (!string.IsNullOrWhiteSpace(request.Origin))
-            payload["origin"] = request.Origin.Trim();
-        else
-            payload["origin"] = ResourceOrigin.Upload;
-        if (!string.IsNullOrWhiteSpace(request.TemplateId))
+        var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
+        payload["origin"] = origin;
             payload["templateId"] = request.TemplateId.Trim();
         if (!string.IsNullOrWhiteSpace(request.TemplateCode))
             payload["templateCode"] = request.TemplateCode.Trim();
@@ -1147,10 +1184,11 @@ public class ResourceService : IResourceService
         if (!string.IsNullOrWhiteSpace(request.DocumentNo))
             payload["documentNo"] = request.DocumentNo.Trim();
 
+        if (QueueScan(origin))
+            MarkScanning(payload);
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
 
         var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
-        var versionFileName = storedFileName;
         if (ResourceOrigin.IsManagedDocument(origin))
         {
             if (!versionFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
@@ -1182,7 +1220,7 @@ public class ResourceService : IResourceService
 
         var dto = await ToDtoWithEffectiveAsync(created, ct);
         ScheduleIndex(dto);
-        return dto;
+        PublishContent(dto);
     }
 
     public async Task<ResourceDto> CloneResourceAsync(string id, CloneResourceRequest request, CancellationToken ct = default)
@@ -1530,6 +1568,7 @@ public class ResourceService : IResourceService
         if (!effective.CanDownload)
             throw DocumentException.Forbidden("Önizleme için indirme yetkisi gerekir.");
 
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         var (path, storedName) = ReadFileField(resource.file);
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -1595,6 +1634,7 @@ public class ResourceService : IResourceService
         if (!effective.CanDownload)
             throw DocumentException.Forbidden("PDF indirmek için indirme yetkisi gerekir.");
 
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         var (path, storedName) = ReadFileField(resource.file);
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -2185,6 +2225,7 @@ public class ResourceService : IResourceService
         CancellationToken ct)
     {
         var version = await LoadVersionOrThrowAsync(resource.__dataId!, versionNumber, dataGatewayToken, ct);
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         var base64 = version.contentSnapshot;
         if (string.IsNullOrWhiteSpace(base64))
         {
@@ -2351,6 +2392,29 @@ public class ResourceService : IResourceService
     }
 
     private void ScheduleIndex(ResourceDto resource)
+    private bool QueueScan(string? origin) =>
+        _settings.Antivirus.Enabled
+        && string.Equals(origin?.Trim(), ResourceOrigin.Upload, StringComparison.OrdinalIgnoreCase);
+
+    private static void MarkScanning(Dictionary<string, object?> payload)
+    {
+        payload["scanStatus"] = ResourceScanStatus.Scanning;
+        payload["scanThreat"] = null;
+        payload["scanError"] = null;
+        payload["scannedAt"] = null;
+    }
+
+    private void PublishContent(ResourceDto resource)
+    {
+        if (string.Equals(resource.ScanStatus, ResourceScanStatus.Scanning, StringComparison.OrdinalIgnoreCase))
+        {
+            _autoScan.Schedule(resource.Id);
+            return;
+        }
+
+        ScheduleIndex(resource);
+    }
+
     {
         if (string.IsNullOrWhiteSpace(resource.Id))
             return;
@@ -2438,6 +2502,10 @@ public class ResourceService : IResourceService
             IndexError = r.indexError,
             IndexCharCount = r.indexCharCount,
             SummaryStatus = ResolveSummaryStatus(r),
+            ScanStatus = string.IsNullOrWhiteSpace(r.scanStatus) ? "none" : r.scanStatus.Trim(),
+            ScanThreat = r.scanThreat,
+            ScanError = r.scanError,
+            ScannedAt = r.scannedAt,
             SummaryText = r.summaryText,
             SummarizedAt = r.summarizedAt,
             SummaryError = r.summaryError,

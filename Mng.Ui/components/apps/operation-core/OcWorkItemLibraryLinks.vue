@@ -6,13 +6,16 @@ import DiPickResourceDialog from '@/components/apps/document-intelligence/DiPick
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
+  diAwaitScan,
   diCreateFileResource,
   diDownloadResource,
   diGetById,
 } from '@/services/documentIntelligenceService';
+import { diScanBlocksContent } from '@/utils/diFilePreview';
 import { ocUpdateWorkItem } from '@/services/operationCoreService';
 import { DI_RESOURCE_TYPE, type DiResource } from '@/types/apps/documentIntelligence';
 import { resolveOcWorkspaceLibrary } from '@/utils/ocWorkspaceLibrary';
+import { useDomainFileLimit } from '@/utils/domainFileLimit';
 
 const props = defineProps<{
   workItemId: string;
@@ -25,7 +28,7 @@ const emit = defineEmits<{
   changed: [];
 }>();
 
-const MAX_FILE_MB = 20;
+const { maxBytes: maxFileBytes, maxMb: maxFileMb } = useDomainFileLimit();
 
 interface LinkRow {
   id: string;
@@ -164,8 +167,8 @@ function fileExtension(name: string): string {
 }
 
 async function uploadInto(folderId: string, file: File) {
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
-    errorLocal.value = t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB });
+  if (file.size > maxFileBytes.value) {
+    errorLocal.value = t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb.value });
     return;
   }
   saving.value = true;
@@ -180,7 +183,12 @@ async function uploadInto(folderId: string, file: File) {
       extension: fileExtension(file.name) || null,
       size: file.size,
     });
-    await linkId(created.id);
+    const scanned = await diAwaitScan(created);
+    if (diScanBlocksContent(scanned)) {
+      errorLocal.value = scanBlockText(scanned.scanStatus);
+      return;
+    }
+    await linkId(scanned.id);
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'operationCore.profile.attachments.uploadError');
   } finally {
@@ -188,8 +196,18 @@ async function uploadInto(folderId: string, file: File) {
   }
 }
 
+function scanBlockText(status: string | null | undefined): string {
+  if (status === 'threat') return t('documentIntelligence.scanThreatMessage');
+  if (status === 'failed') return t('documentIntelligence.scanFailedMessage');
+  return t('documentIntelligence.scanPendingMessage');
+}
+
 function openRow(row: LinkRow) {
   if (!row.resource || row.broken) return;
+  if (diScanBlocksContent(row.resource)) {
+    errorLocal.value = scanBlockText(row.resource.scanStatus);
+    return;
+  }
   if (row.resource.type === DI_RESOURCE_TYPE.markdown) {
     markdownPreviewResource.value = row.resource;
     markdownPreviewOpen.value = true;
@@ -202,6 +220,10 @@ function openRow(row: LinkRow) {
 }
 
 async function downloadResource(resource: DiResource) {
+  if (diScanBlocksContent(resource)) {
+    errorLocal.value = scanBlockText(resource.scanStatus);
+    return;
+  }
   const { blob, fileName } = await diDownloadResource(resource.id, resource.fileName || resource.name);
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

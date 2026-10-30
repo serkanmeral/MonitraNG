@@ -72,17 +72,8 @@ public sealed class DocumentSummaryService : IDocumentSummaryService
                 "Özet için belgenin indeksi tamamlanmış olmalı.");
         }
 
-        if (_board.TryGet(id, out var live)
-            && (live.Status == "running" || (live.Status == "done" && !string.IsNullOrWhiteSpace(live.Text))))
-        {
+        if (_board.TryGet(id, out var live) && live.Status == "running")
             return FromSnapshot(live);
-        }
-
-        if (string.Equals(resource.SummaryStatus, "done", StringComparison.OrdinalIgnoreCase)
-            && !string.IsNullOrWhiteSpace(resource.SummaryText))
-        {
-            return FromResource(resource);
-        }
 
         var domain = string.IsNullOrWhiteSpace(_ctx.DomainName) ? "default" : _ctx.DomainName.Trim();
         var gate = DocumentJobGate.For(domain);

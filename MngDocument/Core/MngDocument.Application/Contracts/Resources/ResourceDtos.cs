@@ -55,6 +55,12 @@ public sealed record ResourceDto
     public string? IndexError { get; init; }
     public int? IndexCharCount { get; init; }
 
+    /// <summary>none, scanning, clean, threat, failed. none eski kayıttır ve erişime açıktır.</summary>
+    public string ScanStatus { get; init; } = "none";
+    public string? ScanThreat { get; init; }
+    public string? ScanError { get; init; }
+    public DateTime? ScannedAt { get; init; }
+
     /// <summary>none, running, done, failed veya okumada hesaplanan stale.</summary>
     public string SummaryStatus { get; init; } = "none";
     public string? SummaryText { get; init; }

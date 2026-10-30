@@ -31,6 +31,7 @@ public class FilesController : ControllerBase
     private readonly IUserInfoService _userInfoService;
     private readonly IDatasetService _datasetService;
     private readonly IPermissionService _permissionService;
+    private readonly IDomainLookupService _domainLookup;
     private readonly MngDataGatewaySettings _settings;
 
     public FilesController(
@@ -50,6 +51,8 @@ public class FilesController : ControllerBase
         _userInfoService = userInfoService ?? throw new ArgumentNullException(nameof(userInfoService));
         _datasetService = datasetService ?? throw new ArgumentNullException(nameof(datasetService));
         _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
+        _settings = options.Value ?? throw new ArgumentNullException(nameof(options));
+        _domainLookup = domainLookup ?? throw new ArgumentNullException(nameof(domainLookup));
         _settings = options.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -120,7 +123,9 @@ public class FilesController : ControllerBase
 
             // 6. Get file options from field definition or use defaults
             var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
-
+            var domainMax = await _domainLookup.GetMaxFileSizeBytesAsync(domainName);
+            if (domainMax is > 0)
+                fileOptions.MaxFileSize = domainMax.Value;
             // 7. Generate record ID if not provided (for new records)
             var recordId = request.RecordId ?? Guid.NewGuid().ToString();
 

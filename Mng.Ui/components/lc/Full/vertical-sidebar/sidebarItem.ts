@@ -434,6 +434,12 @@ const sidebarItem: menu[] = [
     to: "/apps/project-management",
   },
   {
+    title: "Toplantılar",
+    pageCode: "meetings.menuTitle",
+    icon: CalendarIcon,
+    to: "/apps/meetings",
+  },
+  {
     title: "Raporlar",
     pageCode: "reporting.browse.menuTitle",
     icon: ChartDotsIcon,

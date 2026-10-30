@@ -87,7 +87,7 @@ public sealed class DocumentSummaryRunner
 
             summary = summary.Trim();
             if (summary.Length > 8000)
-                summary = summary[..8000];
+                summary = TrimToLastSentence(summary[..8000]);
 
             var saved = await PublishAsync(
                 id, token, state, "done", "Özet hazır", summary, chunked, total, total, "Özet hazır", ct, version);
@@ -223,14 +223,34 @@ public sealed class DocumentSummaryRunner
             : null;
         if (string.IsNullOrWhiteSpace(text))
             throw new InvalidOperationException("Ollama returned an empty summary.");
-        return text.Trim();
+
+        var truncated = doc.RootElement.TryGetProperty("done_reason", out var reason)
+            && string.Equals(reason.GetString(), "length", StringComparison.OrdinalIgnoreCase);
+        text = text.Trim();
+        return truncated ? TrimToLastSentence(text) : text;
+    }
+
+    private static string TrimToLastSentence(string text)
+    {
+        var end = -1;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] is '.' or '!' or '?' or '…')
+                end = i;
+        }
+
+        if (end > 0)
+            return text[..(end + 1)].Trim();
+
+        var space = text.LastIndexOf(' ');
+        return space > 0 ? text[..space].Trim() : text.Trim();
     }
 
     private static string BuildChunkPrompt(string text) =>
-        "Aşağıdaki belge parçasını Türkçe özetle. Metinde olmayan bilgi ekleme. En fazla 5 cümle yaz.\n\nMetin:\n" + text;
+        "Belge parçasını Türkçe özetle. Yalnızca özeti yaz. En fazla 5 cümle.\n\n" + text;
 
     private static string BuildMergePrompt(IReadOnlyList<string> pieces) =>
-        "Aşağıdaki parça özetlerini tek bir Türkçe özette birleştir. Yeni bilgi ekleme. En fazla 12 cümle yaz.\n\n" +
+        "Parça özetlerini tek Türkçe özette birleştir. Yalnızca özeti yaz. En fazla 12 cümle.\n\n" +
         string.Join("\n\n", pieces);
 
     private static string Format(TimeSpan elapsed)

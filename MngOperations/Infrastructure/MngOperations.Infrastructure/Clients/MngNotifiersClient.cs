@@ -69,7 +69,7 @@ public class MngNotifiersClient : IMngNotifiersClient
                 return new SendMailResult
                 {
                     Success = false,
-                    ErrorMessage = $"HTTP {(int)response.StatusCode}"
+                    ErrorMessage = FormatHttpError((int)response.StatusCode, body)
                 };
             }
 
@@ -140,7 +140,7 @@ public class MngNotifiersClient : IMngNotifiersClient
                 return new SendMailResult
                 {
                     Success = false,
-                    ErrorMessage = $"HTTP {(int)response.StatusCode}"
+                    ErrorMessage = FormatHttpError((int)response.StatusCode, body)
                 };
             }
 
@@ -165,5 +165,17 @@ public class MngNotifiersClient : IMngNotifiersClient
             _logger.LogWarning(ex, "MngNotifiers send-template request failed");
             return new SendMailResult { Success = false, ErrorMessage = ex.Message };
         }
+    }
+
+    private static string FormatHttpError(int status, string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return $"HTTP {status}";
+
+        var compact = body.Replace('\r', ' ').Replace('\n', ' ').Trim();
+        if (compact.Length > 300)
+            compact = compact[..300];
+
+        return $"HTTP {status}: {compact}";
     }
 }

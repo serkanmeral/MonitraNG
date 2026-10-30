@@ -92,6 +92,8 @@ public sealed class DocumentIndexBatchRunner
 
         if (!CanIndex(resource))
             return "skipped";
+        if (!ResourceScanStatus.AllowsContent(resource.type, resource.origin, resource.scanStatus))
+            return "skipped";
 
         var displayName = string.IsNullOrWhiteSpace(name)
             ? (resource.name ?? resource.title ?? id)

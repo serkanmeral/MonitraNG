@@ -22,7 +22,7 @@ import DiResourcePreviewProvider from '@/components/apps/document-intelligence/D
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAppToast } from '@/composables/useAppToast';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { isDiIndexable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
+import { diScanBlocksContent, isDiIndexable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
 import { DI_HOME_PATH, DI_LAST_FOLDER_STORAGE_KEY, buildDiFolderUrl, parseFromFolderQuery } from '@/utils/diResourceLink';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
@@ -183,6 +183,14 @@ async function goToParentFolder() {
 }
 
 async function downloadFile(r: DiResource) {
+  if (diScanBlocksContent(r)) {
+    errorMessage.value = r.scanStatus === 'threat'
+      ? t('documentIntelligence.scanThreatMessage')
+      : r.scanStatus === 'failed'
+        ? t('documentIntelligence.scanFailedMessage')
+        : t('documentIntelligence.scanPendingMessage');
+    return;
+  }
   try {
     const { blob, fileName } = await diDownloadResource(r.id, r.fileName || r.name);
     const url = URL.createObjectURL(blob);
@@ -241,6 +249,15 @@ async function openLoadedResource(r: DiResource) {
 
   if (r.type === 'folder') {
     await navigateTo(buildDiFolderUrl(r.id), { replace: true });
+    return;
+  }
+
+  if (diScanBlocksContent(r)) {
+    errorMessage.value = r.scanStatus === 'threat'
+      ? t('documentIntelligence.scanThreatMessage')
+      : r.scanStatus === 'failed'
+        ? t('documentIntelligence.scanFailedMessage')
+        : t('documentIntelligence.scanPendingMessage');
     return;
   }
 

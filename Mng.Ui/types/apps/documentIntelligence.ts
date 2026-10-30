@@ -104,6 +104,11 @@ export interface DiResource {
   indexedAt: string | null;
   indexError: string | null;
   indexCharCount: number | null;
+  /** none | scanning | clean | threat | failed. none eski kayıttır. */
+  scanStatus: string;
+  scanThreat: string | null;
+  scanError: string | null;
+  scannedAt: string | null;
   /** none | running | done | failed | stale */
   summaryStatus: string;
   summaryText: string | null;

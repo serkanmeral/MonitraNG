@@ -38,6 +38,7 @@ namespace MngDataGateway.Api.Controllers
         private readonly IPermissionService _permissionService;
         private readonly CsvConverter _csvConverter;
         private readonly IFileProcessingPipeline _fileProcessingPipeline;
+        private readonly IDomainLookupService _domainLookup;
         private readonly MngDataGatewaySettings _settings;
 
         public DataController(
@@ -1168,6 +1169,8 @@ namespace MngDataGateway.Api.Controllers
                 var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
                 var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
 
+                var fileOptions = await ResolveFileOptionsAsync(field, domainName);
+
                 var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
                     new FileUploadRequestDto
                     {
@@ -1229,9 +1232,7 @@ namespace MngDataGateway.Api.Controllers
 
                 var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
                 var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
-                var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
-
-                var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
+                var fileOptions = await ResolveFileOptionsAsync(field, domainName);
                     new FileUploadRequestDto
                     {
                         Content = content,
@@ -1262,6 +1263,15 @@ namespace MngDataGateway.Api.Controllers
         /// </summary>
         private FileProcessingOptionsDto GetFileOptionsFromField(
             FieldDefinition? field,
+        private async Task<FileProcessingOptionsDto> ResolveFileOptionsAsync(FieldDefinition? field, string domainName)
+        {
+            var options = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
+            var domainMax = await _domainLookup.GetMaxFileSizeBytesAsync(domainName);
+            if (domainMax is > 0)
+                options.MaxFileSize = domainMax.Value;
+            return options;
+        }
+
             ValidationSettings validationSettings)
         {
             // For now, use configuration defaults

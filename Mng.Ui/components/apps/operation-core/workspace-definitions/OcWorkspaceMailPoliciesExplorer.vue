@@ -406,6 +406,7 @@ async function deletePolicy() {
       :email-template-items="emailTemplateItems"
       :in-app-template-items="inAppTemplateItems"
       :saving="saving"
+      :error="errorLocal"
       @save="savePolicy"
     />
 

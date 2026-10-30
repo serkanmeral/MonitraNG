@@ -61,7 +61,9 @@ public static class ServiceRegistration
         services.AddScoped<IDocumentDiffService, DocumentDiffService>();
         services.AddScoped<DocumentSummaryRunner>();
         services.AddScoped<DocumentIndexBatchRunner>();
+        services.AddSingleton<ClamAvScanner>();
         services.AddScoped<IDocumentAutoIndex, DocumentAutoIndex>();
+        services.AddScoped<IDocumentAutoScan, DocumentAutoScan>();
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();

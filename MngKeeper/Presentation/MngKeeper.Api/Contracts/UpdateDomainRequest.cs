@@ -22,6 +22,7 @@ public class UpdateDomainSettingsRequest
 {
     public int? MaxUsers { get; set; }
     public int? MaxAssets { get; set; }
+    public long? MaxFileSizeBytes { get; set; }
     public bool? EnableMqtt { get; set; }
 
     /// <summary>When null/absent, existing directoryPrivileges are kept.</summary>

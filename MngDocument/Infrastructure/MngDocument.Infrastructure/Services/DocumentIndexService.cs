@@ -58,6 +58,7 @@ public sealed class DocumentIndexService : IDocumentIndexService
     public async Task<ResourceIndexResultDto> IndexAsync(string id, CancellationToken ct = default)
     {
         var resource = await _resources.GetByIdAsync(id, ct);
+        ResourceScanGuard.EnsureAllowsContent(resource.Type, resource.Origin, resource.ScanStatus);
         EnsureIndexable(resource);
 
         var gate = DocumentJobGate.For(DomainKey());

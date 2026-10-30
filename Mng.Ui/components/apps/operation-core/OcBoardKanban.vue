@@ -16,6 +16,7 @@ const props = defineProps<{
   /** Sürükle-bırak (transition) etkin mi — board permissions.canEdit. */
   editable?: boolean;
   priorityNames?: Record<string, string>;
+  fieldKeys?: string[] | null;
 }>();
 
 const emit = defineEmits<{

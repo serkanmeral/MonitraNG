@@ -55,6 +55,7 @@ export const OC_POOL_FIELD_TYPE_VALUES = [
   'richtext',
   'number',
   'bool',
+  'date',
   'datetime',
   'select',
   'relation',

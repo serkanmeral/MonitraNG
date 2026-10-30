@@ -26,6 +26,20 @@ public class MngDocumentSettings
 
     /// <summary>İndeksli belgenin tek seferlik özeti. Model iş bitince bellekten iner.</summary>
     public SummarySettings Summary { get; set; } = new();
+
+    /// <summary>Yüklenen dosyanın ClamAV taraması. Kapalıyken yeni yüklemeler taranmaz.</summary>
+    public AntivirusSettings Antivirus { get; set; } = new();
+}
+
+public class AntivirusSettings
+{
+    public bool Enabled { get; set; }
+
+    public string Host { get; set; } = "clamav";
+
+    public int Port { get; set; } = 3310;
+
+    public int TimeoutSeconds { get; set; } = 60;
 }
 
 public class OpenSearchSettings
@@ -42,7 +56,7 @@ public class SummarySettings
     public int ChunkChars { get; set; } = 6000;
     /// <summary>Parça özeti üst sınırı. Birleştirme bundan uzun olabilir.</summary>
     public int ChunkPredict { get; set; } = 150;
-    public int MergePredict { get; set; } = 400;
+    public int MergePredict { get; set; } = 800;
     /// <summary>Parçalar bitene kadar model bellekte kalır. Son çağrı 0 gönderir.</summary>
     public int KeepAliveSeconds { get; set; } = 1800;
 }

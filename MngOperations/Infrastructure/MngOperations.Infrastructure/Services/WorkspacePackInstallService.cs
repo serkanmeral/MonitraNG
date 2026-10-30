@@ -167,6 +167,15 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
         var defaultFlow = pack.Flows.First(f => f.IsDefault);
         var flowId = pieces[defaultFlow.Key];
 
+        var priorityIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var priority in pack.Priorities)
+        {
+            var (id, pieceAction) = await EnsurePriorityAsync(priority, token, cancellationToken);
+            priorityIds[priority.Key] = id;
+            pieces[priority.Key] = id;
+            Note(priority.Key, pieceAction, created, skipped, left);
+        }
+
         var typeIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var type in pack.Types)
         {
@@ -196,7 +205,7 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
                 form.Key,
                 pack.Code,
                 FormStamp(form),
-                () => FormPayload(wsId, pack.Code, form, flowId, typeIds),
+                () => FormPayload(wsId, pack.Code, form, flowId, typeIds, priorityIds),
                 row => FormStampFromRow(row, idToKey, Reverse(typeIds), pieces, defaultFlow.Key),
                 replaceUntouched,
                 token,
@@ -268,14 +277,17 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
             ["enabledStateIds"] = Union(ReadIds(workspace, "enabledStateIds"), stateIds.Values),
             ["enabledFieldIds"] = Union(ReadIds(workspace, "enabledFieldIds"), poolFieldIds)
         };
-        if (string.Equals(pack.Code, "software", StringComparison.OrdinalIgnoreCase))
-            workspaceUpdate["settings"] = EnsureSoftwareViews(workspace);
+        if (priorityIds.Count > 0)
+            workspaceUpdate["enabledPriorityIds"] = Union(ReadIds(workspace, "enabledPriorityIds"), priorityIds.Values);
+        if (pack.Views.Count > 0)
+            workspaceUpdate["settings"] = ApplyPackViews(workspace, pack.Views);
         if (string.IsNullOrWhiteSpace(ReadString(workspace, "defaultStateFlowId")))
             workspaceUpdate["defaultStateFlowId"] = flowId;
 
         await _dg.UpdateAsync(OcDatasets.Workspaces, wsId, workspaceUpdate, token, cancellationToken);
 
         _cache.InvalidateCatalog(OcDatasets.States);
+        _cache.InvalidateCatalog(OcDatasets.Priorities);
         _cache.InvalidateCatalog(OcDatasets.WorkItemTypes);
         _cache.InvalidateCatalog(OcDatasets.Fields);
         try
@@ -478,7 +490,8 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
         string packCode,
         WorkspacePackForm form,
         string flowId,
-        IReadOnlyDictionary<string, string> typeIds)
+        IReadOnlyDictionary<string, string> typeIds,
+        IReadOnlyDictionary<string, string> priorityIds)
     {
         var behaviors = new Dictionary<string, object?>();
         foreach (var field in form.Fields)
@@ -487,7 +500,7 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
             behaviors[field] = new Dictionary<string, object?> { ["visible"] = true, ["required"] = required };
         }
 
-        return new Dictionary<string, object?>
+        var payload = new Dictionary<string, object?>
         {
             ["name"] = form.Name,
             ["workspaceId"] = workspaceId,
@@ -510,6 +523,13 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
             ["packCode"] = packCode,
             ["packKey"] = form.Key
         };
+        if (!string.IsNullOrWhiteSpace(form.DefaultPriorityKey)
+            && priorityIds.TryGetValue(form.DefaultPriorityKey, out var priorityId))
+        {
+            payload["defaultValues"] = new Dictionary<string, object?> { ["priorityId"] = priorityId };
+        }
+
+        return payload;
     }
 
     private static Dictionary<string, object?> ProfilePayload(
@@ -561,9 +581,11 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
     }
 
     /// <summary>
-    /// Yazılım paketinde sprint, takvim ve Gantt açık başlar. Kullanıcı kapattıysa dokunulmaz.
+    /// Paketin görünüm anahtarları yalnızca boşsa yazılır. Kullanıcının kapattığı anahtar durur.
     /// </summary>
-    private static Dictionary<string, object?> EnsureSoftwareViews(Dictionary<string, object?> workspace)
+    private static Dictionary<string, object?> ApplyPackViews(
+        Dictionary<string, object?> workspace,
+        IReadOnlyDictionary<string, bool> packViews)
     {
         JsonObject settings = new();
         if (workspace.TryGetValue("settings", out var raw))
@@ -576,10 +598,11 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
 
         var views = settings["views"] as JsonObject ?? new JsonObject();
         settings["views"] = views;
-        foreach (var key in new[] { "sprints", "calendar", "gantt" })
+        foreach (var (key, enabled) in packViews)
         {
-            if (views[key] is null)
-                views[key] = true;
+            if (string.IsNullOrWhiteSpace(key) || views[key] is not null)
+                continue;
+            views[key] = enabled;
         }
 
         return JsonSerializer.Deserialize<Dictionary<string, object?>>(settings.ToJsonString())
@@ -664,26 +687,62 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
             ["defaultProfileId"] = pieces[profile.Key],
             ["defaultTypeId"] = typeIds[board.TypeKey],
             ["defaultStateId"] = stateIds[flow.InitialStateKey],
-            ["visibleFields"] = new[] { "key", "title", "stateId", "assignee", "priorityId", "storyPoints" },
+            ["visibleFields"] = board.VisibleFields.Count > 0
+                ? board.VisibleFields
+                : new[] { "key", "title", "stateId", "assignee" },
             ["config"] = new Dictionary<string, object?>
             {
                 ["columns"] = columns,
-                ["listColumns"] = new object[]
-                {
-                    ListCol("key", "No"),
-                    ListCol("title", "Başlık"),
-                    ListCol("stateId", "Durum"),
-                    ListCol("sprintId", "Sprint", filterable: false),
-                    ListCol("assignee", "Atanan"),
-                    ListCol("priorityId", "Öncelik"),
-                    ListCol("startDate", "Başlangıç", filterable: false, sortable: false, format: "date"),
-                    ListCol("dueDate", "Vade", filterable: false, format: "date"),
-                    ListCol("storyPoints", "İş puanı")
-                }
+                ["listColumns"] = board.ListColumns.Count > 0
+                    ? board.ListColumns.Select(ListCol).ToArray()
+                    : new object[]
+                    {
+                        ListCol("key", "Key"),
+                        ListCol("title", "Title"),
+                        ListCol("stateId", "State")
+                    }
             },
             ["packCode"] = pack.Code,
             ["packKey"] = board.Key
         };
+    }
+
+    private static Dictionary<string, object?> ListCol(WorkspacePackListColumn column) =>
+        ListCol(
+            column.Key,
+            string.IsNullOrWhiteSpace(column.Label) ? column.Key : column.Label.Trim(),
+            column.Filterable,
+            column.Sortable,
+            column.Format);
+
+    private async Task<(string Id, PieceAction Action)> EnsurePriorityAsync(
+        WorkspacePackPriority priority,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var name = priority.Name.Trim();
+        var page = await _dg.QueryPageAsync(
+            OcDatasets.Priorities,
+            new Dictionary<string, object?> { ["name"] = name },
+            "limit=5&expand=false",
+            token,
+            cancellationToken);
+        var existing = page.Items.FirstOrDefault();
+        var existingId = existing is null ? null : ReadId(existing);
+        if (!string.IsNullOrWhiteSpace(existingId))
+            return (existingId, PieceAction.Skipped);
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["name"] = name,
+            ["level"] = string.IsNullOrWhiteSpace(priority.Level) ? null : priority.Level.Trim(),
+            ["sortOrder"] = priority.SortOrder
+        };
+        var color = NormalizeThemeColor(priority.Color);
+        if (color is not null)
+            payload["color"] = color;
+        var createdId = await CreateAsync(OcDatasets.Priorities, payload, token, cancellationToken);
+        return (createdId, PieceAction.Created);
     }
 
     private static Dictionary<string, object?> ListCol(
@@ -714,27 +773,28 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
         var key = field.Key.Trim();
         var label = field.Label.Trim();
         var fieldType = string.IsNullOrWhiteSpace(field.FieldType) ? "text" : field.FieldType.Trim();
+        // Anahtar domainde tekil. Paket alanı bir kez açılır; her çalışma alanı aynı kaydı etkinleştirir.
         var page = await _dg.QueryPageAsync(
             OcDatasets.Fields,
-            new Dictionary<string, object?> { ["key"] = key, ["workspaceId"] = workspaceId },
-            "limit=20&expand=false",
+            new Dictionary<string, object?> { ["key"] = key },
+            "limit=5&expand=false",
             token,
             cancellationToken);
         var current = page.Items.FirstOrDefault(row =>
-            string.Equals(ReadString(row, "key"), key, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(ReadString(row, "workspaceId"), workspaceId, StringComparison.Ordinal));
+            string.Equals(ReadString(row, "key"), key, StringComparison.OrdinalIgnoreCase));
         if (current is not null)
         {
             var id = ReadId(current) ?? throw Storage("Alan kimliği okunamadı.");
-            if (!string.Equals(ReadString(current, "label"), label, StringComparison.Ordinal)
-                || !string.Equals(ReadString(current, "fieldType"), fieldType, StringComparison.OrdinalIgnoreCase))
+            var update = new Dictionary<string, object?>();
+            if (!string.Equals(ReadString(current, "label"), label, StringComparison.Ordinal))
+                update["label"] = label;
+            if (!string.Equals(ReadString(current, "fieldType"), fieldType, StringComparison.OrdinalIgnoreCase))
+                update["fieldType"] = fieldType;
+            if (!string.IsNullOrWhiteSpace(ReadString(current, "workspaceId")))
+                update["workspaceId"] = null;
+            if (update.Count > 0)
             {
-                await _dg.UpdateAsync(
-                    OcDatasets.Fields,
-                    id,
-                    new Dictionary<string, object?> { ["label"] = label, ["fieldType"] = fieldType },
-                    token,
-                    cancellationToken);
+                await _dg.UpdateAsync(OcDatasets.Fields, id, update, token, cancellationToken);
             }
 
             return id;
@@ -748,7 +808,6 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
                 ["label"] = label,
                 ["fieldType"] = fieldType,
                 ["scope"] = "pool",
-                ["workspaceId"] = workspaceId,
                 ["isSystem"] = false,
                 ["isSensitive"] = false
             },

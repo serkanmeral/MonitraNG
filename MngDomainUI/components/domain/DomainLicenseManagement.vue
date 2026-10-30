@@ -240,6 +240,34 @@
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
       </div>
 
+      <!-- License missing or unreadable: keep create and upload available -->
+      <div v-else-if="accessToken && licenseUnavailable" class="space-y-4">
+        <UAlert
+          color="red"
+          variant="soft"
+          :title="error || 'Bu alan için okunabilir bir lisans bulunamadı.'"
+          description="Yeni bir gerçek lisans oluşturabilir veya lisans dosyası yükleyebilirsiniz."
+        />
+        <div class="flex gap-2">
+          <UButton
+            color="primary"
+            variant="outline"
+            icon="i-heroicons-arrow-up-tray"
+            @click="showUploadModal = true"
+          >
+            Lisans Yükle
+          </UButton>
+          <UButton
+            color="green"
+            variant="outline"
+            icon="i-heroicons-plus-circle"
+            @click="showCreateModal = true"
+          >
+            Real Lisans Oluştur
+          </UButton>
+        </div>
+      </div>
+
       <!-- Error State -->
       <UAlert
         v-else-if="error"
@@ -496,6 +524,7 @@ const license = ref<LicenseInfo | null>(null)
 const userCount = ref<UserCountInfo | null>(null)
 const loading = ref(false)
 const uploading = ref(false)
+const licenseUnavailable = ref(false)
 const creating = ref(false)
 const error = ref<string | null>(null)
 const showUploadModal = ref(false)
@@ -553,6 +582,7 @@ const loadLicense = async () => {
 
   loading.value = true
   error.value = null
+  licenseUnavailable.value = false
   try {
     const { getLicense: getLicenseFn, getUserCount: getUserCountFn } = getLicenseFunctions()
     // Load license and user count in parallel
@@ -576,7 +606,11 @@ const loadLicense = async () => {
   } catch (err: any) {
     if (err.statusCode === 401 || err.status === 401) {
       error.value = 'Kimlik doğrulaması gerekli. Lütfen tekrar giriş yapın.'
+    } else if (err.statusCode === 404 || err.status === 404) {
+      licenseUnavailable.value = true
+      error.value = 'Bu alan için okunabilir bir lisans bulunamadı.'
     } else {
+      licenseUnavailable.value = true
       error.value = err.message || 'Lisans bilgisi yüklenemedi'
     }
   } finally {

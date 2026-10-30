@@ -18,6 +18,9 @@ public sealed class WorkspacePackDefinition
     public List<WorkspacePackBoard> Boards { get; set; } = [];
     public List<WorkspacePackProfile> Profiles { get; set; } = [];
     public List<WorkspacePackPoolField> PoolFields { get; set; } = [];
+    public List<WorkspacePackPriority> Priorities { get; set; } = [];
+    /// <summary>Eksik görünüm anahtarını doldurur. Dolu bir anahtarın üzerine yazılmaz.</summary>
+    public Dictionary<string, bool> Views { get; set; } = [];
     public List<string> LibraryFolders { get; set; } = [];
 
     [JsonIgnore]
@@ -70,6 +73,8 @@ public sealed class WorkspacePackForm
     public string FlowKey { get; set; } = string.Empty;
     public string TypeKey { get; set; } = string.Empty;
     public List<string> Fields { get; set; } = [];
+    /// <summary>Kurulumda çözülen öncelik anahtarı. Formun varsayılan önceliği olur.</summary>
+    public string? DefaultPriorityKey { get; set; }
 }
 
 public sealed class WorkspacePackBoard
@@ -81,6 +86,26 @@ public sealed class WorkspacePackBoard
     public string FormKey { get; set; } = string.Empty;
     public string TypeKey { get; set; } = string.Empty;
     public List<string> ColumnStateKeys { get; set; } = [];
+    public List<string> VisibleFields { get; set; } = [];
+    public List<WorkspacePackListColumn> ListColumns { get; set; } = [];
+}
+
+public sealed class WorkspacePackListColumn
+{
+    public string Key { get; set; } = string.Empty;
+    public string? Label { get; set; }
+    public bool? Filterable { get; set; }
+    public bool? Sortable { get; set; }
+    public string? Format { get; set; }
+}
+
+public sealed class WorkspacePackPriority
+{
+    public string Key { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Level { get; set; }
+    public string? Color { get; set; }
+    public int? SortOrder { get; set; }
 }
 
 public sealed class WorkspacePackPoolField

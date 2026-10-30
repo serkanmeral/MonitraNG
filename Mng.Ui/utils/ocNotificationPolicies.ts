@@ -105,57 +105,106 @@ function parseToastSeverity(raw: unknown): OcToastSeverity | null {
     : null;
 }
 
+function selectionText(raw: unknown): string {
+  if (typeof raw === 'string') return raw.trim();
+  if (raw && typeof raw === 'object') {
+    const record = raw as Record<string, unknown>;
+    if (record.value != null) return String(record.value).trim();
+    if (record.title != null) return String(record.title).trim();
+  }
+  return '';
+}
+
+function selectionList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map(selectionText).filter(Boolean);
+}
+
+function selectionKey(raw: unknown, items?: { value: string; title: string }[]): string {
+  const text = selectionText(raw);
+  if (!text || !items?.length) return text;
+  const byValue = items.find((item) => item.value === text);
+  if (byValue) return byValue.value;
+  const byTitle = items.find((item) => item.title === text);
+  return byTitle?.value ?? text;
+}
+
+/** Combobox seçimleri nesne döndürebilir. Kayıt anahtarları düz metin olmalı. */
+export function normalizeNotificationPolicyDraft(
+  draft: OcNotificationPolicyDraft,
+  templates?: {
+    email?: { value: string; title: string }[];
+    inApp?: { value: string; title: string }[];
+  }
+): OcNotificationPolicyDraft {
+  return {
+    ...draft,
+    name: selectionText(draft.name),
+    eventType: selectionText(draft.eventType),
+    channels: selectionList(draft.channels),
+    recipients: selectionList(draft.recipients),
+    emailTemplateKey: selectionKey(draft.emailTemplateKey, templates?.email),
+    emailSubject: selectionText(draft.emailSubject),
+    notificationTemplateKey: selectionKey(draft.notificationTemplateKey, templates?.inApp),
+  };
+}
+
 export function validateNotificationPolicyDraft(draft: OcNotificationPolicyDraft): string | null {
-  if (!draft.name.trim()) return 'name';
-  if (!draft.eventType.trim()) return 'eventType';
-  if (!draft.channels.length) return 'channels';
-  if (!draft.recipients.length) return 'recipients';
-  const wantsEmail = draft.channels.includes('email');
-  if (wantsEmail && !draft.emailTemplateKey.trim()) return 'emailTemplateKey';
+  const normalized = normalizeNotificationPolicyDraft(draft);
+  if (!normalized.name) return 'name';
+  if (!normalized.eventType) return 'eventType';
+  if (!normalized.channels.length) return 'channels';
+  if (!normalized.recipients.length) return 'recipients';
+  if (normalized.channels.includes('email') && !normalized.emailTemplateKey) return 'emailTemplateKey';
   return null;
 }
 
 export function buildNotificationPolicyPayload(
   draft: OcNotificationPolicyDraft,
-  workspaceId: string
+  workspaceId: string,
+  templates?: {
+    email?: { value: string; title: string }[];
+    inApp?: { value: string; title: string }[];
+  }
 ): Record<string, unknown> {
+  const normalized = normalizeNotificationPolicyDraft(draft, templates);
   const body: Record<string, unknown> = {
-    name: draft.name.trim(),
+    name: normalized.name,
     workspaceId,
-    eventType: draft.eventType.trim(),
-    channels: [...draft.channels],
-    recipients: [...draft.recipients],
-    excludeActor: draft.excludeActor,
-    isActive: draft.isActive,
-    priority: draft.policyPriority,
+    eventType: normalized.eventType,
+    channels: [...normalized.channels],
+    recipients: [...normalized.recipients],
+    excludeActor: normalized.excludeActor,
+    isActive: normalized.isActive,
+    priority: normalized.policyPriority,
   };
-  if (draft.boardId) body.boardId = draft.boardId;
-  if (draft.typeId) body.typeId = draft.typeId;
-  if (draft.channels.includes('email')) {
-    body.emailTemplateKey = draft.emailTemplateKey.trim();
-    body.emailSubject = draft.emailSubject.trim() || null;
+  if (normalized.boardId) body.boardId = normalized.boardId;
+  if (normalized.typeId) body.typeId = normalized.typeId;
+  if (normalized.channels.includes('email')) {
+    body.emailTemplateKey = normalized.emailTemplateKey;
+    body.emailSubject = normalized.emailSubject || null;
   } else {
     body.emailTemplateKey = null;
     body.emailSubject = null;
   }
-  if (draft.channels.includes('inApp') && draft.notificationTemplateKey.trim()) {
-    body.notificationTemplateKey = draft.notificationTemplateKey.trim();
-  } else if (!draft.channels.includes('inApp')) {
+  if (normalized.channels.includes('inApp') && normalized.notificationTemplateKey) {
+    body.notificationTemplateKey = normalized.notificationTemplateKey;
+  } else if (!normalized.channels.includes('inApp')) {
     body.notificationTemplateKey = null;
   }
-  if (draft.eventType === 'WorkItemTransitioned') {
-    body.transitionKey = draft.transitionKey?.trim() || null;
-    body.fromStateId = draft.fromStateId || null;
-    body.toStateId = draft.toStateId || null;
+  if (normalized.eventType === 'WorkItemTransitioned') {
+    body.transitionKey = selectionText(draft.transitionKey) || null;
+    body.fromStateId = selectionText(draft.fromStateId) || null;
+    body.toStateId = selectionText(draft.toStateId) || null;
   } else {
     body.transitionKey = null;
     body.fromStateId = null;
     body.toStateId = null;
   }
-  if (draft.channels.includes('inApp')) {
+  if (normalized.channels.includes('inApp')) {
     body.settings = {
-      pushToast: draft.pushToast === true,
-      toastSeverity: draft.toastSeverity,
+      pushToast: normalized.pushToast === true,
+      toastSeverity: normalized.toastSeverity,
     };
   } else {
     body.settings = null;

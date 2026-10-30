@@ -390,6 +390,56 @@
       },
       {
         "fieldType": "text",
+        "name": "scanStatus",
+        "title": "Antivirüs durumu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "scanThreat",
+        "title": "Antivirüs imzası",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "scanError",
+        "title": "Antivirüs hatası",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "scannedAt",
+        "title": "Antivirüs zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "scannedVersionNumber",
+        "title": "Taranan sürüm",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
         "name": "summaryStatus",
         "title": "Ozet durumu",
         "mandatory": false,

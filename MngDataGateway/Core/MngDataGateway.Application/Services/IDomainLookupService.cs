@@ -22,6 +22,11 @@ public interface IDomainLookupService
     Task<string?> GetDatabaseNameAsync(string domainId);
 
     /// <summary>
+    /// Etki alanı kaydındaki yükleme üst boyutu. 0 veya kayıt yoksa null; çağıran gateway varsayılanını kullanır.
+    /// </summary>
+    Task<long?> GetMaxFileSizeBytesAsync(string domainName);
+
+    /// <summary>
     /// Clear cache (if caching is enabled)
     /// </summary>
     Task ClearCacheAsync();

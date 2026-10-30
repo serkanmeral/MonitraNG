@@ -12,6 +12,8 @@ const props = withDefaults(
     profileFrom?: OcProfileNavFrom;
     showAssignee?: boolean;
     priorityName?: string | null;
+    /** Pano kart alanları. Boşsa öncelik ve iş puanı eskisi gibi durur. */
+    fieldKeys?: string[] | null;
   }>(),
   {
     boardId: null,
@@ -74,8 +76,8 @@ const profileTo = computed(() =>
           </span>
         </span>
         <span v-if="showAssignee && assigneeInitials" class="oc-avatar-tiny">{{ assigneeInitials }}</span>
-      </div>
-    </NuxtLink>
+          <span v-if="showsField('priorityId') && priorityName" class="oc-wi-card__chip">{{ priorityName }}</span>
+          <span v-if="showsField('storyPoints') && pointsLabel" class="oc-wi-card__chip">{{ pointsLabel }}</span>
   </div>
 </template>
 

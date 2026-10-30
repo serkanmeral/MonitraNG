@@ -22,11 +22,13 @@ import PmLibraryBindDialog from '@/components/apps/project-management/PmLibraryB
 import PmPickDocumentDialog from '@/components/apps/project-management/PmPickDocumentDialog.vue';
 import type { PmLibraryBindKind } from '@/components/apps/project-management/PmLibraryBindDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useDomainFileLimit } from '@/utils/domainFileLimit';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import {
   DI_CHILDREN_PAGE_SIZE,
   DI_CHILDREN_PAGE_SIZE_OPTIONS,
+  diAwaitScan,
   diCreateFileResource,
   diCreateFolder,
   diCreateMarkdown,
@@ -49,6 +51,7 @@ import {
   diCancelBulkIndex,
   diGetBulkIndex,
   diIndexResource,
+  diRequestScan,
   diStartBulkIndex,
   diSummarizeResource,
   diGetLetterhead,
@@ -68,7 +71,7 @@ import type {
   DiTreeNode,
 } from '@/types/apps/documentIntelligence';
 import { diFullPermission } from '@/types/apps/documentIntelligence';
-import { isDiCloneable, isDiDrawioFile, isDiIndexable, isDiManagedDocument, isDiOfficeEditable, isDiOfficePdfExportable, isDiPreviewable, isDiPresentation, isDiSheet, isDiUploadedFile } from '@/utils/diFilePreview';
+import { diScanBlocksContent, isDiCloneable, isDiDrawioFile, isDiIndexable, isDiManagedDocument, isDiOfficeEditable, isDiOfficePdfExportable, isDiPreviewable, isDiPresentation, isDiSheet, isDiUploadedFile } from '@/utils/diFilePreview';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import { diCreateBlankDrawio } from '@/utils/diDrawio';
 import { buildDiFolderUrl } from '@/utils/diResourceLink';
@@ -99,7 +102,7 @@ const emit = defineEmits<{
   focused: [];
 }>();
 
-const MAX_FILE_MB = 20;
+const { maxBytes: maxFileBytes, maxMb: maxFileMb } = useDomainFileLimit();
 
 const { t } = useAppI18n();
 const authStore = useAuthStore();
@@ -168,6 +171,7 @@ const searchTypeItems = computed(() => [
 ]);
 const indexListFilter = ref<'all' | 'done' | 'missing'>('all');
 const indexingId = ref<string | null>(null);
+const scanningId = ref<string | null>(null);
 const indexResult = ref<DiResourceIndexResult | null>(null);
 const indexDialog = ref(false);
 const summarizingId = ref<string | null>(null);
@@ -367,10 +371,17 @@ const scopedCrumbs = computed(() => {
   return breadcrumb.value.slice(idx);
 });
 const searchHeaders = computed(() => [
-  { title: t('projectManagement.library.colName'), key: 'name', sortable: false, minWidth: 220 },
+  {
+    title: t('projectManagement.library.colName'),
+    key: 'name',
+    sortable: false,
+    width: 260,
+    headerProps: { class: 'pm-library-name' },
+    cellProps: { class: 'pm-library-name' },
+  },
   { title: t('projectManagement.library.searchColMatch'), key: 'match', sortable: false, width: 140 },
-  { title: t('projectManagement.library.searchColPath'), key: 'path', sortable: false, minWidth: 180 },
-  { title: t('projectManagement.library.searchColSnippet'), key: 'snippet', sortable: false, minWidth: 240 },
+  { title: t('projectManagement.library.searchColPath'), key: 'path', sortable: false, width: 200 },
+  { title: t('projectManagement.library.searchColSnippet'), key: 'snippet', sortable: false, width: 280 },
   { title: t('projectManagement.library.colUpdated'), key: 'updatedAt', sortable: false, width: 160 },
   {
     title: t('projectManagement.actions'),
@@ -381,12 +392,19 @@ const searchHeaders = computed(() => [
   },
 ]);
 const listingHeaders = computed(() => [
-  { title: t('projectManagement.library.colName'), key: 'name', minWidth: 240 },
+  {
+    title: t('projectManagement.library.colName'),
+    key: 'name',
+    width: 280,
+    headerProps: { class: 'pm-library-name' },
+    cellProps: { class: 'pm-library-name' },
+  },
   { title: t('projectManagement.library.colType'), key: 'type', width: 140 },
   { title: t('projectManagement.library.colSize'), key: 'size', width: 110, sortable: false },
-  { title: t('projectManagement.library.colTags'), key: 'tags', sortable: false, minWidth: 180 },
+  { title: t('projectManagement.library.colTags'), key: 'tags', sortable: false, width: 180 },
   { title: t('projectManagement.library.colStatus'), key: 'status', width: 130 },
   { title: t('projectManagement.library.colIndex'), key: 'index', width: 150, sortable: false },
+  { title: t('projectManagement.library.colScan'), key: 'scan', width: 130, sortable: false },
   { title: t('projectManagement.library.colCreated'), key: 'createdAt', width: 160 },
   { title: t('projectManagement.library.colCreatedBy'), key: 'createdBy', width: 160, sortable: false },
   { title: t('projectManagement.library.colUpdated'), key: 'updatedAt', width: 160 },
@@ -438,6 +456,77 @@ function indexChipLabel(status: string | null | undefined): string {
   if (status === 'failed') return t('documentIntelligence.indexFailed');
   if (status === 'running') return t('documentIntelligence.indexRunning');
   return t('documentIntelligence.indexNone');
+}
+
+function canOfferScan(resource: DiResource): boolean {
+  return resource.type === 'file' && (resource.origin || '').toLowerCase() === 'upload';
+}
+
+function patchListingRow(resource: DiResource) {
+  const row = children.value.findIndex((item) => item.id === resource.id);
+  if (row >= 0) children.value[row] = resource;
+  if (openDoc.value?.id === resource.id) openDoc.value = resource;
+}
+
+async function scanDocument(resource: DiResource) {
+  if (!canOfferScan(resource) || resource.scanStatus === 'scanning' || scanningId.value) return;
+  scanningId.value = resource.id;
+  try {
+    const queued = await diRequestScan(resource.id);
+    patchListingRow(queued);
+    const scanned = await diAwaitScan(queued);
+    patchListingRow(scanned);
+    toast.push({
+      title: t('projectManagement.notify.successTitle'),
+      message: scanResultMessage(scanned),
+      severity: scanned.scanStatus === 'threat' || scanned.scanStatus === 'failed' ? 'error' : 'success',
+    });
+  } catch (error) {
+    panelError(error);
+  } finally {
+    scanningId.value = null;
+  }
+}
+
+function scanChipVisible(resource: DiResource): boolean {
+  if (resource.type !== 'file' || (resource.origin || '').toLowerCase() !== 'upload') return false;
+  return ['scanning', 'clean', 'threat', 'failed'].includes(resource.scanStatus);
+}
+
+function scanChipLabel(resource: DiResource): string {
+  if (resource.scanStatus === 'clean') return t('documentIntelligence.scanClean');
+  if (resource.scanStatus === 'threat') return t('documentIntelligence.scanThreat');
+  if (resource.scanStatus === 'failed') return t('documentIntelligence.scanFailed');
+  return t('documentIntelligence.scanScanning');
+}
+
+function scanChipColor(status: string | null | undefined): string {
+  if (status === 'clean') return 'success';
+  if (status === 'threat' || status === 'failed') return 'error';
+  if (status === 'scanning') return 'info';
+  return 'default';
+}
+
+function scanBlockMessage(status: string | null | undefined): string {
+  if (status === 'threat') return t('documentIntelligence.scanThreatMessage');
+  if (status === 'failed') return t('documentIntelligence.scanFailedMessage');
+  return t('documentIntelligence.scanPendingMessage');
+}
+
+function notifyScanBlock(resource: DiResource) {
+  toast.push({
+    title: t('errors.dg.toastTitle'),
+    message: scanBlockMessage(resource.scanStatus),
+    severity: resource.scanStatus === 'threat' ? 'error' : 'warning',
+  });
+}
+
+function scanResultMessage(resource: DiResource): string {
+  if (resource.scanStatus === 'clean') return t('documentIntelligence.scanClean');
+  if (resource.scanStatus === 'threat') return t('documentIntelligence.scanThreatMessage');
+  if (resource.scanStatus === 'failed') return t('documentIntelligence.scanFailedMessage');
+  if (resource.scanStatus === 'scanning') return t('documentIntelligence.scanStillRunning');
+  return t('documentIntelligence.fileUploaded');
 }
 
 function indexChipColor(status: string | null | undefined): string {
@@ -557,6 +646,10 @@ function closeBulkIndex() {
 
 async function indexDocument(resource: DiResource) {
   if (!isIndexable(resource) || indexingId.value) return;
+  if (diScanBlocksContent(resource)) {
+    notifyScanBlock(resource);
+    return;
+  }
   indexingId.value = resource.id;
   indexResult.value = null;
   try {
@@ -1010,10 +1103,10 @@ async function loadTree() {
   }
 }
 
-async function loadListing(folderId: string) {
+async function loadListing(folderId: string, quiet = false) {
   if (contentSearchActive.value) return;
   const token = ++listingToken;
-  listingLoading.value = true;
+  if (!quiet) listingLoading.value = true;
   try {
     const filteringIndex = indexListFilter.value !== 'all';
     const skip = filteringIndex ? 0 : (listingPage.value - 1) * listingPageSize.value;
@@ -1052,14 +1145,35 @@ async function loadListing(folderId: string) {
       }
     }
   } catch (error) {
-    if (token !== listingToken) return;
+    if (token !== listingToken || quiet) return;
     children.value = [];
     listingTotal.value = 0;
     panelError(error, 'projectManagement.library.ensureFailed');
   } finally {
-    if (token === listingToken) listingLoading.value = false;
+    if (!quiet && token === listingToken) listingLoading.value = false;
   }
 }
+
+let scanPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+function armScanPoll() {
+  if (scanPollTimer) {
+    clearTimeout(scanPollTimer);
+    scanPollTimer = null;
+  }
+  const folderId = selectedFolderId.value;
+  if (!folderId || !children.value.some((item) => item.scanStatus === 'scanning')) return;
+  scanPollTimer = setTimeout(() => {
+    scanPollTimer = null;
+    if (selectedFolderId.value !== folderId) return;
+    void loadListing(folderId, true).finally(() => armScanPoll());
+  }, 3000);
+}
+
+watch(children, () => armScanPoll());
+onBeforeUnmount(() => {
+  if (scanPollTimer) clearTimeout(scanPollTimer);
+});
 
 async function selectFolder(folderId: string | null) {
   const next = folderId || hubId.value;
@@ -1271,6 +1385,10 @@ function openPageHistory() {
 }
 
 function openLibraryPreview(resource: DiResource) {
+  if (diScanBlocksContent(resource)) {
+    notifyScanBlock(resource);
+    return;
+  }
   filePreviewResource.value = resource;
   filePreviewOpen.value = true;
 }
@@ -1303,28 +1421,29 @@ async function submitReplace() {
   const target = replaceTarget.value;
   const file = replaceFile.value;
   if (!target || !file || busy.value) return;
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+  if (file.size > maxFileBytes.value) {
     toast.push({
-      title: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
-      message: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
+      title: t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb }),
+      message: t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb }),
       severity: 'error',
     });
     return;
   }
   busy.value = true;
   try {
-    await diReplaceFileContent(target.id, {
+    const replaced = await diReplaceFileContent(target.id, {
       content: await fileToBase64(file),
       originalFileName: file.name,
       mimeType: file.type || null,
       extension: fileExtension(file.name) || null,
       changeNote: 'replace',
     });
+    const scanned = await diAwaitScan(replaced);
     replaceDialog.value = false;
     toast.push({
       title: t('projectManagement.notify.successTitle'),
-      message: t('documentIntelligence.fileReplaced'),
-      severity: 'success',
+      message: scanResultMessage(scanned),
+      severity: scanned.scanStatus === 'threat' || scanned.scanStatus === 'failed' ? 'error' : 'success',
     });
     await refreshAll();
   } catch (error) {
@@ -1698,17 +1817,17 @@ async function onFilePick(event: Event) {
   const file = input.files && input.files.length ? input.files[0] : null;
   if (fileInputEl.value) fileInputEl.value.value = '';
   if (!file || !selectedFolderId.value) return;
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+  if (file.size > maxFileBytes.value) {
     toast.push({
-      title: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
-      message: t('documentIntelligence.errors.fileTooLarge', { max: MAX_FILE_MB }),
+      title: t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb }),
+      message: t('documentIntelligence.errors.fileTooLarge', { max: maxFileMb }),
       severity: 'error',
     });
     return;
   }
   busy.value = true;
   try {
-    await diCreateFileResource({
+    const created = await diCreateFileResource({
       parentId: selectedFolderId.value,
       name: file.name,
       originalFileName: file.name,
@@ -1718,10 +1837,11 @@ async function onFilePick(event: Event) {
       size: file.size,
       tags: await currentAutoTags(),
     });
+    const scanned = await diAwaitScan(created);
     toast.push({
       title: t('projectManagement.notify.successTitle'),
-      message: t('documentIntelligence.fileUploaded'),
-      severity: 'success',
+      message: scanResultMessage(scanned),
+      severity: scanned.scanStatus === 'threat' || scanned.scanStatus === 'failed' ? 'error' : 'success',
     });
     await refreshAll();
   } catch (error) {
@@ -1732,6 +1852,10 @@ async function onFilePick(event: Event) {
 }
 
 async function openResource(resource: DiResource, options?: { edit?: boolean }) {
+  if (diScanBlocksContent(resource)) {
+    notifyScanBlock(resource);
+    return;
+  }
   if (resource.type === 'folder') {
     await selectFolder(resource.id);
     return;
@@ -1862,6 +1986,10 @@ function onPreviewUpdated(updated: DiResource) {
 }
 
 async function downloadFile(resource: DiResource) {
+  if (diScanBlocksContent(resource)) {
+    notifyScanBlock(resource);
+    return;
+  }
   try {
     const { blob, fileName } = await diDownloadResource(resource.id, resource.fileName || resource.name);
     const url = URL.createObjectURL(blob);
@@ -2451,8 +2579,8 @@ watch(
             >
               <template #item.name="{ item }">
                 <div class="d-flex align-center ga-2 min-width-0">
-                  <v-icon :icon="resourceIcon(item.resource)" color="primary" size="20" />
-                  <span class="text-body-2 font-weight-medium text-truncate">{{ resourceLabel(item.resource) }}</span>
+                  <v-icon :icon="resourceIcon(item.resource)" color="primary" size="20" class="flex-shrink-0" />
+                  <span class="text-body-2 font-weight-medium text-truncate" :title="resourceLabel(item.resource)">{{ resourceLabel(item.resource) }}</span>
                 </div>
               </template>
               <template #item.match="{ item }">
@@ -2605,10 +2733,14 @@ watch(
             >
               <template #item.name="{ item }">
                 <div class="d-flex align-center ga-2 min-width-0">
-                  <v-icon :icon="resourceIcon(item)" color="primary" size="20" />
-                  <div class="min-width-0">
-                    <div class="text-body-2 font-weight-medium text-truncate">{{ resourceLabel(item) }}</div>
-                    <div v-if="item.description" class="text-caption text-medium-emphasis text-truncate">
+                  <v-icon :icon="resourceIcon(item)" color="primary" size="20" class="flex-shrink-0" />
+                  <div class="min-width-0 flex-grow-1">
+                    <div class="text-body-2 font-weight-medium text-truncate" :title="resourceLabel(item)">{{ resourceLabel(item) }}</div>
+                    <div
+                      v-if="item.description"
+                      class="text-caption text-medium-emphasis text-truncate"
+                      :title="item.description"
+                    >
                       {{ item.description }}
                     </div>
                   </div>
@@ -2616,6 +2748,7 @@ watch(
                     v-if="item.type === 'folder' && isPmLibraryDefaultFolder(item.name)"
                     size="x-small"
                     variant="tonal"
+                    class="flex-shrink-0"
                   >
                     {{ t('projectManagement.library.systemFolder') }}
                   </v-chip>
@@ -2660,6 +2793,18 @@ watch(
                   :color="indexChipColor(item.indexStatus)"
                 >
                   {{ indexChipLabel(item.indexStatus) }}
+                </v-chip>
+                <span v-else class="text-medium-emphasis">—</span>
+              </template>
+              <template #item.scan="{ item }">
+                <v-chip
+                  v-if="scanChipVisible(item)"
+                  size="x-small"
+                  variant="tonal"
+                  :color="scanChipColor(item.scanStatus)"
+                  :title="item.scanThreat || item.scanError || ''"
+                >
+                  {{ scanChipLabel(item) }}
                 </v-chip>
                 <span v-else class="text-medium-emphasis">—</span>
               </template>
@@ -2726,7 +2871,7 @@ watch(
                       <template v-if="hasLibraryFileActions(item)">
                         <v-divider class="my-1" />
                         <v-list-item
-                          v-if="item.type === 'file' && item.permissions.canDownload"
+                          v-if="item.type === 'file' && item.permissions.canDownload && !diScanBlocksContent(item)"
                           prepend-icon="mdi-download"
                           :title="t('documentIntelligence.download')"
                           @click="downloadFile(item)"
@@ -2750,7 +2895,7 @@ watch(
                           @click="openRowHistory(item)"
                         />
                         <v-list-item
-                          v-if="item.type === 'file' && item.permissions.canDownload && isDiPreviewable(item)"
+                          v-if="item.type === 'file' && item.permissions.canDownload && isDiPreviewable(item) && !diScanBlocksContent(item)"
                           prepend-icon="mdi-file-eye-outline"
                           :title="t('documentIntelligence.preview')"
                           @click="openLibraryPreview(item)"
@@ -2783,11 +2928,18 @@ watch(
                           @click="openBulkIndex(item)"
                         />
                       </template>
-                      <template v-if="isIndexable(item) || item.indexStatus === 'done'">
+                      <template v-if="isIndexable(item) || item.indexStatus === 'done' || canOfferScan(item)">
                         <v-divider class="my-1" />
                         <v-list-subheader>{{ t('documentIntelligence.menuAdvanced') }}</v-list-subheader>
                         <v-list-item
-                          v-if="isIndexable(item)"
+                          v-if="canOfferScan(item)"
+                          prepend-icon="mdi-shield-search"
+                          :title="t('documentIntelligence.scan')"
+                          :disabled="item.scanStatus === 'scanning' || scanningId === item.id"
+                          @click="scanDocument(item)"
+                        />
+                        <v-list-item
+                          v-if="isIndexable(item) && !diScanBlocksContent(item)"
                           prepend-icon="mdi-database-search"
                           :title="t('documentIntelligence.index')"
                           :disabled="indexingId === item.id"
@@ -3607,7 +3759,7 @@ watch(
           >
             <v-icon size="40" class="text-medium-emphasis mb-2">mdi-cloud-upload-outline</v-icon>
             <div v-if="!replaceFile" class="text-body-2 text-medium-emphasis">
-              {{ t('documentIntelligence.selectFileHint', { max: MAX_FILE_MB }) }}
+              {{ t('documentIntelligence.selectFileHint', { max: maxFileMb }) }}
             </div>
             <div v-else class="text-body-2 font-weight-medium">{{ replaceFile.name }}</div>
           </div>
@@ -3764,6 +3916,17 @@ watch(
 }
 .pm-library-table-wrap {
   min-width: 0;
+}
+.pm-library-table :deep(.v-table__wrapper > table) {
+  table-layout: fixed;
+  width: 100%;
+}
+.pm-library-table-wrap .pm-library-table :deep(.v-table__wrapper > table) {
+  min-width: 1640px;
+}
+.pm-library-table :deep(th.pm-library-name),
+.pm-library-table :deep(td.pm-library-name) {
+  overflow: hidden;
 }
 .pm-library-table :deep(tbody tr) {
   cursor: pointer;

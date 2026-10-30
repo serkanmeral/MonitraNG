@@ -9,6 +9,7 @@ using MngDocument.Application.Contracts.Templates;
 using MngDocument.Application.Exceptions;
 using MngDocument.Application.Interfaces;
 using MngDocument.Application.Models;
+using MngDocument.Application.Utilities;
 using MngDocument.Domain.Constants;
 
 namespace MngDocument.Infrastructure.Services;
@@ -76,6 +77,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         }
 
         var resource = await LoadOrThrowAsync(id, ct);
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         EnsureManagedOfficeFile(resource);
         EnsureManagedDocument(resource);
 
@@ -159,6 +161,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         }
 
         var resource = await LoadOrThrowAsync(id, ct);
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         EnsureManagedOfficeFile(resource);
         EnsureManagedDocument(resource);
 
@@ -315,6 +318,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         WopiSession session,
         CancellationToken ct)
     {
+        ResourceScanGuard.EnsureAllowsContent(resource.type, resource.origin, resource.scanStatus);
         if (session.PreviewVersionNumber is int versionNumber)
         {
             var (bytes, _) = await _resources.GetFileVersionContentForEditorAsync(

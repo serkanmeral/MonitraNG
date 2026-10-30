@@ -21,6 +21,7 @@ import OcTagSelector from '@/components/apps/operation-core/OcTagSelector.vue';
 import OcRichTextEditor from '@/components/apps/operation-core/OcRichTextEditor.client.vue';
 import OcRichTextContent from '@/components/apps/operation-core/OcRichTextContent.client.vue';
 import OcWorkItemFileField from '@/components/apps/operation-core/OcWorkItemFileField.vue';
+import OcDateField from '@/components/apps/operation-core/OcDateField.vue';
 
 const props = defineProps<{
   fieldKey: string;
@@ -410,43 +411,19 @@ function onSelectUpdate(value: unknown) {
     </template>
   </v-text-field>
 
-  <v-text-field
-    v-else-if="widget === 'date'"
-    :model-value="String(model ?? '')"
-    type="date"
+  <OcDateField
+    v-else-if="widget === 'date' || widget === 'datetime'"
+    v-model="model"
+    :label="label"
+    :required="behavior.required"
     :readonly="fieldDisabled"
     :error="showFieldError"
     :error-messages="fieldErrorMessages"
+    :with-time="widget === 'datetime'"
     density="comfortable"
     variant="outlined"
-    hide-details="auto"
     :class="fieldClass"
-    @update:model-value="(v) => update(v)"
-  >
-    <template #label>
-      <span>{{ label }}</span>
-      <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
-    </template>
-  </v-text-field>
-
-  <v-text-field
-    v-else-if="widget === 'datetime'"
-    :model-value="String(model ?? '')"
-    type="datetime-local"
-    :readonly="fieldDisabled"
-    :error="showFieldError"
-    :error-messages="fieldErrorMessages"
-    density="comfortable"
-    variant="outlined"
-    hide-details="auto"
-    :class="fieldClass"
-    @update:model-value="(v) => update(v)"
-  >
-    <template #label>
-      <span>{{ label }}</span>
-      <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
-    </template>
-  </v-text-field>
+  />
 
   <div v-else-if="isFileWidget" class="oc-dynamic-form__file-field">
     <div class="text-caption text-medium-emphasis mb-1 d-flex align-center ga-1">

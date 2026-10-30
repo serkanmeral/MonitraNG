@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
+import OcDateField from '@/components/apps/operation-core/OcDateField.vue';
 import { ocListDataset } from '@/services/operationCoreService';
 import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
 import {
@@ -133,27 +134,14 @@ function onSelectUpdate(value: unknown) {
     clearable
     @update:model-value="(v) => (model = coerceNumberValue(v))"
   />
-  <v-text-field
-    v-else-if="widget === 'date'"
-    :model-value="String(model ?? '')"
-    type="date"
+  <OcDateField
+    v-else-if="widget === 'date' || widget === 'datetime'"
+    v-model="model"
     :label="fieldLabel"
+    :with-time="widget === 'datetime'"
     :density="density"
     :variant="fieldVariant"
     hide-details
-    clearable
-    @update:model-value="(v) => (model = v)"
-  />
-  <v-text-field
-    v-else-if="widget === 'datetime'"
-    :model-value="String(model ?? '')"
-    type="datetime-local"
-    :label="fieldLabel"
-    :density="density"
-    :variant="fieldVariant"
-    hide-details
-    clearable
-    @update:model-value="(v) => (model = v)"
   />
   <v-select
     v-else-if="widget === 'typeSelect'"

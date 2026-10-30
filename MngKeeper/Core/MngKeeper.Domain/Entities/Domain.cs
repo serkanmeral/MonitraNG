@@ -96,6 +96,10 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("maxAssets")]
         public int MaxAssets { get; set; } = 1000;
 
+        /// <summary>Yükleme üst boyutu (bayt). 0 ise DataGateway varsayılanı kullanılır.</summary>
+        [BsonElement("maxFileSizeBytes")]
+        public long MaxFileSizeBytes { get; set; }
+
         [BsonElement("enableMqtt")]
         public bool EnableMqtt { get; set; } = true;
 

@@ -184,6 +184,10 @@ function mapResource(raw: unknown): DiResource {
     indexedAt: str(o, 'indexedAt'),
     indexError: str(o, 'indexError'),
     indexCharCount: num(o, 'indexCharCount'),
+    scanStatus: str(o, 'scanStatus') ?? 'none',
+    scanThreat: str(o, 'scanThreat'),
+    scanError: str(o, 'scanError'),
+    scannedAt: str(o, 'scannedAt'),
     summaryStatus: str(o, 'summaryStatus') ?? 'none',
     summaryText: str(o, 'summaryText'),
     summarizedAt: str(o, 'summarizedAt'),
@@ -708,9 +712,26 @@ export async function diIndexResource(id: string): Promise<DiResourceIndexResult
   };
 }
 
+export async function diRequestScan(id: string): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/scan`, 'POST');
+  return mapResource(raw);
+}
+
 export async function diGetById(id: string): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}`, 'GET');
   return mapResource(raw);
+}
+
+/** Tarama bitene kadar kaydı okur. Süre dolarsa son durumu döner. */
+export async function diAwaitScan(resource: DiResource, timeoutMs = 120000): Promise<DiResource> {
+  if (resource.scanStatus !== 'scanning') return resource;
+  const started = Date.now();
+  let current = resource;
+  while (current.scanStatus === 'scanning' && Date.now() - started < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    current = await diGetById(resource.id);
+  }
+  return current;
 }
 
 /** Kök -> ... -> kaynak yol bilgisi (breadcrumb). */

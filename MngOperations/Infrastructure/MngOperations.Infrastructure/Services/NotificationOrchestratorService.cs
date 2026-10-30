@@ -402,8 +402,8 @@ public class NotificationOrchestratorService : INotificationOrchestrator
         string? subjectOverride,
         CancellationToken cancellationToken)
     {
-        var emails = await ResolveRecipientEmailsAsync(personIds, request.Token, cancellationToken);
-        if (emails.Count == 0)
+        var recipients = await ResolveMailRecipientsAsync(personIds, request.Token, cancellationToken);
+        if (recipients.Count == 0)
         {
             _logger.LogWarning(
                 "No email addresses resolved for notification (templateKey={TemplateKey}, personIds={PersonIds})",
@@ -412,64 +412,88 @@ public class NotificationOrchestratorService : INotificationOrchestrator
             return;
         }
 
-        SendMailResult result;
         if (!string.IsNullOrWhiteSpace(templateKey))
         {
-            var context = await MailNotificationContextBuilder.BuildAsync(
-                request,
-                _metadataCache,
-                _keeper,
-                cancellationToken);
-
-            result = await _notifiers.SendTemplateAsync(
-                new SendTemplateRequest
-                {
-                    To = emails.ToList(),
-                    TemplateKey = templateKey.Trim(),
-                    Subject = string.IsNullOrWhiteSpace(subjectOverride) ? null : subjectOverride.Trim(),
-                    Context = context,
-                    DomainName = request.DomainName
-                },
-                request.Token,
-                cancellationToken);
-        }
-        else
-        {
-            result = await _notifiers.SendMailAsync(new SendMailRequest
+            foreach (var recipient in recipients)
             {
-                To = emails.ToList(),
-                Subject = subject,
-                Body = htmlBody,
-                IsHtml = true,
-                DomainName = request.DomainName
-            }, cancellationToken);
+                var context = await MailNotificationContextBuilder.BuildAsync(
+                    request,
+                    _metadataCache,
+                    _keeper,
+                    cancellationToken,
+                    recipient.DisplayName);
+
+                var result = await _notifiers.SendTemplateAsync(
+                    new SendTemplateRequest
+                    {
+                        To = new List<string> { recipient.Email },
+                        TemplateKey = templateKey.Trim(),
+                        Subject = string.IsNullOrWhiteSpace(subjectOverride) ? null : subjectOverride.Trim(),
+                        Context = context,
+                        DomainName = request.DomainName
+                    },
+                    request.Token,
+                    cancellationToken);
+
+                if (!result.Success)
+                {
+                    _logger.LogWarning(
+                        "Email notification failed (templateKey={TemplateKey}, to={Recipient}): {Error}",
+                        templateKey,
+                        recipient.Email,
+                        result.ErrorMessage);
+                }
+            }
+
+            return;
         }
 
-        if (!result.Success)
+        var plain = await _notifiers.SendMailAsync(new SendMailRequest
+        {
+            To = recipients.Select(r => r.Email).ToList(),
+            Subject = subject,
+            Body = htmlBody,
+            IsHtml = true,
+            DomainName = request.DomainName
+        }, cancellationToken);
+
+        if (!plain.Success)
         {
             _logger.LogWarning(
                 "Email notification failed (templateKey={TemplateKey}): {Error}",
                 templateKey,
-                result.ErrorMessage);
+                plain.ErrorMessage);
         }
     }
 
-    private async Task<IReadOnlyList<string>> ResolveRecipientEmailsAsync(
+    private async Task<IReadOnlyList<MailRecipient>> ResolveMailRecipientsAsync(
         IReadOnlyList<string> personIds,
         string token,
         CancellationToken cancellationToken)
     {
         if (personIds.Count == 0)
-            return Array.Empty<string>();
+            return Array.Empty<MailRecipient>();
 
         var users = await _keeper.GetUsersAsync(personIds, token, cancellationToken);
-        return personIds
-            .Select(id => users.TryGetValue(id, out var person) ? person.Email : null)
-            .Where(email => !string.IsNullOrWhiteSpace(email))
-            .Select(email => email!.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var recipients = new List<MailRecipient>();
+        foreach (var id in personIds)
+        {
+            if (!users.TryGetValue(id, out var person) || string.IsNullOrWhiteSpace(person.Email))
+                continue;
+
+            var email = person.Email.Trim();
+            if (!seen.Add(email))
+                continue;
+
+            var displayName = string.IsNullOrWhiteSpace(person.Name) ? email : person.Name.Trim();
+            recipients.Add(new MailRecipient(email, displayName));
+        }
+
+        return recipients;
     }
+
+    private sealed record MailRecipient(string Email, string DisplayName);
 
     private static bool PolicyMatches(NotificationPolicyRecord policy, NotificationDispatchRequest request)
     {

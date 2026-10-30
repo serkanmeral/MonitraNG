@@ -1,6 +1,6 @@
 {
   "code": "software",
-  "version": "1.3.4",
+  "version": "1.4.0",
   "name": "Yazılım geliştirme",
   "description": "Geliştirme, inceleme ve test akışı. Üst iş ve iş tipleri.",
   "suggestedWorkspaceType": "team",
@@ -45,7 +45,8 @@
       "isDefault": true,
       "flowKey": "flow.default",
       "typeKey": "type.work",
-      "fields": ["title", "description", "typeId", "reporter", "assignee", "watchers", "priorityId", "startDate", "dueDate", "storyPoints"]
+      "fields": ["title", "description", "typeId", "reporter", "assignee", "watchers", "priorityId", "startDate", "dueDate", "storyPoints"],
+      "defaultPriorityKey": "priority.normal"
     }
   ],
   "boards": [
@@ -56,7 +57,19 @@
       "flowKey": "flow.default",
       "formKey": "form.default",
       "typeKey": "type.work",
-      "columnStateKeys": ["state.new", "state.dev", "state.review", "state.test", "state.done", "state.rejected"]
+      "columnStateKeys": ["state.new", "state.dev", "state.review", "state.test", "state.done", "state.rejected"],
+      "visibleFields": ["key", "title", "stateId", "assignee", "priorityId", "storyPoints"],
+      "listColumns": [
+        { "key": "key", "label": "No" },
+        { "key": "title", "label": "Başlık" },
+        { "key": "stateId", "label": "Durum" },
+        { "key": "sprintId", "label": "Sprint", "filterable": false },
+        { "key": "assignee", "label": "Atanan" },
+        { "key": "priorityId", "label": "Öncelik" },
+        { "key": "startDate", "label": "Başlangıç", "filterable": false, "sortable": false, "format": "date" },
+        { "key": "dueDate", "label": "Vade", "filterable": false, "format": "date" },
+        { "key": "storyPoints", "label": "İş puanı" }
+      ]
     }
   ],
   "profiles": [
@@ -91,7 +104,16 @@
   "poolFields": [
     { "key": "dueDate", "label": "Vade", "fieldType": "datetime" },
     { "key": "startDate", "label": "Başlangıç", "fieldType": "date" },
-    { "key": "watchers", "label": "İzleyenler", "fieldType": "persons" }
+    { "key": "watchers", "label": "İzleyenler", "fieldType": "persons" },
+    { "key": "reporter", "label": "Talep eden", "fieldType": "persons" },
+    { "key": "storyPoints", "label": "İş puanı", "fieldType": "number" }
   ],
+  "priorities": [
+    { "key": "priority.urgent", "name": "Acil", "level": "1", "color": "error", "sortOrder": 1 },
+    { "key": "priority.high", "name": "Yüksek", "level": "2", "color": "warning", "sortOrder": 2 },
+    { "key": "priority.normal", "name": "Normal", "level": "3", "color": "info", "sortOrder": 3 },
+    { "key": "priority.low", "name": "Düşük", "level": "4", "color": "secondary", "sortOrder": 4 }
+  ],
+  "views": { "sprints": true, "calendar": true, "gantt": true },
   "libraryFolders": []
 }

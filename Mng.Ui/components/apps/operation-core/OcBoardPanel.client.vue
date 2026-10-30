@@ -1205,6 +1205,7 @@ onUnmounted(() => {
         :profile-from="profileNavFrom"
         :editable="canEdit"
         :priority-names="priorityNames"
+        :field-keys="store.boardContext?.cardFieldKeys"
         @transition="onKanbanTransition"
         @load-more="store.loadMoreColumn($event)"
       />
