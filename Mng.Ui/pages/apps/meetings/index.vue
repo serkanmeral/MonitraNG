@@ -2,8 +2,14 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import DiPickResourceDialog from '@/components/apps/document-intelligence/DiPickResourceDialog.vue';
 import PmMeetingDocField from '@/components/apps/project-management/PmMeetingDocField.vue';
+import MtMeetingAttachments from '@/components/apps/meetings/MtMeetingAttachments.vue';
+import MtMeetingSearch from '@/components/apps/meetings/MtMeetingSearch.vue';
+import MtMeetingSummary from '@/components/apps/meetings/MtMeetingSummary.vue';
+import MtMeetingReport from '@/components/apps/meetings/MtMeetingReport.vue';
+import MtMeetingSettings from '@/components/apps/meetings/MtMeetingSettings.vue';
+import MtMeetingInvite from '@/components/apps/meetings/MtMeetingInvite.vue';
 import MtMeetingCalendar from '@/components/apps/meetings/MtMeetingCalendar.vue';
-import MtMinutesImportDialog from '@/components/apps/meetings/MtMinutesImportDialog.vue';
+import MtMinutesImportDialog, { type ImportedMinutesFile } from '@/components/apps/meetings/MtMinutesImportDialog.vue';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
@@ -12,20 +18,30 @@ import { diCreateMarkdown, diGetById, diGetMarkdownContent, diUpdateMarkdown } f
 import {
   createOrgMeeting,
   createOrgMeetingAction,
+  createOrgMeetingAttendance,
   createOrgMeetingPerson,
   createOrgMeetingSeries,
   deleteOrgMeeting,
   deleteOrgMeetingAction,
-  deleteOrgMeetingPerson,
   deleteOrgMeetingSeries,
   endOrgMeetingSeries,
+  ensureOrgMeetingAttachments,
+  ensureOrgMeetingAttendance,
+  ensureOrgMeetingNotices,
+  ensureOrgMeetingRooms,
+  ensureOrgMeetingTopics,
   extendOpenSeries,
   istanbulYmd,
   listOrgMeetingActions,
   listOrgMeetingAttendance,
   listOrgMeetingPeople,
   listOrgMeetingSeries,
+  listOrgMeetingRooms,
+  listOrgMeetingTopics,
   listOrgMeetings,
+  plannedSeriesSlots,
+  roomConflicts,
+  meetingTopicColorHex,
   syncOrgMeetingAttendance,
   updateOrgMeeting,
   updateOrgMeetingAction,
@@ -33,12 +49,14 @@ import {
   type OrgAttendanceDraft,
   type OrgAttendancePresence,
   type OrgMeeting,
+  type OrgMeetingRoom,
   type OrgMeetingAttendance,
   type OrgMeetingAction,
   type OrgMeetingActionStatus,
   type OrgMeetingPerson,
   type OrgMeetingSeries,
   type OrgMeetingStatus,
+  type OrgMeetingTopic,
 } from '@/services/meetingsService';
 import { useUserStore, type User } from '@/stores/apps/user';
 import type { DiResource } from '@/types/apps/documentIntelligence';
@@ -48,7 +66,8 @@ import { TrashIcon } from 'vue-tabler-icons';
 definePageMeta({ layout: 'default' });
 
 type ListFilter = 'upcoming' | 'past' | 'all';
-type Surface = 'list' | 'calendar';
+type Surface = 'list' | 'calendar' | 'search' | 'summary' | 'report' | 'settings';
+type MeetingDialogTab = 'event' | 'people' | 'agenda' | 'minutes' | 'attachments' | 'actions' | 'invite';
 type DocTarget = 'minutes' | 'agenda' | 'seriesAgenda';
 type DocSource = 'write' | 'existing';
 type MeetingDoc = {
@@ -71,14 +90,16 @@ const userStore = useUserStore();
 
 const loading = ref(false);
 const saving = ref(false);
+const route = useRoute();
 const meetings = ref<OrgMeeting[]>([]);
 const people = ref<OrgMeetingPerson[]>([]);
 const seriesRows = ref<OrgMeetingSeries[]>([]);
 const personNames = ref<Record<string, string>>({});
 const filter = ref<ListFilter>('upcoming');
-const surface = ref<Surface>('list');
+const surface = ref<Surface>('calendar');
 
 const dialogOpen = ref(false);
+const meetingTab = ref<MeetingDialogTab>('event');
 const editingId = ref<string | null>(null);
 const title = ref('');
 const startAt = ref('');
@@ -92,6 +113,16 @@ const agendaResourceId = ref<string | null>(null);
 const minutesResourceId = ref<string | null>(null);
 const agendaDoc = ref<MeetingDoc>(emptyDoc());
 const minutesDoc = ref<MeetingDoc>(emptyDoc());
+const topicId = ref<string | null>(null);
+const topicCustom = ref(false);
+const topics = ref<OrgMeetingTopic[]>([]);
+const rooms = ref<OrgMeetingRoom[]>([]);
+const roomId = ref<string | null>(null);
+const roomCustom = ref(false);
+const roomFilter = ref<string | null>(null);
+const conflictOpen = ref(false);
+const conflictLines = ref<{ title: string; when: string }[]>([]);
+const conflictTarget = ref<'meeting' | 'series'>('meeting');
 const seriesId = ref<string | null>(null);
 const occurrenceDate = ref<string | null>(null);
 const detached = ref(false);
@@ -112,6 +143,7 @@ const deleteOpen = ref(false);
 const deleting = ref(false);
 const deleteSeriesOpen = ref(false);
 const importOpen = ref(false);
+const importMeetingId = ref<string | null>(null);
 
 const seriesOpen = ref(false);
 const seriesSaving = ref(false);
@@ -133,6 +165,8 @@ const seriesAgendaName = ref('');
 const seriesUserIds = ref<string[]>([]);
 const seriesPersonIds = ref<string[]>([]);
 const seriesFrom = ref('');
+const seriesTopicId = ref<string | null>(null);
+const seriesRoomId = ref<string | null>(null);
 
 const personOpen = ref(false);
 const personName = ref('');
@@ -160,6 +194,28 @@ const presenceItems = computed(() =>
 const weekdayItems = computed(() =>
   [1, 2, 3, 4, 5, 6, 7].map((value) => ({ title: t(`meetings.weekday.${value}`), value })),
 );
+const roomChoices = computed(() => {
+  const selected = new Set([roomId.value, seriesRoomId.value, roomFilter.value].filter(Boolean) as string[]);
+  return rooms.value
+    .filter((room) => !room.archived || selected.has(room.id))
+    .map((room) => ({
+      title: room.capacity ? `${room.name} (${room.capacity})` : room.name,
+      value: room.id,
+    }));
+});
+const calendarMeetings = computed(() => (
+  roomFilter.value ? meetings.value.filter((meeting) => meeting.roomId === roomFilter.value) : meetings.value
+));
+const topicChoices = computed(() => {
+  const selected = new Set([topicId.value, seriesTopicId.value].filter(Boolean) as string[]);
+  return topics.value
+    .filter((topic) => !topic.archived || selected.has(topic.id))
+    .map((topic) => ({
+      title: topic.code ? `${topic.name} (${topic.code})` : topic.name,
+      value: topic.id,
+      color: meetingTopicColorHex(topic.color),
+    }));
+});
 const personItems = computed(() =>
   people.value.map((person) => ({
     title: person.organization ? `${person.name} (${person.organization})` : person.name,
@@ -193,6 +249,11 @@ const visibleMeetings = computed(() => {
 function rowOf(item: OrgMeeting | { raw?: OrgMeeting }): OrgMeeting {
   if (item && typeof item === 'object' && 'raw' in item && item.raw) return item.raw;
   return item as OrgMeeting;
+}
+
+function topicOf(id: string | null | undefined): OrgMeetingTopic | null {
+  if (!id) return null;
+  return topics.value.find((topic) => topic.id === id) || null;
 }
 
 function personLabel(id: string | null | undefined): string {
@@ -269,14 +330,19 @@ async function rememberPeople(ids: string[]) {
 async function load() {
   loading.value = true;
   try {
-    const [meetingRows, personRows, series] = await Promise.all([
+    await Promise.all([ensureOrgMeetingTopics(), ensureOrgMeetingAttachments(), ensureOrgMeetingAttendance(), ensureOrgMeetingNotices(), ensureOrgMeetingRooms()]);
+    const [meetingRows, personRows, series, topicRows, roomRows] = await Promise.all([
       listOrgMeetings(),
       listOrgMeetingPeople(),
       listOrgMeetingSeries(),
+      listOrgMeetingTopics(),
+      listOrgMeetingRooms(),
     ]);
     meetings.value = meetingRows;
     people.value = personRows;
     seriesRows.value = series;
+    topics.value = topicRows;
+    rooms.value = roomRows;
     const ids = meetingRows.flatMap((meeting) => [meeting.organizerId].filter(Boolean) as string[]);
     await rememberPeople(ids);
   } catch (error) {
@@ -287,6 +353,7 @@ async function load() {
 }
 
 function resetForm() {
+  meetingTab.value = 'event';
   editingId.value = null;
   title.value = '';
   startAt.value = '';
@@ -300,6 +367,10 @@ function resetForm() {
   minutesResourceId.value = null;
   agendaDoc.value = emptyDoc();
   minutesDoc.value = emptyDoc();
+  topicId.value = null;
+  topicCustom.value = false;
+  roomId.value = null;
+  roomCustom.value = false;
   seriesId.value = null;
   occurrenceDate.value = null;
   detached.value = false;
@@ -350,6 +421,13 @@ async function openEdit(meeting: OrgMeeting) {
   agendaResourceId.value = meeting.agendaResourceId;
   minutesResourceId.value = meeting.minutesResourceId;
   seriesId.value = meeting.seriesId;
+  topicId.value = meeting.topicId;
+  topicCustom.value = meeting.topicCustom;
+  roomId.value = meeting.roomId;
+  roomCustom.value = meeting.roomCustom;
+  const linked = seriesRows.value.find((row) => row.id === meeting.seriesId);
+  if (linked && !meeting.topicCustom) topicId.value = linked.topicId;
+  if (linked && !meeting.roomCustom) roomId.value = linked.roomId;
   occurrenceDate.value = meeting.occurrenceDate;
   detached.value = meeting.detached;
   dialogOpen.value = true;
@@ -385,7 +463,23 @@ function currentInput(detachedNow = detached.value) {
     seriesId: seriesId.value,
     occurrenceDate: occurrenceDate.value,
     detached: detachedNow,
+    topicId: topicId.value,
+    topicCustom: topicCustom.value,
+    roomId: roomId.value,
+    roomCustom: roomCustom.value,
   };
+}
+
+function onMeetingRoom(value: string | null) {
+  roomId.value = value;
+  const series = seriesRows.value.find((row) => row.id === seriesId.value);
+  roomCustom.value = Boolean(series) && (value || null) !== (series?.roomId || null);
+}
+
+function onMeetingTopic(value: string | null) {
+  topicId.value = value;
+  const series = seriesRows.value.find((row) => row.id === seriesId.value);
+  topicCustom.value = Boolean(series) && (value || null) !== (series?.topicId || null);
 }
 
 function sameIds(left: Array<string | null | undefined>, right: string[]): boolean {
@@ -399,7 +493,7 @@ function occurrenceIsException(agendaText: string, agendaId: string | null, minu
   const series = seriesRows.value.find((row) => row.id === seriesId.value);
   const timeChanged = startAt.value !== originalStart.value || endAt.value !== originalEnd.value;
   if (timeChanged || minutesId || actions.value.length) return true;
-  if (attendance.value.some((row) => row.presence !== 'invited')) return true;
+  if (attendance.value.some((row) => row.presence !== 'invited' || Boolean(row.note?.trim()))) return true;
   if (!series) return true;
   const ownAgenda = agendaText.trim() !== (series.agenda || '').trim()
     || (agendaId || null) !== (series.agendaResourceId || null);
@@ -489,11 +583,57 @@ function formErrorKey(): string | null {
   return null;
 }
 
-async function save() {
+function conflictRows(hits: OrgMeeting[]) {
+  return hits.slice(0, 6).map((meeting) => ({ title: meeting.title, when: formatWhen(meeting.startAt) }));
+}
+
+function openConflict(target: 'meeting' | 'series', hits: OrgMeeting[]) {
+  conflictTarget.value = target;
+  conflictLines.value = conflictRows(hits);
+  conflictOpen.value = true;
+}
+
+function meetingConflictHits(): OrgMeeting[] {
+  if (!roomId.value || status.value === 'cancelled') return [];
+  return roomConflicts(meetings.value, roomId.value, startAt.value, endAt.value || null, editingId.value ? [editingId.value] : []);
+}
+
+function seriesConflictHits(): OrgMeeting[] {
+  if (!seriesRoomId.value) return [];
+  const from = editingSeriesId.value ? clampSeriesFrom(seriesFrom.value) : seriesFirst.value;
+  const slots = plannedSeriesSlots(seriesInput(), from);
+  const found = new Map<string, OrgMeeting>();
+  for (const slot of slots) {
+    const day = istanbulYmd(slot.startAt);
+    const ignore = meetings.value
+      .filter((meeting) => meeting.seriesId === editingSeriesId.value && meeting.occurrenceDate === day)
+      .map((meeting) => meeting.id);
+    for (const hit of roomConflicts(meetings.value, seriesRoomId.value, slot.startAt, slot.endAt, ignore)) {
+      found.set(hit.id, hit);
+    }
+  }
+  return [...found.values()];
+}
+
+function confirmConflict() {
+  conflictOpen.value = false;
+  if (conflictTarget.value === 'series') void saveSeries(true);
+  else void save(true);
+}
+
+async function save(force = false) {
   const problem = formErrorKey();
   if (problem) {
+    meetingTab.value = 'event';
     panelError(new Error(problem), problem);
     return;
+  }
+  if (!force) {
+    const hits = meetingConflictHits();
+    if (hits.length) {
+      openConflict('meeting', hits);
+      return;
+    }
   }
   saving.value = true;
   try {
@@ -515,6 +655,105 @@ async function save() {
   } finally {
     saving.value = false;
   }
+}
+
+const importHasMinutes = computed(() =>
+  Boolean(importMeetingId.value)
+  && Boolean(minutesResourceId.value || minutesDoc.value.resourceId || minutesDoc.value.body.trim()),
+);
+
+function openPageImport() {
+  importMeetingId.value = null;
+  importOpen.value = true;
+}
+
+function openMeetingImport() {
+  if (!editingId.value) return;
+  importMeetingId.value = editingId.value;
+  importOpen.value = true;
+}
+
+async function attachImportedMinutes(file: ImportedMinutesFile) {
+  const meetingId = editingId.value;
+  if (!meetingId || importMeetingId.value !== meetingId) return;
+  const nextStatus: OrgMeetingStatus = status.value === 'scheduled' ? 'held' : status.value;
+  const detachedNow = Boolean(seriesId.value) || detached.value;
+  await updateOrgMeeting(meetingId, {
+    ...currentInput(detachedNow),
+    status: nextStatus,
+    minutesResourceId: file.resourceId,
+  });
+  status.value = nextStatus;
+  if (seriesId.value) detached.value = true;
+  minutesResourceId.value = file.resourceId;
+  minutesDoc.value = {
+    source: 'existing',
+    body: '',
+    resourceId: file.resourceId,
+    resourceName: file.fileName,
+    loading: false,
+    canSync: false,
+    version: 0,
+  };
+  const known = new Set<string>();
+  for (const row of attendance.value) {
+    const label = attendanceLabel(row).trim().toLocaleLowerCase('tr');
+    const display = row.displayName.trim().toLocaleLowerCase('tr');
+    if (label) known.add(label);
+    if (display) known.add(display);
+  }
+  let catalog = people.value.slice();
+  const byName = new Map(catalog.map((person) => [person.name.toLocaleLowerCase('tr'), person]));
+  for (const row of file.parsed.participants) {
+    const key = row.name.trim().toLocaleLowerCase('tr');
+    if (!key || known.has(key)) continue;
+    let person = byName.get(key);
+    if (!person) {
+      person = await createOrgMeetingPerson({ name: row.name.trim(), organization: row.organization || null });
+      byName.set(key, person);
+      catalog = [...catalog, person];
+    }
+    const id = await createOrgMeetingAttendance({
+      meetingId,
+      kind: 'external',
+      personId: person.id,
+      displayName: person.name,
+      organization: person.organization || row.organization || null,
+      email: person.email || null,
+      presence: 'attended',
+    });
+    const stored: OrgMeetingAttendance = {
+      id,
+      meetingId,
+      kind: 'external',
+      userId: null,
+      personId: person.id,
+      displayName: person.name,
+      organization: person.organization || row.organization || '',
+      email: person.email || '',
+      presence: 'attended',
+      note: '',
+    };
+    attendance.value.push({ ...stored });
+    attendanceExisting.value.push(stored);
+    known.add(key);
+    known.add(person.name.toLocaleLowerCase('tr'));
+  }
+  people.value = catalog;
+  for (const row of file.parsed.actions) {
+    const actionTitleText = row.title.trim();
+    if (!actionTitleText) continue;
+    const note = [row.code, ...row.firms].filter(Boolean).join(' · ');
+    await createOrgMeetingAction({
+      meetingId,
+      title: actionTitleText,
+      dueAt: row.dueDate,
+      status: 'open',
+      note: note || null,
+    });
+  }
+  await loadActions(meetingId);
+  await load();
 }
 
 function openPicker(target: DocTarget) {
@@ -684,6 +923,8 @@ function resetSeries() {
   seriesUserIds.value = [];
   seriesPersonIds.value = [];
   seriesFrom.value = '';
+  seriesTopicId.value = null;
+  seriesRoomId.value = null;
 }
 
 function seriesFromMin(): string {
@@ -721,6 +962,8 @@ async function editSeries(row: OrgMeetingSeries, fromDate?: string) {
   seriesAgendaName.value = await labelResource(row.agendaResourceId);
   seriesUserIds.value = [...row.memberUserIds];
   seriesPersonIds.value = [...row.memberPersonIds];
+  seriesTopicId.value = row.topicId;
+  seriesRoomId.value = row.roomId;
   seriesFrom.value = clampSeriesFrom(fromDate || istanbulYmd(new Date()));
 }
 
@@ -774,14 +1017,23 @@ function seriesInput() {
     agendaResourceId: seriesAgendaResourceId.value,
     memberUserIds: idsOf(seriesUserIds.value),
     memberPersonIds: idsOf(seriesPersonIds.value),
+    topicId: seriesTopicId.value,
+    roomId: seriesRoomId.value,
   };
 }
 
-async function saveSeries() {
+async function saveSeries(force = false) {
   const problem = seriesErrorKey();
   if (problem) {
     panelError(new Error(problem), problem);
     return;
+  }
+  if (!force) {
+    const hits = seriesConflictHits();
+    if (hits.length) {
+      openConflict('series', hits);
+      return;
+    }
   }
   seriesSaving.value = true;
   try {
@@ -862,13 +1114,32 @@ async function savePerson() {
   }
 }
 
-async function removePerson(id: string) {
+async function reloadTopics() {
   try {
-    await deleteOrgMeetingPerson(id);
-    people.value = people.value.filter((row) => row.id !== id);
+    topics.value = await listOrgMeetingTopics();
   } catch (error) {
-    const message = error instanceof Error ? error.message : '';
-    panelError(error, message === 'PERSON_IN_USE' ? 'meetings.personInUse' : 'meetings.personSaveFailed');
+    panelError(error, 'meetings.topic.saveFailed');
+  }
+}
+
+async function reloadRooms() {
+  try {
+    rooms.value = await listOrgMeetingRooms();
+  } catch (error) {
+    panelError(error, 'meetings.room.loadFailed');
+  }
+}
+
+function placeLabel(meeting: OrgMeeting): string {
+  const room = rooms.value.find((item) => item.id === meeting.roomId);
+  return [room?.name, meeting.location].filter(Boolean).join(' · ') || meeting.meetingUrl || '—';
+}
+
+async function reloadPeople() {
+  try {
+    people.value = await listOrgMeetingPeople();
+  } catch (error) {
+    panelError(error, 'meetings.loadFailed');
   }
 }
 
@@ -887,8 +1158,12 @@ async function onCalendarRange(through: string) {
   }
 }
 
-onMounted(() => {
-  void load();
+onMounted(async () => {
+  await load();
+  const openId = typeof route.query.open === 'string' ? route.query.open.trim() : '';
+  if (!openId) return;
+  const row = meetings.value.find((meeting) => meeting.id === openId);
+  if (row) openEdit(row);
 });
 </script>
 
@@ -899,16 +1174,31 @@ onMounted(() => {
     <v-card>
       <v-card-text class="d-flex flex-wrap align-center ga-3">
         <v-btn-toggle v-model="surface" mandatory density="comfortable" divided>
-          <v-btn value="list">{{ t('meetings.surface.list') }}</v-btn>
           <v-btn value="calendar">{{ t('meetings.surface.calendar') }}</v-btn>
+          <v-btn value="list">{{ t('meetings.surface.list') }}</v-btn>
+          <v-btn value="search">{{ t('meetings.surface.search') }}</v-btn>
+          <v-btn value="summary">{{ t('meetings.surface.summary') }}</v-btn>
+          <v-btn value="report">{{ t('meetings.surface.report') }}</v-btn>
+          <v-btn value="settings">{{ t('meetings.settings.title') }}</v-btn>
         </v-btn-toggle>
         <v-btn-toggle v-if="surface === 'list'" v-model="filter" mandatory density="comfortable" divided>
           <v-btn value="upcoming">{{ t('meetings.filters.upcoming') }}</v-btn>
           <v-btn value="past">{{ t('meetings.filters.past') }}</v-btn>
           <v-btn value="all">{{ t('meetings.filters.all') }}</v-btn>
         </v-btn-toggle>
+        <v-select
+          v-if="surface === 'calendar'"
+          v-model="roomFilter"
+          :items="roomChoices"
+          :label="t('meetings.room.calendar')"
+          variant="outlined"
+          density="compact"
+          hide-details
+          clearable
+          style="max-width: 240px; min-width: 180px;"
+        />
         <v-spacer />
-        <v-btn variant="tonal" @click="importOpen = true">{{ t('meetings.import.open') }}</v-btn>
+        <v-btn variant="tonal" @click="openPageImport">{{ t('meetings.import.open') }}</v-btn>
         <v-btn variant="tonal" @click="openSeries">{{ t('meetings.series.open') }}</v-btn>
         <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate()">{{ t('meetings.new') }}</v-btn>
       </v-card-text>
@@ -916,10 +1206,45 @@ onMounted(() => {
       <MtMeetingCalendar
         v-if="surface === 'calendar'"
         class="pa-4"
-        :meetings="meetings"
+        :meetings="calendarMeetings"
+        :topics="topics"
         @create="openCreate"
         @range="onCalendarRange"
         @open="(id) => { const row = meetings.find((item) => item.id === id); if (row) void openEdit(row); }"
+      />
+
+      <MtMeetingSearch
+        v-else-if="surface === 'search'"
+        class="pa-4"
+        :meetings="meetings"
+        :topics="topics"
+        :people="people"
+        :person-names="personNames"
+        @open="(id) => { const row = meetings.find((item) => item.id === id); if (row) void openEdit(row); }"
+      />
+
+      <MtMeetingSummary
+        v-else-if="surface === 'summary'"
+        class="pa-4"
+        :meetings="meetings"
+        :topics="topics"
+        @open="(id) => { const row = meetings.find((item) => item.id === id); if (row) void openEdit(row); }"
+      />
+
+      <MtMeetingReport
+        v-else-if="surface === 'report'"
+        class="pa-4"
+        :meetings="meetings"
+        :topics="topics"
+        @open="(id) => { const row = meetings.find((item) => item.id === id); if (row) void openEdit(row); }"
+      />
+
+      <MtMeetingSettings
+        v-else-if="surface === 'settings'"
+        :people="people"
+        @changed="reloadPeople"
+        @topics="reloadTopics"
+        @rooms="reloadRooms"
       />
 
       <v-data-table
@@ -940,6 +1265,11 @@ onMounted(() => {
           <v-chip v-else-if="rowOf(item).detached" size="x-small" class="ms-2" color="warning" variant="tonal">
             {{ t('meetings.series.detached') }}
           </v-chip>
+          <div v-if="topicOf(rowOf(item).topicId)" class="mt-1">
+            <v-chip size="x-small" :color="meetingTopicColorHex(topicOf(rowOf(item).topicId)?.color)" variant="tonal">
+              {{ topicOf(rowOf(item).topicId)?.name }}
+            </v-chip>
+          </div>
         </template>
         <template #item.when="{ item }">{{ formatWhen(rowOf(item).startAt) }}</template>
         <template #item.duration="{ item }">{{ formatDuration(rowOf(item)) }}</template>
@@ -949,7 +1279,7 @@ onMounted(() => {
           </v-chip>
         </template>
         <template #item.organizer="{ item }">{{ personLabel(rowOf(item).organizerId) }}</template>
-        <template #item.place="{ item }">{{ rowOf(item).location || rowOf(item).meetingUrl || '—' }}</template>
+        <template #item.place="{ item }">{{ placeLabel(rowOf(item)) }}</template>
         <template #item.actions="{ item }">
           <v-btn icon variant="text" :aria-label="t('meetings.delete')" @click="askDelete(rowOf(item))">
             <TrashIcon size="18" />
@@ -966,142 +1296,233 @@ onMounted(() => {
           <v-alert v-if="seriesId && !detached" type="info" variant="tonal" class="mb-3">
             {{ t('meetings.series.detachHint') }}
           </v-alert>
-          <v-row>
-            <v-col cols="12">
-              <v-text-field v-model="title" :label="t('meetings.fields.title')" variant="outlined" />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field v-model="startAt" :label="t('meetings.fields.start')" type="datetime-local" variant="outlined" />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field v-model="endAt" :label="t('meetings.fields.end')" type="datetime-local" variant="outlined" />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select v-model="status" :items="statusItems" :label="t('meetings.fields.status')" variant="outlined" />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field v-model="location" :label="t('meetings.fields.location')" variant="outlined" />
-            </v-col>
-            <v-col cols="12">
-              <v-text-field v-model="meetingUrl" :label="t('meetings.fields.url')" variant="outlined" />
-            </v-col>
-            <v-col cols="12">
-              <MngDirectoryPickerField v-model="organizerId" entity="user" :label="t('meetings.fields.organizer')" />
-            </v-col>
-            <v-col cols="12" md="6">
-              <div class="text-subtitle-2 mb-2">{{ t('meetings.fields.agenda') }}</div>
-              <PmMeetingDocField
-                :source="agendaDoc.source"
-                :body="agendaDoc.body"
-                :resource-id="agendaDoc.resourceId"
-                :resource-name="agendaDoc.resourceName"
-                :loading="agendaDoc.loading"
-                :write-hint="t('meetings.writeAgenda')"
-                :empty-label="t('meetings.agendaEmpty')"
-                @update:source="agendaDoc.source = $event"
-                @update:body="agendaDoc.body = $event"
-                @pick="openPicker('agenda')"
-                @clear="agendaDoc.resourceId = ''; agendaDoc.resourceName = ''; agendaDoc.canSync = false"
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <div class="text-subtitle-2 mb-2">{{ t('meetings.fields.minutes') }}</div>
-              <PmMeetingDocField
-                :source="minutesDoc.source"
-                :body="minutesDoc.body"
-                :resource-id="minutesDoc.resourceId"
-                :resource-name="minutesDoc.resourceName"
-                :loading="minutesDoc.loading"
-                :write-hint="t('meetings.writeMinutes')"
-                :empty-label="t('meetings.minutesEmpty')"
-                @update:source="minutesDoc.source = $event"
-                @update:body="minutesDoc.body = $event"
-                @pick="openPicker('minutes')"
-                @clear="minutesDoc.resourceId = ''; minutesDoc.resourceName = ''; minutesDoc.canSync = false"
-              />
-            </v-col>
-          </v-row>
-
-          <v-divider class="my-4" />
-          <div class="text-subtitle-1 mb-2">{{ t('meetings.attendanceTitle') }}</div>
-          <v-row>
-            <v-col cols="12" md="6">
-              <MngDirectoryPickerField v-model="pendingUserIds" entity="user" multiple :label="t('meetings.addUser')" />
-            </v-col>
-            <v-col cols="12" md="6" class="d-flex ga-2 align-start">
-              <v-select
-                v-model="pendingPersonIds"
-                :items="personItems"
-                :label="t('meetings.addExternal')"
-                variant="outlined"
-                multiple
-                chips
-                clearable
-                class="flex-grow-1"
-              />
-              <v-btn class="mt-1" variant="tonal" @click="addExternal">{{ t('meetings.add') }}</v-btn>
-              <v-btn class="mt-1" variant="text" @click="openPerson">{{ t('meetings.newPerson') }}</v-btn>
-            </v-col>
-          </v-row>
-          <v-list v-if="attendance.length" density="compact">
-            <v-list-item v-for="(row, index) in attendance" :key="row.id || `${row.kind}-${row.userId || row.personId}`">
-              <v-list-item-title>{{ attendanceLabel(row) }}</v-list-item-title>
-              <v-list-item-subtitle>{{ row.kind === 'external' ? t('meetings.kind.external') : t('meetings.kind.user') }}</v-list-item-subtitle>
-              <template #append>
+          <v-tabs v-model="meetingTab" color="primary" class="mb-2">
+            <v-tab value="event">{{ t('meetings.tabs.event') }}</v-tab>
+            <v-tab value="people">{{ t('meetings.tabs.people') }}</v-tab>
+            <v-tab value="agenda">{{ t('meetings.tabs.agenda') }}</v-tab>
+            <v-tab value="minutes">{{ t('meetings.tabs.minutes') }}</v-tab>
+            <v-tab value="attachments">{{ t('meetings.tabs.attachments') }}</v-tab>
+            <v-tab value="actions">{{ t('meetings.tabs.actions') }}</v-tab>
+            <v-tab value="invite">{{ t('meetings.tabs.invite') }}</v-tab>
+          </v-tabs>
+          <v-window v-model="meetingTab">
+            <v-window-item value="event">
+              <div class="d-flex flex-column ga-3 pt-2">
+                <v-text-field v-model="title" :label="t('meetings.fields.title')" variant="outlined" />
                 <v-select
-                  v-model="row.presence"
-                  :items="presenceItems"
-                  density="compact"
+                  :model-value="topicId"
+                  :items="topicChoices"
+                  :label="t('meetings.fields.topic')"
                   variant="outlined"
-                  hide-details
-                  style="min-width: 150px"
+                  clearable
+                  @update:model-value="onMeetingTopic"
+                >
+                  <template #item="{ props: itemProps, item }">
+                    <v-list-item v-bind="itemProps">
+                      <template #prepend>
+                        <span class="mt-topic-dot" :style="{ background: item.raw.color }" />
+                      </template>
+                    </v-list-item>
+                  </template>
+                </v-select>
+                <p class="text-caption text-medium-emphasis mb-0">{{ t('meetings.topic.pickHint') }}</p>
+                <p v-if="seriesId" class="text-caption text-medium-emphasis mb-0">
+                  {{ topicCustom ? t('meetings.topic.customHint') : t('meetings.topic.followHint') }}
+                </p>
+                <div class="d-flex flex-wrap ga-3">
+                  <v-text-field v-model="startAt" :label="t('meetings.fields.start')" type="datetime-local" variant="outlined" class="flex-grow-1" />
+                  <v-text-field v-model="endAt" :label="t('meetings.fields.end')" type="datetime-local" variant="outlined" class="flex-grow-1" />
+                </div>
+                <v-select v-model="status" :items="statusItems" :label="t('meetings.fields.status')" variant="outlined" />
+                <v-select
+                  :model-value="roomId"
+                  :items="roomChoices"
+                  :label="t('meetings.room.field')"
+                  variant="outlined"
+                  clearable
+                  @update:model-value="onMeetingRoom"
                 />
-                <v-btn icon variant="text" :aria-label="t('meetings.delete')" @click="removeAttendance(index)">
-                  <TrashIcon size="18" />
-                </v-btn>
-              </template>
-            </v-list-item>
-          </v-list>
-          <p v-else class="text-medium-emphasis">{{ t('meetings.attendanceEmpty') }}</p>
-
-          <v-divider class="my-4" />
-          <div class="text-subtitle-1 mb-2">{{ t('meetings.actionsTitle') }}</div>
-          <p v-if="!editingId" class="text-medium-emphasis">{{ t('meetings.actionsAfterSave') }}</p>
-          <template v-else>
-            <v-row>
-              <v-col cols="12" md="5">
-                <v-text-field v-model="actionTitle" :label="t('meetings.actionTitle')" variant="outlined" density="comfortable" />
-              </v-col>
-              <v-col cols="12" md="4">
-                <MngDirectoryPickerField v-model="actionAssigneeId" entity="user" :label="t('meetings.actionAssignee')" />
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-text-field v-model="actionDueAt" :label="t('meetings.actionDue')" type="date" variant="outlined" density="comfortable" />
-              </v-col>
-            </v-row>
-            <v-btn size="small" color="primary" variant="tonal" :loading="actionsLoading" :disabled="!actionTitle.trim()" @click="addAction">
-              {{ t('meetings.addAction') }}
-            </v-btn>
-            <v-list v-if="actions.length" class="mt-2" density="compact">
-              <v-list-item v-for="action in actions" :key="action.id">
-                <template #prepend>
-                  <v-checkbox-btn :model-value="action.status === 'done'" @update:model-value="toggleAction(action)" />
-                </template>
-                <v-list-item-title :class="{ 'text-decoration-line-through': action.status === 'done' }">{{ action.title }}</v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ personLabel(action.assigneeId) }}
-                  <span v-if="action.dueAt"> · {{ action.dueAt }}</span>
-                  <span v-if="action.note"> · {{ action.note }}</span>
-                </v-list-item-subtitle>
-                <template #append>
-                  <v-btn icon variant="text" :aria-label="t('meetings.delete')" @click="removeAction(action)">
-                    <TrashIcon size="18" />
+                <p class="text-caption text-medium-emphasis mb-0">{{ t('meetings.room.pickHint') }}</p>
+                <p v-if="seriesId" class="text-caption text-medium-emphasis mb-0">
+                  {{ roomCustom ? t('meetings.room.customHint') : t('meetings.room.followHint') }}
+                </p>
+                <v-text-field v-model="location" :label="t('meetings.fields.location')" variant="outlined" />
+                <v-text-field v-model="meetingUrl" :label="t('meetings.fields.url')" variant="outlined" />
+                <MngDirectoryPickerField v-model="organizerId" entity="user" :label="t('meetings.fields.organizer')" />
+              </div>
+            </v-window-item>
+            <v-window-item value="people">
+              <div class="pt-2">
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <MngDirectoryPickerField
+                      v-model="pendingUserIds"
+                      entity="user"
+                      multiple
+                      density="comfortable"
+                      hide-details
+                      :label="t('meetings.addUser')"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <div class="text-caption mb-1">{{ t('meetings.addExternal') }}</div>
+                    <div class="d-flex align-center ga-2">
+                      <v-select
+                        v-model="pendingPersonIds"
+                        :items="personItems"
+                        :placeholder="t('meetings.addExternal')"
+                        variant="outlined"
+                        density="comfortable"
+                        hide-details
+                        multiple
+                        chips
+                        clearable
+                        class="flex-grow-1"
+                      />
+                      <v-btn variant="tonal" @click="addExternal">{{ t('meetings.add') }}</v-btn>
+                      <v-btn variant="text" @click="openPerson">{{ t('meetings.newPerson') }}</v-btn>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" class="pt-0">
+                    <p class="text-caption text-medium-emphasis mb-0">{{ t('meetings.settings.pickHint') }}</p>
+                  </v-col>
+                </v-row>
+                <div v-if="attendance.length" class="d-flex flex-column ga-3 mt-2">
+                  <div
+                    v-for="(row, index) in attendance"
+                    :key="row.id || `${row.kind}-${row.userId || row.personId}`"
+                    class="mt-attendance-row rounded-lg pa-3"
+                  >
+                    <div class="d-flex align-center ga-2">
+                      <div class="flex-grow-1 min-width-0">
+                        <div class="text-body-1 text-truncate">{{ attendanceLabel(row) }}</div>
+                        <div class="text-caption text-medium-emphasis">
+                          {{ row.kind === 'external' ? t('meetings.kind.external') : t('meetings.kind.user') }}
+                        </div>
+                      </div>
+                      <v-select
+                        v-model="row.presence"
+                        class="mt-attendance-presence"
+                        :items="presenceItems"
+                        :label="t('meetings.fields.status')"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                      />
+                      <v-btn icon variant="text" :aria-label="t('meetings.delete')" @click="removeAttendance(index)">
+                        <TrashIcon size="18" />
+                      </v-btn>
+                    </div>
+                    <v-text-field
+                      v-model="row.note"
+                      class="mt-3"
+                      :label="t('meetings.attendanceNote')"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                    />
+                  </div>
+                </div>
+                <p v-else class="text-medium-emphasis">{{ t('meetings.attendanceEmpty') }}</p>
+              </div>
+            </v-window-item>
+            <v-window-item value="agenda">
+              <div class="pt-2">
+                <PmMeetingDocField
+                  :source="agendaDoc.source"
+                  :body="agendaDoc.body"
+                  :resource-id="agendaDoc.resourceId"
+                  :resource-name="agendaDoc.resourceName"
+                  :loading="agendaDoc.loading"
+                  :write-hint="t('meetings.writeAgenda')"
+                  :empty-label="t('meetings.agendaEmpty')"
+                  @update:source="agendaDoc.source = $event"
+                  @update:body="agendaDoc.body = $event"
+                  @pick="openPicker('agenda')"
+                  @clear="agendaDoc.resourceId = ''; agendaDoc.resourceName = ''; agendaDoc.canSync = false"
+                />
+              </div>
+            </v-window-item>
+            <v-window-item value="minutes">
+              <div class="pt-2">
+                <v-btn v-if="editingId" variant="tonal" class="mb-3" @click="openMeetingImport">{{ t('meetings.import.open') }}</v-btn>
+                <p v-else class="text-medium-emphasis mb-3">{{ t('meetings.import.afterSave') }}</p>
+                <PmMeetingDocField
+                  :source="minutesDoc.source"
+                  :body="minutesDoc.body"
+                  :resource-id="minutesDoc.resourceId"
+                  :resource-name="minutesDoc.resourceName"
+                  :loading="minutesDoc.loading"
+                  :write-hint="t('meetings.writeMinutes')"
+                  :empty-label="t('meetings.minutesEmpty')"
+                  @update:source="minutesDoc.source = $event"
+                  @update:body="minutesDoc.body = $event"
+                  @pick="openPicker('minutes')"
+                  @clear="minutesDoc.resourceId = ''; minutesDoc.resourceName = ''; minutesDoc.canSync = false"
+                />
+              </div>
+            </v-window-item>
+            <v-window-item value="attachments">
+              <div class="pt-2">
+                <MtMeetingAttachments :meeting-id="editingId" />
+              </div>
+            </v-window-item>
+            <v-window-item value="actions">
+              <div class="pt-2">
+                <p v-if="!editingId" class="text-medium-emphasis">{{ t('meetings.actionsAfterSave') }}</p>
+                <template v-else>
+                  <v-row>
+                    <v-col cols="12" md="5">
+                      <v-text-field v-model="actionTitle" :label="t('meetings.actionTitle')" variant="outlined" density="comfortable" />
+                    </v-col>
+                    <v-col cols="12" md="4">
+                      <MngDirectoryPickerField v-model="actionAssigneeId" entity="user" :label="t('meetings.actionAssignee')" />
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-text-field v-model="actionDueAt" :label="t('meetings.actionDue')" type="date" variant="outlined" density="comfortable" />
+                    </v-col>
+                  </v-row>
+                  <v-btn size="small" color="primary" variant="tonal" :loading="actionsLoading" :disabled="!actionTitle.trim()" @click="addAction">
+                    {{ t('meetings.addAction') }}
                   </v-btn>
+                  <v-list v-if="actions.length" class="mt-2" density="compact">
+                    <v-list-item v-for="action in actions" :key="action.id">
+                      <template #prepend>
+                        <v-checkbox-btn :model-value="action.status === 'done'" @update:model-value="toggleAction(action)" />
+                      </template>
+                      <v-list-item-title :class="{ 'text-decoration-line-through': action.status === 'done' }">{{ action.title }}</v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ personLabel(action.assigneeId) }}
+                        <span v-if="action.dueAt"> · {{ action.dueAt }}</span>
+                        <span v-if="action.note"> · {{ action.note }}</span>
+                      </v-list-item-subtitle>
+                      <template #append>
+                        <v-btn icon variant="text" :aria-label="t('meetings.delete')" @click="removeAction(action)">
+                          <TrashIcon size="18" />
+                        </v-btn>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+                  <p v-else-if="!actionsLoading" class="text-medium-emphasis mt-2">{{ t('meetings.actionsEmpty') }}</p>
                 </template>
-              </v-list-item>
-            </v-list>
-            <p v-else-if="!actionsLoading" class="text-medium-emphasis mt-2">{{ t('meetings.actionsEmpty') }}</p>
-          </template>
+              </div>
+            </v-window-item>
+            <v-window-item value="invite">
+              <MtMeetingInvite
+                :meeting-id="editingId"
+                :title="title"
+                :start-at="startAt"
+                :end-at="endAt"
+                :location="location"
+                :meeting-url="meetingUrl"
+                :agenda="agendaDoc.body.trim() || agenda"
+                :status="status"
+                :attendance="attendance"
+                :people="people"
+                :person-names="personNames"
+              />
+            </v-window-item>
+          </v-window>
         </v-card-text>
         <v-card-actions>
           <v-btn v-if="editingId && seriesId && status === 'scheduled'" color="error" variant="text" :loading="saving" @click="cancelThisOccurrence">
@@ -1136,6 +1557,16 @@ onMounted(() => {
               <v-text-field v-model="seriesName" :label="t('meetings.fields.title')" variant="outlined" />
             </v-col>
             <v-col cols="12" md="6">
+              <v-select
+                v-model="seriesTopicId"
+                :items="topicChoices"
+                :label="t('meetings.fields.topic')"
+                variant="outlined"
+                clearable
+              />
+              <p class="text-caption text-medium-emphasis mt-1 mb-0">{{ t('meetings.topic.pickHint') }}</p>
+            </v-col>
+            <v-col cols="12" md="6">
               <v-btn-toggle v-model="seriesPattern" mandatory density="comfortable" divided>
                 <v-btn value="once">{{ t('meetings.series.once') }}</v-btn>
                 <v-btn value="weekdays">{{ t('meetings.series.weekdays') }}</v-btn>
@@ -1163,6 +1594,10 @@ onMounted(() => {
               <v-text-field v-model="seriesUntil" :label="t('meetings.series.until')" type="date" variant="outlined" />
             </v-col>
             <v-col cols="12" md="4">
+              <v-select v-model="seriesRoomId" :items="roomChoices" :label="t('meetings.room.field')" variant="outlined" clearable />
+              <p class="text-caption text-medium-emphasis mt-1 mb-0">{{ t('meetings.room.pickHint') }}</p>
+            </v-col>
+            <v-col cols="12" md="4">
               <v-text-field v-model="seriesLocation" :label="t('meetings.fields.location')" variant="outlined" />
             </v-col>
             <v-col cols="12" md="4">
@@ -1176,6 +1611,7 @@ onMounted(() => {
             </v-col>
             <v-col cols="12" md="6">
               <v-select v-model="seriesPersonIds" :items="personItems" :label="t('meetings.series.people')" multiple chips variant="outlined" />
+              <p class="text-caption text-medium-emphasis mt-1 mb-0">{{ t('meetings.settings.pickHint') }}</p>
             </v-col>
             <v-col cols="12">
               <v-textarea v-model="seriesAgenda" :label="t('meetings.fields.agenda')" variant="outlined" rows="3" auto-grow />
@@ -1215,11 +1651,6 @@ onMounted(() => {
           <v-text-field v-model="personOrganization" :label="t('meetings.person.organization')" variant="outlined" />
           <v-text-field v-model="personEmail" :label="t('meetings.person.email')" variant="outlined" />
           <v-textarea v-model="personNote" :label="t('meetings.person.note')" variant="outlined" rows="2" />
-          <div v-if="people.length" class="d-flex flex-wrap ga-2">
-            <v-chip v-for="person in people" :key="person.id" closable @click:close="removePerson(person.id)">
-              {{ person.name }}
-            </v-chip>
-          </div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -1230,7 +1661,13 @@ onMounted(() => {
     </v-dialog>
 
     <DiPickResourceDialog v-model="pickerOpen" :title="t('meetings.pickMinutes')" @pick="onPicked" />
-    <MtMinutesImportDialog v-model="importOpen" @saved="load" />
+    <MtMinutesImportDialog
+      v-model="importOpen"
+      :meeting-id="importMeetingId"
+      :has-minutes="importHasMinutes"
+      :attach="attachImportedMinutes"
+      @saved="load"
+    />
 
     <v-dialog v-model="deleteSeriesOpen" max-width="480">
       <v-card>
@@ -1240,6 +1677,21 @@ onMounted(() => {
           <v-spacer />
           <v-btn variant="text" @click="deleteSeriesOpen = false">{{ t('meetings.cancel') }}</v-btn>
           <v-btn color="error" :loading="seriesSaving" @click="removeSeries">{{ t('meetings.series.remove') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="conflictOpen" max-width="520">
+      <v-card>
+        <v-card-title>{{ t('meetings.room.conflictTitle') }}</v-card-title>
+        <v-card-text>
+          <p class="mb-3">{{ t('meetings.room.conflictBody') }}</p>
+          <div v-for="(line, index) in conflictLines" :key="index" class="text-body-2">{{ line.title }} — {{ line.when }}</div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="conflictOpen = false">{{ t('meetings.cancel') }}</v-btn>
+          <v-btn color="primary" @click="confirmConflict">{{ t('meetings.room.conflictSave') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -1257,3 +1709,19 @@ onMounted(() => {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.mt-topic-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.mt-attendance-row {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+.mt-attendance-presence {
+  flex: 0 0 168px;
+  max-width: 168px;
+}
+</style>

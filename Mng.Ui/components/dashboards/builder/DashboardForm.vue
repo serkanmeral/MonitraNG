@@ -56,6 +56,20 @@ function update<K extends keyof DashboardFormData>(key: K, value: DashboardFormD
 }
 
 const lbl = (key: string) => props.t?.(`dashboards.builder.form.${key}`) ?? key;
+
+function hasKind(kind: 'person' | 'dateRange'): boolean {
+  return (props.modelValue.surfaceVariables ?? []).some((item) => item.kind === kind);
+}
+
+function setKind(kind: 'person' | 'dateRange', on: boolean) {
+  const rest = (props.modelValue.surfaceVariables ?? []).filter((item) => item.kind !== kind);
+  const next = on
+    ? [...rest, kind === 'person'
+      ? { key: 'personId', kind: 'person' as const, lockToSelf: true }
+      : { key: 'range', kind: 'dateRange' as const }]
+    : rest;
+  update('surfaceVariables', next);
+}
 </script>
 
 <template>
@@ -125,6 +139,33 @@ const lbl = (key: string) => props.t?.(`dashboards.builder.form.${key}`) ?? key;
           density="compact"
           color="primary"
           @update:model-value="(v) => update('isActive', !!v)"
+        />
+      </v-card-text>
+    </v-card>
+
+    <v-card variant="outlined" class="mb-4">
+      <v-card-title class="text-subtitle-1 font-weight-medium">
+        {{ lbl('variablesTitle') }}
+      </v-card-title>
+      <v-card-text>
+        <p class="text-body-2 text-medium-emphasis mb-3">{{ lbl('variablesHint') }}</p>
+        <v-switch
+          :model-value="hasKind('person')"
+          :label="lbl('variablePerson')"
+          :disabled="disabled"
+          color="primary"
+          hide-details
+          density="compact"
+          @update:model-value="(value) => setKind('person', !!value)"
+        />
+        <v-switch
+          :model-value="hasKind('dateRange')"
+          :label="lbl('variableDates')"
+          :disabled="disabled"
+          color="primary"
+          hide-details
+          density="compact"
+          @update:model-value="(value) => setKind('dateRange', !!value)"
         />
       </v-card-text>
     </v-card>

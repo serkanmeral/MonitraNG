@@ -44,6 +44,9 @@ public sealed class DashboardWidgetRuntimeDto
 
     public string? Icon { get; init; }
 
+    /// <summary>count veya sum. Boşsa sayım.</summary>
+    public string? Measure { get; init; }
+
     public IReadOnlyDictionary<string, object?>? ResolvedParameters { get; init; }
     public DashboardWidgetExecutionDto? Execution { get; init; }
 }
@@ -54,6 +57,13 @@ public sealed class DashboardWidgetExecutionDto
     public string? ErrorCode { get; init; }
     public string? ErrorMessage { get; init; }
     public int Total { get; init; }
+
+    /// <summary>sum ölçüsünün sayısı. Sayım kartında boş kalır.</summary>
+    public double? Value { get; init; }
+
+    /// <summary>Puanı yazılmamış kayıt sayısı. İstenmemişse boş.</summary>
+    public int? UnpointedCount { get; init; }
+
     public int Skip { get; init; }
     public int Take { get; init; }
     public IReadOnlyList<WorkItemCardDto> Items { get; init; } = Array.Empty<WorkItemCardDto>();
@@ -70,4 +80,7 @@ public sealed class DashboardAggregationBucketDto
 {
     public string? Key { get; init; }
     public int Count { get; init; }
+
+    /// <summary>sum ölçüsünde kovanın puan toplamı. Sayımda boş.</summary>
+    public double? Value { get; init; }
 }

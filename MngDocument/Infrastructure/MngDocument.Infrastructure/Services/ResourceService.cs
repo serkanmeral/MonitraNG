@@ -62,6 +62,7 @@ public class ResourceService : IResourceService
         IDocumentRenderService render,
         DocumentIndexCleaner indexCleaner,
         IDocumentAutoIndex autoIndex,
+        IDocumentAutoScan autoScan,
         IOptions<MngDocumentSettings> settings,
         ILogger<ResourceService> logger)
     {
@@ -233,6 +234,13 @@ public class ResourceService : IResourceService
     }
 
     public async Task<IReadOnlyList<BreadcrumbDto>> GetBreadcrumbAsync(string id, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        return await BuildBreadcrumbAsync(resource, ct);
+    }
+
     public async Task<ResourceDto> RequestScanAsync(string id, CancellationToken ct = default)
     {
         if (!_settings.Antivirus.Enabled)
@@ -263,13 +271,6 @@ public class ResourceService : IResourceService
         var dto = ToDto(updated, snapshot.Resolve(updated));
         PublishContent(dto);
         return dto;
-    }
-
-    {
-        var resource = await LoadOrThrowAsync(id, ct);
-        var snapshot = await _perms.LoadSnapshotAsync(ct);
-        snapshot.EnsureCan(resource, ResourceAction.View);
-        return await BuildBreadcrumbAsync(resource, ct);
     }
 
     public async Task<ResourceDto> CreateFolderAsync(CreateFolderRequest request, CancellationToken ct = default)
@@ -1111,6 +1112,7 @@ public class ResourceService : IResourceService
         var dto = ToDto(updated, snapshot.Resolve(updated));
         ScheduleIndex(dto);
         PublishContent(dto);
+        return dto;
     }
 
     private async Task<ResourceDto> CreateFileResourceCoreAsync(
@@ -1172,8 +1174,10 @@ public class ResourceService : IResourceService
             payload["kind"] = await _kinds.NormalizeAsync(kindCode, ct);
 
         if (!string.IsNullOrWhiteSpace(request.Origin))
-        var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
-        payload["origin"] = origin;
+            payload["origin"] = request.Origin.Trim();
+        else
+            payload["origin"] = ResourceOrigin.Upload;
+        if (!string.IsNullOrWhiteSpace(request.TemplateId))
             payload["templateId"] = request.TemplateId.Trim();
         if (!string.IsNullOrWhiteSpace(request.TemplateCode))
             payload["templateCode"] = request.TemplateCode.Trim();
@@ -1184,11 +1188,12 @@ public class ResourceService : IResourceService
         if (!string.IsNullOrWhiteSpace(request.DocumentNo))
             payload["documentNo"] = request.DocumentNo.Trim();
 
+        var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
         if (QueueScan(origin))
             MarkScanning(payload);
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
 
-        var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
+        var versionFileName = storedFileName;
         if (ResourceOrigin.IsManagedDocument(origin))
         {
             if (!versionFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
@@ -1221,6 +1226,7 @@ public class ResourceService : IResourceService
         var dto = await ToDtoWithEffectiveAsync(created, ct);
         ScheduleIndex(dto);
         PublishContent(dto);
+        return dto;
     }
 
     public async Task<ResourceDto> CloneResourceAsync(string id, CloneResourceRequest request, CancellationToken ct = default)
@@ -2392,6 +2398,18 @@ public class ResourceService : IResourceService
     }
 
     private void ScheduleIndex(ResourceDto resource)
+    {
+        if (string.IsNullOrWhiteSpace(resource.Id))
+            return;
+
+        if (string.Equals(resource.Type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase)
+            || (string.Equals(resource.Type, ResourceType.File, StringComparison.OrdinalIgnoreCase)
+                && IndexPlainText.IsIndexableExtension(resource.Extension, resource.FileName ?? resource.Name)))
+        {
+            _autoIndex.Schedule(resource.Id);
+        }
+    }
+
     private bool QueueScan(string? origin) =>
         _settings.Antivirus.Enabled
         && string.Equals(origin?.Trim(), ResourceOrigin.Upload, StringComparison.OrdinalIgnoreCase);
@@ -2413,18 +2431,6 @@ public class ResourceService : IResourceService
         }
 
         ScheduleIndex(resource);
-    }
-
-    {
-        if (string.IsNullOrWhiteSpace(resource.Id))
-            return;
-
-        if (string.Equals(resource.Type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase)
-            || (string.Equals(resource.Type, ResourceType.File, StringComparison.OrdinalIgnoreCase)
-                && IndexPlainText.IsIndexableExtension(resource.Extension, resource.FileName ?? resource.Name)))
-        {
-            _autoIndex.Schedule(resource.Id);
-        }
     }
 
     /// <summary>Son güncelleme audit girdisi: en son <c>update</c>; hiç güncelleme yoksa null.</summary>

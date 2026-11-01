@@ -14,7 +14,18 @@ import {
 import type { DiTemplateSummary } from '@/types/apps/documentIntelligence';
 import { fileTitle, minutesReaderFor, parseMinutesDocx, type ParsedMinutes } from '@/utils/pmMinutesDocx';
 
+export interface ImportedMinutesFile {
+  resourceId: string;
+  fileName: string;
+  parsed: ParsedMinutes;
+}
+
 const open = defineModel<boolean>({ required: true });
+const props = defineProps<{
+  meetingId?: string | null;
+  hasMinutes?: boolean;
+  attach?: (file: ImportedMinutesFile) => Promise<void>;
+}>();
 const emit = defineEmits<{ saved: [] }>();
 
 const { t } = useAppI18n();
@@ -28,6 +39,8 @@ const file = ref<File | null>(null);
 const picked = ref<File | File[] | null>(null);
 const preview = ref<ParsedMinutes | null>(null);
 const busy = ref(false);
+const confirmOpen = ref(false);
+const replaceAck = ref(false);
 
 const bvTemplates = computed(() => templates.value.filter((row) => minutesReaderFor(row.code)));
 const selected = computed(() => bvTemplates.value.find((row) => row.id === templateId.value) || null);
@@ -38,6 +51,8 @@ watch(open, (value) => {
   file.value = null;
   picked.value = null;
   preview.value = null;
+  confirmOpen.value = false;
+  replaceAck.value = false;
   void loadTemplates();
 });
 
@@ -97,6 +112,20 @@ async function fileToBase64(source: File): Promise<string> {
   return dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
 }
 
+function askSave() {
+  if (props.meetingId && props.hasMinutes && !replaceAck.value) {
+    confirmOpen.value = true;
+    return;
+  }
+  void save();
+}
+
+function confirmReplace() {
+  replaceAck.value = true;
+  confirmOpen.value = false;
+  void save();
+}
+
 async function save() {
   const current = file.value;
   const parsed = preview.value;
@@ -112,6 +141,17 @@ async function save() {
       extension: 'docx',
       size: current.size,
     });
+    if (props.meetingId) {
+      if (!props.attach) throw new Error('attach');
+      await props.attach({ resourceId: stored.id, fileName: current.name, parsed });
+      toast.push({
+        title: t('meetings.import.savedTitle'),
+        message: t('meetings.import.attached'),
+        severity: 'success',
+      });
+      open.value = false;
+      return;
+    }
     const meetingId = await createOrgMeeting({
       title: parsed.name || fileTitle(current.name),
       startAt: parsed.startAt || new Date().toISOString(),
@@ -169,7 +209,7 @@ async function save() {
     <v-card>
       <v-card-title>{{ t('meetings.import.title') }}</v-card-title>
       <v-card-text>
-        <p class="text-medium-emphasis mb-3">{{ t('meetings.import.hint') }}</p>
+        <p class="text-medium-emphasis mb-3">{{ meetingId ? t('meetings.import.hintDay') : t('meetings.import.hint') }}</p>
         <v-alert v-if="!loadingTemplates && !bvTemplates.length" type="warning" variant="tonal" class="mb-3">
           {{ t('meetings.import.noTemplate') }}
         </v-alert>
@@ -204,7 +244,18 @@ async function save() {
       <v-card-actions>
         <v-spacer />
         <v-btn variant="text" @click="open = false">{{ t('meetings.cancel') }}</v-btn>
-        <v-btn color="primary" :loading="busy" :disabled="!canSave" @click="save">{{ t('meetings.import.save') }}</v-btn>
+        <v-btn color="primary" :loading="busy" :disabled="!canSave" @click="askSave">{{ t('meetings.import.save') }}</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+  <v-dialog v-model="confirmOpen" max-width="480">
+    <v-card>
+      <v-card-title>{{ t('meetings.import.replaceTitle') }}</v-card-title>
+      <v-card-text>{{ t('meetings.import.replaceBody') }}</v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" @click="confirmOpen = false">{{ t('meetings.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="busy" @click="confirmReplace">{{ t('meetings.import.replaceConfirm') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

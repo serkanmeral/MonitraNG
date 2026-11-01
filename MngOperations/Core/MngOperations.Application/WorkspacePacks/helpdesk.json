@@ -1,0 +1,115 @@
+{
+  "code": "helpdesk",
+  "version": "1.0.0",
+  "name": "Help Desk",
+  "description": "Talep, hata ve değişiklik kuyruğu. Üstlenme, bekleme ve kapatma.",
+  "suggestedWorkspaceType": "service_desk",
+  "suggestedPrefix": "HD",
+  "states": [
+    { "key": "state.new", "name": "Yeni", "category": "open", "isInitial": true, "color": "secondary" },
+    { "key": "state.progress", "name": "İşlemde", "category": "in_progress", "color": "primary" },
+    { "key": "state.waiting", "name": "Beklemede", "category": "in_progress", "color": "warning" },
+    { "key": "state.closed", "name": "Kapatıldı", "category": "closed", "color": "success" },
+    { "key": "state.rejected", "name": "Reddedildi", "category": "closed", "color": "error" }
+  ],
+  "flows": [
+    {
+      "key": "flow.default",
+      "name": "Yardım akışı",
+      "isDefault": true,
+      "initialStateKey": "state.new",
+      "transitions": [
+        { "key": "transition.claim", "fromStateKey": "state.new", "toStateKey": "state.progress", "label": "Üstlen", "requiredFields": ["assignee"] },
+        { "key": "transition.wait", "fromStateKey": "state.progress", "toStateKey": "state.waiting", "label": "Beklet", "requireComment": true },
+        { "key": "transition.resume", "fromStateKey": "state.waiting", "toStateKey": "state.progress", "label": "Sürdür" },
+        { "key": "transition.close", "fromStateKey": "state.progress", "toStateKey": "state.closed", "label": "Kapat", "requireComment": true },
+        { "key": "transition.closeWaiting", "fromStateKey": "state.waiting", "toStateKey": "state.closed", "label": "Kapat", "requireComment": true },
+        { "key": "transition.rejectNew", "fromStateKey": "state.new", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
+        { "key": "transition.rejectProgress", "fromStateKey": "state.progress", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
+        { "key": "transition.reopen", "fromStateKey": "state.closed", "toStateKey": "state.progress", "label": "Yeniden aç", "requiredFields": ["assignee"] },
+        { "key": "transition.reopenRejected", "fromStateKey": "state.rejected", "toStateKey": "state.progress", "label": "Yeniden aç", "requiredFields": ["assignee"] }
+      ]
+    }
+  ],
+  "types": [
+    { "key": "type.request", "name": "Talep", "flowKey": "flow.default", "requiresParent": false, "childTypeKeys": [] },
+    { "key": "type.incident", "name": "Hata", "flowKey": "flow.default", "requiresParent": false, "childTypeKeys": [] },
+    { "key": "type.change", "name": "Değişiklik", "flowKey": "flow.default", "requiresParent": false, "childTypeKeys": [] }
+  ],
+  "forms": [
+    {
+      "key": "form.default",
+      "name": "Oluşturma formu",
+      "isDefault": true,
+      "flowKey": "flow.default",
+      "typeKey": "type.request",
+      "fields": ["title", "description", "typeId", "reporter", "assignee", "watchers", "priorityId", "dueDate"],
+      "defaultPriorityKey": "priority.normal"
+    }
+  ],
+  "boards": [
+    {
+      "key": "board.default",
+      "name": "Kuyruk",
+      "isDefault": true,
+      "flowKey": "flow.default",
+      "formKey": "form.default",
+      "typeKey": "type.request",
+      "columnStateKeys": ["state.new", "state.progress", "state.waiting", "state.closed", "state.rejected"],
+      "visibleFields": ["key", "title", "stateId", "typeId", "priorityId", "reporter", "assignee", "dueDate"],
+      "listColumns": [
+        { "key": "key", "label": "No" },
+        { "key": "title", "label": "Başlık" },
+        { "key": "stateId", "label": "Durum" },
+        { "key": "typeId", "label": "Tip" },
+        { "key": "priorityId", "label": "Öncelik" },
+        { "key": "reporter", "label": "Talep eden", "filterable": false },
+        { "key": "assignee", "label": "Atanan", "filterable": false },
+        { "key": "dueDate", "label": "Vade", "filterable": false, "format": "date" }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "key": "profile.default",
+      "name": "Profil",
+      "isDefault": true,
+      "flowKey": "flow.default",
+      "typeKey": "type.request",
+      "fields": ["title", "description", "typeId", "priorityId", "reporter", "assignee", "watchers", "dueDate"],
+      "sections": [
+        { "key": "identity", "title": "Kimlik", "fields": ["title", "description"] },
+        { "key": "classification", "title": "Sınıflandırma", "fields": ["typeId", "priorityId"] },
+        { "key": "people", "title": "Kişiler", "fields": ["reporter", "assignee", "watchers"] },
+        { "key": "plan", "title": "Plan", "fields": ["dueDate"] }
+      ],
+      "actionKeys": [
+        "transition.claim",
+        "transition.wait",
+        "transition.resume",
+        "transition.close",
+        "transition.closeWaiting",
+        "transition.rejectNew",
+        "transition.rejectProgress",
+        "transition.reopen",
+        "transition.reopenRejected"
+      ]
+    }
+  ],
+  "poolFields": [
+    { "key": "dueDate", "label": "Vade", "fieldType": "datetime" },
+    { "key": "watchers", "label": "İzleyenler", "fieldType": "persons" },
+    { "key": "reporter", "label": "Talep eden", "fieldType": "persons" }
+  ],
+  "priorities": [
+    { "key": "priority.urgent", "name": "Acil", "level": "1", "color": "error", "sortOrder": 1 },
+    { "key": "priority.high", "name": "Yüksek", "level": "2", "color": "warning", "sortOrder": 2 },
+    { "key": "priority.normal", "name": "Normal", "level": "3", "color": "info", "sortOrder": 3 },
+    { "key": "priority.low", "name": "Düşük", "level": "4", "color": "secondary", "sortOrder": 4 }
+  ],
+  "views": { "sprints": false, "calendar": false, "gantt": false },
+  "dashboards": [
+    { "key": "dashboard.summary", "name": "Yardım özeti", "isDefault": true, "kind": "helpdesk" }
+  ],
+  "libraryFolders": []
+}

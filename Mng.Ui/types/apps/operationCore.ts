@@ -585,6 +585,8 @@ export interface OcColumnItemsState {
 export interface OcDashboardBucket {
   key?: string | null;
   count: number;
+  /** sum ölçüsünde puan toplamı. */
+  value?: number | null;
 }
 
 /** Tek widget'ın çalıştırma sonucu (MO server-side). */
@@ -593,6 +595,10 @@ export interface OcDashboardWidgetExecution {
   errorCode?: string | null;
   errorMessage?: string | null;
   total: number;
+  /** sum ölçüsünün sayısı. */
+  value?: number | null;
+  /** Puanı yazılmamış kayıt. */
+  unpointedCount?: number | null;
   skip: number;
   take: number;
   items: OcWorkItemCard[];
@@ -617,6 +623,8 @@ export interface OcDashboardWidget {
   accentColor?: string | null;
   /** summaryCard: mdi-* ikon adı. */
   icon?: string | null;
+  /** count veya sum. */
+  measure?: string | null;
   resolvedParameters?: Record<string, unknown> | null;
   execution?: OcDashboardWidgetExecution | null;
 }
@@ -685,6 +693,9 @@ export interface OcDashboardWidgetDef {
   groupBy?: string | null;
   accentColor?: string | null;
   icon?: string | null;
+  measure?: string | null;
+  measureField?: string | null;
+  aside?: string | null;
 }
 
 /** op_dashboards ham kaydı (admin editörü için — DG'den okunur, DG'ye yazılır). */

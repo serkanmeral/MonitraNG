@@ -12,6 +12,7 @@ import {
   type CreateDashboardDto,
   type UpdateDashboardDto,
 } from '@/stores/apps/dashboard';
+import { readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
 
 const props = defineProps<{
   /** Edit modunda mevcut dashboard; yoksa create. */
@@ -60,6 +61,7 @@ const form = ref<DashboardFormData>({
   isDefault: false,
   isActive: true,
   permissions: undefined,
+  surfaceVariables: [],
 });
 
 const layout = ref<DashboardLayout>(defaultLayout());
@@ -74,6 +76,7 @@ function initFromDashboard(d: Dashboard | null | undefined) {
       isDefault: false,
       isActive: true,
       permissions: undefined,
+      surfaceVariables: [],
     };
     layout.value = defaultLayout();
     return;
@@ -86,6 +89,7 @@ function initFromDashboard(d: Dashboard | null | undefined) {
     isDefault: d.isDefault ?? false,
     isActive: d.isActive ?? true,
     permissions: d.permissions,
+    surfaceVariables: readSurfaceVariables(d.layout?.meta),
   };
   layout.value = d.layout ?? defaultLayout();
 }
@@ -128,12 +132,17 @@ async function save() {
   const slug = (form.value.slug ?? '').trim() || undefined;
   const description = (form.value.description ?? '').trim() || undefined;
 
+  const meta = { ...((layout.value.meta ?? {}) as Record<string, unknown>) };
+  if (form.value.surfaceVariables.length) meta.surfaceVariables = form.value.surfaceVariables;
+  else delete meta.surfaceVariables;
+  const layoutToSave: DashboardLayout = { ...layout.value, meta };
+
   const dto: CreateDashboardDto = {
     name,
     title,
     description,
     slug,
-    layout: layout.value,
+    layout: layoutToSave,
     isDefault: form.value.isDefault,
     isActive: form.value.isActive,
     order: 0,
@@ -146,7 +155,7 @@ async function save() {
         title,
         description,
         slug,
-        layout: layout.value,
+        layout: layoutToSave,
         isDefault: form.value.isDefault,
         isActive: form.value.isActive,
         permissions: form.value.permissions,

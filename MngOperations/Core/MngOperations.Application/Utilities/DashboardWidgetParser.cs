@@ -26,6 +26,15 @@ public sealed class DashboardWidgetDefinition
 
     /// <summary>summaryCard: mdi ikon adı (örn. mdi-counter).</summary>
     public string? Icon { get; init; }
+
+    /// <summary>count (varsayılan) veya sum.</summary>
+    public string? Measure { get; init; }
+
+    /// <summary>sum iken toplanan alan. Yazılım panosu storyPoints kullanır.</summary>
+    public string? MeasureField { get; init; }
+
+    /// <summary>summaryCard: unpointed ise puanı olmayan kayıt sayısı da döner.</summary>
+    public string? Aside { get; init; }
 }
 
 public static class DashboardWidgetParser
@@ -69,7 +78,11 @@ public static class DashboardWidgetParser
         var groupBy = ReadString(item, "groupBy");
         var accentColor = ReadString(item, "accentColor");
         var icon = ReadString(item, "icon");
-        if ((chartType == null || groupBy == null || accentColor == null || icon == null)
+        var measure = ReadString(item, "measure");
+        var measureField = ReadString(item, "measureField");
+        var aside = ReadString(item, "aside");
+        if ((chartType == null || groupBy == null || accentColor == null || icon == null
+                || measure == null || measureField == null || aside == null)
             && item.TryGetProperty("config", out var config)
             && config.ValueKind == JsonValueKind.Object)
         {
@@ -77,6 +90,9 @@ public static class DashboardWidgetParser
             groupBy ??= ReadString(config, "groupBy");
             accentColor ??= ReadString(config, "accentColor");
             icon ??= ReadString(config, "icon");
+            measure ??= ReadString(config, "measure");
+            measureField ??= ReadString(config, "measureField");
+            aside ??= ReadString(config, "aside");
         }
 
         string? dataset = null;
@@ -116,7 +132,10 @@ public static class DashboardWidgetParser
             ChartType = chartType,
             GroupBy = groupBy,
             AccentColor = accentColor,
-            Icon = icon
+            Icon = icon,
+            Measure = measure,
+            MeasureField = measureField,
+            Aside = aside
         };
     }
 

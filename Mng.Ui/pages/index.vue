@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import WelcomeHomePage from '@/components/welcome/WelcomeHomePage.vue';
+import WelcomeActivityPage from '@/components/welcome/WelcomeActivityPage.vue';
 
 definePageMeta({
   layout: 'default',
@@ -7,5 +7,5 @@ definePageMeta({
 </script>
 
 <template>
-  <WelcomeHomePage />
+  <WelcomeActivityPage />
 </template>

@@ -1,4 +1,4 @@
-import { diBreakInheritance, diGetById, diSetPermissions } from '@/services/documentIntelligenceService';
+import { diBreakInheritance, diGetById, diRename, diSetPermissions } from '@/services/documentIntelligenceService';
 import { ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
 import { pmListProjects, pmUpdateProject } from '@/services/projectManagementService';
 import { useGroupStore } from '@/stores/apps/group';
@@ -55,23 +55,52 @@ async function writeFolderPermissions(folderId: string, viewGroups: string[], ed
   });
 }
 
-async function ensureOwnFolder(workspaceId: string, code: string, existingId: string | null, viewGroups: string[], editGroups: string[]) {
+function sameFolderName(left: string, right: string) {
+  return left.trim().toLocaleLowerCase('tr') === right.trim().toLocaleLowerCase('tr');
+}
+
+/** A folder still labeled with the workspace code takes the workspace name. Anything else is left as it is. */
+async function alignCodeFolderName(folderId: string, currentName: string, folderName: string, legacyCode: string) {
+  if (!folderName || sameFolderName(currentName, folderName)) return;
+  if (!legacyCode || !sameFolderName(currentName, legacyCode)) return;
+  try {
+    await diRename(folderId, { name: folderName });
+  } catch {
+    // The library stays on this folder even when the label cannot be updated.
+  }
+}
+
+async function ensureOwnFolder(
+  workspaceId: string,
+  folderName: string,
+  legacyCode: string,
+  existingId: string | null,
+  viewGroups: string[],
+  editGroups: string[],
+) {
   const stored = existingId?.trim();
   if (stored) {
     try {
       const resource = await diGetById(stored);
-      if (resource?.id && resource.type === 'folder') return resource.id;
+      if (resource?.id && resource.type === 'folder') {
+        await alignCodeFolderName(resource.id, resource.name || '', folderName, legacyCode);
+        return resource.id;
+      }
     } catch {
-      // Stale id. Look up or create the code folder again.
+      // Stale id. Look up or create the folder again.
     }
   }
 
   const docs = await findChildFolder(null, DOCS_FOLDER_NAMES);
   if (!docs?.id) return null;
   const operationId = await ensureFolder(docs.id, OC_LIBRARY_FOLDER);
-  const found = await findChildFolder(operationId, [code]);
+  let found = await findChildFolder(operationId, [folderName]);
+  if (!found?.id && legacyCode && !sameFolderName(legacyCode, folderName)) {
+    found = await findChildFolder(operationId, [legacyCode]);
+  }
   const created = !found?.id;
-  const folderId = found?.id || (await ensureFolder(operationId, code));
+  const folderId = found?.id || (await ensureFolder(operationId, folderName));
+  if (found?.id) await alignCodeFolderName(found.id, found.name || '', folderName, legacyCode);
   if (created) {
     try {
       await writeFolderPermissions(folderId, viewGroups, editGroups);
@@ -87,8 +116,9 @@ async function ensureOwnFolder(workspaceId: string, code: string, existingId: st
 
 async function resolveOnce(workspaceId: string): Promise<string | null> {
   const workspace = await ocGetWorkspace(workspaceId);
-  const code = workspace?.key?.trim();
-  if (!workspace || !code) return null;
+  const legacyCode = workspace?.key?.trim() || '';
+  const folderName = workspace?.name?.trim() || legacyCode;
+  if (!workspace || !folderName) return null;
 
   const projects = await pmListProjects();
   const project = linkedProject(projects, workspaceId);
@@ -103,7 +133,8 @@ async function resolveOnce(workspaceId: string): Promise<string | null> {
 
   return ensureOwnFolder(
     workspaceId,
-    code,
+    folderName,
+    legacyCode,
     workspace.diFolderId,
     workspace.viewGroups ?? [],
     workspace.editGroups ?? [],

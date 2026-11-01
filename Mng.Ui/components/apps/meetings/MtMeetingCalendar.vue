@@ -8,9 +8,9 @@ import trLocale from '@fullcalendar/core/locales/tr';
 import type { CalendarOptions, DateSelectArg, DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useLocaleStore } from '@/stores/locale';
-import type { OrgMeeting, OrgMeetingStatus } from '@/services/meetingsService';
+import { meetingTopicColorHex, type OrgMeeting, type OrgMeetingStatus, type OrgMeetingTopic } from '@/services/meetingsService';
 
-const props = defineProps<{ meetings: OrgMeeting[] }>();
+const props = defineProps<{ meetings: OrgMeeting[]; topics?: OrgMeetingTopic[] }>();
 const emit = defineEmits<{
   create: [payload: { start: string; end: string }];
   open: [id: string];
@@ -33,6 +33,14 @@ function localInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function eventColor(meeting: OrgMeeting): string {
+  if (meeting.status !== 'cancelled' && meeting.topicId) {
+    const topic = props.topics?.find((item) => item.id === meeting.topicId);
+    if (topic) return meetingTopicColorHex(topic.color);
+  }
+  return STATUS_COLOR[meeting.status];
+}
+
 function eventEnd(meeting: OrgMeeting): string | undefined {
   if (meeting.endAt) return meeting.endAt;
   const start = Date.parse(meeting.startAt);
@@ -48,8 +56,8 @@ const events = computed<EventInput[]>(() =>
       title: meeting.title,
       start: meeting.startAt,
       end: eventEnd(meeting),
-      backgroundColor: STATUS_COLOR[meeting.status],
-      borderColor: STATUS_COLOR[meeting.status],
+      backgroundColor: eventColor(meeting),
+      borderColor: eventColor(meeting),
       classNames: [
         meeting.seriesId && !meeting.detached ? 'mt-cal-series' : '',
         meeting.detached ? 'mt-cal-detached' : '',

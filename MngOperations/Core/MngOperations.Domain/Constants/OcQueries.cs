@@ -10,8 +10,13 @@ public static class OcQueries
         "wi_assigned_open",
         "wi_sla_response_breach",
         "wi_sla_resolve_breach",
-        "wi_count_by_state"
+        "wi_count_by_state",
+        "wi_open_workspace",
+        "wi_active_sprint"
     };
+
+    public const string OpenWorkspace = "wi_open_workspace";
+    public const string ActiveSprint = "wi_active_sprint";
 
     public static bool IsAllowed(string dataset, string queryKey) =>
         string.Equals(dataset, OcDatasets.WorkItems, StringComparison.OrdinalIgnoreCase)

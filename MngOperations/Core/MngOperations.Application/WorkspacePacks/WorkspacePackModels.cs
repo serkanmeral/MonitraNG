@@ -21,6 +21,7 @@ public sealed class WorkspacePackDefinition
     public List<WorkspacePackPriority> Priorities { get; set; } = [];
     /// <summary>Eksik görünüm anahtarını doldurur. Dolu bir anahtarın üzerine yazılmaz.</summary>
     public Dictionary<string, bool> Views { get; set; } = [];
+    public List<WorkspacePackDashboard> Dashboards { get; set; } = [];
     public List<string> LibraryFolders { get; set; } = [];
 
     [JsonIgnore]
@@ -106,6 +107,17 @@ public sealed class WorkspacePackPriority
     public string? Level { get; set; }
     public string? Color { get; set; }
     public int? SortOrder { get; set; }
+}
+
+public sealed class WorkspacePackDashboard
+{
+    public string Key { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
+    /// <summary>summary, sprint, or helpdesk. The installer builds the layout for these kinds.</summary>
+    public string Kind { get; set; } = string.Empty;
+    /// <summary>When set, the dashboard is created only if this view is on.</summary>
+    public string? RequiresView { get; set; }
 }
 
 public sealed class WorkspacePackPoolField

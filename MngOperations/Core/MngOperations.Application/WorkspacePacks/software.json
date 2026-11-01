@@ -1,6 +1,6 @@
 {
   "code": "software",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "Yazılım geliştirme",
   "description": "Geliştirme, inceleme ve test akışı. Üst iş ve iş tipleri.",
   "suggestedWorkspaceType": "team",
@@ -115,5 +115,9 @@
     { "key": "priority.low", "name": "Düşük", "level": "4", "color": "secondary", "sortOrder": 4 }
   ],
   "views": { "sprints": true, "calendar": true, "gantt": true },
+  "dashboards": [
+    { "key": "dashboard.summary", "name": "Yazılım özeti", "isDefault": true, "kind": "summary" },
+    { "key": "dashboard.sprint", "name": "Sprint", "isDefault": false, "kind": "sprint", "requiresView": "sprints" }
+  ],
   "libraryFolders": []
 }

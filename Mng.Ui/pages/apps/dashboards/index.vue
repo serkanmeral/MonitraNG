@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useDashboardStore } from '@/stores/apps/dashboard';
+import { useAuthStore } from '@/stores/auth';
+import { PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
 import { useLocaleStore } from '@/stores/locale';
 import { EditIcon, EyeIcon, TrashIcon, LayoutDashboardIcon, PlusIcon, RefreshIcon, ExternalLinkIcon, MenuIcon } from 'vue-tabler-icons';
 
@@ -14,6 +16,12 @@ const t = (key: string, params?: any) => {
 };
 
 const dashboardStore = useDashboardStore();
+const authStore = useAuthStore();
+const listedDashboards = computed(() => {
+  const rows = dashboardStore.dashboards;
+  if (authStore.isAdmin || authStore.isManager) return rows;
+  return rows.filter((item) => item.slug !== PERSONNEL_DASHBOARD_SLUG);
+});
 const router = useRouter();
 const localeStore = useLocaleStore();
 
@@ -234,7 +242,7 @@ const isActiveOptions = computed(() => [
         v-model="selectedDashboards"
         v-model:options="tableOptions"
         :headers="headers"
-        :items="dashboardStore.dashboards"
+        :items="listedDashboards"
         :loading="dashboardStore.loading"
         :server-items-length="serverItemsLength"
         :items-per-page-options="[10, 20, 50, 100]"

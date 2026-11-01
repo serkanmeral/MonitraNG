@@ -1,5 +1,6 @@
 using System.Threading;
 using MngOperations.Application.Contracts.Runtime;
+using MngOperations.Domain.Constants;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Models;
 using MngOperations.Application.Permissions;
@@ -134,7 +135,7 @@ public partial class RuntimeContextService
         try
         {
             // Chart: tam sonuç kümesini groupBy'a göre server-side gruplar (doğru sayım); item listesi döndürmez.
-            if (isChart)
+            if (isChart || definition.WidgetType.Equals("summaryCard", StringComparison.OrdinalIgnoreCase))
             {
                 var cards = await ExecuteQueryCardsAsync(
                     definition.QueryKey!,
@@ -145,8 +146,25 @@ public partial class RuntimeContextService
                     cancellationToken,
                     queryResultCache);
 
-                var buckets = AggregateCards(cards, definition.GroupBy);
+                if (isChart)
+                {
+                    var buckets = AggregateCards(cards, definition.GroupBy, definition.Measure);
+                    return ToDashboardWidgetDto(
+                        definition,
+                        isChart,
+                        resolved,
+                        new DashboardWidgetExecutionDto
+                        {
+                            Success = true,
+                            Total = cards.Count,
+                            Aggregation = buckets,
+                            ExecutedAt = executedAt
+                        });
+                }
 
+                var summed = DashboardMeasure.IsSum(definition.Measure);
+                var wantsAside = string.Equals(definition.Aside, DashboardMeasure.Unpointed, StringComparison.OrdinalIgnoreCase);
+                var points = summed || wantsAside ? DashboardMeasure.SumPoints(cards) : default;
                 return ToDashboardWidgetDto(
                     definition,
                     isChart,
@@ -155,7 +173,8 @@ public partial class RuntimeContextService
                     {
                         Success = true,
                         Total = cards.Count,
-                        Aggregation = buckets,
+                        Value = summed ? points.Value : null,
+                        UnpointedCount = wantsAside ? points.Unpointed : null,
                         ExecutedAt = executedAt
                     });
             }
@@ -252,6 +271,7 @@ public partial class RuntimeContextService
             GroupBy = isChart ? definition.GroupBy : null,
             AccentColor = isSummary ? definition.AccentColor : null,
             Icon = isSummary ? definition.Icon : null,
+            Measure = definition.Measure,
             ResolvedParameters = resolved,
             Execution = execution
         };
@@ -269,10 +289,13 @@ public partial class RuntimeContextService
     /// </summary>
     private static IReadOnlyList<DashboardAggregationBucketDto> AggregateCards(
         IReadOnlyList<WorkItemCardDto> cards,
-        string? groupBy)
+        string? groupBy,
+        string? measure)
     {
         var field = string.IsNullOrWhiteSpace(groupBy) ? "stateid" : groupBy.Trim().ToLowerInvariant();
+        var sum = DashboardMeasure.IsSum(measure);
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var values = new Dictionary<string, double>(StringComparer.Ordinal);
         var order = new List<string>();
         const string noneKey = "\u0000none";
 
@@ -289,17 +312,84 @@ public partial class RuntimeContextService
             if (!counts.ContainsKey(key))
             {
                 counts[key] = 0;
+                values[key] = 0;
                 order.Add(key);
             }
             counts[key]++;
+            if (sum)
+                values[key] += DashboardMeasure.ReadStoryPoints(c) ?? 0;
         }
 
         return order
             .Select(k => new DashboardAggregationBucketDto
             {
                 Key = k == noneKey ? null : k,
-                Count = counts[k]
+                Count = counts[k],
+                Value = sum ? values[k] : null
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Workspace-open and active-sprint slices. These are not DataGateway named queries.
+    /// An empty active sprint stays empty.
+    /// </summary>
+    private async Task<IReadOnlyList<WorkItemCardDto>> LoadDashboardScopeAsync(
+        string queryKey,
+        IReadOnlyDictionary<string, object?> rawParams,
+        string token,
+        QueryResolveContext resolveContext,
+        CancellationToken cancellationToken)
+    {
+        var merged = new Dictionary<string, object?>(rawParams, StringComparer.OrdinalIgnoreCase);
+        var closure = merged.TryGetValue("closure", out var closureValue) ? closureValue?.ToString() : null;
+        merged.Remove("closure");
+        var resolved = QueryParameterResolver.Resolve(merged, resolveContext);
+        var workspaceId = resolved.TryGetValue("workspaceId", out var ws) ? ws?.ToString() : resolveContext.WorkspaceId;
+        if (string.IsNullOrWhiteSpace(workspaceId))
+            return Array.Empty<WorkItemCardDto>();
+
+        var workspace = await _metadataCache.GetWorkspaceAsync(workspaceId, token, cancellationToken);
+        _permissions.EnsureWorkspace(workspace, WorkspaceAction.View);
+
+        string? sprintId = null;
+        if (string.Equals(queryKey, OcQueries.ActiveSprint, StringComparison.OrdinalIgnoreCase))
+        {
+            sprintId = await FindActiveSprintIdAsync(workspaceId, token, cancellationToken);
+            if (string.IsNullOrWhiteSpace(sprintId))
+                return Array.Empty<WorkItemCardDto>();
+        }
+
+        var filter = string.IsNullOrWhiteSpace(sprintId)
+            ? $"filter=workspaceId:eq:{Uri.EscapeDataString(workspaceId)},closedAt:null&limit=1000&expand=false"
+            : $"filter=workspaceId:eq:{Uri.EscapeDataString(workspaceId)},sprintId:eq:{Uri.EscapeDataString(sprintId)}&limit=1000&expand=false";
+        var rows = await _dg.GetAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, filter, token, cancellationToken);
+        var cards = rows.Select(MapWorkItemCard).ToList();
+        var mode = closure?.Trim().ToLowerInvariant();
+        // closedAt:null is not a valid gateway filter (it needs field:op:value), so open scope is applied here.
+        if (string.Equals(queryKey, OcQueries.OpenWorkspace, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(mode))
+            mode = "open";
+        if (mode == "open")
+            cards = cards.Where(card => card.ClosedAt is null).ToList();
+        else if (mode == "closed")
+            cards = cards.Where(card => card.ClosedAt is not null).ToList();
+
+        await AttachChildCountsAsync(cards, token, cancellationToken);
+        return cards;
+    }
+
+    private async Task<string?> FindActiveSprintIdAsync(string workspaceId, string token, CancellationToken cancellationToken)
+    {
+        var filter = $"filter=workspaceId:eq:{Uri.EscapeDataString(workspaceId)},state:eq:active&limit=5&expand=false";
+        var rows = await _dg.GetAsync<Dictionary<string, object?>>(OcDatasets.Sprints, filter, token, cancellationToken);
+        foreach (var row in rows)
+        {
+            var id = WorkItemDataHelper.GetDataId(row);
+            if (!string.IsNullOrWhiteSpace(id))
+                return id;
+        }
+
+        return null;
     }
 }

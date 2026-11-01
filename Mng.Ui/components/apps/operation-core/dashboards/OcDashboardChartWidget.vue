@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useTheme } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type {
   OcBoardCatalogs,
@@ -16,12 +17,22 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const theme = useTheme();
+
+function formatMeasure(amount: number): string {
+  if (!Number.isFinite(amount)) return '0';
+  if (Number.isInteger(amount)) return String(amount);
+  return amount.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
 
 const execution = computed(() => props.widget.execution ?? null);
 const failed = computed(() => execution.value != null && execution.value.success === false);
 const buckets = computed(() => execution.value?.aggregation ?? []);
 const title = computed(() => props.widget.title?.trim() || props.widget.key);
-const total = computed(() => buckets.value.reduce((s, b) => s + b.count, 0));
+const summed = computed(() => (props.widget.measure || '').toLowerCase() === 'sum');
+const amountOf = (bucket: { count: number; value?: number | null }) =>
+  summed.value ? bucket.value ?? 0 : bucket.count;
+const total = computed(() => buckets.value.reduce((s, b) => s + amountOf(b), 0));
 
 const chartType = computed(() => {
   const t = (props.widget.chartType || 'donut').toLowerCase();
@@ -44,7 +55,7 @@ function labelFor(key: string | null | undefined): string {
 }
 
 const labels = computed(() => buckets.value.map((b) => labelFor(b.key)));
-const values = computed(() => buckets.value.map((b) => b.count));
+const values = computed(() => buckets.value.map((b) => amountOf(b)));
 
 // Renk: yalnızca hex (#...) renkleri ApexCharts'a verilir; tema adlari (primary vb.) varsayilan palete birakilir.
 const colors = computed(() => {
@@ -65,18 +76,37 @@ const colors = computed(() => {
 const isCircular = computed(() => chartType.value === 'pie' || chartType.value === 'donut');
 
 const chartOptions = computed(() => {
+  const isDark = theme.current.value.dark;
+  const labelColor = isDark ? '#a1aab2' : '#5a6a85';
   const base: Record<string, unknown> = {
-    chart: { type: chartType.value, fontFamily: 'inherit', toolbar: { show: false } },
-    legend: { position: 'bottom' },
-    dataLabels: { enabled: isCircular.value },
-    tooltip: { theme: 'light' },
+    chart: {
+      type: chartType.value,
+      fontFamily: 'inherit',
+      foreColor: labelColor,
+      toolbar: { show: false },
+    },
+    legend: {
+      position: 'bottom',
+      labels: { colors: labelColor },
+    },
+    dataLabels: isCircular.value
+      ? { enabled: true, style: { colors: ['#ffffff'] } }
+      : { enabled: false },
+    tooltip: { theme: isDark ? 'dark' : 'light' },
   };
   if (colors.value) base.colors = colors.value;
 
   if (isCircular.value) {
     base.labels = labels.value;
   } else {
-    base.xaxis = { categories: labels.value };
+    base.xaxis = {
+      categories: labels.value,
+      labels: { style: { colors: labelColor } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    };
+    base.yaxis = { labels: { style: { colors: labelColor } } };
+    base.grid = { borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' };
     base.plotOptions = { bar: { distributed: true, borderRadius: 4, columnWidth: '55%' } };
     base.legend = { show: false };
   }
@@ -94,7 +124,7 @@ const series = computed(() => {
     <v-card-title class="d-flex align-center py-2 px-4 ga-2">
       <span class="text-subtitle-2 font-weight-medium text-truncate">{{ title }}</span>
       <v-spacer />
-      <v-chip size="x-small" variant="tonal" color="primary">{{ total }}</v-chip>
+      <v-chip size="x-small" variant="tonal" color="primary">{{ formatMeasure(total) }}</v-chip>
     </v-card-title>
     <v-divider />
 

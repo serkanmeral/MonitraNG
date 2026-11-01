@@ -8,8 +8,11 @@ import {
   scenarioRollupWidgetResponse,
 } from '@/utils/alarm/alarmScenarioRollupNormalize';
 import { normalizeManifestBinding } from '@/utils/widgets/widgetManifestServiceRefs';
+import { fetchPersonnelServiceRef, isPersonnelServiceRef } from '@/services/personnelActivityFetch';
 
 export interface ManifestGatewayTransport {
+  /** Caller token. Personnel boards use it to keep a non-manager on their own person. */
+  accessToken?: string;
   request(
     path: string,
     options?: {
@@ -265,6 +268,10 @@ async function fetchServiceRef(
     mapped.total = raw.total ?? raw.items?.length ?? 0;
     mapped.items = raw.items ?? [];
     return toWidgetDataResponse(mapped, { stat: binding.fieldMap?.value === 'total' });
+  }
+
+  if (isPersonnelServiceRef(serviceRef)) {
+    return fetchPersonnelServiceRef(serviceRef, parameters, transport);
   }
 
   throw new Error(`Desteklenmeyen serviceRef: ${serviceRef}`);

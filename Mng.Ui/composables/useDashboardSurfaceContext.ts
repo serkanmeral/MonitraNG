@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue';
 import type { SurfaceContext } from '@/types/apps/widgetManifest';
 import { surfacePresetToTimeRange, type SurfaceTimePreset } from '@/utils/widgets/surfaceTimeRange';
+import { istanbulDateRangeToTime } from '@/utils/widgets/dashboardSurfaceVariables';
 import type { DashboardSurfaceMutations } from '@/utils/widgets/dashboardSurfaceMutations';
 
 export function useDashboardSurfaceContext(initialPreset: SurfaceTimePreset = '24h') {
@@ -9,16 +10,23 @@ export function useDashboardSurfaceContext(initialPreset: SurfaceTimePreset = '2
   const workspaceId = ref('');
   const customTimeRange = ref<{ from: string; to: string } | null>(null);
   const crossFilterVariables = ref<Record<string, string | number | boolean | null>>({});
+  const personId = ref<string | null>(null);
+  const rangeFrom = ref('');
+  const rangeTo = ref('');
+  const calendarRange = ref(false);
 
   const context = computed<SurfaceContext>(() => {
-    const baseTime = customTimeRange.value
-      ? {
-          from: customTimeRange.value.from,
-          to: customTimeRange.value.to,
-          hours: undefined,
-          preset: undefined,
-        }
-      : surfacePresetToTimeRange(timePreset.value);
+    const calendar = calendarRange.value ? istanbulDateRangeToTime(rangeFrom.value, rangeTo.value) : null;
+    const baseTime = calendar
+      ? calendar
+      : customTimeRange.value
+        ? {
+            from: customTimeRange.value.from,
+            to: customTimeRange.value.to,
+            hours: undefined,
+            preset: undefined,
+          }
+        : surfacePresetToTimeRange(timePreset.value);
 
     return {
       locale: 'tr',
@@ -26,6 +34,7 @@ export function useDashboardSurfaceContext(initialPreset: SurfaceTimePreset = '2
       variables: {
         ...(severity.value != null ? { severity: severity.value } : {}),
         ...(workspaceId.value.trim() ? { workspaceId: workspaceId.value.trim() } : {}),
+        ...(personId.value ? { personId: personId.value } : {}),
         ...crossFilterVariables.value,
       },
     };
@@ -55,6 +64,10 @@ export function useDashboardSurfaceContext(initialPreset: SurfaceTimePreset = '2
     workspaceId.value = '';
     customTimeRange.value = null;
     crossFilterVariables.value = {};
+    personId.value = null;
+    rangeFrom.value = '';
+    rangeTo.value = '';
+    calendarRange.value = false;
   }
 
   const mutations: DashboardSurfaceMutations = {
@@ -70,6 +83,10 @@ export function useDashboardSurfaceContext(initialPreset: SurfaceTimePreset = '2
     workspaceId,
     customTimeRange,
     crossFilterVariables,
+    personId,
+    rangeFrom,
+    rangeTo,
+    calendarRange,
     context,
     mutations,
     reset,

@@ -38,6 +38,8 @@ const NAMED_QUERIES: { key: string; params: string[]; supportsChart: boolean }[]
   { key: 'wi_assigned_to_user', params: ['assignee'], supportsChart: true },
   { key: 'wi_sla_response_breach', params: ['workspaceId', 'asOf'], supportsChart: false },
   { key: 'wi_sla_resolve_breach', params: ['workspaceId', 'asOf'], supportsChart: false },
+  { key: 'wi_open_workspace', params: ['workspaceId'], supportsChart: true },
+  { key: 'wi_active_sprint', params: ['workspaceId', 'closure'], supportsChart: true },
 ];
 
 const WIDGET_TYPES = ['summaryCard', 'list', 'chart'];
@@ -252,6 +254,9 @@ function save() {
     groupBy: isChart.value ? form.value.groupBy : null,
     accentColor: isSummary.value ? form.value.accentColor.trim() || null : null,
     icon: isSummary.value ? form.value.icon.trim() || null : null,
+    measure: props.widget?.measure ?? null,
+    measureField: props.widget?.measureField ?? null,
+    aside: props.widget?.aside ?? null,
   };
 
   emit('save', widget);

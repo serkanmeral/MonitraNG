@@ -35,6 +35,7 @@ async function createGatewayTransport(event: H3Event) {
   if (!token) throw new Error('Unauthorized');
 
   return {
+    accessToken: token,
     async request(path: string, options: GatewayFetchOptions = {}) {
       const q = new URLSearchParams();
       if (options.query) {

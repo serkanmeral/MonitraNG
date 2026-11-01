@@ -48,6 +48,12 @@ const profileTo = computed(() =>
     from: props.profileFrom,
   })
 );
+
+function showsField(key: string) {
+  const keys = props.fieldKeys;
+  if (!keys || keys.length === 0) return key === 'priorityId' || key === 'storyPoints';
+  return keys.includes(key);
+}
 </script>
 
 <template>
@@ -69,15 +75,15 @@ const profileTo = computed(() =>
       <div class="oc-wi-card__title">{{ card.title }}</div>
       <div class="oc-wi-card__foot">
         <span class="d-flex align-center ga-1 flex-wrap">
-          <span v-if="priorityName" class="oc-wi-card__chip">{{ priorityName }}</span>
-          <span v-if="pointsLabel" class="oc-wi-card__chip">{{ pointsLabel }}</span>
+          <span v-if="showsField('priorityId') && priorityName" class="oc-wi-card__chip">{{ priorityName }}</span>
+          <span v-if="showsField('storyPoints') && pointsLabel" class="oc-wi-card__chip">{{ pointsLabel }}</span>
           <span v-if="card.childCount" class="oc-wi-card__chip">
             {{ t('operationCore.board.childCount', { count: card.childCount }) }}
           </span>
         </span>
         <span v-if="showAssignee && assigneeInitials" class="oc-avatar-tiny">{{ assigneeInitials }}</span>
-          <span v-if="showsField('priorityId') && priorityName" class="oc-wi-card__chip">{{ priorityName }}</span>
-          <span v-if="showsField('storyPoints') && pointsLabel" class="oc-wi-card__chip">{{ pointsLabel }}</span>
+      </div>
+    </NuxtLink>
   </div>
 </template>
 

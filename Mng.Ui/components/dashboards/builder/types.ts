@@ -1,4 +1,5 @@
 import type { DashboardPermissions } from '@/stores/apps/dashboard';
+import type { DashboardSurfaceVariableDef } from '@/utils/widgets/dashboardSurfaceVariables';
 
 /** Dashboard Builder form alanları (sol panel) */
 export interface DashboardFormData {
@@ -9,4 +10,5 @@ export interface DashboardFormData {
   isDefault: boolean;
   isActive: boolean;
   permissions?: DashboardPermissions;
+  surfaceVariables: DashboardSurfaceVariableDef[];
 }

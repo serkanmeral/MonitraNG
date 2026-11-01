@@ -12,7 +12,7 @@ Bu plan bir şablon marketi değildir. Kütüphane, Belge Zekâsında workspace�
 
 - Workspace bir projeye bağlıysa ayrı kök açılmaz. Projenin klasörü kullanılır: `Dökümanlar / Projeler / {proje kodu}`. Kimlik projenin `diFolderId` alanındadır.
 - Bağ, projenin `workspaceId` veya `meetingWorkspaceId` alanının bu workspace’i göstermesidir. Toplantı workspace’i de aynı klasörü görür.
-- Bağı olmayan workspace için `Dökümanlar / Operasyon / {workspace kodu}` açılır. Kod `WS-0004` biçimindedir. Görünen ad klasör adı olmaz. Ad değişince klasör taşınmaz. Kimlik `op_workspaces.diFolderId` alanındadır.
+- Bağı olmayan workspace için `Dökümanlar / Operasyon / {çalışma alanı adı}` açılır. Kod `WS-0004` biçimindedir ve klasör adı değildir. Kimlik `op_workspaces.diFolderId` alanındadır. Alanın adı sonradan değişirse klasör kendiliğinden yeniden adlandırılmaz. Klasör hâlâ kod adındaysa, kütüphane ilk açıldığında alanın adına çekilir. Kullanıcının kendi verdiği ad yerinde kalır. Bu cümle 1 Kasım 2026’da değişti; önceki kural görünen adın klasör adı olmamasıydı.
 - Bağ sonradan kurulursa görünüm proje klasörüne döner. Daha önce açılmış Operasyon klasörü silinmez.
 - Bağ kalkarsa belgeler projede kalır. Workspace için Operasyon klasörü o anda açılır.
 - Paylaşılan klasörün yetkisi projenindir. Workspace grupları bu klasörün üzerine yazılmaz.

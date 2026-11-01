@@ -1,6 +1,6 @@
 import type { ManifestDataBinding } from '@/types/apps/widgetManifest';
 import type { WidgetDataResponse } from '@/services/widgetDataService';
-import { fetchFromDataGateway } from '@/services/apiService';
+import { fetchFromDataGateway, fetchFromMngKeeper } from '@/services/apiService';
 import { alarmDashboardSnapshot, alarmTrendBuckets } from '@/services/alarmService';
 import { shouldReturnStatShape } from '@/utils/widgets/widgetFieldMappingBridge';
 import { secEventDashboardSummary, secEventQuery } from '@/services/secEventService';
@@ -12,6 +12,8 @@ import {
   scenarioRollupWidgetResponse,
 } from '@/utils/alarm/alarmScenarioRollupNormalize';
 import { normalizeManifestBinding } from '@/utils/widgets/widgetManifestServiceRefs';
+import { fetchPersonnelServiceRef, isPersonnelServiceRef } from '@/services/personnelActivityFetch';
+import { useAuthStore } from '@/stores/auth';
 
 function getNestedValue(obj: unknown, path: string): unknown {
   if (!path || obj == null) return undefined;
@@ -102,6 +104,30 @@ function normalizeQueryResponse(raw: unknown, binding: ManifestDataBinding): Wid
   }
 
   return { data: [obj], total: 1 };
+}
+
+function clientGatewayRequest(
+  path: string,
+  options?: {
+    method?: 'GET' | 'POST';
+    body?: unknown;
+    query?: Record<string, string | number | boolean | undefined>;
+  },
+): Promise<unknown> {
+  const q = new URLSearchParams();
+  if (options?.query) {
+    for (const [key, value] of Object.entries(options.query)) {
+      if (value === undefined || value === null || value === '') continue;
+      q.set(key, String(value));
+    }
+  }
+  const qs = q.toString();
+  if (path.startsWith('/keeper/api/')) {
+    const rest = path.slice('/keeper/api'.length);
+    return fetchFromMngKeeper(`${rest}${qs ? `?${qs}` : ''}`, options?.method ?? 'GET', options?.body);
+  }
+  const rest = path.startsWith('/data/api') ? path.slice('/data/api'.length) : path;
+  return fetchFromDataGateway(`/api${rest}${qs ? `?${qs}` : ''}`, options?.method ?? 'GET', options?.body);
 }
 
 async function fetchQueryRef(binding: ManifestDataBinding): Promise<WidgetDataResponse> {
@@ -241,6 +267,14 @@ async function fetchServiceRef(
     mapped.total = raw.total ?? raw.items.length;
     mapped.items = raw.items;
     return toWidgetDataResponse(mapped, { stat: binding.fieldMap?.value === 'total' });
+  }
+
+  if (isPersonnelServiceRef(serviceRef)) {
+    const authStore = useAuthStore();
+    return fetchPersonnelServiceRef(serviceRef, parameters, {
+      accessToken: authStore.accessToken ?? undefined,
+      request: (path, options) => clientGatewayRequest(path, options),
+    });
   }
 
   throw new Error(`Desteklenmeyen serviceRef: ${serviceRef}`);

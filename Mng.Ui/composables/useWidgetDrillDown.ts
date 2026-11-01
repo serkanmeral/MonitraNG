@@ -1,5 +1,5 @@
 import type { DrillDownConfig } from '@/utils/widgets/surfaceInteractions';
-import { resolveParamMap } from '@/utils/widgets/surfaceInteractions';
+import { resolveParamMap, resolveRowField } from '@/utils/widgets/surfaceInteractions';
 import type { SurfaceContext } from '@/types/apps/widgetManifest';
 
 export function useWidgetDrillDown(surfaceContext?: () => SurfaceContext | undefined) {
@@ -20,7 +20,11 @@ export function useWidgetDrillDown(surfaceContext?: () => SurfaceContext | undef
     }
 
     const query = resolveParamMap(config.paramMap, row, context);
-    const target = { path: config.path, query };
+    const path = config.path.replace(/\{([A-Za-z0-9_.]+)\}/g, (_, key: string) => {
+      const value = resolveRowField(row, key);
+      return value == null ? '' : encodeURIComponent(String(value));
+    });
+    const target = { path, query };
 
     if (config.openInNewTab) {
       window.open(router.resolve(target).href, '_blank', 'noopener');

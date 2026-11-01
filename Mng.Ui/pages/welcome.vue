@@ -1,12 +1,11 @@
 <script setup lang="ts">
-/** Eski /welcome adresi — ana sayfaya yönlendir */
-definePageMeta({ layout: 'default' });
+import WelcomeHomePage from '@/components/welcome/WelcomeHomePage.vue';
 
-onMounted(() => {
-  navigateTo('/', { replace: true });
+definePageMeta({
+  layout: 'default',
 });
 </script>
 
 <template>
-  <div />
+  <WelcomeHomePage />
 </template>

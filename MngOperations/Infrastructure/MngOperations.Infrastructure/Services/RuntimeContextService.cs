@@ -1315,6 +1315,12 @@ public partial class RuntimeContextService : IRuntimeContextService
                 400);
         }
 
+        if (string.Equals(queryKey, OcQueries.OpenWorkspace, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(queryKey, OcQueries.ActiveSprint, StringComparison.OrdinalIgnoreCase))
+        {
+            return await LoadDashboardScopeAsync(queryKey, rawParams, token, resolveContext, cancellationToken);
+        }
+
         var mergedParams = new Dictionary<string, object?>(rawParams, StringComparer.OrdinalIgnoreCase);
         var sprintScope = mergedParams.TryGetValue("sprintScope", out var scopeValue) ? scopeValue?.ToString() : null;
         mergedParams.Remove("sprintScope");

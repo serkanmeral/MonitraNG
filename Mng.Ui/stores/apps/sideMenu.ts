@@ -81,6 +81,98 @@ interface SideMenuState {
 
 const scenarioStudioRoute = '/apps/alarm-center/scenario-studio';
 const meetingsRoute = '/apps/meetings';
+const ankaraBtHeader = 'AnkaraBT';
+const personnelDashboardRoute = '/dashboards/personel';
+
+function createdMenuId(raw: unknown): string {
+  const row = Array.isArray(raw) ? raw[0] : raw;
+  if (!row || typeof row !== 'object') return '';
+  const record = row as Record<string, unknown>;
+  const direct = record.__dataId ?? record.dataId ?? record.DataId;
+  return typeof direct === 'string' ? direct : '';
+}
+
+async function findSideMenuRow(filter: string): Promise<Record<string, unknown> | null> {
+  const raw = await fetchFromDataGateway(
+    `/api/v1/data/@side_menu?filter=${encodeURIComponent(filter)}&limit=5`,
+    'GET',
+  );
+  const rows = Array.isArray(raw) ? raw : [];
+  const row = rows[0];
+  return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+}
+
+async function ensureAnkaraBtSideMenu(items: SideMenuItem[]): Promise<SideMenuItem[]> {
+  const authStore = useAuthStore();
+  if (!authStore.isAdmin && !authStore.isManager) return items;
+
+  const next = items.slice();
+  let header = next.find(
+    (item) => item.itemType === 'header' && (item.header === ankaraBtHeader || item.pageCode === 'ankarabt'),
+  );
+
+  if (!header?.__dataId) {
+    const order = next.reduce((max, item) => Math.max(max, item.order || 0), 0) + 10;
+    let id = '';
+    try {
+      id = createdMenuId(await fetchFromDataGateway('/api/v1/data/@side_menu', 'POST', {
+        order,
+        itemType: 'header',
+        pageType: 'user',
+        header: ankaraBtHeader,
+        title: ankaraBtHeader,
+        pageCode: 'ankarabt',
+        parentId: null,
+        level: 0,
+        disabled: false,
+      }));
+    } catch {
+      id = createdMenuId(await findSideMenuRow('pageCode:eq:ankarabt'));
+    }
+    if (!id) return next;
+    header = {
+      __dataId: id,
+      order,
+      itemType: 'header',
+      pageType: 'user',
+      header: ankaraBtHeader,
+      title: ankaraBtHeader,
+      pageCode: 'ankarabt',
+      parentId: null,
+      level: 0,
+      disabled: false,
+    };
+    next.push(header);
+  }
+
+  if (!next.some((item) => item.to === personnelDashboardRoute) && header.__dataId) {
+    const order = (header.order || 0) + 1;
+    const body = {
+      order,
+      itemType: 'item',
+      pageType: 'manager',
+      title: 'Personel hareketi',
+      pageCode: 'personnel-activity',
+      icon: 'UsersIcon',
+      iconType: 'tabler',
+      to: personnelDashboardRoute,
+      type: 'internal',
+      parentId: header.__dataId,
+      level: 1,
+      disabled: false,
+    };
+    let id = '';
+    try {
+      id = createdMenuId(await fetchFromDataGateway('/api/v1/data/@side_menu', 'POST', body));
+    } catch {
+      id = createdMenuId(await findSideMenuRow('pageCode:eq:personnel-activity'));
+    }
+    if (!id) return next;
+    next.push({ ...body, __dataId: id });
+  }
+
+  return next;
+}
 
 function ensureMeetingsMenuItem(items: SideMenuItem[]): SideMenuItem[] {
   if (items.some((item) => item.to === meetingsRoute)) return items;
@@ -193,12 +285,14 @@ export const useSideMenuStore = defineStore('sideMenu', {
               
               // TTL kontrolü (10 dakika)
               if (now - timestamp < (ttl || 600000)) {
-                const items = ensureMeetingsMenuItem(
-                ensureScenarioStudioMenuItem(JSON.parse(cachedData) as SideMenuItem[]),
+                const items = await ensureAnkaraBtSideMenu(
+                ensureMeetingsMenuItem(ensureScenarioStudioMenuItem(JSON.parse(cachedData) as SideMenuItem[])),
               );
                 this.menuItems = items;
                 this.menuItemsTree = this.buildMenuTree(items);
-                this.lastUpdated = timestamp;
+                this.lastUpdated = Date.now();
+                localStorage.setItem(cacheKey, JSON.stringify(items));
+                localStorage.setItem(ttlKey, JSON.stringify({ timestamp: this.lastUpdated, ttl: ttl || 600000 }));
                 return;
               }
             } catch {
@@ -241,7 +335,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
         }
 
         // Map items to SideMenuItem format (handle different field name cases)
-        this.menuItems = ensureMeetingsMenuItem(ensureScenarioStudioMenuItem(items.map((item: any) => ({
+        this.menuItems = await ensureAnkaraBtSideMenu(ensureMeetingsMenuItem(ensureScenarioStudioMenuItem(items.map((item: any) => ({
           __dataId: item.__dataId ?? item.DataId ?? item.dataId,
           dataId: item.__dataId ?? item.DataId ?? item.dataId,
           itemType: item.itemType ?? item.ItemType ?? 'item',
@@ -265,7 +359,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
           chipVariant: item.chipVariant ?? item.ChipVariant,
           chipIcon: item.chipIcon ?? item.ChipIcon,
           permissions: item.permissions ?? item.Permissions,
-        })) as SideMenuItem[]));
+        })) as SideMenuItem[])));
         this.menuItemsTree = this.buildMenuTree(this.menuItems);
         this.lastUpdated = Date.now();
 

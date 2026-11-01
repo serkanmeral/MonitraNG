@@ -53,6 +53,14 @@ function initials(name: string | null): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function storyPoints(card: OcWorkItemCard): string | null {
+  const raw = card.fields?.storyPoints;
+  if (raw == null || raw === '') return null;
+  const amount = Number(raw);
+  if (!Number.isFinite(amount)) return null;
+  return Number.isInteger(amount) ? String(amount) : amount.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
 function openItem(card: OcWorkItemCard) {
   router.push(`/apps/operation-core/work-items/${encodeURIComponent(card.id)}/profile`);
 }
@@ -106,6 +114,9 @@ function openItem(card: OcWorkItemCard) {
                   style="max-width: 140px"
                 >
                   {{ assigneeName(card) }}
+                </span>
+                <span v-if="storyPoints(card)" class="text-caption text-medium-emphasis flex-shrink-0">
+                  {{ storyPoints(card) }} {{ t('operationCore.dashboards.points') }}
                 </span>
               </div>
             </div>

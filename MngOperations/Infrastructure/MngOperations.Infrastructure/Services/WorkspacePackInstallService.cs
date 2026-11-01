@@ -259,6 +259,27 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
             pieces[$"field.{field.Key}"] = fieldId;
         }
 
+        string? summaryDashboardId = null;
+        foreach (var dashboard in pack.Dashboards)
+        {
+            if (string.IsNullOrWhiteSpace(dashboard.Name) || string.IsNullOrWhiteSpace(dashboard.Kind))
+                continue;
+            if (!string.IsNullOrWhiteSpace(dashboard.RequiresView)
+                && !ViewEnabled(workspace, pack, dashboard.RequiresView))
+            {
+                continue;
+            }
+
+            var (id, pieceAction) = await EnsureDashboardAsync(wsId, dashboard, stateIds, token, cancellationToken);
+            pieces[dashboard.Key] = id;
+            Note(dashboard.Key, pieceAction, created, skipped, left);
+            if (dashboard.IsDefault)
+                summaryDashboardId = id;
+        }
+
+        if (!string.IsNullOrWhiteSpace(summaryDashboardId))
+            await LinkDefaultBoardDashboardAsync(pack, pieces, summaryDashboardId, token, cancellationToken);
+
         if (existing is not null && string.Equals(action, "skipped", StringComparison.Ordinal) && created.Count > 0)
             action = "completed";
 
@@ -851,6 +872,116 @@ public sealed class WorkspacePackInstallService : IWorkspacePackInstallService
         }
 
         return row;
+    }
+
+    private static bool ViewEnabled(
+        IReadOnlyDictionary<string, object?> workspace,
+        WorkspacePackDefinition pack,
+        string viewKey)
+    {
+        if (TryReadView(workspace, viewKey, out var current))
+            return current;
+        return pack.Views.TryGetValue(viewKey, out var fromPack) && fromPack;
+    }
+
+    private static bool TryReadView(IReadOnlyDictionary<string, object?> workspace, string viewKey, out bool enabled)
+    {
+        enabled = false;
+        if (!workspace.TryGetValue("settings", out var raw) || raw is null)
+            return false;
+
+        JsonObject? settings = raw switch
+        {
+            JsonElement element when element.ValueKind == JsonValueKind.Object => JsonNode.Parse(element.GetRawText()) as JsonObject,
+            string text when text.TrimStart().StartsWith('{') => JsonNode.Parse(text) as JsonObject,
+            _ => null
+        };
+        if (settings?["views"] is not JsonObject views || views[viewKey] is not JsonValue flag)
+            return false;
+        if (flag.TryGetValue<bool>(out var value))
+        {
+            enabled = value;
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task<(string Id, PieceAction Action)> EnsureDashboardAsync(
+        string workspaceId,
+        WorkspacePackDashboard dashboard,
+        IReadOnlyDictionary<string, string> stateIds,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var name = dashboard.Name.Trim();
+        var page = await _dg.QueryPageAsync(
+            OcDatasets.Dashboards,
+            new Dictionary<string, object?> { ["workspaceId"] = workspaceId, ["name"] = name },
+            "limit=5&expand=false",
+            token,
+            cancellationToken);
+        var existingId = page.Items.Count == 0 ? null : ReadId(page.Items[0]);
+        if (!string.IsNullOrWhiteSpace(existingId))
+            return (existingId, PieceAction.Skipped);
+
+        var kind = dashboard.Kind.Trim().ToLowerInvariant();
+        var (layout, widgets) = kind == "helpdesk"
+            ? HelpDeskPackDashboards.Build(stateIds)
+            : SoftwarePackDashboards.Build(dashboard.Kind, stateIds);
+        var id = await CreateAsync(
+            OcDatasets.Dashboards,
+            new Dictionary<string, object?>
+            {
+                ["name"] = name,
+                ["description"] = DashboardDescription(kind),
+                ["workspaceId"] = workspaceId,
+                ["scope"] = "workspace",
+                ["isDefault"] = dashboard.IsDefault,
+                ["isActive"] = true,
+                ["layout"] = layout,
+                ["widgets"] = widgets
+            },
+            token,
+            cancellationToken);
+        return (id, PieceAction.Created);
+    }
+
+    private static string DashboardDescription(string kind) => kind switch
+    {
+        "sprint" => "Aktif sprintin işi ve puanı.",
+        "helpdesk" => "Açık talepler, bekleyenler ve bana atananlar.",
+        _ => "Yazılım akışının açık işi ve puanı."
+    };
+
+    private async Task LinkDefaultBoardDashboardAsync(
+        WorkspacePackDefinition pack,
+        IReadOnlyDictionary<string, string> pieces,
+        string dashboardId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var board = pack.Boards.FirstOrDefault(item => item.IsDefault) ?? pack.Boards.FirstOrDefault();
+        if (board is null || !pieces.TryGetValue(board.Key, out var boardId) || string.IsNullOrWhiteSpace(boardId))
+            return;
+
+        var row = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+            OcDatasets.Boards,
+            boardId,
+            token,
+            cancellationToken,
+            expand: false);
+        if (row is null)
+            return;
+        if (!string.IsNullOrWhiteSpace(ReadString(row, "defaultDashboardId")))
+            return;
+
+        await _dg.UpdateAsync(
+            OcDatasets.Boards,
+            boardId,
+            new Dictionary<string, object?> { ["defaultDashboardId"] = dashboardId },
+            token,
+            cancellationToken);
     }
 
     private async Task<string> CreateAsync(

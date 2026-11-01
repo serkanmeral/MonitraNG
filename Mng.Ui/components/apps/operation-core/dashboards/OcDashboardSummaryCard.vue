@@ -9,9 +9,17 @@ const props = defineProps<{
 
 const { t } = useAppI18n();
 
+function formatMeasure(amount: number): string {
+  if (!Number.isFinite(amount)) return '0';
+  if (Number.isInteger(amount)) return String(amount);
+  return amount.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
 const execution = computed(() => props.widget.execution ?? null);
 const failed = computed(() => execution.value != null && execution.value.success === false);
-const value = computed(() => execution.value?.total ?? 0);
+const summed = computed(() => (props.widget.measure || '').toLowerCase() === 'sum');
+const value = computed(() => (summed.value ? execution.value?.value ?? 0 : execution.value?.total ?? 0));
+const unpointed = computed(() => execution.value?.unpointedCount);
 const title = computed(() => props.widget.title?.trim() || props.widget.key);
 
 // Widget'a özel renk/ikon meta yok → key'den kararlı bir aksan rengi ve makul bir ikon türet.
@@ -59,10 +67,13 @@ const icon = computed(() => {
       </template>
       <template v-else>
         <div class="d-flex align-end ga-2 mt-auto">
-          <span class="oc-summary-value">{{ value }}</span>
+          <span class="oc-summary-value">{{ formatMeasure(value) }}</span>
           <span class="text-body-2 text-medium-emphasis pb-1">
-            {{ t('operationCore.dashboards.totalRecords') }}
+            {{ summed ? t('operationCore.dashboards.points') : t('operationCore.dashboards.totalRecords') }}
           </span>
+        </div>
+        <div v-if="unpointed != null" class="text-caption text-medium-emphasis mt-1">
+          {{ t('operationCore.dashboards.unpointed', { count: unpointed }) }}
         </div>
       </template>
     </v-card-text>

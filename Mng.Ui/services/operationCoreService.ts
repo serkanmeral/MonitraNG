@@ -2425,6 +2425,11 @@ function mapDashboardWidgetExecution(raw: unknown): OcDashboardWidgetExecution |
     errorCode: pickStr(r, 'errorCode', 'ErrorCode') ?? null,
     errorMessage: pickStr(r, 'errorMessage', 'ErrorMessage') ?? null,
     total: Number(r.total ?? r.Total ?? 0),
+    value: r.value == null && r.Value == null ? null : Number(r.value ?? r.Value),
+    unpointedCount:
+      r.unpointedCount == null && r.UnpointedCount == null
+        ? null
+        : Number(r.unpointedCount ?? r.UnpointedCount),
     skip: Number(r.skip ?? r.Skip ?? 0),
     take: Number(r.take ?? r.Take ?? 0),
     items: Array.isArray(items)
@@ -2436,6 +2441,7 @@ function mapDashboardWidgetExecution(raw: unknown): OcDashboardWidgetExecution |
           return {
             key: (o.key ?? o.Key ?? null) as string | null,
             count: Number(o.count ?? o.Count ?? 0),
+            value: o.value == null && o.Value == null ? null : Number(o.value ?? o.Value),
           };
         })
       : [],
@@ -2454,6 +2460,7 @@ function mapDashboardWidget(raw: Record<string, unknown>): OcDashboardWidget {
     groupBy: pickStr(raw, 'groupBy', 'GroupBy') ?? null,
     accentColor: pickStr(raw, 'accentColor', 'AccentColor') ?? null,
     icon: pickStr(raw, 'icon', 'Icon') ?? null,
+    measure: pickStr(raw, 'measure', 'Measure') ?? null,
     resolvedParameters: (raw.resolvedParameters ?? raw.ResolvedParameters ?? null) as
       | Record<string, unknown>
       | null,
@@ -2552,6 +2559,9 @@ function mapDashboardWidgetDef(raw: Record<string, unknown>): OcDashboardWidgetD
     groupBy: (raw.groupBy ?? raw.GroupBy ?? null) as string | null,
     accentColor: style.accentColor,
     icon: style.icon,
+    measure: pickStr(raw, 'measure', 'Measure') ?? null,
+    measureField: pickStr(raw, 'measureField', 'MeasureField') ?? null,
+    aside: pickStr(raw, 'aside', 'Aside') ?? null,
   };
 }
 

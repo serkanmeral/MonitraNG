@@ -1,3 +1,4 @@
+import { fetchFromDataGateway } from '@/services/apiService';
 import {
   ocCreateRecordId,
   ocDelete,
@@ -10,6 +11,33 @@ export const MT_MEETING_ACTIONS = 'mt_meeting_actions';
 export const MT_MEETING_SERIES = 'mt_meeting_series';
 export const MT_MEETING_PEOPLE = 'mt_meeting_people';
 export const MT_MEETING_ATTENDANCE = 'mt_meeting_attendance';
+export const MT_MEETING_TOPICS = 'mt_meeting_topics';
+export const MT_MEETING_ROOMS = 'mt_meeting_rooms';
+export const MT_MEETING_ATTACHMENTS = 'mt_meeting_attachments';
+export const MT_MEETING_NOTICE_SETTINGS = 'mt_meeting_notice_settings';
+export const MT_MEETING_NOTICE_LOGS = 'mt_meeting_notice_logs';
+export const MEETING_NOTICE_KINDS = ['invite', 'update', 'cancel'] as const;
+export type MeetingNoticeKind = (typeof MEETING_NOTICE_KINDS)[number];
+export type MeetingNoticeResult = 'sent' | 'skipped' | 'failed';
+
+export const MEETING_TOPIC_COLORS = ['blue', 'teal', 'green', 'orange', 'purple', 'red', 'brown', 'slate'] as const;
+export type MeetingTopicColor = (typeof MEETING_TOPIC_COLORS)[number];
+
+const TOPIC_COLOR_HEX: Record<MeetingTopicColor, string> = {
+  blue: '#1565c0',
+  teal: '#00897b',
+  green: '#2e7d32',
+  orange: '#ef6c00',
+  purple: '#6a1b9a',
+  red: '#c62828',
+  brown: '#6d4c41',
+  slate: '#546e7a',
+};
+
+export function meetingTopicColorHex(color: string | null | undefined): string {
+  if (color && color in TOPIC_COLOR_HEX) return TOPIC_COLOR_HEX[color as MeetingTopicColor];
+  return TOPIC_COLOR_HEX.blue;
+}
 export const MAX_SERIES_OCCURRENCES = 26;
 const OPEN_SERIES_DAYS = 84;
 
@@ -34,6 +62,18 @@ export interface OrgMeeting {
   seriesId: string | null;
   occurrenceDate: string | null;
   detached: boolean;
+  topicId: string | null;
+  topicCustom: boolean;
+  roomId: string | null;
+  roomCustom: boolean;
+}
+
+export interface OrgMeetingTopic {
+  id: string;
+  name: string;
+  code: string;
+  color: MeetingTopicColor;
+  archived: boolean;
 }
 
 export interface OrgMeetingAction {
@@ -64,6 +104,7 @@ export interface OrgMeetingAttendance {
   organization: string;
   email: string;
   presence: OrgAttendancePresence;
+  note: string;
 }
 
 export interface OrgMeetingSeries {
@@ -82,6 +123,8 @@ export interface OrgMeetingSeries {
   agendaResourceId: string | null;
   memberUserIds: string[];
   memberPersonIds: string[];
+  topicId: string | null;
+  roomId: string | null;
 }
 
 export interface OrgMeetingInput {
@@ -98,6 +141,10 @@ export interface OrgMeetingInput {
   seriesId?: string | null;
   occurrenceDate?: string | null;
   detached?: boolean;
+  topicId?: string | null;
+  topicCustom?: boolean;
+  roomId?: string | null;
+  roomCustom?: boolean;
 }
 
 export interface OrgMeetingActionInput {
@@ -125,6 +172,7 @@ export interface OrgMeetingAttendanceInput {
   organization?: string | null;
   email?: string | null;
   presence: OrgAttendancePresence;
+  note?: string | null;
 }
 
 export interface OrgAttendanceDraft extends OrgMeetingAttendanceInput {
@@ -146,6 +194,28 @@ export interface OrgMeetingSeriesInput {
   agendaResourceId?: string | null;
   memberUserIds?: string[];
   memberPersonIds?: string[];
+  topicId?: string | null;
+  roomId?: string | null;
+}
+
+export interface OrgMeetingRoom {
+  id: string;
+  name: string;
+  capacity: number | null;
+  archived: boolean;
+}
+
+export interface OrgMeetingRoomInput {
+  name: string;
+  capacity?: number | null;
+  archived?: boolean;
+}
+
+export interface OrgMeetingTopicInput {
+  name: string;
+  code?: string | null;
+  color?: string | null;
+  archived?: boolean;
 }
 
 const ISTANBUL_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -177,6 +247,12 @@ function asInt(raw: unknown, fallback: number): number {
 
 function asBool(raw: unknown): boolean {
   return raw === true || raw === 1 || raw === '1' || raw === 'true';
+}
+
+function topicColor(raw: unknown): MeetingTopicColor {
+  const value = text(raw);
+  if ((MEETING_TOPIC_COLORS as readonly string[]).includes(value)) return value as MeetingTopicColor;
+  return 'blue';
 }
 
 function meetingStatus(raw: unknown): OrgMeetingStatus {
@@ -315,6 +391,10 @@ function mapMeeting(raw: unknown): OrgMeeting | null {
     seriesId: optionalText(row.seriesId),
     occurrenceDate: optionalText(row.occurrenceDate),
     detached: asBool(row.detached),
+    topicId: optionalText(row.topicId),
+    topicCustom: asBool(row.topicCustom),
+    roomId: optionalText(row.roomId),
+    roomCustom: asBool(row.roomCustom),
   };
 }
 
@@ -365,6 +445,7 @@ function mapAttendance(raw: unknown): OrgMeetingAttendance | null {
     organization: text(row.organization),
     email: text(row.email),
     presence: attendancePresence(row.presence),
+    note: text(row.note),
   };
 }
 
@@ -389,6 +470,22 @@ function mapSeries(raw: unknown): OrgMeetingSeries | null {
     agendaResourceId: optionalText(row.agendaResourceId),
     memberUserIds: idList(row.memberUserIds),
     memberPersonIds: idList(row.memberPersonIds),
+    topicId: optionalText(row.topicId),
+    roomId: optionalText(row.roomId),
+  };
+}
+
+function mapTopic(raw: unknown): OrgMeetingTopic | null {
+  const row = asRecord(raw);
+  const id = text(row.__dataId ?? row.dataId);
+  const name = text(row.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    code: text(row.code),
+    color: topicColor(row.color),
+    archived: asBool(row.archived),
   };
 }
 
@@ -407,6 +504,10 @@ function meetingPayload(input: OrgMeetingInput): Record<string, unknown> {
     seriesId: input.seriesId || null,
     occurrenceDate: input.occurrenceDate || null,
     detached: Boolean(input.detached),
+    topicId: input.topicId || null,
+    topicCustom: Boolean(input.topicCustom),
+    roomId: input.roomId || null,
+    roomCustom: Boolean(input.roomCustom),
   };
 }
 
@@ -440,6 +541,7 @@ function attendancePayload(input: OrgMeetingAttendanceInput): Record<string, unk
     organization: input.organization?.trim() || null,
     email: input.email?.trim() || null,
     presence: input.presence,
+    note: input.note?.trim() || null,
   };
 }
 
@@ -459,6 +561,17 @@ function seriesPayload(series: OrgMeetingSeries, input: OrgMeetingSeriesInput, a
     agendaResourceId: input.agendaResourceId || null,
     memberUserIds: input.memberUserIds ?? [],
     memberPersonIds: input.memberPersonIds ?? [],
+    topicId: input.topicId || null,
+    roomId: input.roomId || null,
+  };
+}
+
+function topicPayload(input: OrgMeetingTopicInput): Record<string, unknown> {
+  return {
+    name: input.name.trim(),
+    code: input.code?.trim() || null,
+    color: topicColor(input.color),
+    archived: Boolean(input.archived),
   };
 }
 
@@ -479,6 +592,8 @@ function normalizeSeriesInput(input: OrgMeetingSeriesInput): OrgMeetingSeries {
     agendaResourceId: input.agendaResourceId || null,
     memberUserIds: input.memberUserIds ?? [],
     memberPersonIds: input.memberPersonIds ?? [],
+    topicId: input.topicId || null,
+    roomId: input.roomId || null,
   };
 }
 
@@ -502,13 +617,22 @@ export async function updateOrgMeeting(id: string, input: OrgMeetingInput): Prom
 }
 
 export async function deleteOrgMeeting(id: string): Promise<void> {
-  const [actions, attendance] = await Promise.all([
+  const [actions, attendance, attachments, notices] = await Promise.all([
     listOrgMeetingActions(id),
     listOrgMeetingAttendance(id),
+    listOrgMeetingAttachments(id),
+    listOrgMeetingNoticeLogs(id).catch(() => [] as OrgMeetingNoticeLog[]),
   ]);
   for (const action of actions) await ocDelete(MT_MEETING_ACTIONS, action.id);
   for (const row of attendance) await ocDelete(MT_MEETING_ATTENDANCE, row.id);
+  for (const row of attachments) await ocDelete(MT_MEETING_ATTACHMENTS, row.id);
+  for (const row of notices) await ocDelete(MT_MEETING_NOTICE_LOGS, row.id);
   await ocDelete(MT_MEETINGS, id);
+}
+
+export async function listOrgMeetingActionRows(): Promise<OrgMeetingAction[]> {
+  const rows = await ocListDataset(MT_MEETING_ACTIONS, { limit: 2000, expand: false });
+  return rows.map(mapAction).filter((row): row is OrgMeetingAction => row != null);
 }
 
 export async function listOrgMeetingActions(meetingId: string): Promise<OrgMeetingAction[]> {
@@ -540,6 +664,10 @@ export async function listOrgMeetingPeople(): Promise<OrgMeetingPerson[]> {
   return rows.map(mapPerson).filter((row): row is OrgMeetingPerson => row != null);
 }
 
+export async function updateOrgMeetingPerson(id: string, input: OrgMeetingPersonInput): Promise<void> {
+  await ocUpdate(MT_MEETING_PEOPLE, id, personPayload(input));
+}
+
 export async function createOrgMeetingPerson(input: OrgMeetingPersonInput): Promise<OrgMeetingPerson> {
   const id = await ocCreateRecordId(MT_MEETING_PEOPLE, personPayload(input));
   if (!id) throw new Error('Meeting person create did not return an id.');
@@ -561,6 +689,11 @@ export async function deleteOrgMeetingPerson(id: string): Promise<void> {
     throw new Error('PERSON_IN_USE');
   }
   await ocDelete(MT_MEETING_PEOPLE, id);
+}
+
+export async function listOrgMeetingAttendanceRows(): Promise<OrgMeetingAttendance[]> {
+  const rows = await ocListDataset(MT_MEETING_ATTENDANCE, { limit: 2000, expand: false });
+  return rows.map(mapAttendance).filter((row): row is OrgMeetingAttendance => row != null);
 }
 
 export async function listOrgMeetingAttendance(meetingId: string): Promise<OrgMeetingAttendance[]> {
@@ -607,29 +740,112 @@ export async function listOrgMeetingSeries(): Promise<OrgMeetingSeries[]> {
   return rows.map(mapSeries).filter((row): row is OrgMeetingSeries => row != null);
 }
 
+const SERIES_WRITE_BATCH = 5;
+const BULK_ROW_LIMIT = 2000;
+
+async function runInBatches<T>(items: T[], work: (item: T) => Promise<void>): Promise<void> {
+  for (let index = 0; index < items.length; index += SERIES_WRITE_BATCH) {
+    await Promise.all(items.slice(index, index + SERIES_WRITE_BATCH).map((item) => work(item)));
+  }
+}
+
+function groupByMeeting<T extends { meetingId: string }>(rows: T[]): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = grouped.get(row.meetingId);
+    if (list) list.push(row);
+    else grouped.set(row.meetingId, [row]);
+  }
+  return grouped;
+}
+
+async function bulkMeetingActions(): Promise<Map<string, OrgMeetingAction[]> | null> {
+  const rows = await listOrgMeetingActionRows();
+  if (rows.length >= BULK_ROW_LIMIT) return null;
+  return groupByMeeting(rows);
+}
+
+async function bulkMeetingAttendance(): Promise<Map<string, OrgMeetingAttendance[]> | null> {
+  const rows = await listOrgMeetingAttendanceRows();
+  if (rows.length >= BULK_ROW_LIMIT) return null;
+  return groupByMeeting(rows);
+}
+
+async function actionsFor(index: Map<string, OrgMeetingAction[]> | null, meetingId: string): Promise<OrgMeetingAction[]> {
+  if (index) return index.get(meetingId) || [];
+  return listOrgMeetingActions(meetingId);
+}
+
+async function attendanceFor(index: Map<string, OrgMeetingAttendance[]> | null, meetingId: string): Promise<OrgMeetingAttendance[]> {
+  if (index) return index.get(meetingId) || [];
+  return listOrgMeetingAttendance(meetingId);
+}
+
+function sameIdSet(left: Array<string | null | undefined>, right: string[]): boolean {
+  const a = left.filter((id): id is string => Boolean(id)).slice().sort();
+  const b = right.slice().sort();
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+function sameInstant(left: string | null | undefined, right: string | null | undefined): boolean {
+  const a = text(left);
+  const b = text(right);
+  if (!a && !b) return true;
+  const leftMs = Date.parse(a);
+  const rightMs = Date.parse(b);
+  if (Number.isNaN(leftMs) || Number.isNaN(rightMs)) return a === b;
+  return leftMs === rightMs;
+}
+
+function seriesFieldsMatch(
+  meeting: OrgMeeting,
+  series: OrgMeetingSeries,
+  clock: { startAt: string; endAt: string },
+): boolean {
+  if (meeting.title !== series.name) return false;
+  if (!sameInstant(meeting.startAt, clock.startAt) || !sameInstant(meeting.endAt, clock.endAt)) return false;
+  if (meeting.location !== text(series.location)) return false;
+  if (meeting.meetingUrl !== text(series.meetingUrl)) return false;
+  if ((meeting.organizerId || null) !== (series.organizerId || null)) return false;
+  if (meeting.agenda !== text(series.agenda)) return false;
+  if ((meeting.agendaResourceId || null) !== (series.agendaResourceId || null)) return false;
+  if (!meeting.topicCustom && (meeting.topicId || null) !== (series.topicId || null)) return false;
+  if (!meeting.roomCustom && (meeting.roomId || null) !== (series.roomId || null)) return false;
+  return true;
+}
+
+function attendanceMatchesSeries(rows: OrgMeetingAttendance[], series: OrgMeetingSeries): boolean {
+  const users = rows.filter((row) => row.kind === 'user').map((row) => row.userId);
+  const persons = rows.filter((row) => row.kind === 'external').map((row) => row.personId);
+  return sameIdSet(users, series.memberUserIds) && sameIdSet(persons, series.memberPersonIds);
+}
+
 async function copySeriesAttendance(meetingId: string, series: OrgMeetingSeries, people: OrgMeetingPerson[]): Promise<void> {
   const byId = new Map(people.map((person) => [person.id, person]));
-  for (const userId of series.memberUserIds) {
-    await createOrgMeetingAttendance({
+  const drafts: OrgMeetingAttendanceInput[] = [
+    ...series.memberUserIds.map((userId) => ({
       meetingId,
-      kind: 'user',
+      kind: 'user' as const,
       userId,
       displayName: userId,
-      presence: 'invited',
-    });
-  }
-  for (const personId of series.memberPersonIds) {
-    const person = byId.get(personId);
-    await createOrgMeetingAttendance({
-      meetingId,
-      kind: 'external',
-      personId,
-      displayName: person?.name || personId,
-      organization: person?.organization || null,
-      email: person?.email || null,
-      presence: 'invited',
-    });
-  }
+      presence: 'invited' as const,
+    })),
+    ...series.memberPersonIds.map((personId) => {
+      const person = byId.get(personId);
+      return {
+        meetingId,
+        kind: 'external' as const,
+        personId,
+        displayName: person?.name || personId,
+        organization: person?.organization || null,
+        email: person?.email || null,
+        presence: 'invited' as const,
+      };
+    }),
+  ];
+  await runInBatches(drafts, async (draft) => {
+    await createOrgMeetingAttendance(draft);
+  });
 }
 
 function occurrenceClock(date: string, startTime: string, durationMinutes: number): { startAt: string; endAt: string } {
@@ -640,30 +856,59 @@ function occurrenceClock(date: string, startTime: string, durationMinutes: numbe
   return { startAt: start.toISOString(), endAt: end.toISOString() };
 }
 
+function attendanceKeepsOccurrence(rows: OrgMeetingAttendance[]): boolean {
+  return rows.some((row) => row.presence !== 'invited' || Boolean(row.note.trim()));
+}
+
 async function applySeriesForward(series: OrgMeetingSeries, fromDate: string): Promise<void> {
-  const [meetings, people] = await Promise.all([listOrgMeetings(), listOrgMeetingPeople()]);
+  const [meetings, people, actionIndex, attendanceIndex] = await Promise.all([
+    listOrgMeetings(),
+    listOrgMeetingPeople(),
+    bulkMeetingActions(),
+    bulkMeetingAttendance(),
+  ]);
   const rows = meetings.filter(
     (row) => row.seriesId === series.id && row.occurrenceDate && row.occurrenceDate >= fromDate && !row.detached && row.status === 'scheduled' && !row.minutesResourceId,
   );
+  const work: Array<{
+    meeting: OrgMeeting;
+    attendance: OrgMeetingAttendance[];
+    clock: { startAt: string; endAt: string };
+    fieldsSame: boolean;
+    peopleSame: boolean;
+  }> = [];
   for (const meeting of rows) {
-    const actions = await listOrgMeetingActions(meeting.id);
-    if (actions.length) continue;
-    const attendance = await listOrgMeetingAttendance(meeting.id);
-    if (attendance.some((row) => row.presence !== 'invited')) continue;
+    if ((await actionsFor(actionIndex, meeting.id)).length) continue;
+    const attendance = await attendanceFor(attendanceIndex, meeting.id);
+    if (attendanceKeepsOccurrence(attendance)) continue;
     const clock = occurrenceClock(meeting.occurrenceDate as string, series.startTime, series.durationMinutes);
-    await ocUpdate(MT_MEETINGS, meeting.id, {
-      title: series.name,
-      startAt: clock.startAt,
-      endAt: clock.endAt,
-      location: series.location || null,
-      meetingUrl: series.meetingUrl || null,
-      organizerId: series.organizerId,
-      agenda: series.agenda || null,
-      agendaResourceId: series.agendaResourceId,
-    });
-    for (const row of attendance) await deleteOrgMeetingAttendance(row.id);
-    await copySeriesAttendance(meeting.id, series, people);
+    const fieldsSame = seriesFieldsMatch(meeting, series, clock);
+    const peopleSame = attendanceMatchesSeries(attendance, series);
+    if (fieldsSame && peopleSame) continue;
+    work.push({ meeting, attendance, clock, fieldsSame, peopleSame });
   }
+  await runInBatches(work, async (item) => {
+    if (!item.fieldsSame) {
+      await ocUpdate(MT_MEETINGS, item.meeting.id, {
+        title: series.name,
+        startAt: item.clock.startAt,
+        endAt: item.clock.endAt,
+        location: series.location || null,
+        meetingUrl: series.meetingUrl || null,
+        organizerId: series.organizerId,
+        agenda: series.agenda || null,
+        agendaResourceId: series.agendaResourceId,
+        ...(item.meeting.topicCustom ? {} : { topicId: series.topicId }),
+        ...(item.meeting.roomCustom ? {} : { roomId: series.roomId }),
+      });
+    }
+    if (!item.peopleSame) {
+      await runInBatches(item.attendance, async (row) => {
+        await deleteOrgMeetingAttendance(row.id);
+      });
+      await copySeriesAttendance(item.meeting.id, series, people);
+    }
+  });
 }
 
 async function generateSeriesOccurrences(
@@ -680,53 +925,62 @@ async function generateSeriesOccurrences(
   );
   const days = new Set(seriesDays(series));
   const limit = series.until || openHorizon(through);
+  const pending: Array<{ key: string; start: Date }> = [];
   let cursor = anchor;
   let steps = 0;
   while (steps < 500) {
     const parts = istanbulParts(cursor);
     const key = ymd(parts.year, parts.month, parts.day);
     if (key > limit) break;
-    if (notBefore && key < notBefore) {
-      steps += 1;
-      cursor = new Date(cursor.getTime() + 86400000);
-      continue;
-    }
-    if (days.has(parts.weekday) && !existing.has(key)) {
-      const end = new Date(cursor.getTime() + series.durationMinutes * 60000);
-      const meetingId = await createOrgMeeting({
-        title: series.name,
-        startAt: cursor.toISOString(),
-        endAt: end.toISOString(),
-        status: 'scheduled',
-        location: series.location,
-        meetingUrl: series.meetingUrl,
-        organizerId: series.organizerId,
-        agenda: series.agenda,
-        agendaResourceId: series.agendaResourceId,
-        seriesId: series.id,
-        occurrenceDate: key,
-        detached: false,
-      });
-      await copySeriesAttendance(meetingId, series, people);
+    if (!(notBefore && key < notBefore) && days.has(parts.weekday) && !existing.has(key)) {
+      pending.push({ key, start: new Date(cursor.getTime()) });
       existing.add(key);
     }
     steps += 1;
     cursor = new Date(cursor.getTime() + 86400000);
   }
+  await runInBatches(pending, async (day) => {
+    const end = new Date(day.start.getTime() + series.durationMinutes * 60000);
+    const meetingId = await createOrgMeeting({
+      title: series.name,
+      startAt: day.start.toISOString(),
+      endAt: end.toISOString(),
+      status: 'scheduled',
+      location: series.location,
+      meetingUrl: series.meetingUrl,
+      organizerId: series.organizerId,
+      agenda: series.agenda,
+      agendaResourceId: series.agendaResourceId,
+      seriesId: series.id,
+      occurrenceDate: day.key,
+      detached: false,
+      topicId: series.topicId,
+      topicCustom: false,
+      roomId: series.roomId,
+      roomCustom: false,
+    });
+    await copySeriesAttendance(meetingId, series, people);
+  });
 }
 
 async function cancelSeriesTail(series: OrgMeetingSeries, fromDate: string): Promise<void> {
   if (!series.until) return;
-  const meetings = (await listOrgMeetings()).filter((row) => row.seriesId === series.id);
-  for (const meeting of meetings) {
+  const [meetings, actionIndex, attendanceIndex] = await Promise.all([
+    listOrgMeetings(),
+    bulkMeetingActions(),
+    bulkMeetingAttendance(),
+  ]);
+  const targets: OrgMeeting[] = [];
+  for (const meeting of meetings.filter((row) => row.seriesId === series.id)) {
     if (meeting.detached || meeting.status !== 'scheduled' || meeting.minutesResourceId) continue;
     if (!meeting.occurrenceDate || meeting.occurrenceDate < fromDate || meeting.occurrenceDate <= series.until) continue;
-    const actions = await listOrgMeetingActions(meeting.id);
-    if (actions.length) continue;
-    const attendance = await listOrgMeetingAttendance(meeting.id);
-    if (attendance.some((row) => row.presence !== 'invited')) continue;
-    await ocUpdate(MT_MEETINGS, meeting.id, { status: 'cancelled' });
+    if ((await actionsFor(actionIndex, meeting.id)).length) continue;
+    if (attendanceKeepsOccurrence(await attendanceFor(attendanceIndex, meeting.id))) continue;
+    targets.push(meeting);
   }
+  await runInBatches(targets, async (meeting) => {
+    await ocUpdate(MT_MEETINGS, meeting.id, { status: 'cancelled' });
+  });
 }
 
 export async function createOrgMeetingSeries(input: OrgMeetingSeriesInput): Promise<string> {
@@ -778,18 +1032,24 @@ export async function deleteOrgMeetingSeries(id: string): Promise<void> {
 }
 
 export async function endOrgMeetingSeries(id: string): Promise<void> {
-  const meetings = (await listOrgMeetings()).filter((row) => row.seriesId === id);
+  const [meetings, actionIndex, attendanceIndex] = await Promise.all([
+    listOrgMeetings(),
+    bulkMeetingActions(),
+    bulkMeetingAttendance(),
+  ]);
   const now = Date.now();
-  for (const meeting of meetings) {
+  const targets: OrgMeeting[] = [];
+  for (const meeting of meetings.filter((row) => row.seriesId === id)) {
     if (meeting.status !== 'scheduled' || meeting.detached || meeting.minutesResourceId) continue;
     const start = Date.parse(meeting.startAt);
     if (!Number.isNaN(start) && start < now) continue;
-    const actions = await listOrgMeetingActions(meeting.id);
-    if (actions.length) continue;
-    const attendance = await listOrgMeetingAttendance(meeting.id);
-    if (attendance.some((row) => row.presence !== 'invited')) continue;
-    await ocUpdate(MT_MEETINGS, meeting.id, { status: 'cancelled' });
+    if ((await actionsFor(actionIndex, meeting.id)).length) continue;
+    if (attendanceKeepsOccurrence(await attendanceFor(attendanceIndex, meeting.id))) continue;
+    targets.push(meeting);
   }
+  await runInBatches(targets, async (meeting) => {
+    await ocUpdate(MT_MEETINGS, meeting.id, { status: 'cancelled' });
+  });
   const today = istanbulYmd(new Date());
   await ocUpdate(MT_MEETING_SERIES, id, { until: addDaysYmd(today, -1) });
 }
@@ -802,5 +1062,438 @@ export async function extendOpenSeries(through: string): Promise<void> {
     const anchor = series.anchorStart ? new Date(series.anchorStart) : new Date();
     if (Number.isNaN(anchor.getTime())) continue;
     await generateSeriesOccurrences(series, anchor, limit, istanbulYmd(new Date()));
+  }
+}
+
+export async function listOrgMeetingTopics(): Promise<OrgMeetingTopic[]> {
+  const rows = await ocListDataset(MT_MEETING_TOPICS, { sort: 'name:asc', limit: 500, expand: false });
+  return rows.map(mapTopic).filter((row): row is OrgMeetingTopic => row != null);
+}
+
+export async function createOrgMeetingTopic(input: OrgMeetingTopicInput): Promise<string> {
+  const id = await ocCreateRecordId(MT_MEETING_TOPICS, topicPayload(input));
+  if (!id) throw new Error('Topic create did not return an id.');
+  return id;
+}
+
+export async function updateOrgMeetingTopic(id: string, input: OrgMeetingTopicInput): Promise<void> {
+  await ocUpdate(MT_MEETING_TOPICS, id, topicPayload(input));
+}
+
+function mapRoom(raw: unknown): OrgMeetingRoom | null {
+  const row = asRecord(raw);
+  const id = text(row.__dataId ?? row.dataId);
+  const name = text(row.name);
+  if (!id || !name) return null;
+  const capacity = asInt(row.capacity, 0);
+  return { id, name, capacity: capacity > 0 ? capacity : null, archived: asBool(row.archived) };
+}
+
+function roomPayload(input: OrgMeetingRoomInput): Record<string, unknown> {
+  const capacity = Number(input.capacity);
+  return {
+    name: input.name.trim(),
+    capacity: Number.isFinite(capacity) && capacity > 0 ? String(Math.round(capacity)) : null,
+    archived: Boolean(input.archived),
+  };
+}
+
+export async function listOrgMeetingRooms(): Promise<OrgMeetingRoom[]> {
+  const rows = await ocListDataset(MT_MEETING_ROOMS, { sort: 'name:asc', limit: 500, expand: false });
+  return rows.map(mapRoom).filter((row): row is OrgMeetingRoom => row != null);
+}
+
+export async function createOrgMeetingRoom(input: OrgMeetingRoomInput): Promise<string> {
+  const id = await ocCreateRecordId(MT_MEETING_ROOMS, roomPayload(input));
+  if (!id) throw new Error('Room create did not return an id.');
+  return id;
+}
+
+export async function updateOrgMeetingRoom(id: string, input: OrgMeetingRoomInput): Promise<void> {
+  await ocUpdate(MT_MEETING_ROOMS, id, roomPayload(input));
+}
+
+export async function deleteOrgMeetingRoom(id: string): Promise<void> {
+  const [meetings, series] = await Promise.all([
+    ocListDataset(MT_MEETINGS, { filter: `roomId:eq:${id}`, limit: 1, expand: false }),
+    ocListDataset(MT_MEETING_SERIES, { filter: `roomId:eq:${id}`, limit: 1, expand: false }),
+  ]);
+  if (meetings.length || series.length) throw new Error('ROOM_IN_USE');
+  await ocDelete(MT_MEETING_ROOMS, id);
+}
+
+export function meetingRangesOverlap(
+  startAt: string,
+  endAt: string | null | undefined,
+  otherStart: string,
+  otherEnd: string | null | undefined,
+): boolean {
+  const start = Date.parse(startAt);
+  const other = Date.parse(otherStart);
+  if (Number.isNaN(start) || Number.isNaN(other)) return false;
+  const end = endAt ? Date.parse(endAt) : start + 60 * 60000;
+  const otherFinish = otherEnd ? Date.parse(otherEnd) : other + 60 * 60000;
+  if (Number.isNaN(end) || Number.isNaN(otherFinish)) return false;
+  return start < otherFinish && other < end;
+}
+
+export function roomConflicts(
+  meetings: OrgMeeting[],
+  roomId: string,
+  startAt: string,
+  endAt: string | null | undefined,
+  ignoreIds: string[] = [],
+): OrgMeeting[] {
+  if (!roomId) return [];
+  const skip = new Set(ignoreIds);
+  return meetings.filter((meeting) =>
+    meeting.roomId === roomId
+    && meeting.status !== 'cancelled'
+    && !skip.has(meeting.id)
+    && meetingRangesOverlap(startAt, endAt, meeting.startAt, meeting.endAt),
+  );
+}
+
+export function plannedSeriesSlots(input: OrgMeetingSeriesInput, fromDate?: string | null): Array<{ startAt: string; endAt: string }> {
+  const series = normalizeSeriesInput(input);
+  const anchor = seriesAnchor(input.firstDate, series);
+  const days = new Set(seriesDays(series));
+  const limit = series.until || openHorizon(null);
+  const slots: Array<{ startAt: string; endAt: string }> = [];
+  let cursor = anchor;
+  let steps = 0;
+  while (steps < 500 && slots.length < 120) {
+    const parts = istanbulParts(cursor);
+    const key = ymd(parts.year, parts.month, parts.day);
+    if (key > limit) break;
+    if (!(fromDate && key < fromDate) && days.has(parts.weekday)) {
+      const end = new Date(cursor.getTime() + series.durationMinutes * 60000);
+      slots.push({ startAt: cursor.toISOString(), endAt: end.toISOString() });
+    }
+    steps += 1;
+    cursor = new Date(cursor.getTime() + 86400000);
+  }
+  return slots;
+}
+
+function datasetField(field: Record<string, unknown>): Record<string, unknown> {
+  const slim: Record<string, unknown> = {
+    fieldType: field.fieldType,
+    name: field.name,
+    title: field.title,
+    mandatory: Boolean(field.mandatory),
+    unique: Boolean(field.unique),
+    isArray: Boolean(field.isArray),
+  };
+  if (field.relationDataset) slim.relationDataset = field.relationDataset;
+  if (field.incrementalOptions) slim.incrementalOptions = field.incrementalOptions;
+  return slim;
+}
+
+async function ensureDatasetFields(name: string, additions: Record<string, unknown>[]): Promise<void> {
+  const current = await fetchFromDataGateway(`/api/v1/datasets/${name}`);
+  const fields = Array.isArray(current?.fields) ? current.fields as Record<string, unknown>[] : [];
+  const names = new Set(fields.map((field) => text(field.name)));
+  const missing = additions.filter((field) => !names.has(text(field.name)));
+  if (!missing.length) return;
+  await fetchFromDataGateway(`/api/v1/datasets/${name}`, 'PUT', {
+    fields: [...fields.map(datasetField), ...missing],
+  });
+}
+
+function topicDatasetAlreadyExists(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('zaten mevcut') || message.toLowerCase().includes('already exists');
+}
+
+export async function ensureOrgMeetingTopics(): Promise<void> {
+  let exists = false;
+  try {
+    await fetchFromDataGateway(`/api/v1/datasets/${MT_MEETING_TOPICS}`);
+    exists = true;
+  } catch {
+    exists = false;
+  }
+  if (!exists) {
+    try {
+      await fetchFromDataGateway('/api/v1/datasets', 'POST', {
+        name: MT_MEETING_TOPICS,
+        description: 'Kurum toplantı konuları',
+        forceSchema: true,
+        logging: 'none',
+        publishMode: 'none',
+        fields: [
+          { fieldType: 'text', name: 'name', title: 'Ad', mandatory: true, unique: false, isArray: false },
+          { fieldType: 'text', name: 'code', title: 'Kod', mandatory: false, unique: false, isArray: false },
+          { fieldType: 'text', name: 'color', title: 'Renk', mandatory: false, unique: false, isArray: false },
+          { fieldType: 'bool', name: 'archived', title: 'Arşiv', mandatory: false, unique: false, isArray: false },
+        ],
+      });
+    } catch (error) {
+      if (!topicDatasetAlreadyExists(error)) throw error;
+    }
+  }
+  await ensureDatasetFields(MT_MEETINGS, [
+    { fieldType: 'text', name: 'topicId', title: 'Konu', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'bool', name: 'topicCustom', title: 'Konu güne özel', mandatory: false, unique: false, isArray: false },
+  ]);
+  await ensureDatasetFields(MT_MEETING_SERIES, [
+    { fieldType: 'text', name: 'topicId', title: 'Konu', mandatory: false, unique: false, isArray: false },
+  ]);
+}
+
+export async function ensureOrgMeetingRooms(): Promise<void> {
+  await ensureNamedDataset(MT_MEETING_ROOMS, 'Toplantı odaları', [
+    { fieldType: 'text', name: 'name', title: 'Ad', mandatory: true, unique: false, isArray: false },
+    { fieldType: 'text', name: 'capacity', title: 'Kapasite', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'bool', name: 'archived', title: 'Arşiv', mandatory: false, unique: false, isArray: false },
+  ]);
+  await ensureDatasetFields(MT_MEETINGS, [
+    { fieldType: 'text', name: 'roomId', title: 'Oda', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'bool', name: 'roomCustom', title: 'Oda güne özel', mandatory: false, unique: false, isArray: false },
+  ]);
+  await ensureDatasetFields(MT_MEETING_SERIES, [
+    { fieldType: 'text', name: 'roomId', title: 'Oda', mandatory: false, unique: false, isArray: false },
+  ]);
+}
+
+export interface OrgMeetingAttachment {
+  id: string;
+  meetingId: string;
+  resourceId: string;
+}
+
+function mapAttachment(raw: unknown): OrgMeetingAttachment | null {
+  const row = asRecord(raw);
+  const id = text(row.__dataId ?? row.dataId);
+  const meetingId = text(row.meetingId);
+  const resourceId = text(row.resourceId);
+  if (!id || !meetingId || !resourceId) return null;
+  return { id, meetingId, resourceId };
+}
+
+export async function listOrgMeetingAttachmentRows(): Promise<OrgMeetingAttachment[]> {
+  const rows = await ocListDataset(MT_MEETING_ATTACHMENTS, { limit: 2000, expand: false });
+  return rows.map(mapAttachment).filter((row): row is OrgMeetingAttachment => row != null);
+}
+
+export async function listOrgMeetingAttachments(meetingId: string): Promise<OrgMeetingAttachment[]> {
+  const rows = await ocListDataset(MT_MEETING_ATTACHMENTS, {
+    filter: `meetingId:eq:${meetingId}`,
+    limit: 200,
+    expand: false,
+  });
+  return rows.map(mapAttachment).filter((row): row is OrgMeetingAttachment => row != null);
+}
+
+export async function createOrgMeetingAttachment(meetingId: string, resourceId: string): Promise<string> {
+  const existing = await listOrgMeetingAttachments(meetingId);
+  const found = existing.find((row) => row.resourceId === resourceId);
+  if (found) return found.id;
+  const id = await ocCreateRecordId(MT_MEETING_ATTACHMENTS, { meetingId, resourceId });
+  if (!id) throw new Error('Attachment create did not return an id.');
+  return id;
+}
+
+export async function deleteOrgMeetingAttachment(id: string): Promise<void> {
+  await ocDelete(MT_MEETING_ATTACHMENTS, id);
+}
+
+export async function ensureOrgMeetingAttendance(): Promise<void> {
+  await ensureDatasetFields(MT_MEETING_ATTENDANCE, [
+    { fieldType: 'text', name: 'note', title: 'Not', mandatory: false, unique: false, isArray: false },
+  ]);
+}
+
+export async function ensureOrgMeetingAttachments(): Promise<void> {
+  let exists = false;
+  try {
+    await fetchFromDataGateway(`/api/v1/datasets/${MT_MEETING_ATTACHMENTS}`);
+    exists = true;
+  } catch {
+    exists = false;
+  }
+  if (exists) return;
+  try {
+    await fetchFromDataGateway('/api/v1/datasets', 'POST', {
+      name: MT_MEETING_ATTACHMENTS,
+      description: 'Toplantıya bağlı belgeler',
+      forceSchema: true,
+      logging: 'none',
+      publishMode: 'none',
+      fields: [
+        { fieldType: 'text', name: 'meetingId', title: 'Toplantı', mandatory: true, unique: false, isArray: false },
+        { fieldType: 'text', name: 'resourceId', title: 'Belge', mandatory: true, unique: false, isArray: false },
+      ],
+    });
+  } catch (error) {
+    if (!topicDatasetAlreadyExists(error)) throw error;
+  }
+}
+
+export interface OrgMeetingNoticeSetting {
+  id: string;
+  kind: MeetingNoticeKind;
+  enabled: boolean;
+  templateKey: string;
+}
+
+export interface OrgMeetingNoticeRecipient {
+  name: string;
+  email: string;
+  result: MeetingNoticeResult;
+}
+
+export interface OrgMeetingNoticeLog {
+  id: string;
+  meetingId: string;
+  kind: MeetingNoticeKind;
+  sentAt: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+  recipients: OrgMeetingNoticeRecipient[];
+}
+
+function noticeKind(raw: unknown): MeetingNoticeKind | null {
+  const value = text(raw);
+  return (MEETING_NOTICE_KINDS as readonly string[]).includes(value) ? value as MeetingNoticeKind : null;
+}
+
+function noticeRecipients(raw: unknown): OrgMeetingNoticeRecipient[] {
+  try {
+    const parsed = JSON.parse(text(raw) || '[]') as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((item) => {
+      const row = asRecord(item);
+      const result = text(row.result);
+      if (result !== 'sent' && result !== 'skipped' && result !== 'failed') return [];
+      return [{ name: text(row.name), email: text(row.email), result }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function mapNoticeSetting(raw: unknown): OrgMeetingNoticeSetting | null {
+  const row = asRecord(raw);
+  const id = text(row.__dataId ?? row.dataId);
+  const kind = noticeKind(row.kind);
+  if (!id || !kind) return null;
+  return { id, kind, enabled: asBool(row.enabled), templateKey: text(row.templateKey) };
+}
+
+function mapNoticeLog(raw: unknown): OrgMeetingNoticeLog | null {
+  const row = asRecord(raw);
+  const id = text(row.__dataId ?? row.dataId);
+  const meetingId = text(row.meetingId);
+  const kind = noticeKind(row.kind);
+  if (!id || !meetingId || !kind) return null;
+  return {
+    id,
+    meetingId,
+    kind,
+    sentAt: text(row.sentAt),
+    title: text(row.title),
+    startAt: text(row.startAt),
+    endAt: text(row.endAt),
+    location: text(row.location),
+    recipients: noticeRecipients(row.detail),
+  };
+}
+
+async function ensureNamedDataset(name: string, description: string, fields: Record<string, unknown>[]): Promise<void> {
+  try {
+    await fetchFromDataGateway(`/api/v1/datasets/${name}`);
+    return;
+  } catch {
+    // The dataset is created below.
+  }
+  try {
+    await fetchFromDataGateway('/api/v1/datasets', 'POST', {
+      name,
+      description,
+      forceSchema: true,
+      logging: 'none',
+      publishMode: 'none',
+      fields,
+    });
+  } catch (error) {
+    if (!topicDatasetAlreadyExists(error)) throw error;
+  }
+}
+
+export async function listOrgMeetingNoticeSettings(): Promise<OrgMeetingNoticeSetting[]> {
+  const rows = await ocListDataset(MT_MEETING_NOTICE_SETTINGS, { limit: 20, expand: false });
+  return rows.map(mapNoticeSetting).filter((row): row is OrgMeetingNoticeSetting => row != null);
+}
+
+export async function updateOrgMeetingNoticeSetting(id: string, input: { kind: MeetingNoticeKind; enabled: boolean; templateKey: string }): Promise<void> {
+  await ocUpdate(MT_MEETING_NOTICE_SETTINGS, id, {
+    kind: input.kind,
+    enabled: input.enabled,
+    templateKey: input.templateKey.trim() || null,
+  });
+}
+
+export async function listOrgMeetingNoticeLogs(meetingId: string): Promise<OrgMeetingNoticeLog[]> {
+  const rows = await ocListDataset(MT_MEETING_NOTICE_LOGS, {
+    filter: `meetingId:eq:${meetingId}`,
+    sort: 'sentAt:desc',
+    limit: 200,
+    expand: false,
+  });
+  return rows.map(mapNoticeLog).filter((row): row is OrgMeetingNoticeLog => row != null);
+}
+
+export async function createOrgMeetingNoticeLog(input: {
+  meetingId: string;
+  kind: MeetingNoticeKind;
+  sentAt: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+  recipients: OrgMeetingNoticeRecipient[];
+}): Promise<string> {
+  const id = await ocCreateRecordId(MT_MEETING_NOTICE_LOGS, {
+    meetingId: input.meetingId,
+    kind: input.kind,
+    sentAt: input.sentAt,
+    title: input.title.trim() || null,
+    startAt: input.startAt || null,
+    endAt: input.endAt || null,
+    location: input.location.trim() || null,
+    detail: JSON.stringify(input.recipients),
+  });
+  if (!id) throw new Error('Notice log create did not return an id.');
+  return id;
+}
+
+export async function ensureOrgMeetingNotices(): Promise<void> {
+  await ensureNamedDataset(MT_MEETING_NOTICE_SETTINGS, 'Toplantı bildirim ayarları', [
+    { fieldType: 'text', name: 'kind', title: 'Tür', mandatory: true, unique: true, isArray: false },
+    { fieldType: 'bool', name: 'enabled', title: 'Açık', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'text', name: 'templateKey', title: 'Şablon', mandatory: false, unique: false, isArray: false },
+  ]);
+  await ensureNamedDataset(MT_MEETING_NOTICE_LOGS, 'Toplantı davet kayıtları', [
+    { fieldType: 'text', name: 'meetingId', title: 'Toplantı', mandatory: true, unique: false, isArray: false },
+    { fieldType: 'text', name: 'kind', title: 'Tür', mandatory: true, unique: false, isArray: false },
+    { fieldType: 'text', name: 'sentAt', title: 'Zaman', mandatory: true, unique: false, isArray: false },
+    { fieldType: 'text', name: 'title', title: 'Başlık', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'text', name: 'startAt', title: 'Başlangıç', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'text', name: 'endAt', title: 'Bitiş', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'text', name: 'location', title: 'Yer', mandatory: false, unique: false, isArray: false },
+    { fieldType: 'text', name: 'detail', title: 'Sonuç', mandatory: false, unique: false, isArray: false },
+  ]);
+  const existing = await listOrgMeetingNoticeSettings();
+  for (const kind of MEETING_NOTICE_KINDS) {
+    if (existing.some((row) => row.kind === kind)) continue;
+    try {
+      await ocCreateRecordId(MT_MEETING_NOTICE_SETTINGS, { kind, enabled: false, templateKey: null });
+    } catch (error) {
+      if (!topicDatasetAlreadyExists(error)) throw error;
+    }
   }
 }

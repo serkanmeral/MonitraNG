@@ -18,6 +18,8 @@ import {
 import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfaceMutations';
 import type { DashboardLayout, WidgetConfigOverrides } from '@/stores/apps/dashboard';
 import { isSiemCenterDashboardMeta } from '@/types/apps/siemDashboardSurface';
+import { istanbulWeekRange, readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
+import { PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
 
 const route = useRoute();
 const router = useRouter();
@@ -40,6 +42,10 @@ const {
   workspaceId,
   customTimeRange,
   crossFilterVariables,
+  personId,
+  rangeFrom,
+  rangeTo,
+  calendarRange,
   context: surfaceContext,
   mutations: surfaceMutations,
 } = useDashboardSurfaceContext('24h');
@@ -74,6 +80,37 @@ const redirectingSiemCenter = ref(false);
 
 const layoutWidgetIds = computed(() => collectWidgetIdsFromLayout(layout.value));
 
+const surfaceVariableDefs = computed(() => readSurfaceVariables(dashboardStore.currentDashboard?.layout?.meta));
+const personLocked = computed(() => {
+  const person = surfaceVariableDefs.value.find((item) => item.kind === 'person');
+  if (!person?.lockToSelf) return false;
+  return !(authStore.isAdmin || authStore.isManager);
+});
+
+watch(
+  () => dashboardStore.currentDashboard?.__dataId || dashboardStore.currentDashboard?.dataId,
+  () => {
+    const defs = surfaceVariableDefs.value;
+    const selfId = authStore.userInfo?.mng_person_id?.trim() || '';
+    if (defs.some((item) => item.kind === 'dateRange')) {
+      const week = istanbulWeekRange();
+      rangeFrom.value = week.from;
+      rangeTo.value = week.to;
+      calendarRange.value = true;
+    } else {
+      calendarRange.value = false;
+    }
+    personId.value = defs.some((item) => item.kind === 'person') ? selfId || null : null;
+  },
+  { immediate: true },
+);
+
+watch(personLocked, (locked) => {
+  if (!locked) return;
+  const selfId = authStore.userInfo?.mng_person_id?.trim() || '';
+  if (selfId) personId.value = selfId;
+});
+
 const activeCrossFilters = computed(() => {
   const vars = crossFilterVariables.value;
   return Object.entries(vars).filter(([, v]) => v !== null && v !== undefined && v !== '');
@@ -106,6 +143,9 @@ provide('dashboardRefreshInterval', refreshIntervalMs);
 const notFound = computed(() => !dashboardStore.loading && !dashboardStore.currentDashboard && !!slug.value);
 
 const hasViewPermission = computed(() => {
+  if (slug.value === PERSONNEL_DASHBOARD_SLUG && !(authStore.isAdmin || authStore.isManager)) {
+    return false;
+  }
   const dashboard = dashboardStore.currentDashboard;
   if (!dashboard) return true;
   return canViewDashboard(dashboard.permissions);
@@ -206,6 +246,11 @@ onUnmounted(() => {
           v-model:severity="severity"
           v-model:workspace-id="workspaceId"
           v-model:refresh-seconds="refreshSeconds"
+          v-model:person-id="personId"
+          v-model:range-from="rangeFrom"
+          v-model:range-to="rangeTo"
+          :variables="surfaceVariableDefs"
+          :person-locked="personLocked"
           :loading="batchLoading"
           :t="t"
           @refresh="refreshBatch()"
