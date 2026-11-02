@@ -1,0 +1,35 @@
+{
+  "workspaces": {
+    "gir": {
+      "name": "Zimmet Depo",
+      "id": "b0f1f0f2-0fd7-4427-9cef-817945f2b875",
+      "prefix": "GIR"
+    },
+    "zim": {
+      "name": "Personel Zimmet",
+      "id": "a26811c8-d323-4360-8f3d-571608ff3e43",
+      "prefix": "ZIM"
+    }
+  },
+  "boards": {
+    "zimQueue": "b168f33d-63c7-4f2d-a741-ad67c55af00c",
+    "zimIade": "3b7bfe88-5053-4b2f-9d72-3c9822cf3897",
+    "girQueue": "ea179d05-4a03-4940-8328-35cb6f6a0017"
+  },
+  "types": {
+    "depoGirisi": "8e567fc7-b383-40a4-ab6a-5b15950124d6",
+    "zimmetIade": "b59c83d9-ae6d-47e8-863d-fdd1b50cc25b",
+    "zimmetVerme": "2e80b412-f716-4ef4-a7fa-039711af59c4"
+  },
+  "flows": {
+    "gir": "b0cabd37-0d4e-4fd0-9938-c8d10ff4cb85",
+    "zimIade": "66738cb8-fdcd-4bac-92fb-41d427f5890e",
+    "zimVerme": "44e3306a-54cf-49e2-b5e4-d809041d3bee"
+  },
+  "seededAt": "2026-11-02T14:19:06.4227467Z",
+  "rules": {
+    "zimDeliverUpdateDemirbas": "3d0b31f1-bb3c-4398-bdba-4762fde32a4a",
+    "girCreateDemirbas": "6f6f2faa-566e-4262-960a-0201602837da",
+    "zimReturnUpdateDemirbas": "f3744c86-b366-4123-b9b2-4fa1be4cc32d"
+  }
+}

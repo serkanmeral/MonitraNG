@@ -40,6 +40,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useDatasetStore, type FieldDefinition } from '@/stores/apps/dataset';
 import { fetchReportingPreview } from '@/services/reportingService';
 import type { AfListFilter } from '@/utils/afListFilters';
+import { loadReportingRelationFilterOptions } from '@/utils/reportingRelationFilterOptions';
 import {
   applyListColumnFormatting,
   getListColumnCellStyle,
@@ -213,6 +214,17 @@ const datasetItems = computed(() =>
 
 const filterColumns = computed(() =>
   buildReportingFilterColumns(listConfig.value, schemaFields.value, (field) => canViewColumn(field))
+);
+
+const relationOptionsByKey = ref<Record<string, { value: string; title: string }[]>>({});
+watch(
+  () => [filterColumns.value, schemaFields.value, listConfig.value.columns] as const,
+  ([columns, fields, listColumns]) => {
+    void loadReportingRelationFilterOptions(columns, fields, listColumns).then((options) => {
+      relationOptionsByKey.value = options;
+    });
+  },
+  { immediate: true }
 );
 
 const showAdvancedFilterPanel = computed(() => filterColumns.value.length > 0);
@@ -931,6 +943,7 @@ watch(
                 <AfListFilters
                   :key="runtimeFiltersKey"
                   :columns="filterColumns"
+                  :relation-options-by-key="relationOptionsByKey"
                   :initial-filters="cloneAfListFilters(advancedFilters)"
                   :initial-panel-open="advancedFilters.length > 0"
                   @update:filters="onAdvancedFiltersUpdate"

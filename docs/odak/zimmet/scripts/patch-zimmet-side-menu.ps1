@@ -223,7 +223,7 @@ $zimmetParentResult = Upsert-MenuItem -AllItems $items -Label "Zimmet Yonetimi" 
     title    = "Zimmet Yönetimi"
     icon     = "DeviceLaptopIcon"
     iconType = "tabler"
-    to       = "#"
+    to       = ""
     type     = "internal"
     disabled = $false
 }

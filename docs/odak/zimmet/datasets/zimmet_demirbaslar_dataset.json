@@ -50,6 +50,15 @@
       "validation": { "maxLength": 80 }
     },
     {
+      "fieldType": "relation",
+      "name": "urunGrubuId",
+      "title": "Ürün grubu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_urun_gruplari"
+    },
+    {
       "fieldType": "text",
       "name": "model",
       "title": "Model",

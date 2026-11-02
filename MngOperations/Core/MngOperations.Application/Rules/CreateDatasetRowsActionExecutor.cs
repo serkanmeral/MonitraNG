@@ -43,11 +43,76 @@ public static partial class CreateDatasetRowsPlanner
         return JsonSerializer.SerializeToElement(payload);
     }
 
-    public static List<Dictionary<string, object?>> BuildRows(
+    public readonly record struct LookupRequest(string Target, string Dataset, string RecordId, string Field);
+
+    /// <summary>
+    /// <c>source: lookup</c> mappings. Empty source id is skipped; incomplete mapping fails.
+    /// </summary>
+    public static List<LookupRequest> CollectLookupRequests(
         JsonElement action,
         IReadOnlyDictionary<string, object?> workItem,
         string workItemId,
         string workItemKey)
+    {
+        var list = new List<LookupRequest>();
+        foreach (var mapping in ParseMappings(action))
+        {
+            var source = (GetString(mapping, "source") ?? "field").ToLowerInvariant();
+            if (!string.Equals(source, "lookup", StringComparison.Ordinal))
+                continue;
+
+            var target = GetString(mapping, "target");
+            var dataset = GetString(mapping, "dataset");
+            var from = GetString(mapping, "from") ?? GetString(mapping, "path");
+            var field = GetString(mapping, "field");
+            if (string.IsNullOrWhiteSpace(target)
+                || string.IsNullOrWhiteSpace(dataset)
+                || string.IsNullOrWhiteSpace(field))
+            {
+                throw Fail(
+                    "CREATE_DATASET_ROWS_LOOKUP",
+                    "lookup mapping requires target, dataset and field.",
+                    "lookup eşlemesi için target, dataset ve field zorunlu.");
+            }
+
+            var raw = WorkItemPathValueResolver.Resolve(from, workItem, workItemId, workItemKey);
+            var recordId = AsStoredId(raw);
+            if (string.IsNullOrWhiteSpace(recordId))
+                continue;
+
+            list.Add(new LookupRequest(target.Trim(), dataset.Trim(), recordId.Trim(), field.Trim()));
+        }
+
+        return list;
+    }
+
+    public static object? ReadStoredField(IReadOnlyDictionary<string, object?> row, string field)
+    {
+        foreach (var pair in row)
+        {
+            if (string.Equals(pair.Key, field, StringComparison.OrdinalIgnoreCase))
+                return NormalizeStoredValue(pair.Value);
+        }
+
+        return null;
+    }
+
+    public static string? AsStoredId(object? value)
+    {
+        var normalized = NormalizeStoredValue(value);
+        if (normalized is null)
+            return null;
+
+        var text = WorkItemPathValueResolver.FormatScalar(normalized);
+        return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    public static List<Dictionary<string, object?>> BuildRows(
+        JsonElement action,
+        IReadOnlyDictionary<string, object?> workItem,
+        string workItemId,
+        string workItemKey,
+        IReadOnlyDictionary<string, object?>? lookupValues = null)
     {
         var mappings = ParseMappings(action);
         var cardinality = action.TryGetProperty("cardinality", out var card) && card.ValueKind == JsonValueKind.Object
@@ -61,7 +126,7 @@ public static partial class CreateDatasetRowsPlanner
         {
             return new List<Dictionary<string, object?>>
             {
-                BuildRow(mappings, workItem, workItemId, workItemKey, itemContext: null, rowIndex: 0)
+                BuildRow(mappings, workItem, workItemId, workItemKey, itemContext: null, rowIndex: 0, lookupValues)
             };
         }
 
@@ -80,7 +145,7 @@ public static partial class CreateDatasetRowsPlanner
 
             var rows = new List<Dictionary<string, object?>>(n);
             for (var i = 0; i < n; i++)
-                rows.Add(BuildRow(mappings, workItem, workItemId, workItemKey, itemContext: null, rowIndex: i));
+                rows.Add(BuildRow(mappings, workItem, workItemId, workItemKey, itemContext: null, rowIndex: i, lookupValues));
             return rows;
         }
 
@@ -121,7 +186,7 @@ public static partial class CreateDatasetRowsPlanner
                     [itemAs] = item,
                     ["value"] = item
                 };
-                rows.Add(BuildRow(mappings, workItem, workItemId, workItemKey, ctx, rowIndex: i));
+                rows.Add(BuildRow(mappings, workItem, workItemId, workItemKey, ctx, rowIndex: i, lookupValues));
             }
 
             return rows;
@@ -148,7 +213,8 @@ public static partial class CreateDatasetRowsPlanner
         string workItemId,
         string workItemKey,
         IReadOnlyDictionary<string, object?>? itemContext,
-        int rowIndex)
+        int rowIndex,
+        IReadOnlyDictionary<string, object?>? lookupValues)
     {
         var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -176,6 +242,9 @@ public static partial class CreateDatasetRowsPlanner
                     workItemId,
                     workItemKey,
                     itemContext),
+                "lookup" => lookupValues != null && lookupValues.TryGetValue(target, out var lookedUp)
+                    ? lookedUp
+                    : null,
                 _ => null
             };
 
@@ -304,6 +373,62 @@ public static partial class CreateDatasetRowsPlanner
             JsonValueKind.Null => null,
             _ => JsonSerializer.Deserialize<object?>(prop.GetRawText())
         };
+    }
+
+    private static object? NormalizeStoredValue(object? value)
+    {
+        if (value is null)
+            return null;
+
+        if (value is JsonElement el)
+        {
+            switch (el.ValueKind)
+            {
+                case JsonValueKind.String:
+                    var text = el.GetString();
+                    return string.IsNullOrWhiteSpace(text) ? null : text;
+                case JsonValueKind.Number:
+                    return el.TryGetInt64(out var number) ? number : el.GetDouble();
+                case JsonValueKind.True:
+                    return true;
+                case JsonValueKind.False:
+                    return false;
+                case JsonValueKind.Object:
+                    foreach (var key in new[] { "__dataId", "dataId", "id" })
+                    {
+                        if (el.TryGetProperty(key, out var idProp) && idProp.ValueKind == JsonValueKind.String)
+                        {
+                            var id = idProp.GetString();
+                            if (!string.IsNullOrWhiteSpace(id))
+                                return id;
+                        }
+                    }
+
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        if (value is IDictionary<string, object?> dict)
+        {
+            foreach (var key in new[] { "__dataId", "dataId", "id" })
+            {
+                foreach (var pair in dict)
+                {
+                    if (!string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    var id = AsStoredId(pair.Value);
+                    if (!string.IsNullOrWhiteSpace(id))
+                        return id;
+                }
+            }
+        }
+
+        if (value is string raw)
+            return string.IsNullOrWhiteSpace(raw) ? null : raw;
+
+        return value;
     }
 
     private static OperationCoreException Fail(string code, string en, string tr) =>

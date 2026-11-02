@@ -33,6 +33,11 @@ export interface OcLookupDefaultSort {
   dir: 'asc' | 'desc';
 }
 
+export interface OcLookupCopyField {
+  from: string;
+  to: string;
+}
+
 export interface OcLookupSelection {
   mode?: 'single' | 'multi';
   min?: number;
@@ -59,6 +64,8 @@ export interface OcLookupConfig {
   columns: OcLookupColumn[];
   defaultSort: OcLookupDefaultSort | null;
   selection: OcLookupSelection | null;
+  /** Seçilen kayıttan başka form alanlarına kopyalanan alanlar. */
+  copyFields?: OcLookupCopyField[];
 }
 
 export const OC_LOOKUP_DEFAULT_VALUE_FIELD = '__dataId';
@@ -208,7 +215,21 @@ function finalizeLookupConfig(
     columns: partial?.columns ?? [],
     defaultSort: partial?.defaultSort ?? null,
     selection: partial?.selection ?? null,
+    copyFields: partial?.copyFields ?? [],
   };
+}
+
+function parseCopyFields(raw: unknown): OcLookupCopyField[] {
+  if (!Array.isArray(raw)) return [];
+  const out: OcLookupCopyField[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const from = asNonEmptyString(o.from ?? o.source);
+    const to = asNonEmptyString(o.to ?? o.target);
+    if (from && to) out.push({ from, to });
+  }
+  return out;
 }
 
 function parseLookupBlock(raw: unknown): Partial<OcLookupConfig> | null {
@@ -244,6 +265,7 @@ function parseLookupBlock(raw: unknown): Partial<OcLookupConfig> | null {
   const columns = parseColumns(o.columns);
   const defaultSort = parseDefaultSort(o.defaultSort ?? o.default_sort);
   const selection = parseSelection(o.selection);
+  const copyFields = parseCopyFields(o.copyFields ?? o.copy_fields);
 
   const partial: Partial<OcLookupConfig> = {};
   if (source) partial.source = source;
@@ -258,6 +280,7 @@ function parseLookupBlock(raw: unknown): Partial<OcLookupConfig> | null {
   if (columns.length) partial.columns = columns;
   if (defaultSort) partial.defaultSort = defaultSort;
   if (selection) partial.selection = selection;
+  if (copyFields.length) partial.copyFields = copyFields;
   return Object.keys(partial).length ? partial : null;
 }
 

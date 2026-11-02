@@ -26,6 +26,8 @@ import { normalizeOcDialogMaxWidthPx } from '@/utils/ocFormLayout';
 
 type DialogMode = 'create' | 'edit';
 
+const dynamicFormRef = ref<{ flushLookupCopies?: () => Promise<void> } | null>(null);
+
 const props = defineProps<{
   modelValue: boolean;
   mode: DialogMode;
@@ -185,6 +187,7 @@ async function submit() {
   submitting.value = true;
   errorLocal.value = null;
   try {
+    await dynamicFormRef.value?.flushLookupCopies?.();
     if (isEdit.value) {
       const id = props.workItemId?.trim();
       if (!id) return;
@@ -296,6 +299,7 @@ watch(
 
           <OcDynamicForm
             v-if="formContext && !loading"
+            ref="dynamicFormRef"
             v-model="formModel"
             :context="formContext"
             :field-errors="fieldErrors"

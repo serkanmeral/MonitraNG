@@ -56,7 +56,7 @@ export default defineNuxtConfig({
     // duplicate internal manifest-route-rule registration during dev/HMR.
     appManifest: false,
   },
-  devtools:{enabled:true},
+  devtools: { enabled: true },
   css: ["@/assets/css/task-manager.css", "@/assets/css/operation-core.css"],
   //css: ["@/assets/main.scss"], // vuetify ships precompiled css, no need to import sass
   typescript: {

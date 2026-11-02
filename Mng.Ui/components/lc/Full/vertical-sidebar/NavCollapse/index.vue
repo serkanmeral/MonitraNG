@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useNuxtApp } from '#app';
 import { useLocaleStore } from '@/stores/locale';
+import { ChevronDownIcon, ChevronUpIcon } from 'vue-tabler-icons';
 import Icon from "../Icon.vue";
 
 interface Props {
@@ -21,6 +23,23 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   level: 0,
 });
+
+const route = useRoute();
+
+function menuPathActive(to: string | undefined, path: string): boolean {
+  if (!to || to === '#' || to === '/') return false;
+  const target = to.split('?')[0].split('#')[0];
+  if (!target.startsWith('/')) return false;
+  return path === target || path.startsWith(target.endsWith('/') ? target : `${target}/`);
+}
+
+function treeHasActiveRoute(children: Array<{ to?: string; children?: any[] }> | undefined, path: string): boolean {
+  if (!children?.length) return false;
+  return children.some((child) => menuPathActive(child.to, path) || treeHasActiveRoute(child.children, path));
+}
+
+// Open folders are not the current page. Highlight only while a child route matches.
+const sectionActive = computed(() => treeHasActiveRoute(props.item.children, route.path));
 
 // Get i18n instance and locale store for reactivity
 const nuxtApp = useNuxtApp();
@@ -123,14 +142,15 @@ const needsTooltip = computed(() => {
     <!-- ---------------------------------------------- -->
     <!---Dropdown  -->
     <!-- ---------------------------------------------- -->
-    <template v-slot:activator="{ props: activatorProps }">
+    <template v-slot:activator="{ props: activatorProps, isOpen }">
       <v-tooltip
           location="right"
       >
           <template v-slot:activator="{ props: tooltipProps }">
               <v-list-item
-                  v-bind="{ ...activatorProps, ...tooltipProps }"
+                  v-bind="{ ...tooltipProps, ...activatorProps }"
                   :value="item.title"
+                  :active="sectionActive"
                   rounded
                   class="mb-1"
               >
@@ -149,6 +169,10 @@ const needsTooltip = computed(() => {
                   >
                     {{ menuTitle }}
                   </v-list-item-title>
+                  <template #append>
+                    <ChevronUpIcon v-if="isOpen" size="18" class="text-medium-emphasis" />
+                    <ChevronDownIcon v-else size="18" class="text-medium-emphasis" />
+                  </template>
                   <!---If Caption-->
                   <v-list-item-subtitle
                     v-if="item.subCaption"

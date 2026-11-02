@@ -25,7 +25,8 @@
         { "target": "durum", "source": "static", "value": "zimmetli" },
         { "target": "zimmetliPersonelId", "source": "field", "path": "fields.personelId" },
         { "target": "zimmetRef", "source": "field", "path": "key" }
-      ]
+      ],
+      "clearFields": ["depoId", "lokasyonId"]
     }
   ]
 }

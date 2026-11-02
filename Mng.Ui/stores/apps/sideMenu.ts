@@ -272,8 +272,8 @@ export const useSideMenuStore = defineStore('sideMenu', {
       // Cache kontrolü (localStorage)
       if (!forceRefresh) {
         try {
-          const cacheKey = `menuItems_${authStore.userInfo.sub}_${authStore.domainName}`;
-          const ttlKey = `menuItems_${authStore.userInfo.sub}_${authStore.domainName}_ttl`;
+          const cacheKey = `menuItems_v2_${authStore.userInfo.sub}_${authStore.domainName}`;
+          const ttlKey = `menuItems_v2_${authStore.userInfo.sub}_${authStore.domainName}_ttl`;
           
           const cachedData = localStorage.getItem(cacheKey);
           const ttlData = localStorage.getItem(ttlKey);
@@ -290,9 +290,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
               );
                 this.menuItems = items;
                 this.menuItemsTree = this.buildMenuTree(items);
-                this.lastUpdated = Date.now();
-                localStorage.setItem(cacheKey, JSON.stringify(items));
-                localStorage.setItem(ttlKey, JSON.stringify({ timestamp: this.lastUpdated, ttl: ttl || 600000 }));
+                this.lastUpdated = timestamp;
                 return;
               }
             } catch {
@@ -365,8 +363,8 @@ export const useSideMenuStore = defineStore('sideMenu', {
 
         // Cache'e kaydet
         try {
-          const cacheKey = `menuItems_${authStore.userInfo.sub}_${authStore.domainName}`;
-          const ttlKey = `menuItems_${authStore.userInfo.sub}_${authStore.domainName}_ttl`;
+          const cacheKey = `menuItems_v2_${authStore.userInfo.sub}_${authStore.domainName}`;
+          const ttlKey = `menuItems_v2_${authStore.userInfo.sub}_${authStore.domainName}_ttl`;
           
           localStorage.setItem(cacheKey, JSON.stringify(this.menuItems));
           localStorage.setItem(ttlKey, JSON.stringify({
@@ -411,8 +409,8 @@ export const useSideMenuStore = defineStore('sideMenu', {
       
       if (authStore.userInfo && authStore.domainName) {
         try {
-          const cacheKey = `menuItems_${authStore.userInfo.sub}_${authStore.domainName}`;
-          const ttlKey = `menuItems_${authStore.userInfo.sub}_${authStore.domainName}_ttl`;
+          const cacheKey = `menuItems_v2_${authStore.userInfo.sub}_${authStore.domainName}`;
+          const ttlKey = `menuItems_v2_${authStore.userInfo.sub}_${authStore.domainName}_ttl`;
           
           localStorage.removeItem(cacheKey);
           localStorage.removeItem(ttlKey);

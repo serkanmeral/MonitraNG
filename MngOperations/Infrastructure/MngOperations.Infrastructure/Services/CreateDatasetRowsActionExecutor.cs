@@ -57,7 +57,10 @@ public sealed class CreateDatasetRowsActionExecutor : ICreateDatasetRowsActionEx
                 };
             }
 
-            var rows = CreateDatasetRowsPlanner.BuildRows(action, workItem, workItemId, workItemKey);
+            var lookupValues = await ResolveLookupValuesAsync(
+                action, workItem, workItemId, workItemKey, token, cancellationToken);
+            var rows = CreateDatasetRowsPlanner.BuildRows(
+                action, workItem, workItemId, workItemKey, lookupValues);
             if (rows.Count == 0)
             {
                 throw new OperationCoreException(
@@ -119,6 +122,49 @@ public sealed class CreateDatasetRowsActionExecutor : ICreateDatasetRowsActionEx
                 $"Dataset satırları oluşturulamadı: {ex.Message}",
                 400);
         }
+    }
+
+    private async Task<Dictionary<string, object?>> ResolveLookupValuesAsync(
+        JsonElement action,
+        IReadOnlyDictionary<string, object?> workItem,
+        string workItemId,
+        string workItemKey,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var requests = CreateDatasetRowsPlanner.CollectLookupRequests(action, workItem, workItemId, workItemKey);
+        var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        var cache = new Dictionary<string, Dictionary<string, object?>?>(StringComparer.Ordinal);
+
+        foreach (var request in requests)
+        {
+            var cacheKey = request.Dataset + "\n" + request.RecordId;
+            if (!cache.TryGetValue(cacheKey, out var row))
+            {
+                row = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+                    request.Dataset,
+                    request.RecordId,
+                    token,
+                    cancellationToken,
+                    expand: false);
+                cache[cacheKey] = row;
+            }
+
+            if (row is null)
+            {
+                throw new OperationCoreException(
+                    "CREATE_DATASET_ROWS_LOOKUP",
+                    $"Lookup record '{request.RecordId}' was not found in '{request.Dataset}'.",
+                    $"İlişkili kayıt bulunamadı ({request.Dataset}).",
+                    400);
+            }
+
+            var value = CreateDatasetRowsPlanner.ReadStoredField(row, request.Field);
+            if (value is not null)
+                values[request.Target] = value;
+        }
+
+        return values;
     }
 
     private async Task<bool> IsIdempotentSkipAsync(

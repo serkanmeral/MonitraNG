@@ -1,6 +1,12 @@
 import type { DiTreeNode } from '@/types/apps/documentIntelligence';
 import type { ReportingCategory } from '@/types/apps/reporting';
 
+/** Pasif kategori rapor kataloğunda ve tarayıcıda görünmez. Boş durum aktif sayılır. */
+export function isReportingCategoryListed(category: ReportingCategory): boolean {
+  const status = (category.status || 'active').trim().toLowerCase();
+  return status === 'active';
+}
+
 export function buildReportingCategoryTree(categories: ReportingCategory[]): DiTreeNode[] {
   const nodes = new Map<string, DiTreeNode>();
   for (const cat of categories) {

@@ -314,7 +314,8 @@ function New-ZimmetLookupOptions {
         [string]$Presentation = "autocomplete",
         [array]$Columns = $null,
         [hashtable]$DefaultSort = $null,
-        [hashtable]$Selection = $null
+        [hashtable]$Selection = $null,
+        [array]$CopyFields = $null
     )
     $lookup = @{
         source       = "dataset"
@@ -329,6 +330,7 @@ function New-ZimmetLookupOptions {
     if ($Columns) { $lookup.columns = $Columns }
     if ($DefaultSort) { $lookup.defaultSort = $DefaultSort }
     if ($Selection) { $lookup.selection = $Selection }
+    if ($CopyFields) { $lookup.copyFields = $CopyFields }
     return @{ lookup = $lookup }
 }
 
@@ -350,7 +352,8 @@ function New-ZimmetTransition {
         [string]$To,
         [string]$Label,
         [int]$Order,
-        [string[]]$Required = @()
+        [string[]]$Required = @(),
+        [string[]]$Groups = @()
     )
     $h = [ordered]@{
         transitionKey = $Key
@@ -360,5 +363,6 @@ function New-ZimmetTransition {
         order         = $Order
     }
     if ($Required.Count -gt 0) { $h.requiredFields = @($Required) }
+    if ($Groups.Count -gt 0) { $h.permissions = @{ groups = @($Groups) } }
     return [hashtable]$h
 }

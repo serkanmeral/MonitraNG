@@ -22,6 +22,7 @@ import {
   parseReportingBrowseReportId,
   reportingBrowseReportNodeId,
 } from '@/utils/reportingBrowseTree';
+import { isReportingCategoryListed } from '@/utils/reportingCategoryTree';
 import { filterVisibleReportingReports } from '@/utils/reportingReportAccess';
 import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
 import { LayoutSidebarLeftCollapseIcon, LayoutSidebarLeftExpandIcon } from 'vue-tabler-icons';
@@ -74,9 +75,17 @@ const visibleReports = computed(() =>
 );
 
 function rebuildTree() {
+  const hiddenCategoryIds = new Set(
+    categoryService.value
+      .list()
+      .filter((category) => !isReportingCategoryListed(category))
+      .map((category) => category.id)
+  );
   browseTree.value = buildReportingBrowseTree({
     categoryTree: categoryService.value.getTree(),
-    reports: visibleReports.value,
+    reports: visibleReports.value.filter(
+      (report) => !report.categoryId || !hiddenCategoryIds.has(report.categoryId)
+    ),
     uncategorizedLabel: t('reporting.browse.uncategorized'),
   });
 }

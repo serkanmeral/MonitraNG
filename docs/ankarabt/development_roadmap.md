@@ -8,7 +8,7 @@ OperationCore maddeleri [OC workspace oluşturma planı](../odak/operationcore/O
 
 Durumlar: **konuşuldu**, **planlandı**, **yapılıyor**, **bitti**.
 
-Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. OperationCore’da sıradaki kod işi OC-03 görsel akıştır.
+Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanter çekirdeği abt alanına kuruldu. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. Envanterin kullanılabilirlik dilimi OC-04 içindedir.
 
 ## DI-01 — Yüklenen dosyaların antivirüs taraması
 
@@ -103,20 +103,43 @@ Tuval seçilen akışın taslağını düzenler. Taslak akış kaydında durur. 
 
 Yayın, üzerinde iş bulunan bir durumu akıştan çıkarmışsa o işler durumlarında kalır. O durumdan çıkan geçişler kalkar. Düğümün yerini taslak saklar. İş kayıtları bu yeri okumaz.
 
-## OC-04 — Diğer paket gövdeleri
+## OC-04 — Envanter
 
 | | |
 |---|---|
-| Durum | Konuşulacak. Katalog gövdesi yok. |
-| Sıra | Uygulama sırasının dışında. |
+| Durum | Çekirdek abt’de (2026-11-02). Kullanılabilirlik dilimi planlandı. Katalog paketi yok. |
+| Sıra | Görsel akıştan (OC-03) ayrı. İlk dilim kural, form ve rapor ayarıdır. |
 
-İlk katalog dört pakettir: izin, yazılım geliştirme, stok ve depo, demirbaş ve zimmet. Yazılım paketi (`software` `1.3.4`) katalogdadır. Diğer üç gövde sonra konuşulur.
+Adı **Envanter**. Stok, depo, demirbaş ve zimmet bu adın altındadır. Operasyon Merkezi ağacında klasör bu adı taşır. Altında Zimmet Depo ve Personel Zimmet durur. Dinamik form menüsü bugün Zimmet Yönetimi’dir; aynı ad oraya da yazılır.
 
-Stok, depo, demirbaş ve zimmet Odak testte kuruldu. O kurulum katalog paketi değildir. Ayrı plan: [stok, depo, demirbaş ve zimmet](stok_depo_demirbas_zimmet_plani.md).
+Ayrıntı: [stok, depo, demirbaş ve zimmet](stok_depo_demirbas_zimmet_plani.md). Kurulum katalog paketi değildir. Ayrı bir zimmet servisi yoktur. Kapanış, çalışma alanının geçişindedir.
 
-Stok ile depo aynı pakettir. Depo, hareketin yeridir. Demirbaş ile zimmet aynı pakettir. Zimmet, demirbaşın kişiye verilmesidir.
+Abt alanına şunlar indi: beş veri seti, mevcut tedarikçi bağı, iki çalışma alanı, üç kapanış kuralı, üç rapor, üç belge, ikinci çalıştırmada çiftlemeyen demo. Ürün grubu kategoridir. Marka katalogda metindir. Yeni bir tür ağacı açılmaz.
 
-Kurulum bugün kütüphane alt klasörü olan paketi kurmaz. Bu gövdeler klasör veya hazır belge taşırsa kurulumun o adımı da açılır.
+Çekirdek emanet takibidir. Stok muhasebesi ve taşınır defteri bu dilimin dışında kalır.
+
+### Kullanılabilirlik
+
+Günlük kullanımdan önce. Sıra sabittir.
+
+1. Teslim, demirbaşın depo ve rafını temizler. İade, depoyu ve rafı yeniden yazar. Zimmetli satır depoda görünmez.
+2. Demirbaş formunda durum, kişi, depo ve raf kilitlidir. Bu dört alan yalnız geçişten değişir.
+3. Teslim ve iade belirli gruplara bağlanır. Grupların adı bu dilim uygulanırken yazılır.
+4. Demirbaş envanteri ürün grubunu ve markayı gösterir, ikisini de süzer. Grup katalogdaki bağdan okunur. “Bütün laptoplar” ve “bütün Dell’ler” bu listeden sorulur.
+
+### Sonra
+
+Kullanılabilirlik kapandıktan sonra, bu sırayla:
+
+- Üretici seri numarası demirbaşa yazılır. Grup bayrağı, seri listesi boşsa üretilmiş numaraya izin verir.
+- Garanti bitişi, katalogdaki ay ile giriş tarihinden hesaplanır.
+- Demirbaş satırında zimmet geçmişi durur. İade, son iş kodunu silince hikâye kaybolmaz.
+- Hurda ve kayıp bir geçişle işlenir. Formdan işaretlenmez.
+- Satınalma çalışma alanı depo girişine bağlanır.
+
+Miktar bakiyesi (bir satırda adet) ayrı bir stok kartıdır. Bu gövdeye girmez. Geçiş bitince kendiliğinden tutanak ve ürün görseli bu sıranın dışındadır.
+
+İzin paketi ayrıca konuşulur. Yazılım paketi (`software` `1.3.4`) katalogdadır. Kurulum bugün kütüphane alt klasörü olan paketi kurmaz. Envanter klasör veya hazır belge taşırsa o adım da açılır.
 
 ## OC-05 — Sprint ve proje bağlantısı
 

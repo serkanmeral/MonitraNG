@@ -22,7 +22,9 @@
         "path": "value"
       },
       "fieldMappings": [
-        { "target": "durum", "source": "static", "value": "depoda" }
+        { "target": "durum", "source": "static", "value": "depoda" },
+        { "target": "depoId", "source": "field", "path": "fields.depoId" },
+        { "target": "lokasyonId", "source": "field", "path": "fields.lokasyonId" }
       ],
       "clearFields": ["zimmetliPersonelId", "zimmetRef"]
     }

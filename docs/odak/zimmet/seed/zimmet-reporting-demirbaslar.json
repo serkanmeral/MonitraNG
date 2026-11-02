@@ -30,12 +30,23 @@
           "filterable": true,
           "relationDisplayField": "ad"
         },
-        { "fieldName": "seriNo", "title": "Seri no", "visible": true, "order": 3, "sortable": true, "filterable": true, "width": 140 },
+        {
+          "fieldName": "urunGrubuId",
+          "title": "Ürün grubu",
+          "visible": true,
+          "order": 3,
+          "sortable": false,
+          "filterable": true,
+          "width": 140,
+          "relationDisplayField": "ad"
+        },
+        { "fieldName": "marka", "title": "Marka", "visible": true, "order": 4, "sortable": true, "filterable": true, "width": 120 },
+        { "fieldName": "seriNo", "title": "Seri no", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 140 },
         {
           "fieldName": "durum",
           "title": "Durum",
           "visible": true,
-          "order": 4,
+          "order": 6,
           "sortable": true,
           "filterable": true,
           "width": 110,
@@ -54,7 +65,7 @@
           "fieldName": "depoId",
           "title": "Depo",
           "visible": true,
-          "order": 5,
+          "order": 7,
           "sortable": false,
           "filterable": true,
           "width": 140,
@@ -64,7 +75,7 @@
           "fieldName": "zimmetliPersonelId",
           "title": "Zimmetli personel",
           "visible": true,
-          "order": 6,
+          "order": 8,
           "sortable": false,
           "filterable": true,
           "width": 160
@@ -73,12 +84,12 @@
           "fieldName": "garantiBitis",
           "title": "Garanti bitiş",
           "visible": true,
-          "order": 7,
+          "order": 9,
           "sortable": true,
           "filterable": true,
           "width": 130
         },
-        { "fieldName": "zimmetRef", "title": "Zimmet WI", "visible": true, "order": 8, "sortable": true, "filterable": true, "width": 120 }
+        { "fieldName": "zimmetRef", "title": "Zimmet WI", "visible": true, "order": 10, "sortable": true, "filterable": true, "width": 120 }
       ]
     },
     "expand": {
@@ -91,7 +102,7 @@
           "key": "kimlik",
           "title": "Kimlik",
           "cols": 12,
-          "fields": ["demirbasNo", "katalogUrunId", "seriNo", "marka", "model", "durum"]
+          "fields": ["demirbasNo", "katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum"]
         },
         {
           "key": "konum",
@@ -115,6 +126,7 @@
       "fieldCols": {
         "demirbasNo": 6,
         "katalogUrunId": 6,
+        "urunGrubuId": 6,
         "seriNo": 6,
         "marka": 6,
         "model": 6,

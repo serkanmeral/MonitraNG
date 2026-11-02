@@ -1,0 +1,28 @@
+{
+  "seededAt": "2026-11-02T14:18:56.5620368Z",
+  "ids": {
+    "urunGruplari": {
+      "GRP-MON": "adfe3636-5916-4b36-881e-658316c39626",
+      "GRP-CNT": "211fb0af-4964-4eef-ab47-fe0c6424c47a",
+      "GRP-ACC": "b0bf8a7a-b190-49fd-b0f0-18bfc4be0b3e",
+      "GRP-LAP": "159ae653-0b3b-4bf4-9066-fbca57909d68"
+    },
+    "urunler": {
+      "PRD-LOG-MX": "5b4e3573-448b-4159-9620-06db15d8d319",
+      "PRD-LENOVO-BAG": "b832f111-a457-47e4-90a2-a05ab94e05c3",
+      "PRD-DELL-5520": "c5194d1a-0c07-4939-9cb0-f7959056539a",
+      "PRD-DELL-U2722D": "f337ae08-6b24-423b-aa7f-c80d57037237",
+      "PRD-HP-840": "7c19f5e7-bab1-491a-a977-da3b3f8189bd"
+    },
+    "depolar": {
+      "DEP-ANA": "b81668eb-43be-428e-83eb-7e5e41744de6"
+    },
+    "lokasyonlar": {
+      "DEP-ANA/B-01": "d5d082e2-5f2d-4dab-823d-854ef3984ae5",
+      "DEP-ANA/A-01": "eb4e037e-a493-44df-ae87-ab27bc7f4100",
+      "DEP-ANA/A-02": "1cce025f-8c1c-4db0-bd69-b13af84ca0a7"
+    },
+    "demirbaslar": {}
+  },
+  "gateway": "http://192.168.1.249:5040"
+}

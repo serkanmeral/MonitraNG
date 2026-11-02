@@ -84,11 +84,21 @@ $optIadeDurumu = New-ZimmetStaticSelectOptions @(
     @{ value = "eksik"; label = "Eksik parca" }
 )
 
+$katalogCopyFields = @(
+    @{ from = "marka"; to = "marka" }
+    @{ from = "urunGrubuId"; to = "urunGrubuId" }
+)
+$katalogLookup = New-ZimmetLookupOptions -DatasetName "zimmet_urunler" -LabelField "ad" -SearchFields @("ad", "kod", "marka") -Filter "aktif:eq:true" -CopyFields $katalogCopyFields
 $fieldKatalogUrunId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:katalogUrunId" -Label "katalogUrunId" -Body @{
     key = "katalogUrunId"; label = "Katalog urun"; fieldType = "relation"; scope = "pool"; category = "reference"
     relationDatasetName = "zimmet_urunler"
-    options = (New-ZimmetLookupOptions -DatasetName "zimmet_urunler" -LabelField "ad" -SearchFields @("ad", "kod", "marka") -Filter "aktif:eq:true")
+    options = $katalogLookup
 }
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_fields/$fieldKatalogUrunId" -Body @{
+    key = "katalogUrunId"; label = "Katalog urun"; fieldType = "relation"; scope = "pool"; category = "reference"
+    relationDatasetName = "zimmet_urunler"
+    options = $katalogLookup
+} | Out-Null
 $fieldMiktar = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:miktar" -Label "miktar" -Body @{
     key = "miktar"; label = "Miktar"; fieldType = "number"; scope = "pool"; category = "quantity"
 }
@@ -120,6 +130,14 @@ $fieldKaynak = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "ke
 }
 $fieldSeriNoListesi = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:seriNoListesi" -Label "seriNoListesi" -Body @{
     key = "seriNoListesi"; label = "Seri no listesi"; fieldType = "text"; scope = "pool"; category = "technical"
+}
+$fieldMarka = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:marka" -Label "marka" -Body @{
+    key = "marka"; label = "Marka"; fieldType = "text"; scope = "pool"; category = "classification"
+}
+$fieldUrunGrubuId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:urunGrubuId" -Label "urunGrubuId" -Body @{
+    key = "urunGrubuId"; label = "Urun grubu"; fieldType = "relation"; scope = "pool"; category = "classification"
+    relationDatasetName = "zimmet_urun_gruplari"
+    options = (New-ZimmetLookupOptions -DatasetName "zimmet_urun_gruplari" -LabelField "ad" -SearchFields @("ad", "kod") -Filter $null)
 }
 
 $demirbasPickerColumns = @(
@@ -201,11 +219,11 @@ $fieldHasarAciklamasi = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -F
 
 $girFieldIds = @(
     $fieldKatalogUrunId, $fieldMiktar, $fieldDepoId, $fieldLokasyonId, $fieldTedarikciId,
-    $fieldFaturaNo, $fieldGirisTarihi, $fieldKaynak, $fieldSeriNoListesi
+    $fieldFaturaNo, $fieldGirisTarihi, $fieldKaynak, $fieldSeriNoListesi, $fieldMarka, $fieldUrunGrubuId
 )
 $zimFieldIds = @(
     $fieldDemirbasId, $fieldDemirbasIds, $fieldPersonelId, $fieldDepartman, $fieldTeslimTarihi, $fieldPlanliIadeTarihi,
-    $fieldTeslimDurumu, $fieldZimmetNotu, $fieldIadeDurumu, $fieldHasarAciklamasi
+    $fieldTeslimDurumu, $fieldZimmetNotu, $fieldIadeDurumu, $fieldHasarAciklamasi, $fieldDepoId, $fieldLokasyonId
 )
 $allFieldIds = @($girFieldIds + $zimFieldIds | Select-Object -Unique)
 
@@ -301,7 +319,21 @@ $wsZimBody = @{
     enabledFieldIds       = $zimFieldIds
 }
 Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_workspaces/$wsZimId" -Body $wsZimBody | Out-Null
-Write-Host "  UPDATED: WS ZIM enabledFieldIds (demirbasIds)" -ForegroundColor Green
+Write-Host "  UPDATED: WS ZIM enabledFieldIds (demirbasIds, depo)" -ForegroundColor Green
+$wsGirBody = @{
+    name                  = $wsGirName
+    workspaceType         = "operational"
+    description           = "Demirbas depo giris islemleri"
+    workItemKeyPrefix     = "GIR"
+    workItemKeyFormat     = "{prefix}-{seq:D4}"
+    workItemSequenceStart = 1
+    enabledTypeIds        = @($typeGirisId)
+    enabledStateIds       = $girStateIds
+    enabledPriorityIds    = $sharedPriorityIds
+    enabledFieldIds       = $girFieldIds
+}
+Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_workspaces/$wsGirId" -Body $wsGirBody | Out-Null
+Write-Host "  UPDATED: WS GIR enabledFieldIds (marka, urun grubu)" -ForegroundColor Green
 
 # --- Flows ---
 Write-Host "[7] op_state_flows..." -ForegroundColor Yellow
@@ -330,7 +362,7 @@ $flowZimVermeBody = @{
         (New-ZimmetTransition "request" $zimRequest $zimApproval "Onaya gonder" 0 @("demirbasIds", "personelId")),
         (New-ZimmetTransition "approve" $zimApproval $zimDelivered "Onayla" 1),
         (New-ZimmetTransition "reject" $zimApproval $zimClosed "Reddet" 2),
-        (New-ZimmetTransition "deliver" $zimDelivered $zimActive "Teslim et" 3 @("teslimTarihi", "teslimDurumu")),
+        (New-ZimmetTransition "deliver" $zimDelivered $zimActive "Teslim et" 3 @("teslimTarihi", "teslimDurumu") @("managers", "admins")),
         (New-ZimmetTransition "close" $zimActive $zimClosed "Tamamla" 4)
     )
 }
@@ -346,7 +378,7 @@ $flowZimIadeBody = @{
     isDefault      = $false
     isActive       = $true
     transitions    = @(
-        (New-ZimmetTransition "receive_return" $zimIadeOpen $zimIadeDone "Iade al" 0),
+        (New-ZimmetTransition "receive_return" $zimIadeOpen $zimIadeDone "Iade al" 0 @("depoId", "lokasyonId") @("managers", "admins")),
         (New-ZimmetTransition "close_return" $zimIadeDone $zimClosed "Kapat" 1)
     )
 }
@@ -430,7 +462,7 @@ $formZimIadeBody = @{
     layout = @{
         sections = @(@{
             key = "main"; title = "Iade bilgileri"
-            fields = @("title", "description", "typeId", "personelId", "demirbasId", "iadeDurumu", "hasarAciklamasi", "zimmetNotu")
+            fields = @("title", "description", "typeId", "personelId", "demirbasId", "depoId", "lokasyonId", "iadeDurumu", "hasarAciklamasi", "zimmetNotu")
         })
     }
     fieldBehaviors = @{
@@ -439,6 +471,8 @@ $formZimIadeBody = @{
         typeId = @{ visible = $true; readonly = $true }
         personelId = @{ visible = $true; required = $true }
         demirbasId = @{ visible = $true; required = $true }
+        depoId = @{ visible = $true; required = $true }
+        lokasyonId = @{ visible = $true; required = $true }
         iadeDurumu = @{ visible = $true; required = $true }
         hasarAciklamasi = @{ visible = $true }
         zimmetNotu = @{ visible = $true }
@@ -609,6 +643,10 @@ $ruleAf1Body = @{
                     startFrom = 1
                 }
                 @{ target = "tedarikciId"; source = "field"; path = "fields.tedarikciId" }
+                @{ target = "marka"; source = "field"; path = "fields.marka" }
+                @{ target = "urunGrubuId"; source = "field"; path = "fields.urunGrubuId" }
+                @{ target = "marka"; source = "lookup"; from = "fields.katalogUrunId"; dataset = "zimmet_urunler"; field = "marka" }
+                @{ target = "urunGrubuId"; source = "lookup"; from = "fields.katalogUrunId"; dataset = "zimmet_urunler"; field = "urunGrubuId" }
             )
         }
     )
@@ -648,6 +686,7 @@ $ruleOc1Body = @{
                 @{ target = "zimmetliPersonelId"; source = "field"; path = "fields.personelId" }
                 @{ target = "zimmetRef"; source = "field"; path = "key" }
             )
+            clearFields = @("depoId", "lokasyonId")
         }
     )
 }
@@ -683,6 +722,8 @@ $ruleOc2Body = @{
             }
             fieldMappings = @(
                 @{ target = "durum"; source = "static"; value = "depoda" }
+                @{ target = "depoId"; source = "field"; path = "fields.depoId" }
+                @{ target = "lokasyonId"; source = "field"; path = "fields.lokasyonId" }
             )
             clearFields = @("zimmetliPersonelId", "zimmetRef")
         }

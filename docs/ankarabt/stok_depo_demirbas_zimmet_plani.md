@@ -1,6 +1,6 @@
 # Stok, depo, demirbaş ve zimmet
 
-Odak testte kurulmuş işin planı. Katalog paketi değildir. AnkaraBT yol haritasındaki OC-04 bu gövdeyi henüz taşımaz.
+Odak testte kurulmuş işin planı. Katalog paketi değildir. Abt çekirdeği ve sonraki dilim [yol haritası OC-04](development_roadmap.md) içindedir.
 
 **Tarih:** 1 Kasım 2026  
 **Kaynak:** Odak test (`192.168.20.20`), son kapanış 11 Temmuz 2026  
@@ -69,7 +69,7 @@ Altı rapor vardır: depolar, ürünler, ürün grupları, demirbaş envanteri, 
 
 ## Biten ve duran
 
-Uçtan uca çekirdek Odak testte kapandı: tanım, stok girişi, demirbaş, verme, iade, rapor, belge. Üretim ortamına kurulmadı.
+Uçtan uca çekirdek Odak testte kapandı: tanım, stok girişi, demirbaş, verme, iade, rapor, belge. Aynı çekirdek abt alanına 2 Kasım 2026’da indi. Abt’de rapor üçtür: demirbaş envanteri, personel zimmet özeti, garanti. Sonraki sıra yol haritasındadır.
 
 Duruyor:
 

@@ -28,18 +28,20 @@
   },
   "formConfig": {
     "visibleFields": [
-      "katalogUrunId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
+      "katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
       "zimmetliPersonelId", "girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId",
       "girisRef", "zimmetRef", "notlar"
     ],
     "fieldOrder": [
-      "katalogUrunId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
+      "katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
       "zimmetliPersonelId", "girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId",
       "girisRef", "zimmetRef", "notlar"
     ],
+    "readonlyFields": ["durum", "zimmetliPersonelId", "depoId", "lokasyonId"],
     "readonlyOnEditFields": ["demirbasNo"],
     "relationConfig": {
       "katalogUrunId": { "displayField": "ad" },
+      "urunGrubuId": { "displayField": "ad" },
       "depoId": { "displayField": "ad" },
       "lokasyonId": { "displayField": "ad" },
       "tedarikciId": { "displayField": "unvan" }
@@ -48,7 +50,7 @@
       "notlar": { "textWidget": "textarea" }
     },
     "fieldGroups": [
-      { "key": "kimlik", "title": "Kimlik", "fields": ["katalogUrunId", "seriNo", "marka", "model", "durum"] },
+      { "key": "kimlik", "title": "Kimlik", "fields": ["katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum"] },
       { "key": "konum", "title": "Konum", "fields": ["depoId", "lokasyonId", "zimmetliPersonelId"] },
       { "key": "finans", "title": "Finans / garanti", "fields": ["girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId"] },
       { "key": "referans", "title": "Referans", "fields": ["girisRef", "zimmetRef", "notlar"] }

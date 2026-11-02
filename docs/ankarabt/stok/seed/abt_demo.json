@@ -1,0 +1,26 @@
+{
+  "seededAt": "2026-11-02T14:19:55.6769729Z",
+  "gateway": "http://192.168.1.249:5040",
+  "persons": [
+    {
+      "id": "6ae1d5b5e467e0f07bb2f1df",
+      "username": "akahya"
+    },
+    {
+      "id": "6ae1d5b5e467e0f07bb2f1e0",
+      "username": "dgirisken"
+    }
+  ],
+  "receipts": {
+    "bag": "GIR-0003",
+    "laptop": "GIR-0001",
+    "monitor": "GIR-0002"
+  },
+  "assignments": {
+    "monitorActive": "ZIM-0002",
+    "laptopClosed": "ZIM-0001",
+    "bagGiven": "ZIM-0003",
+    "bagReturned": "ZIM-0004"
+  },
+  "warrantySoonAsset": "30efa5fe-663e-4aea-a288-d84a344c55a6"
+}

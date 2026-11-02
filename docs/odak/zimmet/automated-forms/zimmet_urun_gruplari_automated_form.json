@@ -10,8 +10,7 @@
     "defaultSortBy": "ad",
     "defaultSortOrder": "asc",
     "listView": {
-      "mode": "report",
-      "reportId": "rpt_zimmet_urun_gruplari"
+      "mode": "default"
     },
     "columns": [
       { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },

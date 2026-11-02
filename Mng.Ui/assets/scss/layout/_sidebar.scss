@@ -116,6 +116,12 @@
             }
         }
     }
+
+    /* Open group must show its children. The expand transition can stay at height 0. */
+    .v-list-group--open > .v-list-group__items {
+        height: auto !important;
+        overflow: visible !important;
+    }
 }
 
 .v-navigation-drawer--rail {

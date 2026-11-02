@@ -110,9 +110,16 @@ const needsTooltip = computed(() => {
   return true;
 });
 
+const internalRoute = computed(() => {
+  if (props.item.type === 'external') return undefined;
+  const to = props.item.to?.trim();
+  if (!to || to === '#') return undefined;
+  return to;
+});
+
 function onMenuClick() {
-  const to = props.item.to;
-  if (!to || props.item.type === 'external') return;
+  const to = internalRoute.value;
+  if (!to) return;
   recordWelcomeRecentNavigation(to, menuTitle.value);
 }
 </script>
@@ -125,8 +132,8 @@ function onMenuClick() {
         <template v-slot:activator="{ props: tooltipProps }">
             <v-list-item
                 v-bind="tooltipProps"
-                :to="item.type === 'external' ? '' : item.to"
-                :href="item.type === 'external' ? item.to : ''"
+                :to="internalRoute"
+                :href="item.type === 'external' ? item.to : undefined"
                 rounded
                 class="mb-1"
                 :disabled="item.disabled"

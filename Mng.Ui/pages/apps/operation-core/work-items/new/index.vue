@@ -18,6 +18,8 @@ import {
   ocListPoolFieldsForWorkspace,
 } from '@/services/operationCoreService';
 import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
+
+const dynamicFormRef = ref<{ flushLookupCopies?: () => Promise<void> } | null>(null);
 import { useAuthStore } from '@/stores/auth';
 import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
 import { normalizeOcDialogMaxWidthPx } from '@/utils/ocFormLayout';
@@ -167,6 +169,7 @@ async function submit() {
   submitting.value = true;
   errorLocal.value = null;
   try {
+    await dynamicFormRef.value?.flushLookupCopies?.();
     const payload = buildCreateWorkItemRequest(
       formModel.value,
       workspaceId.value,
@@ -267,6 +270,7 @@ watch(formModel, () => {
 
           <OcDynamicForm
             v-if="formContext && !loading"
+            ref="dynamicFormRef"
             v-model="formModel"
             :context="formContext"
             :field-errors="fieldErrors"

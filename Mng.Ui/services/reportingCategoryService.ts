@@ -6,6 +6,7 @@ import type {
 } from '@/types/apps/reporting';
 import {
   buildReportingCategoryTree,
+  isReportingCategoryListed,
   reportingCategoryHasChild,
 } from '@/utils/reportingCategoryTree';
 import {
@@ -32,7 +33,7 @@ export class ReportingCategoryService {
   }
 
   getTree(): DiTreeNode[] {
-    return buildReportingCategoryTree(this.list());
+    return buildReportingCategoryTree(this.list().filter(isReportingCategoryListed));
   }
 
   getById(id: string): ReportingCategory | undefined {

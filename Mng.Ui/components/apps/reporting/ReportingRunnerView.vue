@@ -33,6 +33,7 @@ import {
   isListColumnTextTruncated,
 } from '@/utils/afListColumnFormat';
 import type { AfListFilter } from '@/utils/afListFilters';
+import { loadReportingRelationFilterOptions } from '@/utils/reportingRelationFilterOptions';
 import {
   buildReportingFilterColumns,
   buildReportingListHeaders,
@@ -218,6 +219,17 @@ const breadcrumbs = computed(() => [
 
 const filterColumns = computed(() =>
   buildReportingFilterColumns(listConfig.value, schemaFields.value ?? [], (field) => canViewColumn(field))
+);
+
+const relationOptionsByKey = ref<Record<string, { value: string; title: string }[]>>({});
+watch(
+  () => [filterColumns.value, schemaFields.value, listConfig.value.columns] as const,
+  ([columns, fields, listColumns]) => {
+    void loadReportingRelationFilterOptions(columns, fields ?? [], listColumns).then((options) => {
+      relationOptionsByKey.value = options;
+    });
+  },
+  { immediate: true }
 );
 
 /** Gelişmiş filtre paneli — rapor parametrelerinden bağımsız; filtrelenebilir sütun varsa gösterilir. */
@@ -1164,6 +1176,7 @@ onBeforeUnmount(() => {
             :key="runtimeFiltersKey"
             compact
             :columns="filterColumns"
+            :relation-options-by-key="relationOptionsByKey"
             :initial-filters="cloneAfListFilters(advancedFilters)"
             :initial-panel-open="advancedFilters.length > 0"
             :compact-hint="t('reporting.runner.advancedFiltersHint')"

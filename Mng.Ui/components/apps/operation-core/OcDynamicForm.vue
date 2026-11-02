@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue';
 import type { OcFormLayoutSectionRuntime, OcFormRuntimeContext } from '@/types/apps/operationCore';
 import { fieldColSpanForLayout, sectionColSpanForLayout } from '@/utils/ocFormLayout';
+import { applyOcLookupFieldCopies } from '@/utils/ocLookupCopy';
 import { useOcDynamicFormLookups } from '@/composables/useOcDynamicFormLookups';
 import OcDynamicFormField from '@/components/apps/operation-core/OcDynamicFormField.vue';
 
@@ -93,10 +94,29 @@ function fieldMdCols(fieldKey: string): number {
   return fieldColSpanForLayout(fieldKey, props.context.layout?.fieldCols);
 }
 
+const lookupCopyGeneration = new Map<string, number>();
+let pendingLookupCopy: Promise<void> = Promise.resolve();
+
 function setFieldValue(key: string, value: unknown) {
   if (props.readonly) return;
   model.value = { ...model.value, [key]: value };
+  const generation = (lookupCopyGeneration.get(key) ?? 0) + 1;
+  lookupCopyGeneration.set(key, generation);
+  const meta = fieldMeta(key);
+  pendingLookupCopy = pendingLookupCopy.then(() =>
+    applyOcLookupFieldCopies(key, value, meta).then((patch) => {
+      if (lookupCopyGeneration.get(key) !== generation) return;
+      if (!Object.keys(patch).length) return;
+      model.value = { ...model.value, ...patch };
+    })
+  );
 }
+
+async function flushLookupCopies() {
+  await pendingLookupCopy;
+}
+
+defineExpose({ flushLookupCopies });
 </script>
 
 <template>

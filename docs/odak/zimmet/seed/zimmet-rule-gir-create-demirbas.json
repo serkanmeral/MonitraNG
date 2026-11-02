@@ -33,7 +33,11 @@
           "template": "{{source.key}}-{000}",
           "startFrom": 1
         },
-        { "target": "tedarikciId", "source": "field", "path": "fields.tedarikciId" }
+        { "target": "tedarikciId", "source": "field", "path": "fields.tedarikciId" },
+        { "target": "marka", "source": "field", "path": "fields.marka" },
+        { "target": "urunGrubuId", "source": "field", "path": "fields.urunGrubuId" },
+        { "target": "marka", "source": "lookup", "from": "fields.katalogUrunId", "dataset": "zimmet_urunler", "field": "marka" },
+        { "target": "urunGrubuId", "source": "lookup", "from": "fields.katalogUrunId", "dataset": "zimmet_urunler", "field": "urunGrubuId" }
       ]
     }
   ]

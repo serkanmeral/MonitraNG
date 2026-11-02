@@ -343,6 +343,7 @@ async function saveFormEdit() {
     editError.value = t('operationCore.create.validationRequired');
     return;
   }
+  await editFormRef.value?.flushLookupCopies?.();
   const patch = buildUpdateWorkItemRequestFromFormEdit(collectFormChanges(), formContext.value);
   if (!hasUpdateWorkItemChanges(patch)) {
     editMode.value = false;
@@ -494,6 +495,8 @@ const transitionBusy = ref(false);
 const transitionError = ref<string | null>(null);
 // Geçiş için zorunlu alanların ön-toplanması (MO 400 dönmeden önce kullanıcıdan al).
 const transitionFieldModel = ref<Record<string, unknown>>({});
+const editFormRef = ref<{ flushLookupCopies?: () => Promise<void> } | null>(null);
+const transitionFieldsRef = ref<{ flushLookupCopies?: () => Promise<void> } | null>(null);
 
 const transitionRequiredKeys = computed<string[]>(() => {
   const action = transitionTarget.value;
@@ -557,10 +560,14 @@ async function confirmTransition() {
   transitionBusy.value = true;
   transitionError.value = null;
   try {
+    await transitionFieldsRef.value?.flushLookupCopies?.();
     const keys = transitionRequiredKeys.value;
-    const rawFields = keys.length
-      ? Object.fromEntries(keys.map((key) => [key, transitionFieldModel.value[key]]))
-      : null;
+    const modelKeys = Object.keys(transitionFieldModel.value);
+    const rawFields = modelKeys.length
+      ? { ...transitionFieldModel.value }
+      : keys.length
+        ? Object.fromEntries(keys.map((key) => [key, transitionFieldModel.value[key]]))
+        : null;
     const fields = ocEnrichTransitionFields(action.transitionKey, displayModel.value, rawFields);
     await ocApplyTransition(workItemId.value, action.transitionKey, {
       comment: transitionComment.value,
@@ -740,6 +747,7 @@ watch(workItemId, () => {
               </span>
             </div>
             <OcTransitionRequiredFields
+              ref="transitionFieldsRef"
               v-model="transitionFieldModel"
               :context="transitionFormContext"
               :field-keys="transitionRequiredKeys"
@@ -923,6 +931,7 @@ watch(workItemId, () => {
 
                 <OcDynamicForm
                   v-if="editMode && formContext"
+                  ref="editFormRef"
                   v-model="formModel"
                   :context="formContext"
                   :group-names="groupNames"

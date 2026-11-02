@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { Ref } from 'vue';
 import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
 import { useOcDynamicFormLookups } from '@/composables/useOcDynamicFormLookups';
+import { applyOcLookupFieldCopies } from '@/utils/ocLookupCopy';
 import OcDynamicFormField from '@/components/apps/operation-core/OcDynamicFormField.vue';
 
 const props = defineProps<{
@@ -43,9 +44,27 @@ function behaviorFor(key: string) {
   };
 }
 
+const lookupCopyGeneration = new Map<string, number>();
+let pendingLookupCopy: Promise<void> = Promise.resolve();
+
 function setFieldValue(key: string, value: unknown) {
   model.value = { ...model.value, [key]: value };
+  const generation = (lookupCopyGeneration.get(key) ?? 0) + 1;
+  lookupCopyGeneration.set(key, generation);
+  pendingLookupCopy = pendingLookupCopy.then(() =>
+    applyOcLookupFieldCopies(key, value, props.context.fields[key]).then((patch) => {
+      if (lookupCopyGeneration.get(key) !== generation) return;
+      if (!Object.keys(patch).length) return;
+      model.value = { ...model.value, ...patch };
+    })
+  );
 }
+
+async function flushLookupCopies() {
+  await pendingLookupCopy;
+}
+
+defineExpose({ flushLookupCopies });
 </script>
 
 <template>
