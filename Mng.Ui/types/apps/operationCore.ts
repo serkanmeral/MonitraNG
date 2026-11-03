@@ -65,6 +65,34 @@ export interface OpStateFlowTransition {
   requireComment?: boolean;
   /** Geçişi uygulayabilecek Keeper grup id'leri; boş = kısıtlama yok (MO `permissions.groups`). */
   permissionGroups?: string[];
+  /** Geçiş tamamlanınca her kayıt için belge üretir. Şablon kodu boşsa yok sayılır. */
+  documentAction?: OcTransitionDocumentAction;
+}
+
+/** Durum geçişi sonrası belge üretimi. Çıktı klasörü, reportId bağındaki outputFolderId'dir. */
+export interface OcTransitionDocumentAction {
+  templateCode: string;
+  /** İş kaydı alanındaki kayıt kimlikleri (tekil veya dizi). */
+  itemsField: string;
+  /** Belgesi yazılacak satırın veri kümesi. */
+  sourceDataset: string;
+  /** Çıktı klasörünün okunacağı rapor. */
+  reportId: string;
+  /** Doluysa rapor bağının önüne geçer. */
+  outputFolderId?: string;
+  linkDataset?: string;
+  linkParentField?: string;
+  linkMatchField?: string;
+  linkMatchValue?: string;
+  linkRefField?: string;
+  /** İş kaydı anahtarının kaynak satırda yazılacağı yer tutucu alanı. */
+  parentRefField?: string;
+  /** Dosya adında kullanılacak kaynak alan. */
+  labelField?: string;
+  /** Kaynak alan → şablon yer tutucusu. */
+  fieldAliases?: Record<string, string>;
+  /** Alan → kayıtlı kod → belgede görünecek etiket. */
+  displayMaps?: Record<string, Record<string, string>>;
 }
 
 export type OcAutomationIdempotencyMode = 'none' | 'one_per_source';

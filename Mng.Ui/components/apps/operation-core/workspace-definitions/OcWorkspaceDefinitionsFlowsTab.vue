@@ -103,6 +103,86 @@ function stateName(stateId: string | null | undefined) {
   return states.value.find((s) => s.__dataId === stateId)?.name ?? stateId;
 }
 
+function documentActionPayload(
+  action: OpStateFlowTransition['documentAction']
+): OpStateFlowTransition['documentAction'] | null {
+  if (!action?.templateCode?.trim() || !action.itemsField?.trim() || !action.sourceDataset?.trim() || !action.reportId?.trim()) {
+    return null;
+  }
+  const text = (value?: string) => value?.trim() || undefined;
+  return {
+    templateCode: action.templateCode.trim(),
+    itemsField: action.itemsField.trim(),
+    sourceDataset: action.sourceDataset.trim(),
+    reportId: action.reportId.trim(),
+    outputFolderId: text(action.outputFolderId),
+    linkDataset: text(action.linkDataset),
+    linkParentField: text(action.linkParentField),
+    linkMatchField: text(action.linkMatchField),
+    linkMatchValue: text(action.linkMatchValue),
+    linkRefField: text(action.linkRefField),
+    parentRefField: text(action.parentRefField),
+    labelField: text(action.labelField),
+    fieldAliases: action.fieldAliases && Object.keys(action.fieldAliases).length ? action.fieldAliases : undefined,
+    displayMaps: action.displayMaps && Object.keys(action.displayMaps).length ? action.displayMaps : undefined,
+  };
+}
+
+function emptyDocumentAction(): NonNullable<OpStateFlowTransition['documentAction']> {
+  return {
+    templateCode: '',
+    itemsField: '',
+    sourceDataset: '',
+    reportId: '',
+  };
+}
+
+function aliasLines(action: NonNullable<OpStateFlowTransition['documentAction']>): string {
+  return Object.entries(action.fieldAliases ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+}
+
+function setAliasLines(action: NonNullable<OpStateFlowTransition['documentAction']>, raw: string) {
+  const map: Record<string, string> = {};
+  for (const line of raw.split('\n')) {
+    const index = line.indexOf('=');
+    if (index <= 0) continue;
+    const key = line.slice(0, index).trim();
+    const value = line.slice(index + 1).trim();
+    if (key && value) map[key] = value;
+  }
+  action.fieldAliases = Object.keys(map).length ? map : undefined;
+}
+
+function labelLines(action: NonNullable<OpStateFlowTransition['documentAction']>): string {
+  const lines: string[] = [];
+  for (const [field, codes] of Object.entries(action.displayMaps ?? {})) {
+    for (const [code, label] of Object.entries(codes ?? {})) {
+      if (field && code && label) lines.push(`${field}.${code}=${label}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function setLabelLines(action: NonNullable<OpStateFlowTransition['documentAction']>, raw: string) {
+  const map: Record<string, Record<string, string>> = {};
+  for (const line of raw.split('\n')) {
+    const index = line.indexOf('=');
+    if (index <= 0) continue;
+    const left = line.slice(0, index).trim();
+    const label = line.slice(index + 1).trim();
+    const dot = left.indexOf('.');
+    if (dot <= 0 || !label) continue;
+    const field = left.slice(0, dot).trim();
+    const code = left.slice(dot + 1).trim();
+    if (!field || !code) continue;
+    map[field] = map[field] ?? {};
+    map[field][code] = label;
+  }
+  action.displayMaps = Object.keys(map).length ? map : undefined;
+}
+
 function buildPayload(): Record<string, unknown> {
   const sortRaw = form.value.sortOrder.trim();
   const sortOrder = sortRaw === '' ? null : Number(sortRaw);
@@ -115,6 +195,9 @@ function buildPayload(): Record<string, unknown> {
     requiredFields: Array.isArray(tr.requiredFields) ? [...tr.requiredFields] : [],
     requireComment: tr.requireComment === true,
     permissions: { groups: Array.isArray(tr.permissionGroups) ? [...tr.permissionGroups] : [] },
+    ...(documentActionPayload(tr.documentAction)
+      ? { documentAction: documentActionPayload(tr.documentAction) }
+      : {}),
   }));
 
   return {
@@ -546,6 +629,147 @@ async function confirmDelete() {
                   density="compact"
                   hide-details
                 />
+              </v-col>
+              <v-col cols="12">
+                <v-switch
+                  :model-value="!!tr.documentAction"
+                  :label="t('operationCore.workspaceDefinitions.flows.documentAction')"
+                  color="primary"
+                  density="compact"
+                  hide-details
+                  @update:model-value="(on) => (tr.documentAction = on ? emptyDocumentAction() : undefined)"
+                />
+                <p class="text-caption text-medium-emphasis mb-2">
+                  {{ t('operationCore.workspaceDefinitions.flows.documentActionHint') }}
+                </p>
+                <v-row v-if="tr.documentAction">
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="tr.documentAction.templateCode"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentTemplate')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="tr.documentAction.reportId"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentReport')"
+                      :hint="t('operationCore.workspaceDefinitions.flows.documentReportHint')"
+                      persistent-hint
+                      density="compact"
+                      variant="outlined"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="tr.documentAction.itemsField"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentItemsField')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="tr.documentAction.sourceDataset"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentSourceDataset')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="tr.documentAction.labelField"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentLabelField')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="tr.documentAction.linkDataset"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentLinkDataset')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="tr.documentAction.linkParentField"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentLinkParent')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="tr.documentAction.parentRefField"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentParentRef')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="tr.documentAction.linkMatchField"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentMatchField')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="tr.documentAction.linkMatchValue"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentMatchValue')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="tr.documentAction.linkRefField"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentLinkRef')"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-textarea
+                      :model-value="aliasLines(tr.documentAction)"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentAliases')"
+                      :hint="t('operationCore.workspaceDefinitions.flows.documentAliasesHint')"
+                      persistent-hint
+                      auto-grow
+                      rows="2"
+                      density="compact"
+                      variant="outlined"
+                      @update:model-value="(value) => tr.documentAction && setAliasLines(tr.documentAction, String(value ?? ''))"
+                    />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-textarea
+                      :model-value="labelLines(tr.documentAction)"
+                      :label="t('operationCore.workspaceDefinitions.flows.documentLabels')"
+                      :hint="t('operationCore.workspaceDefinitions.flows.documentLabelsHint')"
+                      persistent-hint
+                      auto-grow
+                      rows="2"
+                      density="compact"
+                      variant="outlined"
+                      @update:model-value="(value) => tr.documentAction && setLabelLines(tr.documentAction, String(value ?? ''))"
+                    />
+                  </v-col>
+                </v-row>
               </v-col>
               <v-col cols="12" md="6">
                 <MngDirectoryPickerField

@@ -303,7 +303,7 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
 
         DomainLogoResult? logo = null;
         if (letterhead.ShowLogo)
-            logo = await _logoProvider.GetCurrentDomainLogoAsync(Token, ct);
+            logo = await _logoProvider.GetLightBackgroundLogoAsync(Token, ct);
 
         return LetterheadDesignSkeletonBuilder.Build(
             MinimalDocxFactory.CreateBlank(),
@@ -327,7 +327,7 @@ public sealed class LetterheadEditorService : ILetterheadEditorService
 
         DomainLogoResult? logo = null;
         if (letterhead.ShowLogo)
-            logo = await _logoProvider.GetCurrentDomainLogoAsync(token, ct);
+            logo = await _logoProvider.GetLightBackgroundLogoAsync(token, ct);
 
         return LetterheadDesignSkeletonBuilder.EnsureEditorParts(
             rawDocxBytes,

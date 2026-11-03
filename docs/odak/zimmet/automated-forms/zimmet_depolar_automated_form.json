@@ -1,7 +1,7 @@
 {
-  "formName": "Zimmet Depolar",
+  "formName": "Depolar",
   "formCode": "zimmet-depolar-form",
-  "description": "Zimmet depo tanimlari",
+  "description": "Demirbaşların tutulduğu depo tanımları.",
   "datasetName": "zimmet_depolar",
   "isActive": true,
   "sideMenuConfig": { "enabled": false },

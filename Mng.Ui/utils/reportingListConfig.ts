@@ -1,4 +1,5 @@
 import type { FieldDefinition } from '@/stores/apps/dataset';
+import { formatTrDisplayDate } from '@/utils/trDisplayDate';
 import type { AfFilterColumn } from '@/utils/afListFilters';
 import { resolveAfFilterKind } from '@/utils/afListFilters';
 import type { OdakHubListColumnConfig, OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
@@ -287,6 +288,10 @@ function formatReportingCellScalar(val: unknown): string {
     } catch {
       return String(val);
     }
+  }
+  if (typeof val === 'string') {
+    const formatted = formatTrDisplayDate(val);
+    if (formatted) return formatted;
   }
   return String(val);
 }

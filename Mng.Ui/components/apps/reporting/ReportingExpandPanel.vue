@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import ReportingChildListPanel from '@/components/apps/reporting/ReportingChildListPanel.vue';
+import ReportingExpandTimelinePanel from '@/components/apps/reporting/ReportingExpandTimelinePanel.vue';
 import ReportingDetailView from '@/components/apps/reporting/ReportingDetailView.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
@@ -21,7 +22,12 @@ import {
 } from '@/utils/reportingExpandLayout';
 import { ensureOdakEgitimParticipantsExpandTab } from '@/utils/reportingOdakEgitimExpandMigrations';
 import { filterVisibleReportingExpandChildTabs } from '@/utils/reportingReportAccess';
+import { diGetById } from '@/services/documentIntelligenceService';
+import { reportingDocumentBindingMatchesRow } from '@/utils/reportingDocumentBindings';
 import { generateReportingParentRowDocument } from '@/utils/reportingParentRowDocument';
+import { reportingDocumentFolderParentId } from '@/utils/reportingDocumentGenerate';
+import { linkResourceToMatchingChildRow } from '@/utils/reportingChildRowLink';
+import { linkResourceToWorkItemKey } from '@/utils/workItemDocumentLink';
 import { openDiResourceInNewTab } from '@/utils/diResourceLink';
 import { FileTextIcon } from 'vue-tabler-icons';
 
@@ -72,7 +78,9 @@ const initialTab = computed(() => {
 const activeTab = ref(initialTab.value);
 
 const parentRowBindings = computed(() =>
-  (props.documentBindings ?? []).filter((b) => b.contextType === 'parentRow')
+  (props.documentBindings ?? []).filter(
+    (binding) => binding.contextType === 'parentRow' && reportingDocumentBindingMatchesRow(binding, props.row)
+  )
 );
 
 const showParentRowDocuments = computed(
@@ -86,6 +94,7 @@ const docGeneratingId = ref<string | null>(null);
 const docError = ref('');
 const docSuccess = ref('');
 const lastDocResourceId = ref<string | null>(null);
+const lifeDocVersion = ref(0);
 
 watch(
   () => reportingRowId(props.row),
@@ -129,6 +138,22 @@ function openLastDocInDi() {
   openDiResourceInNewTab(lastDocResourceId.value);
 }
 
+function scalarOf(row: Record<string, unknown>, field: string): string {
+  const raw = row[field];
+  if (typeof raw === 'string') return raw.trim();
+  if (raw && typeof raw === 'object') {
+    const record = raw as Record<string, unknown>;
+    const key = record.key ?? record.workItemKey ?? record.__dataId ?? record.dataId;
+    if (typeof key === 'string') return key.trim();
+  }
+  return '';
+}
+
+function workItemKeyOf(row: Record<string, unknown>, field?: string): string {
+  if (field?.trim()) return scalarOf(row, field.trim());
+  return scalarOf(row, 'workItemKey') || scalarOf(row, 'key');
+}
+
 async function generateParentRowDocument(binding: ReportingDocumentBinding) {
   if (!props.reportId) return;
   docGeneratingId.value = binding.id;
@@ -145,9 +170,51 @@ async function generateParentRowDocument(binding: ReportingDocumentBinding) {
       listConfig: props.listConfig,
     });
     lastDocResourceId.value = result.resourceId || null;
-    docSuccess.value = t('reporting.runner.generateSuccess', {
-      fileName: result.fileName || binding.label,
-    });
+    const link = binding.linkToChild;
+    const refKey = workItemKeyOf(props.row, link?.parentRefField);
+    let linkedToLife = false;
+    if (link?.childTabId && link.matchField && link.matchValue && result.resourceId) {
+      const tab = (props.expandConfig.tabs ?? []).find((item) => item.id === link.childTabId);
+      const parentField = tab?.childList.parentField?.trim() || '__dataId';
+      const parentId = tab ? String(props.row[parentField] ?? reportingRowId(props.row) ?? '') : '';
+      try {
+        linkedToLife = tab
+          ? await linkResourceToMatchingChildRow({
+              resourceId: result.resourceId,
+              datasetName: tab.childList.datasetName,
+              linkField: tab.childList.linkField,
+              parentId,
+              matchField: link.matchField,
+              matchValue: link.matchValue,
+              refField: link.refField,
+              refValue: refKey,
+              relationType: link.relationType || 'output',
+              sortField: tab.timeline?.whenField || tab.childList.sort,
+            })
+          : false;
+      } catch {
+        linkedToLife = false;
+      }
+      if (linkedToLife) lifeDocVersion.value += 1;
+    } else if (result.resourceId && refKey) {
+      await linkResourceToWorkItemKey(result.resourceId, refKey);
+    }
+    let folderName = '';
+    try {
+      const folderId = await reportingDocumentFolderParentId(props.reportId, binding);
+      folderName = (await diGetById(folderId)).name?.trim() || '';
+    } catch {
+      folderName = '';
+    }
+    const fileName = result.fileName || binding.label;
+    docSuccess.value = folderName
+      ? t('reporting.runner.generateSuccessInFolder', { fileName, folder: folderName })
+      : t('reporting.runner.generateSuccess', { fileName });
+    if (isZimmetAsset) {
+      docSuccess.value += linkedToLife
+        ? ` ${t('reporting.runner.generateLifeLinked')}`
+        : ` ${t('reporting.runner.generateLifeUnlinked')}`;
+    }
   } catch (e: unknown) {
     docError.value =
       e instanceof Error ? e.message : t('reporting.runner.generateFailed');
@@ -235,7 +302,17 @@ async function generateParentRowDocument(binding: ReportingDocumentBinding) {
         />
       </v-window-item>
       <v-window-item v-for="tab in childTabs" :key="tab.id" :value="tab.id">
+        <ReportingExpandTimelinePanel
+          v-if="tab.presentation === 'timeline'"
+          :parent-row="row"
+          :child-list="tab.childList"
+          :timeline="tab.timeline"
+          :empty-message="tab.childList.emptyMessage"
+          :active="activeTab === tab.id"
+          :reload-key="lifeDocVersion"
+        />
         <ReportingChildListPanel
+          v-else
           :parent-row="row"
           :child-list="tab.childList"
           :field-policies="tabFieldPolicies(tab)"

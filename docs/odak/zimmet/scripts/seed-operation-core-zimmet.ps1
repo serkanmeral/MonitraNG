@@ -85,7 +85,7 @@ $optIadeDurumu = New-ZimmetStaticSelectOptions @(
 )
 
 $katalogCopyFields = @(
-    @{ from = "marka"; to = "marka" }
+    @{ from = "markaId"; to = "markaId" }
     @{ from = "urunGrubuId"; to = "urunGrubuId" }
 )
 $katalogLookup = New-ZimmetLookupOptions -DatasetName "zimmet_urunler" -LabelField "ad" -SearchFields @("ad", "kod", "marka") -Filter "aktif:eq:true" -CopyFields $katalogCopyFields
@@ -131,8 +131,10 @@ $fieldKaynak = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "ke
 $fieldSeriNoListesi = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:seriNoListesi" -Label "seriNoListesi" -Body @{
     key = "seriNoListesi"; label = "Seri no listesi"; fieldType = "text"; scope = "pool"; category = "technical"
 }
-$fieldMarka = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:marka" -Label "marka" -Body @{
-    key = "marka"; label = "Marka"; fieldType = "text"; scope = "pool"; category = "classification"
+$fieldMarkaId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:markaId" -Label "markaId" -Body @{
+    key = "markaId"; label = "Marka"; fieldType = "relation"; scope = "pool"; category = "classification"
+    relationDatasetName = "zimmet_markalar"
+    options = (New-ZimmetLookupOptions -DatasetName "zimmet_markalar" -LabelField "ad" -SearchFields @("ad", "kod") -Filter "aktif:eq:true")
 }
 $fieldUrunGrubuId = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -Filter "key:eq:urunGrubuId" -Label "urunGrubuId" -Body @{
     key = "urunGrubuId"; label = "Urun grubu"; fieldType = "relation"; scope = "pool"; category = "classification"
@@ -219,7 +221,7 @@ $fieldHasarAciklamasi = Find-ZimmetOrCreate -Ctx $ctx -Collection "op_fields" -F
 
 $girFieldIds = @(
     $fieldKatalogUrunId, $fieldMiktar, $fieldDepoId, $fieldLokasyonId, $fieldTedarikciId,
-    $fieldFaturaNo, $fieldGirisTarihi, $fieldKaynak, $fieldSeriNoListesi, $fieldMarka, $fieldUrunGrubuId
+    $fieldFaturaNo, $fieldGirisTarihi, $fieldKaynak, $fieldSeriNoListesi, $fieldMarkaId, $fieldUrunGrubuId
 )
 $zimFieldIds = @(
     $fieldDemirbasId, $fieldDemirbasIds, $fieldPersonelId, $fieldDepartman, $fieldTeslimTarihi, $fieldPlanliIadeTarihi,
@@ -333,7 +335,7 @@ $wsGirBody = @{
     enabledFieldIds       = $girFieldIds
 }
 Invoke-ZimmetDg -Ctx $ctx -Method PUT -Uri "$($ctx.BaseUrl)$($ctx.DataPath)/op_workspaces/$wsGirId" -Body $wsGirBody | Out-Null
-Write-Host "  UPDATED: WS GIR enabledFieldIds (marka, urun grubu)" -ForegroundColor Green
+Write-Host "  UPDATED: WS GIR enabledFieldIds (markaId, urun grubu)" -ForegroundColor Green
 
 # --- Flows ---
 Write-Host "[7] op_state_flows..." -ForegroundColor Yellow
@@ -643,11 +645,22 @@ $ruleAf1Body = @{
                     startFrom = 1
                 }
                 @{ target = "tedarikciId"; source = "field"; path = "fields.tedarikciId" }
-                @{ target = "marka"; source = "field"; path = "fields.marka" }
+                @{ target = "markaId"; source = "field"; path = "fields.markaId" }
                 @{ target = "urunGrubuId"; source = "field"; path = "fields.urunGrubuId" }
-                @{ target = "marka"; source = "lookup"; from = "fields.katalogUrunId"; dataset = "zimmet_urunler"; field = "marka" }
+                @{ target = "markaId"; source = "lookup"; from = "fields.katalogUrunId"; dataset = "zimmet_urunler"; field = "markaId" }
                 @{ target = "urunGrubuId"; source = "lookup"; from = "fields.katalogUrunId"; dataset = "zimmet_urunler"; field = "urunGrubuId" }
             )
+            lifecycle = @{
+                dataset   = "zimmet_demirbas_hareketleri"
+                linkField = "demirbasId"
+                static    = @{ olay = "depoya_girdi" }
+                copy      = @{
+                    tarih      = "girisTarihi"
+                    depoId     = "depoId"
+                    lokasyonId = "lokasyonId"
+                    isRef      = "girisRef"
+                }
+            }
         }
     )
 }
@@ -668,6 +681,28 @@ $ruleOc1Body = @{
     typeId         = $typeZimmetVermeId
     transitionKey  = "deliver"
     actions        = @(
+        @{
+            type        = "createDatasetRows"
+            dataset     = "zimmet_demirbas_hareketleri"
+            onError     = "failTransition"
+            cardinality = @{
+                mode      = "expand"
+                itemsFrom = "fields.demirbasIds"
+                itemAs    = "id"
+            }
+            idempotency = @{
+                mode        = "one_per_source"
+                lookupField = "isRef"
+                lookupFrom  = "key"
+            }
+            fieldMappings = @(
+                @{ target = "demirbasId"; source = "item"; path = "value" }
+                @{ target = "olay"; source = "static"; value = "zimmetlendi" }
+                @{ target = "personelId"; source = "field"; path = "fields.personelId" }
+                @{ target = "tarih"; source = "field"; path = "fields.teslimTarihi" }
+                @{ target = "isRef"; source = "field"; path = "key" }
+            )
+        }
         @{
             type         = "updateDatasetRows"
             dataset      = "zimmet_demirbaslar"
@@ -707,6 +742,30 @@ $ruleOc2Body = @{
     typeId         = $typeZimmetIadeId
     transitionKey  = "receive_return"
     actions        = @(
+        @{
+            type        = "createDatasetRows"
+            dataset     = "zimmet_demirbas_hareketleri"
+            onError     = "failTransition"
+            cardinality = @{
+                mode      = "expand"
+                itemsFrom = "fields.demirbasId"
+                itemAs    = "id"
+            }
+            idempotency = @{
+                mode        = "one_per_source"
+                lookupField = "isRef"
+                lookupFrom  = "key"
+            }
+            fieldMappings = @(
+                @{ target = "demirbasId"; source = "item"; path = "value" }
+                @{ target = "olay"; source = "static"; value = "depoya_alindi" }
+                @{ target = "personelId"; source = "field"; path = "fields.personelId" }
+                @{ target = "depoId"; source = "field"; path = "fields.depoId" }
+                @{ target = "lokasyonId"; source = "field"; path = "fields.lokasyonId" }
+                @{ target = "tarih"; source = "field"; path = "updatedAt" }
+                @{ target = "isRef"; source = "field"; path = "key" }
+            )
+        }
         @{
             type         = "updateDatasetRows"
             dataset      = "zimmet_demirbaslar"

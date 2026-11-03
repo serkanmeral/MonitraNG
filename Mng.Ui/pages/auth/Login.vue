@@ -3,7 +3,7 @@ import { useLocaleStore } from '@/stores/locale';
 import { useCustomizerStore } from '@/stores/customizer';
 import { computed, watch, nextTick, ref, onMounted } from 'vue';
 import { isDarkAppTheme, resolveThemedDomainLogoSrc } from '@/composables/useDomain';
-import { currentLoginHostDomain, fetchDomainBranding, type DomainBranding } from '@/utils/loginHostDomain';
+import { currentLoginHostDomain, fetchDomainBranding, fetchSoleDomainBranding, type DomainBranding } from '@/utils/loginHostDomain';
 
 // Import flag images
 import flagTR from '/images/flag/icon-flag-tr.svg';
@@ -18,15 +18,17 @@ definePageMeta({
 
 const localeStore = useLocaleStore();
 const customizer = useCustomizerStore();
-const lockedDomain = currentLoginHostDomain();
-const branding = ref<DomainBranding | null>(null);
+const hostDomain = currentLoginHostDomain();
+const soleBranding = await fetchSoleDomainBranding();
+const lockedDomain = soleBranding?.name || hostDomain || null;
+const branding = ref<DomainBranding | null>(soleBranding?.name ? soleBranding : null);
 
 const brandTitle = computed(() => branding.value?.displayName || lockedDomain || '');
 const logoSrc = computed(() => resolveThemedDomainLogoSrc(branding.value, customizer.actTheme));
 const logoSurface = computed(() => (isDarkAppTheme(customizer.actTheme) ? '#2a3447' : '#ffffff'));
 
 onMounted(async () => {
-  if (!lockedDomain) return;
+  if (!lockedDomain || branding.value) return;
   branding.value = await fetchDomainBranding(lockedDomain);
 });
 
@@ -44,12 +46,9 @@ const localeOptions = [
   { value: 'zh', title: '中文', flag: flagZH }
 ];
 
-// Get current flag based on locale
-const currentFlag = computed(() => {
-  const currentI18nLocale = localeStore.locale === 'ar' ? 'ro' : localeStore.locale;
-  const option = localeOptions.find(opt => opt.value === localeStore.locale);
-  return option?.flag || flagEN;
-});
+const currentLocaleOption = computed(
+  () => localeOptions.find((opt) => opt.value === localeStore.locale) ?? localeOptions[1]
+);
 
 // RTL support for Arabic
 const isRTL = computed(() => localeStore.isRTL);
@@ -138,46 +137,48 @@ if (process.client) {
           />
         </div>
       </v-col>
-      <v-col cols="12" lg="5" xl="4" class="d-flex align-center justify-center bg-surface">
-        <div class="mt-xl-0 mt-5 mw-100 position-relative" style="width: 100%; max-width: 400px;">
-          <!-- Language Selector -->
-          <div class="d-flex mb-4" :class="isRTL ? 'justify-start' : 'justify-end'">
-            <v-select
-              :model-value="localeStore.locale"
-              :items="localeOptions"
-              item-title="title"
-              item-value="value"
-              variant="outlined"
-              density="compact"
-              hide-details
-              style="max-width: 200px;"
-              @update:model-value="handleLocaleChange"
+      <v-col cols="12" lg="5" xl="4" class="login-panel d-flex align-center justify-center bg-surface">
+        <v-menu location="bottom end" :close-on-content-click="true">
+          <template #activator="{ props: menuProps }">
+            <v-btn
+              v-bind="menuProps"
+              class="login-locale"
+              variant="text"
+              size="small"
+              rounded="pill"
             >
-              <template #item="{ props: itemProps, item }">
-                <v-list-item v-bind="itemProps" :title="item.raw.title">
-                  <template #prepend>
-                    <v-avatar size="22" :class="isRTL ? 'ml-2' : 'mr-2'">
-                      <img :src="item.raw.flag" :alt="item.raw.value" width="22" height="22" class="obj-cover" />
-                    </v-avatar>
-                  </template>
-                </v-list-item>
+              <v-avatar size="18" :class="isRTL ? 'ml-2' : 'mr-2'">
+                <img :src="currentLocaleOption.flag" :alt="currentLocaleOption.value" width="18" height="18" />
+              </v-avatar>
+              {{ currentLocaleOption.title }}
+              <v-icon end size="16">mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact" min-width="180" nav>
+            <v-list-item
+              v-for="option in localeOptions"
+              :key="option.value"
+              :active="option.value === localeStore.locale"
+              rounded="lg"
+              @click="handleLocaleChange(option.value)"
+            >
+              <template #prepend>
+                <v-avatar size="20" :class="isRTL ? 'ml-3' : 'mr-3'">
+                  <img :src="option.flag" :alt="option.value" width="20" height="20" />
+                </v-avatar>
               </template>
-              <template #selection="{ item }">
-                <div class="d-flex align-center">
-                  <v-avatar size="18" :class="isRTL ? 'ml-2' : 'mr-2'">
-                    <img :src="item.raw.flag" :alt="item.raw.value" width="18" height="18" class="obj-cover" />
-                  </v-avatar>
-                  <span>{{ item.raw.title }}</span>
-                </div>
-              </template>
-            </v-select>
-          </div>
-          
-          <div v-if="lockedDomain" class="login-brand mb-6 text-center">
-            <div class="login-domain-logo mx-auto" :style="{ backgroundColor: logoSurface }">
+              <v-list-item-title>{{ option.title }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+
+        <div class="login-panel-body mt-xl-0 mt-5">
+          <div v-if="lockedDomain" class="login-brand">
+            <div class="login-domain-logo" :style="{ backgroundColor: logoSurface }">
               <img v-if="logoSrc" :src="logoSrc" :alt="brandTitle" />
             </div>
-            <div class="text-subtitle-1 font-weight-medium mt-3">{{ brandTitle }}</div>
+            <div class="login-brand-name">{{ brandTitle }}</div>
+            <div class="login-brand-rule" />
           </div>
           <h2 :key="`title-${localeKey}`" class="text-h3 font-weight-semibold mb-2">{{ $t('login.title') }}</h2>
           <div :key="`subtitle-${localeKey}`" class="text-subtitle-1 mb-6">{{ $t('login.subtitle') }}</div>
@@ -190,21 +191,62 @@ if (process.client) {
 </template>
 
 <style scoped>
-.login-domain-logo {
+.login-panel {
+  position: relative;
+  min-height: 100vh;
+}
+
+.login-locale {
+  position: absolute;
+  top: 16px;
+  inset-inline-end: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.login-panel-body {
   width: 100%;
-  max-width: 280px;
-  height: 88px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  max-width: 400px;
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-domain-logo {
+  width: min(100%, 280px);
+  min-height: 96px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 16px;
+  padding: 18px 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
 .login-domain-logo img {
   max-width: 100%;
-  max-height: 100%;
+  max-height: 72px;
   object-fit: contain;
+}
+
+.login-brand-name {
+  margin-top: 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+}
+
+.login-brand-rule {
+  width: 42px;
+  height: 3px;
+  margin-top: 14px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-primary));
 }
 </style>

@@ -40,7 +40,7 @@
           "width": 140,
           "relationDisplayField": "ad"
         },
-        { "fieldName": "marka", "title": "Marka", "visible": true, "order": 4, "sortable": true, "filterable": true, "width": 120 },
+        { "fieldName": "markaId", "title": "Marka", "visible": true, "order": 4, "sortable": false, "filterable": true, "width": 120, "relationDisplayField": "ad" },
         { "fieldName": "seriNo", "title": "Seri no", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 140 },
         {
           "fieldName": "durum",
@@ -102,7 +102,7 @@
           "key": "kimlik",
           "title": "Kimlik",
           "cols": 12,
-          "fields": ["demirbasNo", "katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum"]
+          "fields": ["demirbasNo", "katalogUrunId", "urunGrubuId", "seriNo", "markaId", "model", "durum", "girisTarihi"]
         },
         {
           "key": "konum",
@@ -114,7 +114,7 @@
           "key": "finans",
           "title": "Finans / garanti",
           "cols": 12,
-          "fields": ["girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId"]
+          "fields": ["garantiBitis", "alisFiyati", "tedarikciId"]
         },
         {
           "key": "referans",
@@ -128,7 +128,7 @@
         "katalogUrunId": 6,
         "urunGrubuId": 6,
         "seriNo": 6,
-        "marka": 6,
+        "markaId": 6,
         "model": 6,
         "durum": 6,
         "depoId": 6,
@@ -143,8 +143,61 @@
         "notlar": 12
       },
       "actions": [],
-      "tabs": [],
-      "defaultTabId": "fields"
+      "defaultTabId": "fields",
+      "tabs": [
+        {
+          "id": "yasam",
+          "title": "Geçmiş",
+          "presentation": "timeline",
+          "timeline": {
+            "whenField": "tarih",
+            "titleField": "olay",
+            "personField": "personelId",
+            "placeFields": ["depoId", "lokasyonId"],
+            "refField": "isRef",
+            "titleMap": {
+              "depoya_girdi": "Depoya girdi",
+              "zimmetlendi": "Zimmetlendi",
+              "depoya_alindi": "Depoya alındı",
+              "hurdaya_ayrildi": "Hurdaya ayrıldı",
+              "kayip": "Kayıp"
+            },
+            "colorMap": {
+              "depoya_girdi": "primary",
+              "zimmetlendi": "success",
+              "depoya_alindi": "info",
+              "hurdaya_ayrildi": "warning",
+              "kayip": "error"
+            },
+            "documents": {
+              "relationType": "evidence",
+              "allowEdit": true
+            }
+          },
+          "childList": {
+            "datasetName": "zimmet_demirbas_hareketleri",
+            "linkField": "demirbasId",
+            "parentField": "__dataId",
+            "sort": "tarih",
+            "limit": 200,
+            "expand": true,
+            "emptyMessage": "Bu demirbaşın yaşam kaydı henüz yok.",
+            "listConfig": {
+              "enableSearch": false,
+              "defaultSortBy": "tarih",
+              "defaultSortOrder": "asc",
+              "columns": [
+                { "fieldName": "olay", "title": "Olay", "visible": true, "order": 1 },
+                { "fieldName": "tarih", "title": "Tarih", "visible": true, "order": 2 },
+                { "fieldName": "personelId", "title": "Personel", "visible": true, "order": 3 },
+                { "fieldName": "depoId", "title": "Depo", "visible": true, "order": 4, "relationDisplayField": "ad" },
+                { "fieldName": "lokasyonId", "title": "Lokasyon", "visible": true, "order": 5, "relationDisplayField": "ad" },
+                { "fieldName": "isRef", "title": "İş kodu", "visible": true, "order": 6 }
+              ]
+            }
+          }
+        }
+      ]
     },
     "fieldPolicies": { "policiesByField": {} },
     "defaultFilters": [],
@@ -209,7 +262,16 @@
         "label": "Zimmet teslim tutanağı",
         "contextType": "parentRow",
         "documentNamePattern": "{{bindingLabel}} · {{demirbasNo|rowId}} {{now:yyyy-MM-dd HH:mm}}",
-        "generatedAtPattern": "yyyy-MM-dd HH:mm"
+        "generatedAtPattern": "yyyy-MM-dd HH:mm",
+        "rowFilters": [{ "field": "durum", "operator": "eq", "value": "zimmetli" }],
+        "linkToChild": {
+          "childTabId": "yasam",
+          "matchField": "olay",
+          "matchValue": "zimmetlendi",
+          "relationType": "output",
+          "refField": "isRef",
+          "parentRefField": "zimmetRef"
+        }
       },
       {
         "id": "docbind_zimmet_iade",
@@ -218,7 +280,16 @@
         "label": "Zimmet iade tutanağı",
         "contextType": "parentRow",
         "documentNamePattern": "{{bindingLabel}} · {{demirbasNo|rowId}} {{now:yyyy-MM-dd HH:mm}}",
-        "generatedAtPattern": "yyyy-MM-dd HH:mm"
+        "generatedAtPattern": "yyyy-MM-dd HH:mm",
+        "rowFilters": [{ "field": "durum", "operator": "eq", "value": "zimmetli" }],
+        "linkToChild": {
+          "childTabId": "yasam",
+          "matchField": "olay",
+          "matchValue": "depoya_alindi",
+          "relationType": "output",
+          "refField": "isRef",
+          "parentRefField": "zimmetRef"
+        }
       }
     ]
   }

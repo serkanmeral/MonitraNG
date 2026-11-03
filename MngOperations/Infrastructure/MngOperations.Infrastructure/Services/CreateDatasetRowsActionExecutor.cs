@@ -85,7 +85,10 @@ public sealed class CreateDatasetRowsActionExecutor : ICreateDatasetRowsActionEx
                 var created = await _dg.CreateAsync(dataset, row, token, cancellationToken);
                 var id = WorkItemDataHelper.GetDataId(created);
                 if (!string.IsNullOrWhiteSpace(id))
+                {
                     createdIds.Add(id);
+                    await EmitLifecycleAsync(action, row, id, token, cancellationToken);
+                }
             }
 
             _logger.LogInformation(
@@ -122,6 +125,60 @@ public sealed class CreateDatasetRowsActionExecutor : ICreateDatasetRowsActionEx
                 $"Dataset satırları oluşturulamadı: {ex.Message}",
                 400);
         }
+    }
+
+    /// <summary>
+    /// Optional <c>lifecycle</c> block on a create action. Writes one life-cycle row
+    /// per created record. Used by depot stock-in so each new asset gets "depoya girdi".
+    /// </summary>
+    private async Task EmitLifecycleAsync(
+        JsonElement action,
+        Dictionary<string, object?> createdRow,
+        string createdId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (!action.TryGetProperty("lifecycle", out var life) || life.ValueKind != JsonValueKind.Object)
+            return;
+
+        var dataset = CreateDatasetRowsPlanner.GetString(life, "dataset");
+        if (string.IsNullOrWhiteSpace(dataset))
+            return;
+
+        var linkField = CreateDatasetRowsPlanner.GetString(life, "linkField");
+        if (string.IsNullOrWhiteSpace(linkField))
+            linkField = "demirbasId";
+
+        var body = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            [linkField] = createdId
+        };
+
+        if (life.TryGetProperty("static", out var constants) && constants.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in constants.EnumerateObject())
+            {
+                if (prop.Value.ValueKind == JsonValueKind.String)
+                    body[prop.Name] = prop.Value.GetString();
+            }
+        }
+
+        if (life.TryGetProperty("copy", out var copy) && copy.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in copy.EnumerateObject())
+            {
+                if (prop.Value.ValueKind != JsonValueKind.String)
+                    continue;
+                var sourceField = prop.Value.GetString();
+                if (string.IsNullOrWhiteSpace(sourceField))
+                    continue;
+                if (!createdRow.TryGetValue(sourceField, out var value) || value is null)
+                    continue;
+                body[prop.Name] = value;
+            }
+        }
+
+        await _dg.CreateAsync(dataset, body, token, cancellationToken);
     }
 
     private async Task<Dictionary<string, object?>> ResolveLookupValuesAsync(

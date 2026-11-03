@@ -7,7 +7,45 @@ import {
   parseSingleDgRecord,
   resolveRelationId,
 } from '@/services/operationCoreService';
-import type { OpStateFlow, OpStateFlowTransition } from '@/types/apps/operationCore';
+import type { OcTransitionDocumentAction, OpStateFlow, OpStateFlowTransition } from '@/types/apps/operationCore';
+
+function mapDocumentAction(raw: unknown): OcTransitionDocumentAction | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  const templateCode = String(o.templateCode ?? o.TemplateCode ?? '').trim();
+  const itemsField = String(o.itemsField ?? o.ItemsField ?? '').trim();
+  const sourceDataset = String(o.sourceDataset ?? o.SourceDataset ?? '').trim();
+  const reportId = String(o.reportId ?? o.ReportId ?? '').trim();
+  if (!templateCode || !itemsField || !sourceDataset || !reportId) return undefined;
+  const text = (value: unknown) => {
+    const s = String(value ?? '').trim();
+    return s || undefined;
+  };
+  const aliases = o.fieldAliases ?? o.FieldAliases;
+  const maps = o.displayMaps ?? o.DisplayMaps;
+  return {
+    templateCode,
+    itemsField,
+    sourceDataset,
+    reportId,
+    outputFolderId: text(o.outputFolderId ?? o.OutputFolderId),
+    linkDataset: text(o.linkDataset ?? o.LinkDataset),
+    linkParentField: text(o.linkParentField ?? o.LinkParentField),
+    linkMatchField: text(o.linkMatchField ?? o.LinkMatchField),
+    linkMatchValue: text(o.linkMatchValue ?? o.LinkMatchValue),
+    linkRefField: text(o.linkRefField ?? o.LinkRefField),
+    parentRefField: text(o.parentRefField ?? o.ParentRefField),
+    labelField: text(o.labelField ?? o.LabelField),
+    fieldAliases:
+      aliases && typeof aliases === 'object' && !Array.isArray(aliases)
+        ? (aliases as Record<string, string>)
+        : undefined,
+    displayMaps:
+      maps && typeof maps === 'object' && !Array.isArray(maps)
+        ? (maps as Record<string, Record<string, string>>)
+        : undefined,
+  };
+}
 
 function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -43,6 +81,7 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
     requiredFields: requiredFields?.length ? requiredFields : undefined,
     requireComment: Boolean(o.requireComment ?? o.RequireComment ?? false),
     permissionGroups: permissionGroups?.length ? permissionGroups : undefined,
+    documentAction: mapDocumentAction(o.documentAction ?? o.DocumentAction),
   };
 }
 

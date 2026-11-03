@@ -68,12 +68,22 @@ public sealed class ResourceLinkService : IResourceLinkService
 
         var isWorkItem = ResourceLinkRelationType.IsWorkItemTarget(targetModule, targetType);
         var isResource = ResourceLinkRelationType.IsResourceTarget(targetModule, targetType);
-        if (!isWorkItem && !isResource)
+        var isDatasetRow = ResourceLinkRelationType.IsDatasetRowTarget(targetModule, targetType);
+        if (!isWorkItem && !isResource && !isDatasetRow)
         {
             throw DocumentException.Validation(
                 "LINK_TARGET_UNSUPPORTED",
-                "Supported targets: operationCore/workItem or documentIntelligence/resource.",
-                "Hedef operationCore/workItem veya documentIntelligence/resource olmalıdır.");
+                "Supported targets: operationCore/workItem, documentIntelligence/resource, or dataGateway/datasetRow.",
+                "Hedef iş kaydı, doküman veya dataset satırı olmalıdır.");
+        }
+
+        var datasetName = request.DatasetName?.Trim() ?? string.Empty;
+        if (isDatasetRow && !IsSafeDatasetName(datasetName))
+        {
+            throw DocumentException.Validation(
+                "LINK_DATASET_REQUIRED",
+                "datasetName is required for a dataset row target.",
+                "Dataset satırı bağlantısında dataset adı zorunludur.");
         }
 
         if (isResource && string.Equals(resourceId, targetId, StringComparison.OrdinalIgnoreCase))
@@ -90,6 +100,8 @@ public sealed class ResourceLinkService : IResourceLinkService
 
         if (isWorkItem)
             await EnsureWorkItemExistsAsync(targetId, ct);
+        else if (isDatasetRow)
+            await EnsureDatasetRowExistsAsync(datasetName, targetId, ct);
         else
         {
             var targetResource = await LoadResourceOrThrowAsync(targetId, ct);
@@ -108,6 +120,8 @@ public sealed class ResourceLinkService : IResourceLinkService
             ["createdBy"] = _ctx.Username,
             ["createdAt"] = DateTime.UtcNow
         };
+        if (isDatasetRow)
+            payload["datasetName"] = datasetName;
 
         var created = await _dg.CreateAsync<DmResourceLink>(DmDatasets.ResourceLinks, payload, Token, ct);
         if (created.__dataId is null)
@@ -256,6 +270,49 @@ public sealed class ResourceLinkService : IResourceLinkService
         };
     }
 
+    public async Task<ResourceLinkListResult<LinkedResourceSummaryDto>> GetLinkedResourcesForDatasetRowAsync(
+        string datasetName,
+        string dataId,
+        CancellationToken ct = default)
+    {
+        var name = datasetName?.Trim() ?? string.Empty;
+        var id = dataId?.Trim() ?? string.Empty;
+        if (!IsSafeDatasetName(name) || string.IsNullOrWhiteSpace(id))
+        {
+            throw DocumentException.Validation(
+                "DATASET_ROW_REQUIRED",
+                "datasetName and dataId are required.",
+                "Dataset adı ve kayıt id zorunludur.");
+        }
+
+        await EnsureDatasetRowExistsAsync(name, id, ct);
+
+        var page = await _dg.QueryPageAsync(
+            DmDatasets.ResourceLinks,
+            new Dictionary<string, object?>
+            {
+                ["targetModule"] = ResourceLinkTargetModule.DataGateway,
+                ["targetType"] = ResourceLinkTargetType.DatasetRow,
+                ["targetId"] = id
+            },
+            ListQuery,
+            Token,
+            ct);
+
+        var links = page.Items
+            .Select(MapLinkRow)
+            .Where(link => link.__dataId is not null)
+            .Where(link =>
+            {
+                var stored = link.datasetName?.Trim() ?? string.Empty;
+                return string.IsNullOrWhiteSpace(stored)
+                    || string.Equals(stored, name, StringComparison.OrdinalIgnoreCase);
+            })
+            .ToList();
+
+        return await ToVisibleResourcesAsync(links, ct);
+    }
+
     public async Task<ResourceLinkListResult<LinkedResourceSummaryDto>> GetRelatedResourcesAsync(
         string resourceId,
         CancellationToken ct = default)
@@ -343,6 +400,71 @@ public sealed class ResourceLinkService : IResourceLinkService
             MimeType = other.mimeType,
             Extension = other.extension,
             Permissions = snapshot.Resolve(other)
+        };
+    }
+
+    private async Task EnsureDatasetRowExistsAsync(string datasetName, string dataId, CancellationToken ct)
+    {
+        try
+        {
+            var row = await _dg.GetByIdAsync<Dictionary<string, object?>>(datasetName, dataId, Token, ct);
+            if (row is null)
+                throw DocumentException.NotFound("Kayıt bulunamadı.");
+        }
+        catch (DocumentException)
+        {
+            throw;
+        }
+        catch
+        {
+            throw DocumentException.NotFound("Kayıt bulunamadı.");
+        }
+    }
+
+    private static bool IsSafeDatasetName(string name) =>
+        !string.IsNullOrWhiteSpace(name)
+        && name.Length <= 64
+        && System.Text.RegularExpressions.Regex.IsMatch(name, "^[A-Za-z][A-Za-z0-9_]*$");
+
+    private async Task<ResourceLinkListResult<LinkedResourceSummaryDto>> ToVisibleResourcesAsync(
+        IReadOnlyList<DmResourceLink> links,
+        CancellationToken ct)
+    {
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var items = new List<LinkedResourceSummaryDto>();
+
+        foreach (var link in links)
+        {
+            var resourceId = link.resourceId?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(resourceId) || link.__dataId is null)
+                continue;
+
+            var resource = await TryLoadResourceAsync(resourceId, ct);
+            if (resource is null)
+                continue;
+
+            var eff = snapshot.Resolve(resource);
+            if (!eff.CanView)
+                continue;
+
+            items.Add(new LinkedResourceSummaryDto
+            {
+                LinkId = link.__dataId,
+                ResourceId = resourceId,
+                RelationType = link.relationType ?? ResourceLinkRelationType.Reference,
+                ResourceType = resource.type,
+                Name = resource.name,
+                Title = resource.title,
+                MimeType = resource.mimeType,
+                Extension = resource.extension,
+                Permissions = eff
+            });
+        }
+
+        return new ResourceLinkListResult<LinkedResourceSummaryDto>
+        {
+            Items = items,
+            Total = items.Count
         };
     }
 
@@ -435,6 +557,7 @@ public sealed class ResourceLinkService : IResourceLinkService
             TargetModule = link.targetModule ?? string.Empty,
             TargetType = link.targetType ?? string.Empty,
             TargetId = link.targetId ?? string.Empty,
+            DatasetName = link.datasetName,
             RelationType = link.relationType ?? ResourceLinkRelationType.Reference,
             CreatedBy = link.createdBy,
             CreatedAt = link.createdAt

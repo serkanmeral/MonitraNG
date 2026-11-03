@@ -1,7 +1,7 @@
 {
-  "formName": "Zimmet Urun Katalogu",
+  "formName": "Ürün Kataloğu",
   "formCode": "zimmet-urunler-form",
-  "description": "Zimmet urun katalogu — marka, model, grup",
+  "description": "Grup, marka ve modeli tanımlı ürün kartları.",
   "datasetName": "zimmet_urunler",
   "isActive": true,
   "sideMenuConfig": { "enabled": false },
@@ -16,24 +16,33 @@
       { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
       { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
       { "fieldName": "urunGrubuId", "visible": true, "order": 3, "sortable": false, "filterable": false, "displayField": "ad" },
-      { "fieldName": "marka", "visible": true, "order": 4, "sortable": true, "filterable": true },
+      { "fieldName": "markaId", "visible": true, "order": 4, "sortable": false, "filterable": false, "displayField": "ad" },
       { "fieldName": "model", "visible": true, "order": 5, "sortable": true, "filterable": true },
       { "fieldName": "aktif", "visible": true, "order": 6, "sortable": true, "filterable": true }
     ]
   },
   "formConfig": {
-    "visibleFields": ["kod", "ad", "urunGrubuId", "marka", "model", "aciklama", "varsayilanGarantiAy", "aktif"],
-    "fieldOrder": ["kod", "ad", "urunGrubuId", "marka", "model", "varsayilanGarantiAy", "aktif", "aciklama"],
+    "visibleFields": ["kod", "ad", "urunGrubuId", "markaId", "model", "aciklama", "varsayilanGarantiAy", "aktif"],
+    "fieldOrder": ["kod", "ad", "urunGrubuId", "markaId", "model", "varsayilanGarantiAy", "aktif", "aciklama"],
     "readonlyOnEditFields": ["kod"],
-    "relationConfig": {
-      "urunGrubuId": { "displayField": "ad" }
+    "relationFieldConfig": {
+      "urunGrubuId": { "displayField": "ad" },
+      "markaId": { "displayField": "ad" }
     },
     "fieldLayout": {
       "aciklama": { "textWidget": "textarea" }
     },
     "fieldGroups": [
-      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "urunGrubuId", "marka", "model", "varsayilanGarantiAy", "aktif"] },
+      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "urunGrubuId", "markaId", "model", "varsayilanGarantiAy", "aktif"] },
       { "key": "detay", "title": "Detay", "fields": ["aciklama"] }
-    ]
+    ],
+    "documentScope": {
+      "rootFolderId": "",
+      "title": "Katalog belgeleri",
+      "hint": "Broşür, teknik föy ve ürün görselleri bu karta aittir. Aynı karttan açılan bütün demirbaşlar bu belgeleri paylaşır.",
+      "allowUpload": true,
+      "allowCreateFolder": true,
+      "relationTypes": ["reference", "attachment"]
+    }
   }
 }

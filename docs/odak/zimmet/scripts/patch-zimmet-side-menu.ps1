@@ -1,8 +1,8 @@
 # Zimmet Automated Forms — @side_menu kayitlari
 #
 # Yapi:
-#   Dinamik Formlar (header)
-#     └── Zimmet Yonetimi (parent)
+#   AnkaraBT header varsa onun altinda, yoksa Dinamik Formlar altinda
+#     └── Envanter Yonetimi (parent)
 #           ├── Demirbaslar
 #           ├── Urun Katalogu
 #           ├── Urun Gruplari
@@ -193,9 +193,24 @@ if ([string]::IsNullOrEmpty($dfHeaderId)) {
     exit 1
 }
 
+$ankaraHeaderId = Find-MenuIdByPageCode -PageCode "ankarabt"
+if ([string]::IsNullOrEmpty($ankaraHeaderId)) {
+    $ankaraRow = $items | Where-Object {
+        $_.itemType -eq "header" -and ($_.header -eq "AnkaraBT" -or $_.header -eq "Ankara BT")
+    } | Select-Object -First 1
+    $ankaraHeaderId = Get-ItemId $ankaraRow
+}
+$menuHeaderId = if (-not [string]::IsNullOrEmpty($ankaraHeaderId)) { $ankaraHeaderId } else { $dfHeaderId }
+if ($menuHeaderId -eq $ankaraHeaderId) {
+    Write-Host "Ust grup: AnkaraBT ($menuHeaderId)" -ForegroundColor Gray
+}
+else {
+    Write-Host "Ust grup: Dinamik Formlar ($menuHeaderId)" -ForegroundColor Gray
+}
+
 $childOrders = @()
 foreach ($row in $items) {
-    if ("$($row.parentId)" -eq "$dfHeaderId" -and $null -ne $row.order) {
+    if ("$($row.parentId)" -eq "$menuHeaderId" -and $null -ne $row.order) {
         $childOrders += [int]$row.order
     }
 }
@@ -210,17 +225,17 @@ $defaultPerms = [ordered]@{
     }
 }
 
-# --- Zimmet Yonetimi (parent) ---
-$zimmetParentResult = Upsert-MenuItem -AllItems $items -Label "Zimmet Yonetimi" -FindExisting {
+# --- Envanter Yonetimi (parent) ---
+$zimmetParentResult = Upsert-MenuItem -AllItems $items -Label "Envanter Yonetimi" -FindExisting {
     $_.pageCode -eq "dynamicForms.zimmet.menuParent"
 } -Body @{
     order    = $baseOrder
     itemType = "item"
     level    = 1
-    parentId = $dfHeaderId
+    parentId = $menuHeaderId
     pageType = "user"
     pageCode = "dynamicForms.zimmet.menuParent"
-    title    = "Zimmet Yönetimi"
+    title    = "Envanter Yönetimi"
     icon     = "DeviceLaptopIcon"
     iconType = "tabler"
     to       = ""
@@ -236,39 +251,46 @@ if ([string]::IsNullOrEmpty($zimmetParentId)) {
 
 $menuEntries = @(
     @{
-        Label    = "Demirbaslar"
+        Label    = "Demirbaşlar"
         PageCode = "dynamicForms.zimmet.demirbaslar.menuTitle"
         To       = "/apps/automated-forms/view/zimmet-demirbaslar-form"
         Icon     = "BarcodeIcon"
         Order    = $baseOrder + 1
     },
     @{
-        Label    = "Urun Katalogu"
+        Label    = "Ürün Kataloğu"
         PageCode = "dynamicForms.zimmet.urunler.menuTitle"
         To       = "/apps/automated-forms/view/zimmet-urunler-form"
         Icon     = "PackageIcon"
         Order    = $baseOrder + 2
     },
     @{
-        Label    = "Urun Gruplari"
+        Label    = "Ürün Grupları"
         PageCode = "dynamicForms.zimmet.urunGruplari.menuTitle"
         To       = "/apps/automated-forms/view/zimmet-urun-gruplari-form"
         Icon     = "CategoryIcon"
         Order    = $baseOrder + 3
     },
     @{
+        Label    = "Ürün Markaları"
+        PageCode = "dynamicForms.zimmet.markalar.menuTitle"
+        To       = "/apps/automated-forms/view/zimmet-markalar-form"
+        Icon     = "TagIcon"
+        Order    = $baseOrder + 4
+    },
+    @{
         Label    = "Depolar"
         PageCode = "dynamicForms.zimmet.depolar.menuTitle"
         To       = "/apps/automated-forms/view/zimmet-depolar-form"
         Icon     = "BuildingWarehouseIcon"
-        Order    = $baseOrder + 4
+        Order    = $baseOrder + 5
     },
     @{
-        Label    = "Depo Lokasyonlari"
+        Label    = "Depo Lokasyonları"
         PageCode = "dynamicForms.zimmet.lokasyonlar.menuTitle"
         To       = "/apps/automated-forms/view/zimmet-depo-lokasyonlari-form"
         Icon     = "MapPinIcon"
-        Order    = $baseOrder + 5
+        Order    = $baseOrder + 6
     }
 )
 
@@ -293,4 +315,4 @@ foreach ($entry in $menuEntries) {
 }
 
 Write-Host "`nTamamlandi. UI'da menu gormek icin sayfayi yenileyin veya cikis/giris yapin." -ForegroundColor Cyan
-Write-Host "  Dinamik Formlar > Zimmet Yonetimi > ..." -ForegroundColor Gray
+Write-Host "  AnkaraBT veya Dinamik Formlar > Envanter Yonetimi > ..." -ForegroundColor Gray

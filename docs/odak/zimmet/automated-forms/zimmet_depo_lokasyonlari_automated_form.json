@@ -1,7 +1,7 @@
 {
-  "formName": "Zimmet Depo Lokasyonlari",
+  "formName": "Depo Lokasyonları",
   "formCode": "zimmet-depo-lokasyonlari-form",
-  "description": "Depo ic lokasyonlar",
+  "description": "Depoların içindeki raf ve konum tanımları.",
   "datasetName": "zimmet_depo_lokasyonlari",
   "isActive": true,
   "sideMenuConfig": { "enabled": false },
@@ -19,7 +19,7 @@
   "formConfig": {
     "visibleFields": ["kod", "ad", "depoId", "aktif"],
     "fieldOrder": ["kod", "ad", "depoId", "aktif"],
-    "relationConfig": {
+    "relationFieldConfig": {
       "depoId": { "displayField": "ad" }
     },
     "fieldGroups": [

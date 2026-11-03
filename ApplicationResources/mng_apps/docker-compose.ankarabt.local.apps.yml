@@ -113,8 +113,8 @@ services:
       - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
       - MngDocumentSettings__OpenApiServerPath=http://192.168.1.249:5040/documents
       - MngDocumentSettings__Collabora__Enabled=true
-      - MngDocumentSettings__Collabora__PublicBaseUrl=${COLLABORA_PUBLIC_URL:-http://192.168.1.249:9980}
-      - MngDocumentSettings__Collabora__PostMessageOrigin=http://192.168.1.249:3000 http://127.0.0.1:3000 http://localhost:3000
+      - MngDocumentSettings__Collabora__PublicBaseUrl=${COLLABORA_PUBLIC_URL:-https://app.ankarabt.com}
+      - MngDocumentSettings__Collabora__PostMessageOrigin=https://app.ankarabt.com https://192.168.1.249 http://192.168.1.249:3000 http://abt.localhost:3000 http://127.0.0.1:3000 http://localhost:3000
       - MngDocumentSettings__Notifications__UiBaseUrl=http://192.168.1.249:3000
       - MngDocumentSettings__Antivirus__Enabled=true
       - MngDocumentSettings__Antivirus__Host=clamav
@@ -123,13 +123,13 @@ services:
 
   collabora:
     environment:
-      - aliasgroup1=${COLLABORA_ALIASGROUP:-http://192.168.1.249:9980,http://192.168.1.249:5040,http://192.168.1.249:3000,http://localhost:3000,http://127.0.0.1:3000,http://mngdocument:5095}
+      - aliasgroup1=${COLLABORA_ALIASGROUP:-https://app.ankarabt.com,http://mngdocument:5095,http://192.168.1.249:5040}
     command:
       - --o:ssl.enable=false
-      - --o:ssl.termination=false
+      - --o:ssl.termination=true
       - --o:user_interface.mode=compact
       - --o:home_mode.enable=true
-      - "--o:net.content_security_policy=frame-ancestors localhost:* 127.0.0.1:* 192.168.1.249:* mngdocument:*;"
+      - "--o:net.content_security_policy=frame-ancestors http://localhost:* http://127.0.0.1:* http://abt.localhost:* http://192.168.1.249:* https://localhost:* https://127.0.0.1:* https://app.ankarabt.com https://192.168.1.249:* localhost:* 127.0.0.1:* 192.168.1.249:* mngdocument:*;"
 
   mngadmin:
     ports:

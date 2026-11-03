@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import DiPickResourceDialog from '@/components/apps/document-intelligence/DiPickResourceDialog.vue';
 import ReportingListColumnsPanel from '@/components/apps/reporting/ReportingListColumnsPanel.vue';
 import ReportingSummaryDesignerPanel from '@/components/apps/reporting/ReportingSummaryDesignerPanel.vue';
 import ReportingColumnAuthPanel from '@/components/apps/reporting/ReportingColumnAuthPanel.vue';
@@ -10,6 +11,9 @@ import type { ReportingExpandChildListTab, ReportingExpandConfig, ReportingSumma
 import { emptyOdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { defaultReportingListConfigFromFields } from '@/utils/reportingListConfig';
 import { emptyReportingSummaryConfig } from '@/utils/reportingSummary';
+import { diGetById } from '@/services/documentIntelligenceService';
+import type { DiResource } from '@/types/apps/documentIntelligence';
+import type { ReportingExpandTimelineConfig } from '@/types/apps/reporting';
 import { PlusIcon, TrashIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
@@ -270,6 +274,106 @@ function updateSelectedLimit(value: unknown) {
   tab.childList.limit = Number.isFinite(n) && n > 0 ? n : 500;
 }
 
+const timelineFolderNames = ref<Record<string, string>>({});
+const timelineFolderPickerOpen = ref(false);
+
+function ensureTimeline(tab: ReportingExpandChildListTab): ReportingExpandTimelineConfig {
+  if (!tab.timeline) tab.timeline = {};
+  return tab.timeline;
+}
+
+function updatePresentation(value: unknown) {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  tab.presentation = value === 'timeline' ? 'timeline' : 'table';
+  if (tab.presentation === 'timeline') ensureTimeline(tab);
+}
+
+function updateTimelineField(field: 'whenField' | 'titleField' | 'personField' | 'refField', value: unknown) {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  const timeline = ensureTimeline(tab);
+  const next = typeof value === 'string' ? value.trim() : '';
+  timeline[field] = next || undefined;
+}
+
+function mapLines(map?: Record<string, string>): string {
+  return Object.entries(map ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+}
+
+function parseMapLines(raw: string): Record<string, string> | undefined {
+  const map: Record<string, string> = {};
+  for (const line of raw.split('\n')) {
+    const index = line.indexOf('=');
+    if (index <= 0) continue;
+    const key = line.slice(0, index).trim();
+    const value = line.slice(index + 1).trim();
+    if (key && value) map[key] = value;
+  }
+  return Object.keys(map).length ? map : undefined;
+}
+
+function updateTimelineMap(field: 'titleMap' | 'colorMap', value: unknown) {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  const timeline = ensureTimeline(tab);
+  timeline[field] = parseMapLines(String(value ?? ''));
+}
+
+function updateTimelineDocuments(patch: Partial<NonNullable<ReportingExpandTimelineConfig['documents']>>) {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  const timeline = ensureTimeline(tab);
+  const current = timeline.documents ?? {};
+  const next = { ...current, ...patch };
+  const rootFolderId = next.rootFolderId?.trim() || undefined;
+  const relationType = next.relationType?.trim() || undefined;
+  if (!rootFolderId && !relationType && next.allowEdit == null) {
+    timeline.documents = undefined;
+    return;
+  }
+  timeline.documents = {
+    ...(rootFolderId ? { rootFolderId } : {}),
+    ...(relationType ? { relationType } : {}),
+    ...(next.allowEdit != null ? { allowEdit: next.allowEdit } : {}),
+  };
+}
+
+async function rememberTimelineFolder(folderId: string) {
+  const id = folderId.trim();
+  if (!id || timelineFolderNames.value[id]) return;
+  try {
+    const folder = await diGetById(id);
+    timelineFolderNames.value = { ...timelineFolderNames.value, [id]: folder.name?.trim() || id };
+  } catch {
+    timelineFolderNames.value = { ...timelineFolderNames.value, [id]: id };
+  }
+}
+
+function timelineFolderLabel(folderId?: string): string {
+  const id = folderId?.trim();
+  if (!id) return t('reporting.expand.childTabs.timelineFolderEmpty');
+  return timelineFolderNames.value[id] || id;
+}
+
+function onTimelineFolderPicked(resource: DiResource) {
+  if (!resource.id) return;
+  updateTimelineDocuments({ rootFolderId: resource.id, relationType: selectedTab.value?.timeline?.documents?.relationType || 'evidence' });
+  const name = resource.name?.trim();
+  if (name) timelineFolderNames.value = { ...timelineFolderNames.value, [resource.id]: name };
+  timelineFolderPickerOpen.value = false;
+}
+
+watch(
+  () => selectedTab.value?.timeline?.documents?.rootFolderId,
+  (id) => {
+    if (id) void rememberTimelineFolder(id);
+  },
+  { immediate: true }
+);
+
 watch(
   () => selectedTab.value?.childList.datasetName,
   (name) => {
@@ -450,6 +554,141 @@ onMounted(async () => {
               class="mb-3"
               @update:model-value="updateSelectedEmptyMessage"
             />
+            <v-select
+              :model-value="selectedTab.presentation === 'timeline' ? 'timeline' : 'table'"
+              :items="[
+                { value: 'table', title: t('reporting.expand.childTabs.presentationTable') },
+                { value: 'timeline', title: t('reporting.expand.childTabs.presentationTimeline') },
+              ]"
+              item-title="title"
+              item-value="value"
+              :label="t('reporting.expand.childTabs.presentation')"
+              :disabled="disabled || !expandConfig.enabled"
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="mb-3"
+              @update:model-value="updatePresentation"
+            />
+            <template v-if="selectedTab.presentation === 'timeline'">
+              <v-text-field
+                :model-value="selectedTab.timeline?.whenField ?? ''"
+                :label="t('reporting.expand.childTabs.timelineWhen')"
+                :disabled="disabled || !expandConfig.enabled"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="mb-3"
+                @update:model-value="updateTimelineField('whenField', $event)"
+              />
+              <v-text-field
+                :model-value="selectedTab.timeline?.titleField ?? ''"
+                :label="t('reporting.expand.childTabs.timelineTitle')"
+                :disabled="disabled || !expandConfig.enabled"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="mb-3"
+                @update:model-value="updateTimelineField('titleField', $event)"
+              />
+              <v-text-field
+                :model-value="selectedTab.timeline?.personField ?? ''"
+                :label="t('reporting.expand.childTabs.timelinePerson')"
+                :disabled="disabled || !expandConfig.enabled"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="mb-3"
+                @update:model-value="updateTimelineField('personField', $event)"
+              />
+              <v-text-field
+                :model-value="selectedTab.timeline?.refField ?? ''"
+                :label="t('reporting.expand.childTabs.timelineRef')"
+                :disabled="disabled || !expandConfig.enabled"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="mb-3"
+                @update:model-value="updateTimelineField('refField', $event)"
+              />
+              <v-textarea
+                :model-value="mapLines(selectedTab.timeline?.titleMap)"
+                :label="t('reporting.expand.childTabs.timelineTitleMap')"
+                :hint="t('reporting.expand.childTabs.timelineMapHint')"
+                persistent-hint
+                auto-grow
+                rows="2"
+                density="compact"
+                variant="outlined"
+                class="mb-3"
+                :disabled="disabled || !expandConfig.enabled"
+                @update:model-value="updateTimelineMap('titleMap', $event)"
+              />
+              <v-textarea
+                :model-value="mapLines(selectedTab.timeline?.colorMap)"
+                :label="t('reporting.expand.childTabs.timelineColorMap')"
+                :hint="t('reporting.expand.childTabs.timelineColorHint')"
+                persistent-hint
+                auto-grow
+                rows="2"
+                density="compact"
+                variant="outlined"
+                class="mb-3"
+                :disabled="disabled || !expandConfig.enabled"
+                @update:model-value="updateTimelineMap('colorMap', $event)"
+              />
+              <div class="d-flex align-start ga-2 mb-3">
+                <v-text-field
+                  :model-value="timelineFolderLabel(selectedTab.timeline?.documents?.rootFolderId)"
+                  :label="t('reporting.expand.childTabs.timelineFolder')"
+                  :hint="t('reporting.expand.childTabs.timelineFolderHint')"
+                  persistent-hint
+                  readonly
+                  density="compact"
+                  variant="outlined"
+                  class="flex-grow-1"
+                  :disabled="disabled || !expandConfig.enabled"
+                />
+                <v-btn
+                  size="small"
+                  variant="tonal"
+                  class="mt-1"
+                  :disabled="disabled || !expandConfig.enabled"
+                  @click="timelineFolderPickerOpen = true"
+                >
+                  {{ t('reporting.documentBindings.pickFolder') }}
+                </v-btn>
+                <v-btn
+                  v-if="selectedTab.timeline?.documents?.rootFolderId"
+                  size="small"
+                  variant="text"
+                  class="mt-1"
+                  :disabled="disabled || !expandConfig.enabled"
+                  @click="updateTimelineDocuments({ rootFolderId: undefined })"
+                >
+                  {{ t('reporting.documentBindings.clearFolder') }}
+                </v-btn>
+              </div>
+              <v-text-field
+                :model-value="selectedTab.timeline?.documents?.relationType ?? ''"
+                :label="t('reporting.expand.childTabs.timelineRelation')"
+                :disabled="disabled || !expandConfig.enabled"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="mb-3"
+                @update:model-value="updateTimelineDocuments({ relationType: String($event ?? '') })"
+              />
+              <v-switch
+                :model-value="selectedTab.timeline?.documents?.allowEdit !== false"
+                :label="t('reporting.expand.childTabs.timelineAllowEdit')"
+                color="primary"
+                density="compact"
+                hide-details
+                :disabled="disabled || !expandConfig.enabled"
+                @update:model-value="updateTimelineDocuments({ allowEdit: $event === true })"
+              />
+            </template>
             <v-text-field
               :model-value="selectedTab.childList.limit ?? 500"
               type="number"
@@ -617,5 +856,13 @@ onMounted(async () => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <DiPickResourceDialog
+      v-model="timelineFolderPickerOpen"
+      pick-folder
+      :title="t('reporting.expand.childTabs.timelineFolder')"
+      :hint="t('reporting.expand.childTabs.timelineFolderHint')"
+      :confirm-label="t('reporting.documentBindings.pickFolderConfirm')"
+      @pick="onTimelineFolderPicked"
+    />
   </div>
 </template>

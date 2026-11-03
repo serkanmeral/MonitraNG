@@ -1,0 +1,31 @@
+{
+  "formName": "Ürün Markaları",
+  "formCode": "zimmet-markalar-form",
+  "description": "Ürün kartlarında seçilen marka tanımları.",
+  "datasetName": "zimmet_markalar",
+  "isActive": true,
+  "sideMenuConfig": { "enabled": false },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "ad",
+    "defaultSortOrder": "asc",
+    "listView": { "mode": "default" },
+    "columns": [
+      { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+      { "fieldName": "aktif", "visible": true, "order": 3, "sortable": true, "filterable": true }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "ad", "aktif", "aciklama"],
+    "fieldOrder": ["kod", "ad", "aktif", "aciklama"],
+    "readonlyOnEditFields": ["kod"],
+    "groupOrder": ["Kimlik"],
+    "fieldLayout": {
+      "kod": { "columnSpan": 6, "group": "Kimlik" },
+      "ad": { "columnSpan": 6, "group": "Kimlik" },
+      "aktif": { "columnSpan": 6, "group": "Kimlik" },
+      "aciklama": { "columnSpan": 12, "textWidget": "richtext" }
+    }
+  }
+}

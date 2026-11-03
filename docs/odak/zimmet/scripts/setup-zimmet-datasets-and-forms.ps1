@@ -21,14 +21,17 @@ $formDir = Join-Path $repoRoot "docs/odak/zimmet/automated-forms"
 
 $datasetFiles = @(
     "zimmet_urun_gruplari_dataset.json",
+    "zimmet_markalar_dataset.json",
     "zimmet_urunler_dataset.json",
     "zimmet_depolar_dataset.json",
     "zimmet_depo_lokasyonlari_dataset.json",
-    "zimmet_demirbaslar_dataset.json"
+    "zimmet_demirbaslar_dataset.json",
+    "zimmet_demirbas_hareketleri_dataset.json"
 )
 
 $formFiles = @(
     "zimmet_urun_gruplari_automated_form.json",
+    "zimmet_markalar_automated_form.json",
     "zimmet_urunler_automated_form.json",
     "zimmet_depolar_automated_form.json",
     "zimmet_depo_lokasyonlari_automated_form.json",

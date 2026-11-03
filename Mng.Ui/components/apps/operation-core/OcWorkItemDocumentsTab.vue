@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiMarkdownPreviewDialog from '@/components/apps/document-intelligence/DiMarkdownPreviewDialog.vue';
+import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import OcLinkDocumentDialog from '@/components/apps/operation-core/OcLinkDocumentDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
@@ -16,6 +17,7 @@ import {
   type DiLinkedResource,
   type DiResource,
 } from '@/types/apps/documentIntelligence';
+import { isDiOfficeEditable } from '@/utils/diFilePreview';
 
 const props = defineProps<{
   workItemId: string;
@@ -41,6 +43,8 @@ const filePreviewOpen = ref(false);
 const filePreviewResource = ref<DiResource | null>(null);
 const markdownPreviewOpen = ref(false);
 const markdownPreviewResource = ref<DiResource | null>(null);
+const editorOpen = ref(false);
+const editorResource = ref<DiResource | null>(null);
 
 const excludedResourceIds = ref<string[]>([]);
 
@@ -108,6 +112,11 @@ async function openPreview(item: DiLinkedResource) {
     if (resource.type === DI_RESOURCE_TYPE.markdown) {
       markdownPreviewResource.value = resource;
       markdownPreviewOpen.value = true;
+      return;
+    }
+    if (resource.type === DI_RESOURCE_TYPE.file && isDiOfficeEditable(resource)) {
+      editorResource.value = resource;
+      editorOpen.value = true;
       return;
     }
     if (resource.type === DI_RESOURCE_TYPE.file) {
@@ -301,6 +310,7 @@ onMounted(() => load());
       v-model="markdownPreviewOpen"
       :resource="markdownPreviewResource"
     />
+    <DiResourceEditorDialog v-model="editorOpen" :resource="editorResource" />
   </v-card-text>
 </template>
 

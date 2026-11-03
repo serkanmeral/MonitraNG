@@ -46,3 +46,12 @@ export async function fetchDomainBranding(name: string): Promise<DomainBranding 
     return null;
   }
 }
+
+/** Branding of the only non-deleted tenant. Null when the server has none or more than one. */
+export async function fetchSoleDomainBranding(): Promise<DomainBranding | null> {
+  try {
+    return await $fetch<DomainBranding>('/api/keeper/domain/login-branding');
+  } catch {
+    return null;
+  }
+}

@@ -11,6 +11,9 @@ namespace MngDocument.Infrastructure.Services;
 public interface IDomainLogoProvider
 {
     Task<DomainLogoResult?> GetCurrentDomainLogoAsync(string? bearerToken, CancellationToken ct = default);
+
+    /// <summary>Logo drawn on a white letterhead. Prefers the light-theme mark, then the legacy logo.</summary>
+    Task<DomainLogoResult?> GetLightBackgroundLogoAsync(string? bearerToken, CancellationToken ct = default);
 }
 
 public sealed class DomainLogoResult
@@ -38,7 +41,16 @@ public sealed class DomainLogoProvider : IDomainLogoProvider
         _logger = logger;
     }
 
-    public async Task<DomainLogoResult?> GetCurrentDomainLogoAsync(string? bearerToken, CancellationToken ct = default)
+    public Task<DomainLogoResult?> GetCurrentDomainLogoAsync(string? bearerToken, CancellationToken ct = default) =>
+        ReadDomainLogoAsync(bearerToken, preferLightBackground: false, ct);
+
+    public Task<DomainLogoResult?> GetLightBackgroundLogoAsync(string? bearerToken, CancellationToken ct = default) =>
+        ReadDomainLogoAsync(bearerToken, preferLightBackground: true, ct);
+
+    private async Task<DomainLogoResult?> ReadDomainLogoAsync(
+        string? bearerToken,
+        bool preferLightBackground,
+        CancellationToken ct)
     {
         var token = bearerToken ?? _ctx.BearerToken;
         var domainId = _ctx.DomainId ?? TryReadDomainIdFromToken(token);
@@ -63,6 +75,14 @@ public sealed class DomainLogoProvider : IDomainLogoProvider
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
             var root = doc.RootElement;
+
+            if (preferLightBackground
+                && TryReadProperty(root, "logoLight", out var lightProp))
+            {
+                var decodedLight = DecodeLogoString(lightProp.GetString());
+                if (decodedLight is not null)
+                    return decodedLight;
+            }
 
             if (TryReadProperty(root, "logo", out var logoProp))
             {

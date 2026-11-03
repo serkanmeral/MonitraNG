@@ -6,6 +6,9 @@ import { useDatasetStore } from '@/stores/apps/dataset';
 import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
 import { FileCodeIcon, CheckIcon, XIcon, LanguageIcon } from 'vue-tabler-icons';
+import DiPickResourceDialog from '@/components/apps/document-intelligence/DiPickResourceDialog.vue';
+import { diGetById } from '@/services/documentIntelligenceService';
+import type { DiResource } from '@/types/apps/documentIntelligence';
 import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
 import {
   defaultChoiceWidget,
@@ -151,6 +154,14 @@ const formData = ref({
       };
     },
     groupOrder: [] as string[],
+    documentScope: {
+      rootFolderId: '',
+      title: '',
+      hint: '',
+      allowUpload: true,
+      allowCreateFolder: true,
+      relationTypes: ['reference', 'attachment'] as string[],
+    },
   },
   isActive: true,
 });
@@ -186,6 +197,88 @@ const listViewReportId = computed({
     };
   },
 });
+
+const documentFolderName = ref('');
+const documentFolderPickerOpen = ref(false);
+const documentRelationItems = ['reference', 'attachment', 'evidence', 'output'];
+
+function emptyDocumentScope() {
+  return {
+    rootFolderId: '',
+    title: '',
+    hint: '',
+    allowUpload: true,
+    allowCreateFolder: true,
+    relationTypes: ['reference', 'attachment'] as string[],
+  };
+}
+
+function documentScopeFrom(raw: unknown) {
+  const base = emptyDocumentScope();
+  if (!raw || typeof raw !== 'object') return base;
+  const scope = raw as Record<string, unknown>;
+  const relations = Array.isArray(scope.relationTypes)
+    ? scope.relationTypes.map((item) => String(item).trim()).filter(Boolean)
+    : base.relationTypes;
+  return {
+    rootFolderId: String(scope.rootFolderId ?? '').trim(),
+    title: String(scope.title ?? '').trim(),
+    hint: String(scope.hint ?? '').trim(),
+    allowUpload: scope.allowUpload !== false,
+    allowCreateFolder: scope.allowCreateFolder !== false,
+    relationTypes: relations.length ? relations : base.relationTypes,
+  };
+}
+
+function documentScopePayload() {
+  const scope = formData.value.formConfig.documentScope;
+  const rootFolderId = scope.rootFolderId.trim();
+  const title = scope.title.trim();
+  const hint = scope.hint.trim();
+  const relationTypes = scope.relationTypes.map((item) => item.trim()).filter(Boolean);
+  if (!rootFolderId && !title && !hint) return undefined;
+  return {
+    ...(rootFolderId ? { rootFolderId } : {}),
+    ...(title ? { title } : {}),
+    ...(hint ? { hint } : {}),
+    allowUpload: scope.allowUpload !== false,
+    allowCreateFolder: scope.allowCreateFolder !== false,
+    ...(relationTypes.length ? { relationTypes } : {}),
+  };
+}
+
+function formConfigPayload() {
+  return {
+    visibleFields: formData.value.formConfig.visibleFields || [],
+    readonlyFields: formData.value.formConfig.readonlyFields || [],
+    fieldOrder: formData.value.formConfig.fieldOrder || [],
+    relationFieldConfig: formData.value.formConfig.relationFieldConfig || {},
+    fieldLayout: formData.value.formConfig.fieldLayout || {},
+    groupOrder: formData.value.formConfig.groupOrder || [],
+    ...(documentScopePayload() ? { documentScope: documentScopePayload() } : {}),
+  };
+}
+
+async function rememberDocumentFolder(folderId: string) {
+  const id = folderId.trim();
+  if (!id) {
+    documentFolderName.value = '';
+    return;
+  }
+  try {
+    const folder = await diGetById(id);
+    documentFolderName.value = folder.name?.trim() || id;
+  } catch {
+    documentFolderName.value = id;
+  }
+}
+
+function onDocumentFolderPicked(resource: DiResource) {
+  if (!resource.id) return;
+  formData.value.formConfig.documentScope.rootFolderId = resource.id;
+  documentFolderName.value = resource.name?.trim() || resource.id;
+  documentFolderPickerOpen.value = false;
+}
 
 const listViewModeItems = computed(() => [
   {
@@ -841,14 +934,7 @@ const saveColumnSettings = async () => {
         description: formData.value.description.trim() || undefined,
         datasetName: formData.value.datasetName,
         listConfig: buildListConfigPayload(),
-        formConfig: {
-          visibleFields: formData.value.formConfig.visibleFields || [],
-          readonlyFields: formData.value.formConfig.readonlyFields || [],
-          fieldOrder: formData.value.formConfig.fieldOrder || [],
-          relationFieldConfig: formData.value.formConfig.relationFieldConfig || {},
-          fieldLayout: formData.value.formConfig.fieldLayout || {},
-          groupOrder: formData.value.formConfig.groupOrder || [],
-        },
+        formConfig: formConfigPayload(),
         isActive: formData.value.isActive,
       };
       
@@ -985,9 +1071,11 @@ const loadForm = async () => {
           relationFieldConfig: form.formConfig?.relationFieldConfig || {},
           fieldLayout: form.formConfig?.fieldLayout || {},
           groupOrder: form.formConfig?.groupOrder || [],
+          documentScope: documentScopeFrom(form.formConfig?.documentScope),
         },
         isActive: form.isActive,
       };
+      void rememberDocumentFolder(formData.value.formConfig.documentScope.rootFolderId);
       
       
       // Load selected dataset
@@ -1105,14 +1193,7 @@ const handleSubmit = async () => {
       description: formData.value.description.trim() || undefined,
       datasetName: formData.value.datasetName,
       listConfig: buildListConfigPayload(),
-      formConfig: {
-        visibleFields: formData.value.formConfig.visibleFields || [],
-        readonlyFields: formData.value.formConfig.readonlyFields || [],
-        fieldOrder: formData.value.formConfig.fieldOrder || [],
-        relationFieldConfig: formData.value.formConfig.relationFieldConfig || {},
-        fieldLayout: formData.value.formConfig.fieldLayout || {},
-        groupOrder: formData.value.formConfig.groupOrder || [],
-      },
+      formConfig: formConfigPayload(),
       isActive: formData.value.isActive,
     };
     
@@ -2374,6 +2455,96 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                 <v-col cols="12">
                   <h3 class="text-h6 mb-4">{{ t('automated-forms.form.formConfig.title') }}</h3>
                 </v-col>
+                <v-col cols="12">
+                  <v-card variant="outlined" rounded="lg" class="mb-4">
+                    <v-card-title class="text-subtitle-1">
+                      {{ t('automated-forms.form.formConfig.documentScope.title') }}
+                    </v-card-title>
+                    <v-card-text>
+                      <p class="text-body-2 text-medium-emphasis mb-3">
+                        {{ t('automated-forms.form.formConfig.documentScope.hint') }}
+                      </p>
+                      <v-row>
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-model="formData.formConfig.documentScope.title"
+                            :label="t('automated-forms.form.formConfig.documentScope.cardTitle')"
+                            variant="outlined"
+                            density="compact"
+                            :disabled="loading"
+                          />
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-combobox
+                            v-model="formData.formConfig.documentScope.relationTypes"
+                            :items="documentRelationItems"
+                            :label="t('automated-forms.form.formConfig.documentScope.relations')"
+                            multiple
+                            chips
+                            closable-chips
+                            variant="outlined"
+                            density="compact"
+                            :disabled="loading"
+                          />
+                        </v-col>
+                        <v-col cols="12">
+                          <v-textarea
+                            v-model="formData.formConfig.documentScope.hint"
+                            :label="t('automated-forms.form.formConfig.documentScope.cardHint')"
+                            variant="outlined"
+                            density="compact"
+                            auto-grow
+                            rows="2"
+                            :disabled="loading"
+                          />
+                        </v-col>
+                        <v-col cols="12" md="8">
+                          <v-text-field
+                            :model-value="documentFolderName || formData.formConfig.documentScope.rootFolderId"
+                            :label="t('automated-forms.form.formConfig.documentScope.folder')"
+                            :hint="t('automated-forms.form.formConfig.documentScope.folderHint')"
+                            persistent-hint
+                            readonly
+                            variant="outlined"
+                            density="compact"
+                            :disabled="loading"
+                          />
+                        </v-col>
+                        <v-col cols="12" md="4" class="d-flex align-center ga-2">
+                          <v-btn variant="tonal" :disabled="loading" @click="documentFolderPickerOpen = true">
+                            {{ t('automated-forms.form.formConfig.documentScope.pickFolder') }}
+                          </v-btn>
+                          <v-btn
+                            v-if="formData.formConfig.documentScope.rootFolderId"
+                            variant="text"
+                            :disabled="loading"
+                            @click="formData.formConfig.documentScope.rootFolderId = ''; documentFolderName = ''"
+                          >
+                            {{ t('automated-forms.form.formConfig.documentScope.clearFolder') }}
+                          </v-btn>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-switch
+                            v-model="formData.formConfig.documentScope.allowUpload"
+                            :label="t('automated-forms.form.formConfig.documentScope.allowUpload')"
+                            color="primary"
+                            :disabled="loading"
+                            hide-details
+                          />
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-switch
+                            v-model="formData.formConfig.documentScope.allowCreateFolder"
+                            :label="t('automated-forms.form.formConfig.documentScope.allowCreateFolder')"
+                            color="primary"
+                            :disabled="loading"
+                            hide-details
+                          />
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
                 
                 <!-- Visible Fields -->
                 <v-col cols="12" md="6">
@@ -3433,4 +3604,12 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
       </v-card-actions>
     </v-card>
   </v-dialog>
+  <DiPickResourceDialog
+    v-model="documentFolderPickerOpen"
+    pick-folder
+    :title="t('automated-forms.form.formConfig.documentScope.folder')"
+    :hint="t('automated-forms.form.formConfig.documentScope.folderHint')"
+    :confirm-label="t('automated-forms.form.formConfig.documentScope.pickFolder')"
+    @pick="onDocumentFolderPicked"
+  />
 </template>

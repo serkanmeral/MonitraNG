@@ -43,7 +43,7 @@ public sealed class TemplateLetterheadApplier : ITemplateLetterheadApplier
 
         DomainLogoResult? logo = null;
         if (letterhead.ShowLogo)
-            logo = await _logoProvider.GetCurrentDomainLogoAsync(bearerToken, ct);
+            logo = await _logoProvider.GetLightBackgroundLogoAsync(bearerToken, ct);
 
         return LetterheadInjector.Apply(docxBytes, new LetterheadApplyRequest
         {

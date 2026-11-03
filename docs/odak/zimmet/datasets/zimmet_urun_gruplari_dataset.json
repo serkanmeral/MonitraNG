@@ -65,7 +65,7 @@
       "mandatory": false,
       "unique": false,
       "isArray": false,
-      "validation": { "maxLength": 500 }
+      "validation": { "maxLength": 8000 }
     },
     {
       "fieldType": "bool",

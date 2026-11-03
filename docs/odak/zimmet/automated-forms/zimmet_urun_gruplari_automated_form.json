@@ -1,7 +1,7 @@
 {
-  "formName": "Zimmet Urun Gruplari",
+  "formName": "Ürün Grupları",
   "formCode": "zimmet-urun-gruplari-form",
-  "description": "Zimmet urun gruplari — laptop, monitor, canta, sarf",
+  "description": "Laptop, monitör, çanta ve sarf gibi ürün sınıfları.",
   "datasetName": "zimmet_urun_gruplari",
   "isActive": true,
   "sideMenuConfig": { "enabled": false },
@@ -21,12 +21,18 @@
     ]
   },
   "formConfig": {
-    "visibleFields": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aciklama", "aktif"],
-    "fieldOrder": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aciklama", "aktif"],
+    "visibleFields": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aktif", "aciklama"],
+    "fieldOrder": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aktif", "aciklama"],
     "readonlyOnEditFields": ["kod"],
-    "fieldGroups": [
-      { "key": "genel", "title": "Genel", "fields": ["kod", "ad", "trackBySerial", "isFixedAsset", "isConsumable", "aktif"] },
-      { "key": "detay", "title": "Detay", "fields": ["aciklama"] }
-    ]
+    "groupOrder": ["Kimlik", "Takip"],
+    "fieldLayout": {
+      "kod": { "columnSpan": 6, "group": "Kimlik" },
+      "ad": { "columnSpan": 6, "group": "Kimlik" },
+      "trackBySerial": { "columnSpan": 3, "group": "Takip" },
+      "isFixedAsset": { "columnSpan": 3, "group": "Takip" },
+      "isConsumable": { "columnSpan": 3, "group": "Takip" },
+      "aktif": { "columnSpan": 3, "group": "Takip" },
+      "aciklama": { "columnSpan": 12, "textWidget": "richtext" }
+    }
   }
 }

@@ -472,6 +472,7 @@ export interface DiCreateResourceLinkRequest {
   targetModule: string;
   targetType: string;
   targetId: string;
+  datasetName?: string | null;
   relationType: DiLinkRelationType | string;
 }
 

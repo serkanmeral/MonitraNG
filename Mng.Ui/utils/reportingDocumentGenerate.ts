@@ -74,6 +74,8 @@ export function reportingDocumentFolderParentId(
   reportId: string,
   binding: ReportingDocumentBinding
 ): Promise<string> {
+  const folderId = binding.outputFolderId?.trim();
+  if (folderId) return Promise.resolve(folderId);
   return ensureDiFolderPath(resolveReportingDocumentFolderSegments(reportId, binding));
 }
 
@@ -99,10 +101,11 @@ export async function listReportingGeneratedDocuments(
   reportId: string,
   binding?: ReportingDocumentBinding | null
 ): Promise<DiResource[]> {
+  const explicitFolderId = binding?.outputFolderId?.trim();
   const segments = binding
     ? resolveReportingDocumentFolderSegments(reportId, binding)
     : defaultReportingDocumentFolderSegments(reportId);
-  const folderId = await tryResolveDiFolderPath(segments);
+  const folderId = explicitFolderId || (await tryResolveDiFolderPath(segments));
   if (!folderId) return [];
 
   const listing = await diGetChildren(folderId);

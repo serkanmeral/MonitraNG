@@ -1,4 +1,11 @@
-import type { ReportingCatalog, ReportingCatalogSnapshot, ReportingReportDefinition, ReportingExpandChildListTab, ReportingExpandConfig } from '@/types/apps/reporting';
+import type {
+  ReportingCatalog,
+  ReportingCatalogSnapshot,
+  ReportingReportDefinition,
+  ReportingExpandChildListTab,
+  ReportingExpandConfig,
+  ReportingExpandTimelineConfig,
+} from '@/types/apps/reporting';
 import {
   loadReportingCategories,
   migrateFlatCategoriesToTree,
@@ -71,6 +78,70 @@ function normalizeCatalog(raw: unknown, domainKey: string): ReportingCatalog {
   return { reports };
 }
 
+function parseStringMap(raw: unknown): Record<string, string> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const map = Object.fromEntries(
+    Object.entries(raw as Record<string, unknown>)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0)
+      .map(([key, value]) => [key, value.trim()])
+  );
+  return Object.keys(map).length > 0 ? map : undefined;
+}
+
+function parseTimelineDocuments(raw: unknown): ReportingExpandTimelineConfig['documents'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  const rootFolderId = String(o.rootFolderId ?? o.RootFolderId ?? '').trim() || undefined;
+  const relationType = String(o.relationType ?? o.RelationType ?? '').trim() || undefined;
+  const allowRaw = o.allowEdit ?? o.AllowEdit;
+  const allowEdit = typeof allowRaw === 'boolean' ? allowRaw : undefined;
+  if (!rootFolderId && !relationType && allowEdit == null) return undefined;
+  return {
+    ...(rootFolderId ? { rootFolderId } : {}),
+    ...(relationType ? { relationType } : {}),
+    ...(allowEdit != null ? { allowEdit } : {}),
+  };
+}
+
+function parseTimelineConfig(raw: unknown): ReportingExpandTimelineConfig | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const t = raw as Record<string, unknown>;
+  const text = (value: unknown) => {
+    const s = typeof value === 'string' ? value.trim() : '';
+    return s || undefined;
+  };
+  const titleMap = parseStringMap(t.titleMap ?? t.TitleMap);
+  const colorMap = parseStringMap(t.colorMap ?? t.ColorMap);
+  const placeRaw = t.placeFields ?? t.PlaceFields;
+  const placeFields = Array.isArray(placeRaw)
+    ? placeRaw.map((item) => String(item).trim()).filter(Boolean)
+    : undefined;
+  const documents = parseTimelineDocuments(t.documents ?? t.Documents);
+  const config: ReportingExpandTimelineConfig = {
+    whenField: text(t.whenField ?? t.WhenField),
+    titleField: text(t.titleField ?? t.TitleField),
+    personField: text(t.personField ?? t.PersonField),
+    refField: text(t.refField ?? t.RefField),
+    titleMap,
+    colorMap,
+    placeFields: placeFields && placeFields.length > 0 ? placeFields : undefined,
+    documents,
+  };
+  if (
+    !config.whenField &&
+    !config.titleField &&
+    !config.personField &&
+    !config.refField &&
+    !config.titleMap &&
+    !config.colorMap &&
+    !config.placeFields &&
+    !config.documents
+  ) {
+    return undefined;
+  }
+  return config;
+}
+
 function parseExpandConfig(raw: unknown): ReportingExpandConfig {
   const defaults = defaultReportingExpandConfigFromFields([]);
   if (!raw || typeof raw !== 'object') return defaults;
@@ -93,10 +164,16 @@ function parseExpandConfig(raw: unknown): ReportingExpandConfig {
           }
           const fieldPoliciesRaw = t.fieldPolicies ?? t.FieldPolicies;
           const visibilityPoliciesRaw = t.visibilityPolicies ?? t.VisibilityPolicies;
+          const presentationRaw = String(t.presentation ?? t.Presentation ?? '').trim();
+          const presentation =
+            presentationRaw === 'timeline' || presentationRaw === 'table' ? presentationRaw : undefined;
+          const timeline = parseTimelineConfig(t.timeline ?? t.Timeline);
           return {
             id,
             title,
             childList,
+            ...(presentation ? { presentation } : {}),
+            ...(timeline ? { timeline } : {}),
             fieldPolicies: parseOdakFieldPoliciesBlob(fieldPoliciesRaw ?? {}),
             visibilityPolicies: Array.isArray(visibilityPoliciesRaw)
               ? (visibilityPoliciesRaw as ReportingExpandChildListTab['visibilityPolicies'])

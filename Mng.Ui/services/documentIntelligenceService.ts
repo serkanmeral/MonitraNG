@@ -1,4 +1,4 @@
-import { fetchFromDocuments, fetchBlobFromDataGateway, getAccessToken } from '@/services/apiService';
+import { fetchFromDataGateway, fetchFromDocuments, fetchBlobFromDataGateway, getAccessToken } from '@/services/apiService';
 import {
   documentsApiErrorUserMessage,
   parseDocumentsApiErrorBody,
@@ -1149,6 +1149,84 @@ export async function diGetLinkedResourcesForWorkItem(
     'GET'
   );
   return mapLinkListResult(raw, mapLinkedResource);
+}
+
+function dataRows(raw: unknown): Record<string, unknown>[] {
+  if (Array.isArray(raw)) {
+    return raw.filter((row) => row && typeof row === 'object') as Record<string, unknown>[];
+  }
+  const o = asRecord(raw);
+  const items = o.items ?? o.data ?? o.results;
+  if (!Array.isArray(items)) return [];
+  return items.filter((row) => row && typeof row === 'object') as Record<string, unknown>[];
+}
+
+/** Katalog ve olay belgeleri. Canlı doküman servisi yalnızca iş kaydı hedefini kabul ettiği için satır bağı veri katmanına yazılır. */
+export async function diCreateDatasetRowLink(request: {
+  resourceId: string;
+  datasetName: string;
+  dataId: string;
+  relationType: string;
+}): Promise<void> {
+  await fetchFromDataGateway('/api/v1/data/dm_resource_links', 'POST', {
+    resourceId: request.resourceId,
+    targetModule: 'dataGateway',
+    targetType: 'datasetRow',
+    targetId: request.dataId,
+    datasetName: request.datasetName,
+    relationType: request.relationType,
+  });
+}
+
+export async function diGetLinkedResourcesForDatasetRow(
+  datasetName: string,
+  dataId: string
+): Promise<DiResourceLinkListResult<DiLinkedResource>> {
+  const filter = [
+    'targetModule:eq:dataGateway',
+    'targetType:eq:datasetRow',
+    `targetId:eq:${dataId}`,
+  ].join(',');
+  const raw = await fetchFromDataGateway(
+    `/api/v1/data/dm_resource_links?filter=${encodeURIComponent(filter)}&limit=200&expand=false`
+  );
+  const name = datasetName.trim().toLowerCase();
+  const rows = dataRows(raw).filter((row) => {
+    const moduleName = str(row, 'targetModule')?.trim().toLowerCase() ?? '';
+    const type = str(row, 'targetType')?.trim().toLowerCase() ?? '';
+    const id = str(row, 'targetId')?.trim() ?? '';
+    const stored = str(row, 'datasetName')?.trim().toLowerCase() ?? '';
+    return moduleName === 'datagateway'
+      && type === 'datasetrow'
+      && id === dataId
+      && (!stored || stored === name);
+  });
+  const items = await Promise.all(
+    rows.map(async (row): Promise<DiLinkedResource | null> => {
+      const linkId = str(row, '__dataId') ?? str(row, 'dataId') ?? '';
+      const resourceId = str(row, 'resourceId') ?? '';
+      if (!linkId || !resourceId) return null;
+      let resource: DiResource | null = null;
+      try {
+        resource = await diGetById(resourceId);
+      } catch {
+        resource = null;
+      }
+      return {
+        linkId,
+        resourceId,
+        relationType: str(row, 'relationType') ?? 'reference',
+        resourceType: resource?.type ?? null,
+        name: resource?.name ?? null,
+        title: resource?.title ?? null,
+        mimeType: resource?.mimeType ?? null,
+        extension: resource?.extension ?? null,
+        permissions: resource?.permissions ?? diFullPermission(),
+      };
+    })
+  );
+  const linked = items.filter((item): item is DiLinkedResource => item !== null);
+  return { items: linked, total: linked.length };
 }
 
 export async function diGetRelatedResources(

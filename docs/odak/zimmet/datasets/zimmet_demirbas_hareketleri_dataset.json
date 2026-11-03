@@ -1,0 +1,85 @@
+{
+  "name": "zimmet_demirbas_hareketleri",
+  "description": "Demirbaş yaşam hareketleri — depo girişi, zimmet, iade, hurda, kayıp",
+  "forceSchema": true,
+  "logging": "none",
+  "publish_mode": "none",
+  "indexList": [
+    { "name": "idx_demirbasId", "fields": { "demirbasId": 1 }, "unique": false },
+    { "name": "idx_isRef", "fields": { "isRef": 1 }, "unique": false }
+  ],
+  "fields": [
+    {
+      "fieldType": "relation",
+      "name": "demirbasId",
+      "title": "Demirbaş",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_demirbaslar"
+    },
+    {
+      "fieldType": "select",
+      "name": "olay",
+      "title": "Olay",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "depoya_girdi", "label": "Depoya girdi" },
+            { "value": "zimmetlendi", "label": "Zimmetlendi" },
+            { "value": "depoya_alindi", "label": "Depoya alındı" },
+            { "value": "hurdaya_ayrildi", "label": "Hurdaya ayrıldı" },
+            { "value": "kayip", "label": "Kayıp" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "tarih",
+      "title": "Tarih",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "persons",
+      "name": "personelId",
+      "title": "Personel",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "relation",
+      "name": "depoId",
+      "title": "Depo",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_depolar"
+    },
+    {
+      "fieldType": "relation",
+      "name": "lokasyonId",
+      "title": "Lokasyon",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_depo_lokasyonlari"
+    },
+    {
+      "fieldType": "text",
+      "name": "isRef",
+      "title": "İş kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 40 }
+    }
+  ]
+}

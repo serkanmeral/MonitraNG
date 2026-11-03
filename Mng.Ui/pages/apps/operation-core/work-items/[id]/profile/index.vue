@@ -36,6 +36,7 @@ import {
   ocUpdateWorkItem,
   ocUpdateWorkItemComment,
 } from '@/services/operationCoreService';
+import { findTransitionDocumentAction, writeTransitionDocuments } from '@/utils/transitionDocumentAction';
 import { useAuthStore } from '@/stores/auth';
 import type {
   OcAttachment,
@@ -493,6 +494,7 @@ const transitionTarget = ref<OcProfileAction | null>(null);
 const transitionComment = ref('');
 const transitionBusy = ref(false);
 const transitionError = ref<string | null>(null);
+const cycleDocumentNote = ref('');
 // Geçiş için zorunlu alanların ön-toplanması (MO 400 dönmeden önce kullanıcıdan al).
 const transitionFieldModel = ref<Record<string, unknown>>({});
 const editFormRef = ref<{ flushLookupCopies?: () => Promise<void> } | null>(null);
@@ -569,6 +571,9 @@ async function confirmTransition() {
         ? Object.fromEntries(keys.map((key) => [key, transitionFieldModel.value[key]]))
         : null;
     const fields = ocEnrichTransitionFields(action.transitionKey, displayModel.value, rawFields);
+    const cycleKey = action.transitionKey;
+    const cycleWorkItemKey = workItemKey.value;
+    const cycleFields = { ...displayModel.value, ...(fields ?? {}) };
     await ocApplyTransition(workItemId.value, action.transitionKey, {
       comment: transitionComment.value,
       fields,
@@ -577,6 +582,21 @@ async function confirmTransition() {
     transitionTarget.value = null;
     transitionFieldModel.value = {};
     await loadProfile(true);
+    const documentAction = profile.value?.workspaceId
+      ? await findTransitionDocumentAction(profile.value.workspaceId, cycleKey)
+      : null;
+    if (documentAction) {
+      try {
+        const written = await writeTransitionDocuments({
+          action: documentAction,
+          workItemKey: cycleWorkItemKey,
+          fields: cycleFields,
+        });
+        if (written.note) cycleDocumentNote.value = written.note;
+      } catch {
+        cycleDocumentNote.value = 'Geçiş tamamlandı. Belge yazılamadı.';
+      }
+    }
   } catch (e: unknown) {
     transitionError.value = panelError(e, 'operationCore.profile.transitions.error');
   } finally {
@@ -725,6 +745,17 @@ watch(workItemId, () => {
         </v-card-text>
       </template>
     </v-card>
+    <v-alert
+      v-if="cycleDocumentNote"
+      class="mb-3"
+      type="info"
+      variant="tonal"
+      density="compact"
+      closable
+      @click:close="cycleDocumentNote = ''"
+    >
+      {{ cycleDocumentNote }}
+    </v-alert>
 
     <!-- Durum geçişi onay dialog'u -->
     <v-dialog v-model="transitionDialog" max-width="520" persistent>

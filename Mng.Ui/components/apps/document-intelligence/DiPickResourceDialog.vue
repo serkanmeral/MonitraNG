@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { diGetBootstrap, diGetRecent, diGetTreeChildren, diSearch } from '@/services/documentIntelligenceService';
+import { diGetBootstrap, diGetById, diGetRecent, diGetTreeChildren, diSearch } from '@/services/documentIntelligenceService';
 import {
   DI_RESOURCE_TYPE,
   type DiResource,
@@ -33,6 +33,8 @@ const props = withDefaults(
     uploadLabel?: string | null;
     maxSelection?: number;
     initialSelection?: DiResource[];
+    /** Onay, seçili klasörü döndürür. Dosya listesi gizlenir. */
+    pickFolder?: boolean;
   }>(),
   {
     markdownOnly: false,
@@ -49,6 +51,7 @@ const props = withDefaults(
     uploadLabel: null,
     maxSelection: 4,
     initialSelection: () => [],
+    pickFolder: false,
   }
 );
 
@@ -68,6 +71,7 @@ const open = computed({
 });
 
 const selectedFolderId = ref<string | null>(null);
+const pickedFolder = ref<DiResource | null>(null);
 const tree = ref<DiTreeNode[]>([]);
 const children = ref<DiResource[]>([]);
 const treeLoading = ref(false);
@@ -206,6 +210,7 @@ async function loadTree() {
         : boot.tree;
     children.value = boot.children.items;
     selectedFolderId.value = root;
+    pickedFolder.value = root ? boot.selectedFolder : null;
     selectedResourceId.value = null;
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'documentIntelligence.internalLink.loadTreeError');
@@ -225,6 +230,9 @@ async function selectFolder(folderId: string | null) {
   try {
     const boot = await diGetBootstrap(activeFolderId(folderId));
     children.value = boot.children.items;
+    if (!folderId) pickedFolder.value = null;
+    else if (boot.selectedFolder?.id) pickedFolder.value = boot.selectedFolder;
+    else pickedFolder.value = await diGetById(folderId);
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'documentIntelligence.internalLink.loadTreeError');
     children.value = [];
@@ -265,6 +273,12 @@ function onUploadPick(event: Event) {
 }
 
 function confirmPick() {
+  if (props.pickFolder) {
+    if (!pickedFolder.value?.id) return;
+    emit('pick', pickedFolder.value);
+    open.value = false;
+    return;
+  }
   if (props.multiple) {
     if (!selectedResources.value.length) return;
     emit('pick-many', selectedResources.value.slice(0, props.maxSelection));
@@ -293,6 +307,7 @@ watch(open, (v) => {
   if (!v) {
     selectedResourceId.value = null;
     selectedResources.value = [];
+    pickedFolder.value = null;
     errorLocal.value = null;
     searchQuery.value = '';
     searchResults.value = [];
@@ -321,6 +336,7 @@ watch(open, (v) => {
       <v-divider />
       <v-card-text class="pa-4">
         <v-text-field
+          v-if="!pickFolder"
           v-model="searchQuery"
           :label="t('documentIntelligence.internalLink.searchLabel')"
           :placeholder="t('documentIntelligence.internalLink.searchPlaceholder')"
@@ -347,7 +363,7 @@ watch(open, (v) => {
           </v-chip>
         </div>
 
-        <div v-if="!searchQuery.trim() && recentPages.length" class="mb-3">
+        <div v-if="!pickFolder && !searchQuery.trim() && recentPages.length" class="mb-3">
           <div class="text-caption text-medium-emphasis mb-2">
             {{ t('documentIntelligence.internalLink.recentPages') }}
           </div>
@@ -405,7 +421,15 @@ watch(open, (v) => {
               @select="selectFolder"
             />
           </div>
-          <div class="flex-grow-1">
+          <div v-if="pickFolder" class="flex-grow-1">
+            <p v-if="pickedFolder" class="text-body-2 mb-0">
+              {{ pickedFolder.name }}
+            </p>
+            <p v-else class="text-body-2 text-medium-emphasis mb-0">
+              {{ dialogHint }}
+            </p>
+          </div>
+          <div v-else class="flex-grow-1">
             <v-progress-linear v-if="childrenLoading" indeterminate color="primary" class="mb-2" />
             <div v-if="!childrenLoading && !displayedResources.length" class="text-body-2 text-medium-emphasis py-4">
               {{ indexedOnly ? t('documentIntelligence.internalLink.indexedEmpty') : t('documentIntelligence.internalLink.noPickable') }}
@@ -455,7 +479,7 @@ watch(open, (v) => {
           color="primary"
           variant="flat"
           class="text-none"
-          :disabled="multiple ? !selectedResources.length : !selectedResource"
+          :disabled="pickFolder ? !pickedFolder : multiple ? !selectedResources.length : !selectedResource"
           @click="confirmPick"
         >
           {{ dialogConfirm }}

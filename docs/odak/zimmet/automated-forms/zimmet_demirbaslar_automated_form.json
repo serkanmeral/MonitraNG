@@ -1,7 +1,7 @@
 {
-  "formName": "Zimmet Demirbaslar",
+  "formName": "Demirbaş Envanteri",
   "formCode": "zimmet-demirbaslar-form",
-  "description": "Tekil fiziksel demirbas envanteri",
+  "description": "Depoda bekleyen ve personele zimmetlenmiş tüm demirbaşlar.",
   "datasetName": "zimmet_demirbaslar",
   "isActive": true,
   "sideMenuConfig": {
@@ -28,31 +28,51 @@
   },
   "formConfig": {
     "visibleFields": [
-      "katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
-      "zimmetliPersonelId", "girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId",
+      "demirbasNo", "katalogUrunId", "urunGrubuId", "markaId", "model", "seriNo", "durum", "girisTarihi",
+      "depoId", "lokasyonId", "zimmetliPersonelId",
+      "garantiBitis", "alisFiyati", "tedarikciId",
       "girisRef", "zimmetRef", "notlar"
     ],
     "fieldOrder": [
-      "katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum", "depoId", "lokasyonId",
-      "zimmetliPersonelId", "girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId",
+      "demirbasNo", "katalogUrunId", "urunGrubuId", "markaId", "model", "seriNo", "durum", "girisTarihi",
+      "depoId", "lokasyonId", "zimmetliPersonelId",
+      "garantiBitis", "alisFiyati", "tedarikciId",
       "girisRef", "zimmetRef", "notlar"
     ],
-    "readonlyFields": ["durum", "zimmetliPersonelId", "depoId", "lokasyonId"],
+    "readonlyFields": ["durum", "zimmetliPersonelId", "depoId", "lokasyonId", "girisTarihi"],
     "readonlyOnEditFields": ["demirbasNo"],
-    "relationConfig": {
+    "groupOrder": ["Kimlik", "Konum", "Garanti", "Referans"],
+    "relationFieldConfig": {
       "katalogUrunId": { "displayField": "ad" },
       "urunGrubuId": { "displayField": "ad" },
+      "markaId": { "displayField": "ad" },
       "depoId": { "displayField": "ad" },
       "lokasyonId": { "displayField": "ad" },
       "tedarikciId": { "displayField": "unvan" }
     },
     "fieldLayout": {
-      "notlar": { "textWidget": "textarea" }
+      "demirbasNo": { "columnSpan": 6, "group": "Kimlik" },
+      "katalogUrunId": { "columnSpan": 6, "group": "Kimlik" },
+      "urunGrubuId": { "columnSpan": 6, "group": "Kimlik" },
+      "markaId": { "columnSpan": 6, "group": "Kimlik" },
+      "model": { "columnSpan": 6, "group": "Kimlik" },
+      "seriNo": { "columnSpan": 6, "group": "Kimlik" },
+      "durum": { "columnSpan": 6, "group": "Kimlik" },
+      "girisTarihi": { "columnSpan": 6, "group": "Kimlik" },
+      "depoId": { "columnSpan": 6, "group": "Konum" },
+      "lokasyonId": { "columnSpan": 6, "group": "Konum" },
+      "zimmetliPersonelId": { "columnSpan": 6, "group": "Konum" },
+      "garantiBitis": { "columnSpan": 6, "group": "Garanti" },
+      "alisFiyati": { "columnSpan": 6, "group": "Garanti" },
+      "tedarikciId": { "columnSpan": 6, "group": "Garanti" },
+      "girisRef": { "columnSpan": 6, "group": "Referans" },
+      "zimmetRef": { "columnSpan": 6, "group": "Referans" },
+      "notlar": { "columnSpan": 12, "group": "Referans", "textWidget": "textarea" }
     },
     "fieldGroups": [
-      { "key": "kimlik", "title": "Kimlik", "fields": ["katalogUrunId", "urunGrubuId", "seriNo", "marka", "model", "durum"] },
+      { "key": "kimlik", "title": "Kimlik", "fields": ["demirbasNo", "katalogUrunId", "urunGrubuId", "markaId", "model", "seriNo", "durum", "girisTarihi"] },
       { "key": "konum", "title": "Konum", "fields": ["depoId", "lokasyonId", "zimmetliPersonelId"] },
-      { "key": "finans", "title": "Finans / garanti", "fields": ["girisTarihi", "garantiBitis", "alisFiyati", "tedarikciId"] },
+      { "key": "garanti", "title": "Garanti", "fields": ["garantiBitis", "alisFiyati", "tedarikciId"] },
       { "key": "referans", "title": "Referans", "fields": ["girisRef", "zimmetRef", "notlar"] }
     ]
   }

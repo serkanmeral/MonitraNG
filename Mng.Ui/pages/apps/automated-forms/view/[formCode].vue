@@ -15,14 +15,15 @@ import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
-import { useLocaleStore } from '@/stores/locale';
 import { fetchFromDataGateway, fetchBlobFromDataGateway, getDataGatewayProxyUrl } from '@/services/apiService';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 import { usePagePermissions } from '@/composables/usePagePermissions';
 import { afListViewReportId, isAfReportListView } from '@/utils/afListView';
 import ReportingRunnerView from '@/components/apps/reporting/ReportingRunnerView.vue';
+import LinkedDatasetDocuments from '@/components/apps/automated-forms/LinkedDatasetDocuments.vue';
 import { REPORTING_EMBED_SHARE_PATH } from '@/utils/reportingShareLink';
+import { formatTrDisplayDate } from '@/utils/trDisplayDate';
 
 const { getFieldLabel } = useFieldLabel();
 const { canCreate, canUpdate, canDelete, canExport } = usePagePermissions();
@@ -46,13 +47,36 @@ const formStore = useAutomatedFormsStore();
 const datasetStore = useDatasetStore();
 const userStore = useUserStore();
 const authStore = useAuthStore();
-const localeStore = useLocaleStore();
 
 const formCode = computed(() => route.params.formCode as string);
 
 // Form metadata
 const form = ref<any>(null);
 const dataset = ref<any>(null);
+
+const catalogDocumentScope = computed(() => {
+  const scope = form.value?.formConfig?.documentScope;
+  if (!scope || typeof scope !== 'object') return null;
+  return scope as {
+    rootFolderId?: string;
+    allowUpload?: boolean;
+    allowCreateFolder?: boolean;
+    title?: string;
+    hint?: string;
+    relationTypes?: string[];
+  };
+});
+const catalogDocumentRootId = computed(() => catalogDocumentScope.value?.rootFolderId?.trim() || null);
+const catalogDocumentAllowUpload = computed(() => catalogDocumentScope.value?.allowUpload !== false);
+const catalogDocumentAllowCreate = computed(() => catalogDocumentScope.value?.allowCreateFolder !== false);
+const catalogDocumentTitle = computed(
+  () => catalogDocumentScope.value?.title?.trim() || t('automated-forms.view.formDialog.linkedDocumentsTitle')
+);
+const catalogDocumentHint = computed(() => catalogDocumentScope.value?.hint?.trim() || '');
+const catalogDocumentRelations = computed(() => {
+  const types = catalogDocumentScope.value?.relationTypes?.map((item) => item.trim()).filter(Boolean) ?? [];
+  return types.length ? types : ['reference', 'attachment'];
+});
 const loading = ref(false);
 const errorMessage = ref('');
 
@@ -213,7 +237,7 @@ const filterableColumns = computed<AfFilterColumn[]>(() => {
 async function loadFilterLookupOptions() {
   if (!dataset.value?.fields || !form.value) return;
 
-  const relationConfig = form.value.formConfig?.relationFieldConfig ?? {};
+  const relationConfig = relationFieldMap();
   const nextRelation: Record<string, { value: string; title: string }[]> = {};
 
   for (const col of filterableColumns.value) {
@@ -246,7 +270,7 @@ async function loadFilterLookupOptions() {
 function getEffectiveListDisplayField(fieldName: string): string {
   const columnConfig = form.value?.listConfig?.columns?.find((c) => c.fieldName === fieldName);
   if (columnConfig?.displayField) return columnConfig.displayField;
-  const relationConfig = form.value?.formConfig?.relationFieldConfig?.[fieldName];
+  const relationConfig = getRelationConfig(fieldName);
   if (relationConfig?.displayField) return relationConfig.displayField;
   const field = dataset.value?.fields?.find((f: { name: string }) => f.name === fieldName);
   if (field?.relationField) return field.relationField;
@@ -256,7 +280,7 @@ function getEffectiveListDisplayField(fieldName: string): string {
 async function loadRelationListLabels() {
   if (!dataset.value?.fields || !form.value) return;
 
-  const relationConfig = form.value.formConfig?.relationFieldConfig ?? {};
+  const relationConfig = relationFieldMap();
   const configuredColumns = form.value.listConfig?.columns?.filter((c) => c.visible !== false) ?? [];
   const fieldNames = configuredColumns.length
     ? configuredColumns.map((c) => c.fieldName)
@@ -1344,13 +1368,21 @@ const closeDeleteDialog = () => {
   deleteDialogError.value = '';
 };
 
-// Get relation config for a field
-const getRelationConfig = (fieldName: string) => {
-  if (!form.value || !form.value.formConfig || !form.value.formConfig.relationFieldConfig) {
-    return undefined;
-  }
-  return form.value.formConfig.relationFieldConfig[fieldName];
-};
+type AfRelationFieldConfig = { idField?: string; displayField?: string };
+
+// Seed files used relationConfig; the designer stores relationFieldConfig. Both are read.
+function relationFieldMap(): Record<string, AfRelationFieldConfig> {
+  const cfg = form.value?.formConfig as
+    | {
+        relationFieldConfig?: Record<string, AfRelationFieldConfig>;
+        relationConfig?: Record<string, AfRelationFieldConfig>;
+      }
+    | undefined;
+  if (!cfg) return {};
+  return { ...(cfg.relationConfig ?? {}), ...(cfg.relationFieldConfig ?? {}) };
+}
+
+const getRelationConfig = (fieldName: string) => relationFieldMap()[fieldName];
 
 // Get field column span from layout config
 const getFieldColumnSpan = (fieldName: string) => {
@@ -1530,6 +1562,10 @@ const formatCellValue = (value: any, fieldName: string) => {
     return value; // Single file path
   }
   
+  if (fieldType === 'date') {
+    return formatTrDisplayDate(value) || value;
+  }
+
   if (fieldType === 'datetime') {
     // Check if there's custom formatting configured for this column
     const columnConfig = form.value?.listConfig?.columns?.find(c => c.fieldName === fieldName);
@@ -1574,14 +1610,8 @@ const formatCellValue = (value: any, fieldName: string) => {
       }
     }
     
-    // Default datetime formatting (if no custom format configured)
-    try {
-      const locale = localeStore.locale || 'tr';
-      const localeMap: Record<string, string> = { tr: 'tr-TR', en: 'en-US', fr: 'fr-FR', ar: 'ar-SA', zh: 'zh-CN' };
-      return new Date(value).toLocaleString(localeMap[locale] || 'tr-TR');
-    } catch {
-      return value;
-    }
+    // Default datetime formatting
+    return formatTrDisplayDate(value) || value;
   }
   
   // CRITICAL: Check person and personGroup types BEFORE object type
@@ -2283,7 +2313,7 @@ const getArrayItemDisplayValue = (arrayItem: any, fieldName: string): string => 
   }
   
   // Try to use displayField from formConfig relationFieldConfig
-  const relationConfig = form.value?.formConfig?.relationFieldConfig?.[fieldName];
+  const relationConfig = getRelationConfig(fieldName);
   if (relationConfig?.displayField && arrayItem[relationConfig.displayField] !== undefined) {
     return String(arrayItem[relationConfig.displayField]);
   }
@@ -3055,6 +3085,26 @@ const getFormDescription = (): string => {
             </v-col>
           </v-row>
         </v-form>
+        <v-card
+          v-if="formDialogMode === 'edit' && catalogDocumentRootId && currentEditingItemId"
+          variant="outlined"
+          class="mt-4"
+          rounded="lg"
+        >
+          <v-card-title class="text-subtitle-1">{{ catalogDocumentTitle }}</v-card-title>
+          <v-card-text>
+            <LinkedDatasetDocuments
+              :dataset-name="form?.datasetName"
+              :data-id="currentEditingItemId"
+              :can-edit="canUpdate"
+              :hint="catalogDocumentHint"
+              :relation-types="catalogDocumentRelations"
+              :root-folder-id="catalogDocumentRootId"
+              :allow-upload="catalogDocumentAllowUpload"
+              :allow-create-folder="catalogDocumentAllowCreate"
+            />
+          </v-card-text>
+        </v-card>
       </v-card-text>
       
       <v-divider></v-divider>

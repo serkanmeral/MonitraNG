@@ -5,12 +5,14 @@ public static class ResourceLinkTargetModule
 {
     public const string OperationCore = "operationCore";
     public const string DocumentIntelligence = "documentIntelligence";
+    public const string DataGateway = "dataGateway";
 }
 
 public static class ResourceLinkTargetType
 {
     public const string WorkItem = "workItem";
     public const string Resource = "resource";
+    public const string DatasetRow = "datasetRow";
 }
 
 public static class ResourceLinkRelationType
@@ -50,6 +52,10 @@ public static class ResourceLinkRelationType
     public static bool IsResourceTarget(string? module, string? type) =>
         string.Equals(module, ResourceLinkTargetModule.DocumentIntelligence, StringComparison.OrdinalIgnoreCase)
         && string.Equals(type, ResourceLinkTargetType.Resource, StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsDatasetRowTarget(string? module, string? type) =>
+        string.Equals(module, ResourceLinkTargetModule.DataGateway, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(type, ResourceLinkTargetType.DatasetRow, StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>OperationCore work item dataset adı (DG).</summary>

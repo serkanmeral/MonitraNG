@@ -14,6 +14,7 @@ import ReportingSummaryFooter from '@/components/apps/reporting/ReportingSummary
 import { buildReportingChildListFilters, fetchReportingChildList } from '@/utils/reportingChildList';
 import { reportingCellDisplayValue } from '@/utils/reportingCellDisplay';
 import { openReportingColumnLink } from '@/utils/reportingColumnLink';
+import { reportingDocumentBindingMatchesRow } from '@/utils/reportingDocumentBindings';
 import { reportingRowId } from '@/utils/reportingExpandLayout';
 import {
   emptyOdakFieldPoliciesBlob,
@@ -98,6 +99,11 @@ const childRowBindings = computed(() => {
 });
 
 const showChildDocs = computed(() => childRowBindings.value.length > 0 && !!props.parentListConfig);
+
+function childBindingsFor(item: unknown): ReportingDocumentBinding[] {
+  const row = reportingDataTableRow(item as Record<string, unknown>);
+  return childRowBindings.value.filter((binding) => reportingDocumentBindingMatchesRow(binding, row));
+}
 
 const fieldMap = computed(() => new Map(schemaFields.value.map((f) => [f.name, f])));
 
@@ -374,7 +380,7 @@ async function generateCert(binding: ReportingDocumentBinding, item: Record<stri
       <template v-if="showChildDocs" #item.__docs="{ item }">
         <div class="d-flex flex-wrap ga-1 justify-end">
           <v-btn
-            v-for="b in childRowBindings"
+            v-for="b in childBindingsFor(item)"
             :key="b.id"
             size="x-small"
             variant="tonal"

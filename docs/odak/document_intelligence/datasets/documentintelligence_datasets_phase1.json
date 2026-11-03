@@ -818,6 +818,16 @@
       },
       {
         "fieldType": "text",
+        "name": "datasetName",
+        "title": "Dataset adi (dataGateway/datasetRow hedefi)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
         "name": "relationType",
         "title": "Iliski tipi (reference|attachment|evidence|output|derivedFrom|implements|dependsOn|supersedes|conflictsWith)",
         "mandatory": true,

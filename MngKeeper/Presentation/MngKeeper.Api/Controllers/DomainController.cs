@@ -128,6 +128,33 @@ namespace MngKeeper.Api.Controllers
         }
 
         /// <summary>
+        /// Public branding when this server has exactly one tenant. Multiple tenants return 404
+        /// so the login page keeps using the host label instead.
+        /// </summary>
+        [HttpGet("login-branding")]
+        [ProducesResponseType(typeof(DomainBrandingResponse), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<DomainBrandingResponse>> GetSoleDomainBranding()
+        {
+            try
+            {
+                var domains = (await _domainRepository.GetAllAsync())
+                    .Where(domain => domain.Status != DomainStatus.Deleted)
+                    .Take(2)
+                    .ToList();
+                if (domains.Count != 1)
+                    return NotFound();
+
+                return Ok(ToBranding(domains[0]));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting sole domain branding");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        /// <summary>
         /// Public branding for a tenant login host. Returns display name and logos only.
         /// </summary>
         [HttpGet("branding/{name}")]
@@ -145,16 +172,7 @@ namespace MngKeeper.Api.Controllers
                 if (domain == null || domain.Status == DomainStatus.Deleted)
                     return NotFound();
 
-                return Ok(new DomainBrandingResponse
-                {
-                    Name = domain.Name,
-                    DisplayName = string.IsNullOrWhiteSpace(domain.DisplayName) ? domain.Name : domain.DisplayName,
-                    Logo = domain.Logo,
-                    LogoDark = domain.LogoDark,
-                    LogoLight = domain.LogoLight,
-                    LogoUrl = domain.LogoUrl,
-                    UpdatedAt = domain.UpdatedAt
-                });
+                return Ok(ToBranding(domain));
             }
             catch (Exception ex)
             {
@@ -162,6 +180,18 @@ namespace MngKeeper.Api.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        private static DomainBrandingResponse ToBranding(MngKeeper.Domain.Entities.Domain domain) =>
+            new()
+            {
+                Name = domain.Name,
+                DisplayName = string.IsNullOrWhiteSpace(domain.DisplayName) ? domain.Name : domain.DisplayName,
+                Logo = domain.Logo,
+                LogoDark = domain.LogoDark,
+                LogoLight = domain.LogoLight,
+                LogoUrl = domain.LogoUrl,
+                UpdatedAt = domain.UpdatedAt
+            };
 
         private static readonly Regex BrandingNamePattern = new(
             "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",

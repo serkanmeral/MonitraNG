@@ -32,7 +32,7 @@
           "width": 140,
           "relationDisplayField": "ad"
         },
-        { "fieldName": "marka", "title": "Marka", "visible": true, "order": 4, "sortable": true, "filterable": true, "width": 120 },
+        { "fieldName": "markaId", "title": "Marka", "visible": true, "order": 4, "sortable": false, "filterable": true, "width": 120, "relationDisplayField": "ad" },
         { "fieldName": "model", "title": "Model", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 140 },
         {
           "fieldName": "varsayilanGarantiAy",
@@ -65,14 +65,14 @@
           "key": "detail",
           "title": "Genel",
           "cols": 12,
-          "fields": ["kod", "ad", "urunGrubuId", "marka", "model", "varsayilanGarantiAy", "aktif", "aciklama"]
+          "fields": ["kod", "ad", "urunGrubuId", "markaId", "model", "varsayilanGarantiAy", "aktif", "aciklama"]
         }
       ],
       "fieldCols": {
         "kod": 6,
         "ad": 6,
         "urunGrubuId": 6,
-        "marka": 6,
+        "markaId": 6,
         "model": 6,
         "varsayilanGarantiAy": 6,
         "aktif": 6,

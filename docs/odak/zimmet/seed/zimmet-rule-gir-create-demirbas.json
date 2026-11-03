@@ -34,11 +34,22 @@
           "startFrom": 1
         },
         { "target": "tedarikciId", "source": "field", "path": "fields.tedarikciId" },
-        { "target": "marka", "source": "field", "path": "fields.marka" },
+        { "target": "markaId", "source": "field", "path": "fields.markaId" },
         { "target": "urunGrubuId", "source": "field", "path": "fields.urunGrubuId" },
-        { "target": "marka", "source": "lookup", "from": "fields.katalogUrunId", "dataset": "zimmet_urunler", "field": "marka" },
+        { "target": "markaId", "source": "lookup", "from": "fields.katalogUrunId", "dataset": "zimmet_urunler", "field": "markaId" },
         { "target": "urunGrubuId", "source": "lookup", "from": "fields.katalogUrunId", "dataset": "zimmet_urunler", "field": "urunGrubuId" }
-      ]
+      ],
+      "lifecycle": {
+        "dataset": "zimmet_demirbas_hareketleri",
+        "linkField": "demirbasId",
+        "static": { "olay": "depoya_girdi" },
+        "copy": {
+          "tarih": "girisTarihi",
+          "depoId": "depoId",
+          "lokasyonId": "lokasyonId",
+          "isRef": "girisRef"
+        }
+      }
     }
   ]
 }

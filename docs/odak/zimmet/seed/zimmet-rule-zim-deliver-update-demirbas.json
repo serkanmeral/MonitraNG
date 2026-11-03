@@ -7,7 +7,29 @@
   "priority": 100,
   "typeId": "{{typeZimmetVermeId}}",
   "transitionKey": "deliver",
-  "actions": [
+    "actions": [
+    {
+      "type": "createDatasetRows",
+      "dataset": "zimmet_demirbas_hareketleri",
+      "onError": "failTransition",
+      "cardinality": {
+        "mode": "expand",
+        "itemsFrom": "fields.demirbasIds",
+        "itemAs": "id"
+      },
+      "idempotency": {
+        "mode": "one_per_source",
+        "lookupField": "isRef",
+        "lookupFrom": "key"
+      },
+      "fieldMappings": [
+        { "target": "demirbasId", "source": "item", "path": "value" },
+        { "target": "olay", "source": "static", "value": "zimmetlendi" },
+        { "target": "personelId", "source": "field", "path": "fields.personelId" },
+        { "target": "tarih", "source": "field", "path": "fields.teslimTarihi" },
+        { "target": "isRef", "source": "field", "path": "key" }
+      ]
+    },
     {
       "type": "updateDatasetRows",
       "dataset": "zimmet_demirbaslar",

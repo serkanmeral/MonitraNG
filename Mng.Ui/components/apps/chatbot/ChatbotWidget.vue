@@ -32,6 +32,9 @@ const {
 const messagesContainer = ref<HTMLElement | null>(null)
 const isMinimized = ref(false)
 
+// Keep the widget mounted in the layout, but hide the launcher until the chatbot flow is ready.
+const showChatbot = false
+
 // Auto-scroll to bottom when new message arrives
 watch(
   () => messages.value.length,
@@ -77,6 +80,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <template v-if="showChatbot">
   <!-- Floating Button -->
   <v-btn
     v-if="!isOpen"
@@ -235,6 +239,7 @@ onMounted(() => {
       {{ error }}
     </v-alert>
   </v-card>
+  </template>
 </template>
 
 <style scoped>

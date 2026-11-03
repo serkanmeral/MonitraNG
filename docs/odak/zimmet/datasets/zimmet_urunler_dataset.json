@@ -43,11 +43,20 @@
     {
       "fieldType": "text",
       "name": "marka",
-      "title": "Marka",
+      "title": "Marka (metin)",
       "mandatory": false,
       "unique": false,
       "isArray": false,
       "validation": { "maxLength": 80 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "markaId",
+      "title": "Marka",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "zimmet_markalar"
     },
     {
       "fieldType": "text",

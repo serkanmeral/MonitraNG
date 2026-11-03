@@ -10,6 +10,14 @@
 # GitLab ve MkDocs "ankarabt-local-disabled" profilindedir.
 
 services:
+  # Docker Desktop opens far more files. The server default of 1024 aborts mongod
+  # while restoring or opening the larger databases.
+  mongo:
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
   keycloak:
     ports:
       - "8080:8080"

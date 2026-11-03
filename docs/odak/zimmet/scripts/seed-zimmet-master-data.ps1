@@ -29,6 +29,7 @@ $seed = Get-Content $SeedFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $ids = [ordered]@{
     urunGruplari = @{}
+    markalar     = @{}
     urunler      = @{}
     depolar      = @{}
     lokasyonlar  = @{}
@@ -54,7 +55,28 @@ foreach ($g in $seed.urunGruplari) {
     $ids.urunGruplari[$g.kod] = $id
 }
 
-Write-Host "[2] Urun katalogu..." -ForegroundColor Yellow
+Write-Host "[2] Markalar..." -ForegroundColor Yellow
+function Get-ZimmetBrandCode([string]$Name) {
+    $s = $Name.Trim().ToUpperInvariant()
+    foreach ($pair in @{ 'İ' = 'I'; 'Ş' = 'S'; 'Ğ' = 'G'; 'Ü' = 'U'; 'Ö' = 'O'; 'Ç' = 'C' }.GetEnumerator()) {
+        $s = $s.Replace($pair.Key, $pair.Value)
+    }
+    $s = $s -replace '[^A-Z0-9]', ''
+    if ([string]::IsNullOrWhiteSpace($s)) { $s = 'X' }
+    if ($s.Length -gt 16) { $s = $s.Substring(0, 16) }
+    return "MRK-$s"
+}
+$brandNames = @()
+foreach ($u in @($seed.urunler)) { if ($u.marka) { $brandNames += [string]$u.marka } }
+foreach ($dm in @($seed.demirbaslar)) { if ($dm.marka) { $brandNames += [string]$dm.marka } }
+foreach ($name in ($brandNames | Select-Object -Unique)) {
+    $code = Get-ZimmetBrandCode $name
+    $body = @{ kod = $code; ad = $name; aktif = $true }
+    $id = Sync-ZimmetRecord -Ctx $ctx -Collection "zimmet_markalar" -Filter "kod:eq:$code" -Body $body -Label $code
+    $ids.markalar[$name] = $id
+}
+
+Write-Host "[3] Urun katalogu..." -ForegroundColor Yellow
 foreach ($u in $seed.urunler) {
     $grupId = $ids.urunGruplari[$u.urunGrubuKod]
     if (-not $grupId) { throw "Urun grubu bulunamadi: $($u.urunGrubuKod)" }
@@ -67,12 +89,14 @@ foreach ($u in $seed.urunler) {
         varsayilanGarantiAy = $u.varsayilanGarantiAy
         aktif               = [bool]$u.aktif
     }
+    $markaId = $ids.markalar[[string]$u.marka]
+    if ($markaId) { $body.markaId = $markaId }
     if ($u.aciklama) { $body.aciklama = $u.aciklama }
     $id = Sync-ZimmetRecord -Ctx $ctx -Collection "zimmet_urunler" -Filter "kod:eq:$($u.kod)" -Body $body -Label $u.kod
     $ids.urunler[$u.kod] = $id
 }
 
-Write-Host "[3] Depolar..." -ForegroundColor Yellow
+Write-Host "[4] Depolar..." -ForegroundColor Yellow
 foreach ($d in $seed.depolar) {
     $body = @{
         kod   = $d.kod
@@ -84,7 +108,7 @@ foreach ($d in $seed.depolar) {
     $ids.depolar[$d.kod] = $id
 }
 
-Write-Host "[4] Lokasyonlar..." -ForegroundColor Yellow
+Write-Host "[5] Lokasyonlar..." -ForegroundColor Yellow
 foreach ($l in $seed.lokasyonlar) {
     $depoId = $ids.depolar[$l.depoKod]
     if (-not $depoId) { throw "Depo bulunamadi: $($l.depoKod)" }
@@ -99,7 +123,7 @@ foreach ($l in $seed.lokasyonlar) {
     $ids.lokasyonlar["$($l.depoKod)/$($l.kod)"] = $id
 }
 
-Write-Host "[5] Demirbaslar..." -ForegroundColor Yellow
+Write-Host "[6] Demirbaslar..." -ForegroundColor Yellow
 foreach ($dm in $seed.demirbaslar) {
     $katalogId = $ids.urunler[$dm.katalogUrunKod]
     $depoId = $ids.depolar[$dm.depoKod]
@@ -113,7 +137,11 @@ foreach ($dm in $seed.demirbaslar) {
         girisTarihi   = $dm.girisTarihi
     }
     if ($dm.seriNo) { $body.seriNo = $dm.seriNo }
-    if ($dm.marka) { $body.marka = $dm.marka }
+    if ($dm.marka) {
+        $body.marka = $dm.marka
+        $markaId = $ids.markalar[[string]$dm.marka]
+        if ($markaId) { $body.markaId = $markaId }
+    }
     if ($dm.model) { $body.model = $dm.model }
     if ($depoId) { $body.depoId = $depoId }
     if ($lokId) { $body.lokasyonId = $lokId }

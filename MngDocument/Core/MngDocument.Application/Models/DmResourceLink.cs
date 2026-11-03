@@ -8,6 +8,7 @@ public class DmResourceLink
     public string? targetModule { get; set; }
     public string? targetType { get; set; }
     public string? targetId { get; set; }
+    public string? datasetName { get; set; }
     public string? relationType { get; set; }
     public string? createdBy { get; set; }
     public DateTime? createdAt { get; set; }

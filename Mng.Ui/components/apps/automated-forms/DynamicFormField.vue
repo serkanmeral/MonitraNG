@@ -13,6 +13,7 @@ import {
   type AfChoiceWidget,
   type AfTextWidget,
 } from '@/utils/afFormFieldPresentation';
+import { formatTrDisplayDate } from '@/utils/trDisplayDate';
 
 const props = defineProps<{
   field: any;
@@ -267,15 +268,18 @@ const objectJsonValue = computed({
 // DateTime local value (for datetime type)
 // Check if datetime field should show time
 const showTime = computed(() => {
+  if (props.field.fieldType === 'date') return false;
   if (props.field.fieldType === 'datetime' && props.field.datetimeOptions) {
     return props.field.datetimeOptions.showTime !== undefined ? props.field.datetimeOptions.showTime : true;
   }
   return true; // Default: show time
 });
 
+const formattedReadonlyDate = computed(() => formatTrDisplayDate(localValue.value) || '');
+
 const datetimeLocalValue = computed({
   get: () => {
-    if (props.field.fieldType === 'datetime' && localValue.value) {
+    if ((props.field.fieldType === 'datetime' || props.field.fieldType === 'date') && localValue.value) {
       try {
         const date = new Date(localValue.value);
         const year = date.getFullYear();
@@ -298,7 +302,7 @@ const datetimeLocalValue = computed({
     return '';
   },
   set: (val: string) => {
-    if (props.field.fieldType === 'datetime') {
+    if (props.field.fieldType === 'datetime' || props.field.fieldType === 'date') {
       if (val) {
         const date = new Date(val);
         localValue.value = date.toISOString();
@@ -495,7 +499,22 @@ const rules = computed(() => {
   
   <!-- DateTime Field -->
   <v-text-field
-    v-else-if="field.fieldType === 'datetime'"
+    v-else-if="(field.fieldType === 'datetime' || field.fieldType === 'date') && readonly"
+    :model-value="formattedReadonlyDate"
+    :label="fieldLabel"
+    :hint="field.description"
+    :persistent-hint="!!field.description"
+    readonly
+    :error-messages="errorMessages"
+    variant="outlined"
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-text-field>
+  <v-text-field
+    v-else-if="field.fieldType === 'datetime' || field.fieldType === 'date'"
     v-model="datetimeLocalValue"
     :type="showTime ? 'datetime-local' : 'date'"
     :label="fieldLabel"

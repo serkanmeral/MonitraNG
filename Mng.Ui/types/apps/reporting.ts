@@ -140,11 +140,47 @@ export interface ReportingExpandChildListConfig {
   summary?: ReportingSummaryConfig;
 }
 
+/** Zaman çizgisindeki her olaya belge bağlama. Kök klasör doluysa düğme görünür. */
+export interface ReportingTimelineDocuments {
+  rootFolderId?: string;
+  /** Varsayılan ilişki: evidence. */
+  relationType?: string;
+  /** Düzenleme (Belge bağla). Tanımsızsa açık. */
+  allowEdit?: boolean;
+}
+
 /** Ek expand sekmeleri — varsayılan «Detay» sekmesi expand.sections ile gelir. */
+export interface ReportingExpandTimelineConfig {
+  whenField?: string;
+  titleField?: string;
+  titleMap?: Record<string, string>;
+  /** Olay kodu → Vuetify rengi. Yoksa secondary. */
+  colorMap?: Record<string, string>;
+  personField?: string;
+  placeFields?: string[];
+  refField?: string;
+  documents?: ReportingTimelineDocuments;
+}
+
+/** Üretilen belgeyi bir alt sekmedeki eşleşen satıra bağlar. */
+export interface ReportingDocumentChildLink {
+  childTabId: string;
+  matchField: string;
+  matchValue: string;
+  relationType?: string;
+  /** Alt satırda iş kaydı anahtarının durduğu alan. */
+  refField?: string;
+  /** Üst satırda iş kaydı anahtarının durduğu alan. */
+  parentRefField?: string;
+}
+
 export interface ReportingExpandChildListTab {
   id: string;
   title: string;
   childList: ReportingExpandChildListConfig;
+  /** table: bağlı liste. timeline: yaşam çizgisi. */
+  presentation?: 'table' | 'timeline';
+  timeline?: ReportingExpandTimelineConfig;
   /**
    * Child liste sütun görünürlüğü (ana rapor fieldPolicies ile aynı model).
    * Yok / boş = tüm sütunlar herkese açık.
@@ -200,7 +236,9 @@ export interface ReportingDocumentBinding {
   templateCode?: string;
   label: string;
   contextType: ReportingDocumentContextType;
-  /** Varsayılan: ['Reports', reportId] */
+  /** DI klasör kimliği. Doluysa belge bu klasöre yazılır. */
+  outputFolderId?: string;
+  /** Kimlik yoksa yol. Varsayılan: ['Reports', reportId] */
   outputFolderSegments?: string[];
   /** childRow: yalnızca bu expand sekmesinde göster (örn. participants). */
   childTabId?: string;
@@ -213,6 +251,16 @@ export interface ReportingDocumentBinding {
   documentNamePattern?: string;
   /** Üretim zamanı skaler kalıbı (varsayılan: yyyy-MM-dd HH:mm). */
   generatedAtPattern?: string;
+  /**
+   * Satır bağlamında düğmenin görünmesi. Boş = her satır.
+   * Alan, satırdaki kayıtlı değerle karşılaştırılır (ör. durum = zimmetli).
+   */
+  rowFilters?: AfListFilter[];
+  /**
+   * Üretimden sonra alt sekmedeki eşleşen satıra bağlanır.
+   * Yoksa ve üst satırda iş anahtarı varsa belge iş kaydına bağlanır.
+   */
+  linkToChild?: ReportingDocumentChildLink;
 }
 
 export interface ReportingReportDefinition {

@@ -8,6 +8,8 @@ public sealed class CreateResourceLinkRequest
     public required string TargetModule { get; init; }
     public required string TargetType { get; init; }
     public required string TargetId { get; init; }
+    /// <summary>dataGateway/datasetRow hedefinde zorunlu dataset adı.</summary>
+    public string? DatasetName { get; init; }
     public required string RelationType { get; init; }
 }
 
@@ -18,6 +20,7 @@ public sealed class ResourceLinkDto
     public required string TargetModule { get; init; }
     public required string TargetType { get; init; }
     public required string TargetId { get; init; }
+    public string? DatasetName { get; init; }
     public required string RelationType { get; init; }
     public string? CreatedBy { get; init; }
     public DateTime? CreatedAt { get; init; }
