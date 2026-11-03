@@ -1,6 +1,6 @@
 {
   "name": "materialpro-nuxt",
-  "version": "6.0.33",
+  "version": "6.0.34",
   "private": true,
   "scripts": {
     "build": "nuxt build",
