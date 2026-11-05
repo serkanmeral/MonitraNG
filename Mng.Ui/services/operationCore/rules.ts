@@ -55,6 +55,7 @@ export function mapOpRule(raw: Record<string, unknown>): OpRule {
         : raw.ApplyMode != null
           ? String(raw.ApplyMode)
           : null,
+    querySteps: raw.querySteps ?? raw.QuerySteps,
   };
 }
 

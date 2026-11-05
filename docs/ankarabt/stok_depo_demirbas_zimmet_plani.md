@@ -2,8 +2,8 @@
 
 Odak testte kurulmuş işin planı. Katalog paketi değildir. Abt çekirdeği ve sonraki dilim [yol haritası OC-04](development_roadmap.md) içindedir.
 
-**Tarih:** 1 Kasım 2026  
-**Kaynak:** Odak test (`192.168.20.20`), son kapanış 11 Temmuz 2026  
+**Tarih:** 4 Kasım 2026  
+**Kaynak:** Odak test (`192.168.20.20`) çekirdeği 11 Temmuz 2026. Abt günlük kullanım dilimi 4 Kasım 2026’da duraklatıldı.  
 **Ayrıntı:** [docs/odak/zimmet/PLAN.md](../odak/zimmet/PLAN.md), [DEVAM.md](../odak/zimmet/DEVAM.md)
 
 ## Ne olduğu
@@ -41,15 +41,17 @@ Bir personele aynı anda birden fazla demirbaş verilebilir. İade de birden faz
 | Kayıt | Ne |
 |---|---|
 | `zimmet_urun_gruplari` | Laptop, monitör, çanta, sarf. Seri ile mi, demirbaş mı |
-| `zimmet_urunler` | Marka, model, garanti. Gruba bağlı |
+| `zimmet_markalar` | Marka. Katalog ve demirbaş buraya bağlanır |
+| `zimmet_urunler` | Model, garanti. Gruba ve markaya bağlı |
 | `zimmet_depolar` | Depo |
 | `zimmet_depo_lokasyonlari` | Raf veya bölme. Depoya bağlı |
 | `zimmet_demirbaslar` | Fiziksel parça. Numara `DMB-00001`. Seri no tekildir |
+| `zimmet_demirbas_hareketleri` | Yaşam kaydı. Teslim, iade, hurda ve kayıp cümleleri |
 | `tedarikciler` | Mevcut liste |
 
-Demirbaşın durumu depoda veya zimmetlidir. Kayıtta depo, lokasyon ve kişi durur.
+Demirbaş depoda, zimmetli, bakımda, hurda veya kayıp olabilir. Günlük geçiş depo ile zimmet arasındadır. Kayıtta depo, lokasyon ve kişi durur. Hurda ve kayıp henüz bir geçiş değildir.
 
-Menü **Dinamik Formlar → Zimmet Yönetimi** altındadır: demirbaşlar, ürün kataloğu, ürün grupları, depolar, depo lokasyonları. İki çalışma alanı Operasyon Merkezi ağacında görünür.
+Menü **Dinamik Formlar → Envanter Yönetimi** altındadır: demirbaşlar, ürün kataloğu, ürün grupları, ürün markaları, depolar, depo lokasyonları. İki çalışma alanı Operasyon Merkezi ağacında görünür.
 
 ## Kapanınca ne olur
 
@@ -65,18 +67,20 @@ Hata geçişi geri alır. Stok yarım kalmaz.
 
 ## Rapor ve belge
 
-Altı rapor vardır: depolar, ürünler, ürün grupları, demirbaş envanteri, garanti, personel özeti. Üç belge vardır: personel dökümü, teslim tutanağı, iade tutanağı. Tutanak rapor satırından açılır. Geçiş bitince kendiliğinden belge oluşmaz.
+Altı rapor vardır: depolar, ürünler, ürün grupları, demirbaş envanteri, garanti, personel özeti. Üç belge vardır: personel dökümü, teslim tutanağı, iade tutanağı. Tutanak rapor satırından da açılır. Abt’de teslim ve iade geçişi tutanağı kendisi yazar; düğme yalnız zimmetli satırda görünür. Odak test sunucusu bu davranışı henüz taşımaz.
 
 ## Biten ve duran
 
-Uçtan uca çekirdek Odak testte kapandı: tanım, stok girişi, demirbaş, verme, iade, rapor, belge. Aynı çekirdek abt alanına 2 Kasım 2026’da indi. Abt’de rapor üçtür: demirbaş envanteri, personel zimmet özeti, garanti. Sonraki sıra yol haritasındadır.
+Uçtan uca çekirdek Odak testte kapandı: tanım, stok girişi, demirbaş, verme, iade, rapor, belge. Aynı çekirdek abt alanına 2 Kasım 2026’da indi. Günlük kullanım dilimi 3 Kasım’da AbtApp’e alındı ve 4 Kasım 2026’da duraklatıldı. Ayrıntı yol haritası OC-04’tedir.
+
+Abt’de kapananlar: depo ve rafın teslimde temizlenmesi, iadede geri yazılması, kilitli demirbaş formu, marka ve ürün grubu süzgeci, yaşam kaydı, geçişin tutanak yazması, katalog belge kartı.
 
 Duruyor:
 
+- Teslim ve iadenin belirli gruplara bağlanması
+- Üretici seri numarası ve garantinin katalog ayından hesaplanması
+- Hurda ve kaybın bir geçişle işlenmesi. Sözlük ve liste süzgeci durur
 - Satınalma çalışma alanı ve depo girişine bağlanması
-- Hurda ve kayıp
-- Geçiş bitince tutanağın kendiliğinden yazılması
-- Demirbaş satırında zimmet geçmişi
 - Ürün görseli
 
 Kurulum betikleri `docs/odak/zimmet/scripts/` altındadır. Kayıt kimlikleri Odak teste aittir. Başka bir domaine kopyalanınca yeniden üretilir.

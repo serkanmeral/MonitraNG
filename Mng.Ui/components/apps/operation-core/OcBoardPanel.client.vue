@@ -34,6 +34,7 @@ import type {
   OpBoard,
   OpField,
 } from '@/types/apps/operationCore';
+import { findTransitionDocumentAction, writeTransitionDocuments } from '@/utils/transitionDocumentAction';
 import {
   defaultFormatForKey,
   isBuiltInListColumn,
@@ -842,7 +843,21 @@ async function onKanbanTransition(payload: { card: OcWorkItemCard; fromStateId: 
 
   try {
     await ocApplyTransition(card.id, transition.transitionKey);
-    showTransitionMsg(t('operationCore.board.transition.success'), 'success');
+    const documentAction = store.boardContext?.workspaceId
+      ? await findTransitionDocumentAction(store.boardContext.workspaceId, transition.transitionKey)
+      : null;
+    if (documentAction) {
+      const written = await writeTransitionDocuments({
+        action: documentAction,
+        workItemKey: card.key,
+        workItemId: card.id,
+        fields: card.fields ?? {},
+        fieldDisplays: card.fieldDisplays,
+      });
+      showTransitionMsg(written.note || t('operationCore.board.transition.success'), written.written ? 'success' : 'info');
+    } else {
+      showTransitionMsg(t('operationCore.board.transition.success'), 'success');
+    }
   } catch (e: unknown) {
     showTransitionMsg(panelError(e, 'operationCore.board.transition.error'), 'error');
   } finally {

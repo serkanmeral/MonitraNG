@@ -53,6 +53,11 @@ public class UpdateDatasetDto
     public List<QueryDefinitionDto>? Queries { get; set; }
 
     /// <summary>
+    /// Stored query-write actions (optional - replaces the list when provided)
+    /// </summary>
+    public List<QueryWriteActionDto>? QueryActions { get; set; }
+
+    /// <summary>
     /// Index definitions (optional - adds new indexes, keeps old ones)
     /// </summary>
     public List<IndexDefinition>? IndexList { get; set; }

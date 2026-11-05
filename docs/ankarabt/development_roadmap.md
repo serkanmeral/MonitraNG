@@ -8,7 +8,7 @@ OperationCore maddeleri [OC workspace oluşturma planı](../odak/operationcore/O
 
 Durumlar: **konuşuldu**, **planlandı**, **yapılıyor**, **bitti**.
 
-Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanter çekirdeği abt alanına kuruldu. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. Envanterin kullanılabilirlik dilimi OC-04 içindedir.
+Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanterin çekirdeği ve günlük kullanım dilimi abt alanındadır; 4 Kasım 2026’da duraklatıldı. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. OC-14 ve DG-01 aynı gün bitti. İzin çalışma alanı, kısa zincir, talep kuralları, izin formu ve iki rapor abt alanına kuruldu. Özet, hareket yazılınca yenilenir. Sıradaki izin işi dönem açılışının zamanlayıcıyla kendiliğinden çalışmasıdır. Özlük ve açılış bakiyesinin dosyadan alınması en sona bırakıldı.
 
 ## DI-01 — Yüklenen dosyaların antivirüs taraması
 
@@ -107,37 +107,39 @@ Yayın, üzerinde iş bulunan bir durumu akıştan çıkarmışsa o işler durum
 
 | | |
 |---|---|
-| Durum | Çekirdek abt’de (2026-11-02). Kullanılabilirlik dilimi planlandı. Katalog paketi yok. |
-| Sıra | Görsel akıştan (OC-03) ayrı. İlk dilim kural, form ve rapor ayarıdır. |
+| Durum | Duraklatıldı (2026-11-04). Çekirdek ve günlük kullanım abt’de. Katalog paketi yok. |
+| Sıra | Görsel akıştan (OC-03) ayrı. Dönüşte kalanlar aşağıdadır. |
 
-Adı **Envanter**. Stok, depo, demirbaş ve zimmet bu adın altındadır. Operasyon Merkezi ağacında klasör bu adı taşır. Altında Zimmet Depo ve Personel Zimmet durur. Dinamik form menüsü bugün Zimmet Yönetimi’dir; aynı ad oraya da yazılır.
+Adı **Envanter**. Stok, depo, demirbaş ve zimmet bu adın altındadır. Operasyon Merkezi ağacında klasör bu adı taşır. Altında Zimmet Depo ve Personel Zimmet durur. Dinamik form menüsü **Envanter Yönetimi**dir.
 
 Ayrıntı: [stok, depo, demirbaş ve zimmet](stok_depo_demirbas_zimmet_plani.md). Kurulum katalog paketi değildir. Ayrı bir zimmet servisi yoktur. Kapanış, çalışma alanının geçişindedir.
 
-Abt alanına şunlar indi: beş veri seti, mevcut tedarikçi bağı, iki çalışma alanı, üç kapanış kuralı, üç rapor, üç belge, ikinci çalıştırmada çiftlemeyen demo. Ürün grubu kategoridir. Marka katalogda metindir. Yeni bir tür ağacı açılmaz.
+Abt alanına inenler: ürün grubu, marka, katalog, depo, lokasyon, demirbaş ve yaşam hareketi; mevcut tedarikçi bağı; iki çalışma alanı; üç kapanış kuralı; demirbaş envanteri, personel özeti ve garanti raporları; teslim ve iade tutanakları. Marka serbest metin değildir; `zimmet_markalar` kaydına bağlanır. Form başlıklarında Zimmet öneki yoktur. Demirbaş listesinin adı Demirbaş Envanteri’dir ve `rpt_zimmet_demirbaslar` raporundan açılır.
 
-Çekirdek emanet takibidir. Stok muhasebesi ve taşınır defteri bu dilimin dışında kalır.
+Çekirdek emanet takibidir. Stok muhasebesi, taşınır defteri ve satınalma bu dilimin dışındadır.
 
-### Kullanılabilirlik
+### Bu turda kapanan
 
-Günlük kullanımdan önce. Sıra sabittir.
+- Teslim, demirbaşın depo ve rafını temizler. İade, depo ve rafı iş kaydından yeniden yazar; kişi ve zimmet iş kodunu siler. Envanter listesinde Depoda süzgeci zimmetli satırı göstermez.
+- Demirbaş formunda durum, kişi, depo, raf ve giriş tarihi kilitlidir. Konum ve kişi geçişten değişir.
+- Demirbaş envanteri ürün grubunu ve markayı gösterir, ikisini de süzer. Grup katalogdaki bağdan okunur. Depoda, zimmetli, bakımda, hurda ve kayıp süzgeçleri listede durur.
+- Demirbaş satırında yaşam kaydı durur. Zaman çizelgesi `zimmet_demirbas_hareketleri` kaydından okunur. İade, son iş kodunu silince hikâye kaybolmaz. Kanıt belgesi, klasörü tanımlıysa bağlanır.
+- Teslim ve iade geçişi tutanağı kendisi yazar. Şablon, çıktı klasörü ve satır filtresi rapor bağındadır. Teslim ve iade düğmeleri yalnız zimmetli satırda görünür. Üretilen belge ilgili yaşam satırına bağlanır.
+- Katalog formunda kayıt belgeleri kartı vardır. Kök klasör boşsa kart görünmez. Abt’de kart Envanter / Kataloglar klasörünü açar.
+- Belge davranışı form, rapor ve geçiş ayarındadır. Arayüzde zimmete özel bir dal yoktur. Tutanak gövdesi `ReportingZimmetTutanakDocxFactory` iskeletidir; istek anında kullanılmaz.
 
-1. Teslim, demirbaşın depo ve rafını temizler. İade, depoyu ve rafı yeniden yazar. Zimmetli satır depoda görünmez.
-2. Demirbaş formunda durum, kişi, depo ve raf kilitlidir. Bu dört alan yalnız geçişten değişir.
-3. Teslim ve iade belirli gruplara bağlanır. Grupların adı bu dilim uygulanırken yazılır.
-4. Demirbaş envanteri ürün grubunu ve markayı gösterir, ikisini de süzer. Grup katalogdaki bağdan okunur. “Bütün laptoplar” ve “bütün Dell’ler” bu listeden sorulur.
+AbtApp’e 3 Kasım 2026’da indi: `mngui` 6.0.35, `mngkeeper` 1.3.17, `mngoperations`, `mngdocument`. Commit `4c7691ed`. Odak test sunucusu bu turda yenilenmedi.
 
-### Sonra
+### Dönüşte
 
-Kullanılabilirlik kapandıktan sonra, bu sırayla:
-
+- Teslim ve iade belirli gruplara bağlanır. Grupların adı o zaman yazılır.
 - Üretici seri numarası demirbaşa yazılır. Grup bayrağı, seri listesi boşsa üretilmiş numaraya izin verir.
 - Garanti bitişi, katalogdaki ay ile giriş tarihinden hesaplanır.
-- Demirbaş satırında zimmet geçmişi durur. İade, son iş kodunu silince hikâye kaybolmaz.
-- Hurda ve kayıp bir geçişle işlenir. Formdan işaretlenmez.
+- Hurda ve kayıp bir geçişle işlenir. Sözlük ve liste süzgeci durur. Bakımda geçiş oku yoktur. Formdan işaretlenmez.
 - Satınalma çalışma alanı depo girişine bağlanır.
+- Ürün görseli. Katalog belgesi (broşür, teknik föy) bağlanabilir; bu bir görsel alanı değildir.
 
-Miktar bakiyesi (bir satırda adet) ayrı bir stok kartıdır. Bu gövdeye girmez. Geçiş bitince kendiliğinden tutanak ve ürün görseli bu sıranın dışındadır.
+Miktar bakiyesi (bir satırda adet) ayrı bir stok kartıdır. Bu gövdeye girmez.
 
 İzin paketi ayrıca konuşulur. Yazılım paketi (`software` `1.3.4`) katalogdadır. Kurulum bugün kütüphane alt klasörü olan paketi kurmaz. Envanter klasör veya hazır belge taşırsa o adım da açılır.
 
@@ -259,6 +261,82 @@ Bağı olmayan çalışma alanı `Dökümanlar / Operasyon` altında durur. Klas
 Projeye bağlı çalışma alanı ayrı Operasyon klasörü açmaz. Projenin klasörünü kullanır: `Dökümanlar / Projeler / {proje kodu}`.
 
 Yerelde üç klasör ada çekildi: Yazılım geliştirme, Monitra Yardım, IT Help Desk. Bağı olmayan boş klasörler silindi. İçinde dosya olan ve çalışma alanına bağlı olmayan `WS-0003` duruyor.
+
+## OC-14 — Geçişte dataset sorgusu
+
+| | |
+|---|---|
+| Durum | Bitti (2026-11-04). |
+| Sıra | İzin talebinin düşen günü, çakışması ve tavanı bu aksiyonu bekler. Görsel akıştan (OC-03) ayrıdır. |
+
+Geçiş, kayıt yazılmadan önce dataset’teki adlandırılmış sorguyu çalıştırır. Parametreler iş kaydından gelir. İstemcinin gövdesi parametre olmaz. Sonuç, seçilen alanların üstüne yazılır. Kullanıcının aynı alana yazdığı değer durmaz. Dönen adet veya sayı, bugünkü koşul diliyle kıyaslanır. Koşul bozulursa geçiş durur.
+
+Yönetici sorgu metni yazmaz. Dataset’te duran sorguyu seçer. Aynı geçişte birden fazla sorgu üstten alta çalışır.
+
+Kural penceresine yeni bir adım girer. Sorgu, koşuldan ve sonraki aksiyonlardan önce durur. Alan yazma, satır oluşturma ve satır güncelleme onun yazdığı alanı kullanır. Ayrı bir tanım sayfası açılmaz. Geçiş listesi durum sırası olarak kalır.
+
+Bu aksiyon izin kelimesi taşımaz. İzin talebi ilk kullanıcısıdır. Onaya göndermede sırayla talep kuralı, düşen gün, açık dönem, yazım anahtarı, çakışma ve tavan çalışır. Talep kuralı doğumun bitişini yazar. Çıkış, kapalı tür, cinsiyet, mazeret nedeni, belge, yarım gün ve yerine bakacak kişi koşulla geçişi durdurur. Çakışma adedi ve gün tavanı da öyle. Bloke, kullanım ve iade bugünkü satır yazma aksiyonuyla bu sayıdan üretilir. Dönem açılışı, bant farkı, tatil yılı ve özet satırı bu aksiyon değildir. Onların geçişi yoktur. Onlar DG-01’dedir.
+
+Ayrıntı: [personel izin planı](dev/izin/personel_izin_plani.md).
+
+## DG-01 — Sorgunun satırlarını yazmak
+
+| | |
+|---|---|
+| Durum | Bitti (2026-11-04). |
+| Sıra | OC-14’ten ayrıdır. İzin dönem açılışı, bant farkı, tatil yılı ve özet bu adımı bekler. |
+
+DataGateway’de durur. İş kaydı ve geçiş yoktur. MngOperations bu yola girmez. Yazma, sorgunun içine gömülmez.
+
+Aksiyon dataset üzerinde kayıtlıdır. Çalıştıran serbest sorgu metni göndermez. Kayıtlı aksiyonu seçer.
+
+| Parça | Anlamı |
+|---|---|
+| Kaynak | Dataset ve adlandırılmış sorgu |
+| Parametre | Çağrıdan gelen değer. Dönem açılışında bugünün tarihidir |
+| Hedef | Satırların yazılacağı dataset |
+| Anahtar | Aynı satırı tanıyan alanlar |
+| Yazma | `atla` veya `yenile` |
+
+`atla`, anahtar duruyorsa satıra dokunmaz. `yenile`, anahtar duruyorsa satırın üstüne yazar. Yüz satırdan biri düşerse öncekiler durur. Sonuç yazılan, atlanan ve düşen sayısını verir.
+
+Zamanlayıcı ve form düğmesi aynı aksiyonu çağırır. Düğme «kayıtlı aksiyonu çalıştır»dır. İzin ekranı değildir. İzin ayar formunda dört düğme durur: dönemi aç, bant farkı, tatil yılını aç, özeti yenile. Özet aksiyonu `afterWrite` taşır. Hareket satırı yazılınca, değişince veya silinince özet bir kez yenilenir. Aksiyonun kendi yazdığı satır ikinci bir tur açmaz. Zamanlayıcı kaydı henüz yoktur. DataGateway imajı 4 Kasım 2026 akşamı bu bayrakla yenilendi.
+
+İzin dört aksiyon seçer. Formül sorgudadır.
+
+| Aksiyon | Yazma | Anahtar |
+|---|---|---|
+| Dönem açılışı | Atla | Personel, dönem, hareket |
+| Bant farkı | Atla | Personel, dönem, bant |
+| Tatil yılını aç | Atla | Tarih |
+| Özet | Yenile | Personel, dönem, tür |
+
+Ayrıntı: [personel izin planı](dev/izin/personel_izin_plani.md).
+
+## IZN-01 — Personel izin kurulumu
+
+| | |
+|---|---|
+| Durum | Yapılıyor (2026-11-04). Sözlük, çalışma alanı, kısa zincir, talep kuralları, form, iki rapor ve özet yenileme abt alanındadır. |
+| Sıra | OC-14 ve DG-01 bitti. Sıradaki iş zamanlayıcıdır. Dosyadan özlük ve açılış bakiyesi en sona bırakıldı. |
+
+Sözlükler dataset’tedir: personel kartı, ayarlar, kıdem bantları, türler, mazeret nedenleri, tatil kalıpları, gerçekleşen tatil günleri, hareket ve özet. Formüller adlandırılmış sorgudadır. MngOperations’a izin hesabı yazılmadı.
+
+Çalışma alanı `Personel izin`, önek `IZN`. Zincir kısadır: taslak, yönetici onayı, onaylandı, reddedildi, iptal. Onay ve red `Yonetim` grubundadır. İK adımı yoktur; çalışma alanı ayarından sonra eklenebilir. Onaylanınca kütüphanede `IZN_FORM` ile izin formu üretilir ve işe bağlanır. Şablon Document Intelligence’ta durur. Yeniden kurulum mevcut şablonun üstüne yazmaz.
+
+İki rapor vardır: kişi bakiyesi ve dönem kullanımı. Kaynak özet satırıdır. Personel satırı olmadığı için listeler boştur. Yan menüye madde eklenmedi.
+
+Yerine bakacak kişi personel kartından seçilir. Tür listesi yalnız açık türleri gösterir. Cinsiyeti boş kişi yalnız herkese açık türleri görür. Bu süzme yerel arayüzdedir. Yayınlanan `app.ankarabt.com` imajı henüz bu süzmeyi ve onayda form doldurmayı taşımaz. Geçişi durduran kurallar sunucudadır.
+
+| Kalan | |
+|---|---|
+| Zamanlayıcı | Dönem açılışı, bant farkı ve tatil yılı kendiliğinden çalışsın. Düğmeler durur. |
+| Talep hakkı | Personel kendisi, yönetici ekibi, İK herkes. Onay hâlâ `Yonetim` grubundadır. |
+| Yan menü | Form, pano ve raporlar menü yöneticisinden girer. |
+| Arayüz imajı | Talep alanlarının forma yazılması ve kütüphane bağının yayınlanan imaja girmesi. |
+| Dosya | Özlük ve açılış bakiyesi en sonda, birlikte ve elde işlenir. |
+
+Ayrıntı: [personel izin planı](dev/izin/personel_izin_plani.md).
 
 ## MT-01 — Toplantı günü ve seri
 

@@ -590,7 +590,10 @@ async function confirmTransition() {
         const written = await writeTransitionDocuments({
           action: documentAction,
           workItemKey: cycleWorkItemKey,
+          workItemId: workItemId.value,
           fields: cycleFields,
+          fieldDisplays: fieldDisplays.value,
+          libraryDocumentIds: libraryDocumentIds.value,
         });
         if (written.note) cycleDocumentNote.value = written.note;
       } catch {

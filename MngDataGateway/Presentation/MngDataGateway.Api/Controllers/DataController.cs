@@ -50,6 +50,7 @@ namespace MngDataGateway.Api.Controllers
             IPermissionService permissionService,
             CsvConverter csvConverter,
             IFileProcessingPipeline fileProcessingPipeline,
+            IDomainLookupService domainLookup,
             IOptions<MngDataGatewaySettings> options)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -60,6 +61,7 @@ namespace MngDataGateway.Api.Controllers
             _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
             _csvConverter = csvConverter ?? throw new ArgumentNullException(nameof(csvConverter));
             _fileProcessingPipeline = fileProcessingPipeline ?? throw new ArgumentNullException(nameof(fileProcessingPipeline));
+            _domainLookup = domainLookup ?? throw new ArgumentNullException(nameof(domainLookup));
             _settings = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -789,6 +791,93 @@ namespace MngDataGateway.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Run a stored action: the named query returns rows, this endpoint writes them.
+        /// Callers send parameter values only. They do not send a pipeline.
+        /// </summary>
+        [HttpPost("actions/{actionName}")]
+        [ProducesResponseType(typeof(QueryWriteActionResultDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ExecuteQueryWriteAction(
+            [FromRoute] string datasetName,
+            [FromRoute] string actionName,
+            [FromBody] PredefinedQueryRequestDto? request = null)
+        {
+            try
+            {
+                var domainName = _mongoContextService.GetCurrentDomainName()
+                    ?? throw new UnauthorizedAccessException("Domain not found in token");
+                var database = _mongoContextService.GetDatabase();
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                if (schema == null)
+                {
+                    return this.ErrorResponse(
+                        GetApiPath(datasetName, action: $"actions/{actionName}"),
+                        "DATASET_NOT_FOUND",
+                        $"Dataset '{datasetName}' not found",
+                        statusCode: 404);
+                }
+
+                var action = schema.queryActions?.FirstOrDefault(a =>
+                    string.Equals(a.name, actionName, StringComparison.OrdinalIgnoreCase));
+                if (action == null)
+                {
+                    return this.ErrorResponse(
+                        GetApiPath(datasetName, action: $"actions/{actionName}"),
+                        "QUERY_NOT_FOUND",
+                        $"Query action '{actionName}' not found",
+                        statusCode: 404);
+                }
+
+                var target = await _datasetService.GetSchemaEntityByNameAsync(action.targetDataset);
+                if (target == null)
+                {
+                    return this.ErrorResponse(
+                        GetApiPath(datasetName, action: $"actions/{actionName}"),
+                        "DATASET_NOT_FOUND",
+                        $"Target dataset '{action.targetDataset}' not found",
+                        statusCode: 404);
+                }
+
+                var createDenied = CheckDatasetPermission(target, "create");
+                if (createDenied != null)
+                    return createDenied;
+
+                var refresh = string.Equals(action.mode, "yenile", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(action.mode, "refresh", StringComparison.OrdinalIgnoreCase);
+                if (refresh)
+                {
+                    var updateDenied = CheckDatasetPermission(target, "update");
+                    if (updateDenied != null)
+                        return updateDenied;
+                }
+
+                var userInfo = _userInfoService.GetCurrentUserInfo();
+                var parameters = request?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? new Dictionary<string, object>();
+                var result = await _dataService.ExecuteQueryWriteActionAsync(
+                    datasetName,
+                    actionName,
+                    domainName,
+                    database.DatabaseNamespace.DatabaseName,
+                    userInfo.uid,
+                    userInfo.userName,
+                    parameters,
+                    HttpContext.Connection.RemoteIpAddress?.ToString());
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return this.HandleException(
+                    ex,
+                    GetApiPath(datasetName, action: $"actions/{actionName}"),
+                    "QUERY_ACTION_FAILED",
+                    "Failed to run query action",
+                    _logger);
+            }
+        }
+
         #region Helper Methods
 
         /// <summary>
@@ -1167,8 +1256,6 @@ namespace MngDataGateway.Api.Controllers
 
                 var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
                 var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
-                var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
-
                 var fileOptions = await ResolveFileOptionsAsync(field, domainName);
 
                 var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
@@ -1233,6 +1320,8 @@ namespace MngDataGateway.Api.Controllers
                 var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
                 var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
                 var fileOptions = await ResolveFileOptionsAsync(field, domainName);
+
+                var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
                     new FileUploadRequestDto
                     {
                         Content = content,
@@ -1263,15 +1352,6 @@ namespace MngDataGateway.Api.Controllers
         /// </summary>
         private FileProcessingOptionsDto GetFileOptionsFromField(
             FieldDefinition? field,
-        private async Task<FileProcessingOptionsDto> ResolveFileOptionsAsync(FieldDefinition? field, string domainName)
-        {
-            var options = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
-            var domainMax = await _domainLookup.GetMaxFileSizeBytesAsync(domainName);
-            if (domainMax is > 0)
-                options.MaxFileSize = domainMax.Value;
-            return options;
-        }
-
             ValidationSettings validationSettings)
         {
             // For now, use configuration defaults
@@ -1288,6 +1368,15 @@ namespace MngDataGateway.Api.Controllers
                 CompressionLevel = _settings.FileStorage.Compression.Level
             };
 
+            return options;
+        }
+
+        private async Task<FileProcessingOptionsDto> ResolveFileOptionsAsync(FieldDefinition? field, string domainName)
+        {
+            var options = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
+            var domainMax = await _domainLookup.GetMaxFileSizeBytesAsync(domainName);
+            if (domainMax is > 0)
+                options.MaxFileSize = domainMax.Value;
             return options;
         }
 

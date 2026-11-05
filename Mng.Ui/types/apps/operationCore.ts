@@ -93,6 +93,8 @@ export interface OcTransitionDocumentAction {
   fieldAliases?: Record<string, string>;
   /** Alan → kayıtlı kod → belgede görünecek etiket. */
   displayMaps?: Record<string, Record<string, string>>;
+  /** Üretilen kütüphane kimliğini iş kaydına bağlar. */
+  attachToWorkItem?: boolean;
 }
 
 export type OcAutomationIdempotencyMode = 'none' | 'one_per_source';
@@ -214,6 +216,7 @@ export interface OpRule {
   actions?: unknown[];
   errorMessage?: string | null;
   applyMode?: string | null;
+  querySteps?: unknown;
 }
 
 /** op_notification_policies — workspace bildirim / e-posta politikası */

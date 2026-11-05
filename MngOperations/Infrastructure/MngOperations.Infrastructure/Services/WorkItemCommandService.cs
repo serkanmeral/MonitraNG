@@ -38,6 +38,7 @@ public class WorkItemCommandService : IWorkItemCommandService
     private readonly IWorkspaceAutomationService _workspaceAutomations;
     private readonly ICreateDatasetRowsActionExecutor _createDatasetRows;
     private readonly IUpdateDatasetRowsActionExecutor _updateDatasetRows;
+    private readonly TransitionQueryStepService _querySteps;
     private readonly Lazy<IProjectPlanningService> _planning;
     private readonly ILogger<WorkItemCommandService> _logger;
 
@@ -63,6 +64,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         IWorkspaceAutomationService workspaceAutomations,
         ICreateDatasetRowsActionExecutor createDatasetRows,
         IUpdateDatasetRowsActionExecutor updateDatasetRows,
+        TransitionQueryStepService querySteps,
         Lazy<IProjectPlanningService> planning,
         ILogger<WorkItemCommandService> logger)
     {
@@ -82,6 +84,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         _createDatasetRows = createDatasetRows;
         _planning = planning;
         _updateDatasetRows = updateDatasetRows;
+        _querySteps = querySteps;
         _logger = logger;
     }
 
@@ -1776,6 +1779,7 @@ public class WorkItemCommandService : IWorkItemCommandService
             workItemId,
             workItemKey);
 
+        await _querySteps.ApplyAsync(workItem, context, workspace, token, cancellationToken);
         await ApplyRulePhaseAsync(workItem, context, RulePhase.PreValidation, workspace, token, cancellationToken);
         await ApplyRulePhaseAsync(workItem, context, RulePhase.Default, workspace, token, cancellationToken);
         await ApplyRulePhaseAsync(workItem, context, RulePhase.PostValidation, workspace, token, cancellationToken);
@@ -1808,6 +1812,7 @@ public class WorkItemCommandService : IWorkItemCommandService
             fromStateId,
             toStateId);
 
+        await _querySteps.ApplyAsync(workItem, preContext, workspace, token, cancellationToken);
         await ApplyRulePhaseAsync(workItem, preContext, RulePhase.PreValidation, workspace, token, cancellationToken);
 
         workItem["stateId"] = toStateId;

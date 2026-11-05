@@ -1,0 +1,347 @@
+[
+  {
+    "formName": "Personel kartı",
+    "formCode": "izin-personel-form",
+    "description": "İzin kartı. Ücret, aile, adres ve sözleşme yoktur. Keeper kişisi login kaydıdır.",
+    "datasetName": "izin_personel",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-personel-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "sicil",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "sicil", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "soyad", "visible": true, "order": 3, "sortable": true, "filterable": true },
+        { "fieldName": "birim", "visible": true, "order": 4, "sortable": true, "filterable": true },
+        { "fieldName": "durum", "visible": true, "order": 5, "sortable": true, "filterable": true },
+        { "fieldName": "iseGiris", "visible": true, "order": 6, "sortable": true, "filterable": true },
+        { "fieldName": "cinsiyet", "visible": true, "order": 7, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["sicil", "ad", "soyad", "cinsiyet", "dogumTarihi", "birim", "iseGiris", "yoneticiId", "keeperKisiId", "durum", "cikisTarihi"],
+      "fieldOrder": ["sicil", "ad", "soyad", "cinsiyet", "dogumTarihi", "birim", "iseGiris", "yoneticiId", "keeperKisiId", "durum", "cikisTarihi"],
+      "readonlyOnEditFields": ["sicil"],
+      "groupOrder": ["Kimlik", "Görev", "Ayrılış"],
+      "fieldLayout": {
+        "sicil": { "columnSpan": 6, "group": "Kimlik" },
+        "ad": { "columnSpan": 6, "group": "Kimlik" },
+        "soyad": { "columnSpan": 6, "group": "Kimlik" },
+        "cinsiyet": { "columnSpan": 6, "group": "Kimlik" },
+        "dogumTarihi": { "columnSpan": 6, "group": "Kimlik" },
+        "birim": { "columnSpan": 6, "group": "Görev" },
+        "iseGiris": { "columnSpan": 6, "group": "Görev" },
+        "yoneticiId": { "columnSpan": 6, "group": "Görev" },
+        "keeperKisiId": { "columnSpan": 6, "group": "Görev" },
+        "durum": { "columnSpan": 6, "group": "Görev" },
+        "cikisTarihi": { "columnSpan": 6, "group": "Ayrılış" }
+      }
+    }
+  },
+  {
+    "formName": "İzin ayarları",
+    "formCode": "izin-ayarlar-form",
+    "description": "Tek ayar satırı. Dönem açılışı, bant farkı, tatil yılı ve özet düğmeleri kayıtlı aksiyonu çalıştırır.",
+    "datasetName": "izin_ayarlar",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-ayarlar-form"
+    },
+    "listConfig": {
+      "enableSearch": false,
+      "defaultSortBy": "tekil",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "donemTipi", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "devirTipi", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "hakAsimi", "visible": true, "order": 3, "sortable": true, "filterable": true },
+        { "fieldName": "hakYazimi", "visible": true, "order": 4, "sortable": true, "filterable": true },
+        { "fieldName": "otomatikAcilis", "visible": true, "order": 5, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": [
+        "tekil", "donemTipi", "devirTipi", "devirTavanGun", "devirSureGun", "hakAsimi", "hakYazimi", "otomatikAcilis",
+        "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar",
+        "talepPersonel", "talepYonetici", "talepIk", "yoneticiBosGrup", "cikisKeser"
+      ],
+      "fieldOrder": [
+        "tekil", "donemTipi", "devirTipi", "devirTavanGun", "devirSureGun", "hakAsimi", "hakYazimi", "otomatikAcilis",
+        "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar",
+        "talepPersonel", "talepYonetici", "talepIk", "yoneticiBosGrup", "cikisKeser"
+      ],
+      "readonlyFields": ["tekil"],
+      "groupOrder": ["Dönem", "Gün karşılığı", "Talep"],
+      "fieldLayout": {
+        "tekil": { "columnSpan": 6, "group": "Dönem" },
+        "donemTipi": { "columnSpan": 6, "group": "Dönem" },
+        "devirTipi": { "columnSpan": 6, "group": "Dönem" },
+        "devirTavanGun": { "columnSpan": 6, "group": "Dönem" },
+        "devirSureGun": { "columnSpan": 6, "group": "Dönem" },
+        "hakAsimi": { "columnSpan": 6, "group": "Dönem" },
+        "hakYazimi": { "columnSpan": 6, "group": "Dönem" },
+        "otomatikAcilis": { "columnSpan": 6, "group": "Dönem" },
+        "pazartesi": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "sali": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "carsamba": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "persembe": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "cuma": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "cumartesi": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "pazar": { "columnSpan": 4, "group": "Gün karşılığı" },
+        "talepPersonel": { "columnSpan": 4, "group": "Talep" },
+        "talepYonetici": { "columnSpan": 4, "group": "Talep" },
+        "talepIk": { "columnSpan": 4, "group": "Talep" },
+        "yoneticiBosGrup": { "columnSpan": 6, "group": "Talep" },
+        "cikisKeser": { "columnSpan": 6, "group": "Talep" }
+      },
+      "dataActions": [
+        {
+          "label": "Dönemi aç",
+          "dataset": "izin_personel",
+          "action": "donem_acilis",
+          "parameters": [{ "name": "tarih", "source": "today" }]
+        },
+        {
+          "label": "Bant farkı",
+          "dataset": "izin_personel",
+          "action": "bant_farki",
+          "parameters": [{ "name": "tarih", "source": "today" }]
+        },
+        {
+          "label": "Tatil yılını aç",
+          "dataset": "izin_tatil_kaliplari",
+          "action": "tatil_yili",
+          "parameters": [{ "name": "yil", "source": "year" }]
+        },
+        {
+          "label": "Özeti yenile",
+          "dataset": "izin_hareketleri",
+          "action": "ozet"
+        }
+      ]
+    }
+  },
+  {
+    "formName": "Hak bantları",
+    "formCode": "izin-hak-bantlari-form",
+    "description": "Kıdem bantları ve yaş tabanı. Kıdemde alt ve üst yıl dahildir. Üst yıl boşsa bant açıktır.",
+    "datasetName": "izin_hak_bantlari",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-hak-bantlari-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "kod",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "tip", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "minYil", "visible": true, "order": 3, "sortable": true, "filterable": false },
+        { "fieldName": "maxYil", "visible": true, "order": 4, "sortable": true, "filterable": false },
+        { "fieldName": "gun", "visible": true, "order": 5, "sortable": true, "filterable": false },
+        { "fieldName": "minimumGun", "visible": true, "order": 6, "sortable": true, "filterable": false },
+        { "fieldName": "durum", "visible": true, "order": 7, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["kod", "tip", "minYil", "maxYil", "gun", "altYas", "ustYas", "minimumGun", "durum"],
+      "fieldOrder": ["kod", "tip", "minYil", "maxYil", "gun", "altYas", "ustYas", "minimumGun", "durum"],
+      "readonlyOnEditFields": ["kod"],
+      "groupOrder": ["Bant"],
+      "fieldLayout": {
+        "kod": { "columnSpan": 6, "group": "Bant" },
+        "tip": { "columnSpan": 6, "group": "Bant" },
+        "minYil": { "columnSpan": 4, "group": "Bant" },
+        "maxYil": { "columnSpan": 4, "group": "Bant" },
+        "gun": { "columnSpan": 4, "group": "Bant" },
+        "altYas": { "columnSpan": 4, "group": "Bant" },
+        "ustYas": { "columnSpan": 4, "group": "Bant" },
+        "minimumGun": { "columnSpan": 4, "group": "Bant" },
+        "durum": { "columnSpan": 6, "group": "Bant" }
+      }
+    }
+  },
+  {
+    "formName": "İzin türleri",
+    "formCode": "izin-turleri-form",
+    "description": "İzin türü. Babalık tavanı türdedir. Mazeret tavanı neden formundadır. Doğum takvim haftasıdır.",
+    "datasetName": "izin_turleri",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-turleri-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "sira",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "sira", "visible": true, "order": 1, "sortable": true, "filterable": false },
+        { "fieldName": "kod", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "ad", "visible": true, "order": 3, "sortable": true, "filterable": true },
+        { "fieldName": "kimAcar", "visible": true, "order": 4, "sortable": true, "filterable": true },
+        { "fieldName": "sureTipi", "visible": true, "order": 5, "sortable": true, "filterable": true },
+        { "fieldName": "bakiyedenDuser", "visible": true, "order": 6, "sortable": true, "filterable": true },
+        { "fieldName": "durum", "visible": true, "order": 7, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["kod", "ad", "sira", "durum", "kimAcar", "bakiyedenDuser", "belgeZorunlu", "yarimGun", "sureTipi", "takvimGun", "cogulTakvimGun", "gunTavan"],
+      "fieldOrder": ["kod", "ad", "sira", "durum", "kimAcar", "bakiyedenDuser", "belgeZorunlu", "yarimGun", "sureTipi", "takvimGun", "cogulTakvimGun", "gunTavan"],
+      "readonlyOnEditFields": ["kod"],
+      "groupOrder": ["Kimlik", "Kural"],
+      "fieldLayout": {
+        "kod": { "columnSpan": 6, "group": "Kimlik" },
+        "ad": { "columnSpan": 6, "group": "Kimlik" },
+        "sira": { "columnSpan": 4, "group": "Kimlik" },
+        "durum": { "columnSpan": 4, "group": "Kimlik" },
+        "kimAcar": { "columnSpan": 4, "group": "Kimlik" },
+        "bakiyedenDuser": { "columnSpan": 4, "group": "Kural" },
+        "belgeZorunlu": { "columnSpan": 4, "group": "Kural" },
+        "yarimGun": { "columnSpan": 4, "group": "Kural" },
+        "sureTipi": { "columnSpan": 6, "group": "Kural" },
+        "takvimGun": { "columnSpan": 6, "group": "Kural" },
+        "cogulTakvimGun": { "columnSpan": 6, "group": "Kural" },
+        "gunTavan": { "columnSpan": 6, "group": "Kural" }
+      }
+    }
+  },
+  {
+    "formName": "Mazeret nedenleri",
+    "formCode": "izin-mazeret-nedenleri-form",
+    "description": "Mazeret nedeni ve gün tavanı. Talep tavanın altında kalabilir.",
+    "datasetName": "izin_mazeret_nedenleri",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-mazeret-nedenleri-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "ad",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "gunTavan", "visible": true, "order": 3, "sortable": true, "filterable": false },
+        { "fieldName": "durum", "visible": true, "order": 4, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["kod", "ad", "gunTavan", "durum"],
+      "fieldOrder": ["kod", "ad", "gunTavan", "durum"],
+      "readonlyOnEditFields": ["kod"],
+      "groupOrder": ["Neden"],
+      "fieldLayout": {
+        "kod": { "columnSpan": 6, "group": "Neden" },
+        "ad": { "columnSpan": 6, "group": "Neden" },
+        "gunTavan": { "columnSpan": 6, "group": "Neden" },
+        "durum": { "columnSpan": 6, "group": "Neden" }
+      }
+    }
+  },
+  {
+    "formName": "Tatil kalıpları",
+    "formCode": "izin-tatil-kaliplari-form",
+    "description": "Tekrar eden tatil tanımı. Sabit günde ay ve gün doludur. Dini kalıpta ay ve gün boştur. Yılı aç yalnız sabit milli kalıbı güne çevirir.",
+    "datasetName": "izin_tatil_kaliplari",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-tatil-kaliplari-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "ad",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "kod", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "ad", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "tur", "visible": true, "order": 3, "sortable": true, "filterable": true },
+        { "fieldName": "tekrar", "visible": true, "order": 4, "sortable": true, "filterable": true },
+        { "fieldName": "sureGun", "visible": true, "order": 5, "sortable": true, "filterable": false },
+        { "fieldName": "arefe", "visible": true, "order": 6, "sortable": true, "filterable": true },
+        { "fieldName": "durum", "visible": true, "order": 7, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["kod", "ad", "tur", "tekrar", "ay", "gun", "sureGun", "arefe", "durum"],
+      "fieldOrder": ["kod", "ad", "tur", "tekrar", "ay", "gun", "sureGun", "arefe", "durum"],
+      "readonlyOnEditFields": ["kod"],
+      "groupOrder": ["Kalıp"],
+      "fieldLayout": {
+        "kod": { "columnSpan": 6, "group": "Kalıp" },
+        "ad": { "columnSpan": 6, "group": "Kalıp" },
+        "tur": { "columnSpan": 6, "group": "Kalıp" },
+        "tekrar": { "columnSpan": 6, "group": "Kalıp" },
+        "ay": { "columnSpan": 4, "group": "Kalıp" },
+        "gun": { "columnSpan": 4, "group": "Kalıp" },
+        "sureGun": { "columnSpan": 4, "group": "Kalıp" },
+        "arefe": { "columnSpan": 6, "group": "Kalıp" },
+        "durum": { "columnSpan": 6, "group": "Kalıp" }
+      }
+    }
+  },
+  {
+    "formName": "Tatil günleri",
+    "formCode": "izin-tatil-gunleri-form",
+    "description": "Gerçekleşen tatil günü. Gün hesabı yalnız bu listeyi okur. İdari günün kalıbı yoktur.",
+    "datasetName": "izin_tatil_gunleri",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": true,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/izin-tatil-gunleri-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "tarih",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "tarih", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "tur", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "gunKarsiligi", "visible": true, "order": 3, "sortable": true, "filterable": false },
+        { "fieldName": "kalipId", "visible": true, "order": 4, "sortable": false, "filterable": false, "displayField": "ad" },
+        { "fieldName": "yil", "visible": true, "order": 5, "sortable": true, "filterable": true },
+        { "fieldName": "aciklama", "visible": true, "order": 6, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["tarih", "yil", "tur", "gunKarsiligi", "kalipId", "aciklama"],
+      "fieldOrder": ["tarih", "yil", "tur", "gunKarsiligi", "kalipId", "aciklama"],
+      "groupOrder": ["Gün"],
+      "relationFieldConfig": {
+        "kalipId": { "idField": "__dataId", "displayField": "ad" }
+      },
+      "fieldLayout": {
+        "tarih": { "columnSpan": 6, "group": "Gün" },
+        "yil": { "columnSpan": 6, "group": "Gün" },
+        "tur": { "columnSpan": 6, "group": "Gün" },
+        "gunKarsiligi": { "columnSpan": 6, "group": "Gün" },
+        "kalipId": { "columnSpan": 6, "group": "Gün" },
+        "aciklama": { "columnSpan": 12, "group": "Gün", "textWidget": "textarea" }
+      }
+    }
+  }
+]

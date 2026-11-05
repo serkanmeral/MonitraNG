@@ -42,6 +42,7 @@ public class FilesController : ControllerBase
         IUserInfoService userInfoService,
         IDatasetService datasetService,
         IPermissionService permissionService,
+        IDomainLookupService domainLookup,
         IOptions<MngDataGatewaySettings> options)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -51,7 +52,6 @@ public class FilesController : ControllerBase
         _userInfoService = userInfoService ?? throw new ArgumentNullException(nameof(userInfoService));
         _datasetService = datasetService ?? throw new ArgumentNullException(nameof(datasetService));
         _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
-        _settings = options.Value ?? throw new ArgumentNullException(nameof(options));
         _domainLookup = domainLookup ?? throw new ArgumentNullException(nameof(domainLookup));
         _settings = options.Value ?? throw new ArgumentNullException(nameof(options));
     }

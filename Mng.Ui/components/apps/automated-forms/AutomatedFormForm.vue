@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick, shallowRef } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
+import { useAutomatedFormsStore, type AfDataAction } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
@@ -154,6 +154,7 @@ const formData = ref({
       };
     },
     groupOrder: [] as string[],
+    dataActions: [] as AfDataAction[],
     documentScope: {
       rootFolderId: '',
       title: '',
@@ -255,6 +256,7 @@ function formConfigPayload() {
     relationFieldConfig: formData.value.formConfig.relationFieldConfig || {},
     fieldLayout: formData.value.formConfig.fieldLayout || {},
     groupOrder: formData.value.formConfig.groupOrder || [],
+    dataActions: formData.value.formConfig.dataActions || [],
     ...(documentScopePayload() ? { documentScope: documentScopePayload() } : {}),
   };
 }
@@ -1071,6 +1073,7 @@ const loadForm = async () => {
           relationFieldConfig: form.formConfig?.relationFieldConfig || {},
           fieldLayout: form.formConfig?.fieldLayout || {},
           groupOrder: form.formConfig?.groupOrder || [],
+          dataActions: form.formConfig?.dataActions || [],
           documentScope: documentScopeFrom(form.formConfig?.documentScope),
         },
         isActive: form.isActive,

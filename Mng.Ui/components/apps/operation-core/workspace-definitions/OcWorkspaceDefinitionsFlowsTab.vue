@@ -106,9 +106,10 @@ function stateName(stateId: string | null | undefined) {
 function documentActionPayload(
   action: OpStateFlowTransition['documentAction']
 ): OpStateFlowTransition['documentAction'] | null {
-  if (!action?.templateCode?.trim() || !action.itemsField?.trim() || !action.sourceDataset?.trim() || !action.reportId?.trim()) {
+  if (!action?.templateCode?.trim() || !action.itemsField?.trim() || !action.sourceDataset?.trim()) {
     return null;
   }
+  if (!action.reportId?.trim() && !action.outputFolderId?.trim()) return null;
   const text = (value?: string) => value?.trim() || undefined;
   return {
     templateCode: action.templateCode.trim(),
@@ -123,6 +124,7 @@ function documentActionPayload(
     linkRefField: text(action.linkRefField),
     parentRefField: text(action.parentRefField),
     labelField: text(action.labelField),
+    attachToWorkItem: action.attachToWorkItem || undefined,
     fieldAliases: action.fieldAliases && Object.keys(action.fieldAliases).length ? action.fieldAliases : undefined,
     displayMaps: action.displayMaps && Object.keys(action.displayMaps).length ? action.displayMaps : undefined,
   };

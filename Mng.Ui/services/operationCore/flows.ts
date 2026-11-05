@@ -16,7 +16,8 @@ function mapDocumentAction(raw: unknown): OcTransitionDocumentAction | undefined
   const itemsField = String(o.itemsField ?? o.ItemsField ?? '').trim();
   const sourceDataset = String(o.sourceDataset ?? o.SourceDataset ?? '').trim();
   const reportId = String(o.reportId ?? o.ReportId ?? '').trim();
-  if (!templateCode || !itemsField || !sourceDataset || !reportId) return undefined;
+  const outputFolderId = String(o.outputFolderId ?? o.OutputFolderId ?? '').trim();
+  if (!templateCode || !itemsField || !sourceDataset || (!reportId && !outputFolderId)) return undefined;
   const text = (value: unknown) => {
     const s = String(value ?? '').trim();
     return s || undefined;
@@ -36,6 +37,7 @@ function mapDocumentAction(raw: unknown): OcTransitionDocumentAction | undefined
     linkRefField: text(o.linkRefField ?? o.LinkRefField),
     parentRefField: text(o.parentRefField ?? o.ParentRefField),
     labelField: text(o.labelField ?? o.LabelField),
+    attachToWorkItem: Boolean(o.attachToWorkItem ?? o.AttachToWorkItem ?? false) || undefined,
     fieldAliases:
       aliases && typeof aliases === 'object' && !Array.isArray(aliases)
         ? (aliases as Record<string, string>)

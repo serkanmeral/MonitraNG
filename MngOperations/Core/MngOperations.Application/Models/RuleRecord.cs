@@ -57,4 +57,10 @@ public sealed class RuleRecord : DgRecord
 
     [JsonPropertyName("isActive")]
     public bool? IsActive { get; set; }
+
+    /// <summary>
+    /// Named dataset queries run before conditions. Parameters are read from the work item.
+    /// </summary>
+    [JsonPropertyName("querySteps")]
+    public JsonElement? QuerySteps { get; set; }
 }

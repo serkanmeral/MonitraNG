@@ -578,14 +578,22 @@ export function collectLookupIdsFromValue(value: unknown): string[] {
   return single ? [single] : [];
 }
 
+/** {{parentValue|herkes}} üst alan boşken yedek değeri kullanır. */
+export function lookupDependsOnHasEmptyFallback(template: string): boolean {
+  return /\{\{parentValue\|[^}]*\}\}/.test(template);
+}
+
 /** {{parentValue}} yer tutucusunu üst alan değeri ile doldurur (DG filter dizesi). */
 export function resolveLookupDependsOnFilter(
   template: string,
   parentValue: unknown
 ): string | null {
   const parentId = extractLookupStoredValue(parentValue);
-  if (!parentId) return null;
-  const resolved = template.split('{{parentValue}}').join(parentId);
+  if (!parentId && !lookupDependsOnHasEmptyFallback(template)) return null;
+  const resolved = template.replace(
+    /\{\{parentValue(?:\|([^}]*))?\}\}/g,
+    (_match, fallback: string | undefined) => (parentId ? parentId : fallback ?? '')
+  );
   if (resolved.includes('{{')) return null;
   return resolved.trim() || null;
 }

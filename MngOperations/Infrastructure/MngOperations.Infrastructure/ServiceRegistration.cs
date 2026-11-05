@@ -73,6 +73,7 @@ public static class ServiceRegistration
         services.AddScoped<IRuleEngine, RuleEngineService>();
         services.AddScoped<ICreateDatasetRowsActionExecutor, CreateDatasetRowsActionExecutor>();
         services.AddScoped<IUpdateDatasetRowsActionExecutor, UpdateDatasetRowsActionExecutor>();
+        services.AddScoped<TransitionQueryStepService>();
         services.AddScoped<IFieldBehaviorResolver, FieldBehaviorResolverService>();
         services.AddScoped<ISlaCalculator, SlaCalculatorService>();
         services.AddScoped<IWorkItemTimelineService, WorkItemTimelineService>();

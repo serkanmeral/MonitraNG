@@ -4,6 +4,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import OcConditionClauseList from '@/components/apps/operation-core/workspace-definitions/OcConditionClauseList.vue';
 import OcRuleScopePanel from '@/components/apps/operation-core/workspace-definitions/OcRuleScopePanel.vue';
 import OcRuleEffectPanel from '@/components/apps/operation-core/workspace-definitions/OcRuleEffectPanel.vue';
+import OcQueryStepsEditor from '@/components/apps/operation-core/workspace-definitions/OcQueryStepsEditor.vue';
 import type { OpRule } from '@/types/apps/operationCore';
 import type { OcConditionFieldOption } from '@/utils/ocConditionClauses';
 import {
@@ -323,6 +324,26 @@ function onTriggerChange(v: OcWorkspaceRuleTrigger) {
                 <span class="oc-rule-dialog__step">3</span>
                 <div>
                   <div class="text-subtitle-1 font-weight-bold">
+                    {{ t('operationCore.workspaceDefinitions.rules.sectionQuery') }}
+                  </div>
+                  <p class="text-body-2 text-medium-emphasis mb-0">
+                    {{ t('operationCore.workspaceDefinitions.rules.sectionQueryHint') }}
+                  </p>
+                </div>
+              </div>
+              <OcQueryStepsEditor
+                :model-value="draft.querySteps"
+                :condition-field-items="conditionFields"
+                @update:model-value="draft.querySteps = $event"
+              />
+            </section>
+
+            <!-- Step 4 -->
+            <section class="oc-rule-dialog__section mb-4">
+              <div class="oc-rule-dialog__section-head mb-3">
+                <span class="oc-rule-dialog__step">4</span>
+                <div>
+                  <div class="text-subtitle-1 font-weight-bold">
                     {{ t('operationCore.workspaceDefinitions.rules.sectionWhen') }}
                   </div>
                   <p class="text-body-2 text-medium-emphasis mb-0">
@@ -360,10 +381,10 @@ function onTriggerChange(v: OcWorkspaceRuleTrigger) {
               />
             </section>
 
-            <!-- Step 4 -->
+            <!-- Step 5 -->
             <section class="oc-rule-dialog__section">
               <div class="oc-rule-dialog__section-head mb-3">
-                <span class="oc-rule-dialog__step">4</span>
+                <span class="oc-rule-dialog__step">5</span>
                 <div>
                   <div class="text-subtitle-1 font-weight-bold">
                     {{ t('operationCore.workspaceDefinitions.rules.sectionThen') }}

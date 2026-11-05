@@ -11,7 +11,7 @@ import {
 } from '@/utils/afListFilters';
 import { parseAfStaticSelectItems } from '@/utils/afFormFieldPresentation';
 import { ocListDatasetPage } from '@/services/operationCoreService';
-import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
+import { useAutomatedFormsStore, type AfDataAction } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
@@ -79,6 +79,8 @@ const catalogDocumentRelations = computed(() => {
 });
 const loading = ref(false);
 const errorMessage = ref('');
+const actionMessage = ref('');
+const actionRunning = ref(false);
 
 // Data items (for list view)
 const dataItems = ref<any[]>([]);
@@ -766,6 +768,56 @@ const createNewItem = (preset?: Record<string, unknown>) => {
   currentEditingItemId.value = null;
   showFormDialog.value = true;
 };
+
+const dataActions = computed((): AfDataAction[] => form.value?.formConfig?.dataActions ?? []);
+
+function resolveDataActionParameters(action: AfDataAction): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  const now = new Date();
+  for (const parameter of action.parameters ?? []) {
+    if (!parameter.name) continue;
+    if (parameter.source === 'today') {
+      body[parameter.name] = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())).toISOString();
+    } else if (parameter.source === 'now') {
+      body[parameter.name] = now.toISOString();
+    } else if (parameter.source === 'year') {
+      body[parameter.name] = now.getFullYear();
+    } else if (parameter.source === 'literal') {
+      body[parameter.name] = parameter.value ?? '';
+    } else if (parameter.source === 'field') {
+      const row = selectedItems.value[0];
+      if (!row || !parameter.field) {
+        throw new Error(t('automated-forms.view.buttons.dataActionNeedRow'));
+      }
+      body[parameter.name] = row[parameter.field];
+    }
+  }
+  return body;
+}
+
+async function runDataAction(action: AfDataAction) {
+  if (!action.dataset || !action.action) return;
+  actionRunning.value = true;
+  errorMessage.value = '';
+  actionMessage.value = '';
+  try {
+    const parameters = resolveDataActionParameters(action);
+    const result = await fetchFromDataGateway(
+      `/api/v1/data/${encodeURIComponent(action.dataset)}/actions/${encodeURIComponent(action.action)}`,
+      'POST',
+      parameters
+    );
+    const written = Number(result?.written ?? result?.Written ?? 0);
+    const skipped = Number(result?.skipped ?? result?.Skipped ?? 0);
+    const failed = Number(result?.failed ?? result?.Failed ?? 0);
+    actionMessage.value = t('automated-forms.view.buttons.dataActionResult', { written, skipped, failed });
+    await refreshData();
+  } catch (error: any) {
+    errorMessage.value = error?.message || String(error);
+  } finally {
+    actionRunning.value = false;
+  }
+}
 
 /** Odak Siparis hub — parentPackageId / parentWorkItemId / editId query parametreleri */
 async function applyHubRouteQuery() {
@@ -2540,6 +2592,17 @@ const getFormDescription = (): string => {
             </template>
             {{ t('automated-forms.view.buttons.newRecord') }}
           </v-btn>
+
+          <v-btn
+            v-for="action in dataActions"
+            :key="`${action.dataset}-${action.action}`"
+            variant="outlined"
+            :disabled="loading || actionRunning || !form"
+            :loading="actionRunning"
+            @click="runDataAction(action)"
+          >
+            {{ action.label }}
+          </v-btn>
           
           <v-btn
             icon
@@ -2609,6 +2672,18 @@ const getFormDescription = (): string => {
         @click:close="errorMessage = ''"
       >
         {{ errorMessage }}
+      </v-alert>
+
+      <v-alert
+        v-if="actionMessage"
+        type="success"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+        closable
+        @click:close="actionMessage = ''"
+      >
+        {{ actionMessage }}
       </v-alert>
       
       <!-- Loading State -->

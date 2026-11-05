@@ -2,6 +2,20 @@ import { defineStore } from 'pinia';
 import { fetchFromDataGateway } from '@/services/apiService';
 import type { AfListViewConfig } from '@/utils/afListView';
 
+export interface AfDataActionParameter {
+  name: string;
+  source: 'today' | 'now' | 'year' | 'literal' | 'field';
+  value?: string | number | boolean;
+  field?: string;
+}
+
+export interface AfDataAction {
+  label: string;
+  dataset: string;
+  action: string;
+  parameters?: AfDataActionParameter[];
+}
+
 /**
  * Automated Form Interface
  */
@@ -70,6 +84,7 @@ export interface AutomatedForm {
       };
     };
     groupOrder?: string[]; // Display order of groups. Groups not listed appear after.
+    dataActions?: AfDataAction[];
   };
   isActive: boolean;
   createInfo?: {
@@ -156,6 +171,7 @@ export interface CreateAutomatedFormDto {
       };
     };
     groupOrder?: string[];
+    dataActions?: AfDataAction[];
   };
   isActive: boolean;
 }
@@ -225,6 +241,7 @@ export interface UpdateAutomatedFormDto {
       };
     };
     groupOrder?: string[];
+    dataActions?: AfDataAction[];
   };
   isActive?: boolean;
 }

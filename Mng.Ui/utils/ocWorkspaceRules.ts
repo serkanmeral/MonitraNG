@@ -68,6 +68,29 @@ export interface OcCreateDatasetRowsDraft {
   fieldMappings: OcCreateDatasetRowsFieldMapping[];
 }
 
+export type OcQueryStepOnEmpty = 'zero' | 'false' | 'fail' | 'skip';
+
+export interface OcQueryStepParameter {
+  id: string;
+  name: string;
+  from: string;
+}
+
+export interface OcQueryStepMapping {
+  id: string;
+  from: string;
+  to: string;
+  onEmpty: OcQueryStepOnEmpty;
+}
+
+export interface OcQueryStep {
+  id: string;
+  dataset: string;
+  query: string;
+  parameters: OcQueryStepParameter[];
+  mappings: OcQueryStepMapping[];
+}
+
 export interface OcWorkspaceRuleScope {
   typeId?: string;
   boardId?: string;
@@ -101,6 +124,7 @@ export interface OcWorkspaceRuleDraft {
   activitySummary?: string;
   activityType?: string;
   createDatasetRows: OcCreateDatasetRowsDraft;
+  querySteps: OcQueryStep[];
 }
 
 export interface OcWorkspaceRuleCatalogContext {
@@ -137,8 +161,81 @@ export function newWorkspaceRuleDraft(workspaceId: string, seed?: Partial<OcWork
     activitySummary: '',
     activityType: 'RuleAction',
     createDatasetRows: newCreateDatasetRowsDraft(),
+    querySteps: [],
     ...seed,
   };
+}
+
+function newQueryStepId(): string {
+  return `qs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function newQueryStep(seed?: Partial<OcQueryStep>): OcQueryStep {
+  return {
+    id: newQueryStepId(),
+    dataset: '',
+    query: '',
+    parameters: [],
+    mappings: [],
+    ...seed,
+  };
+}
+
+export function newQueryStepParameter(seed?: Partial<OcQueryStepParameter>): OcQueryStepParameter {
+  return {
+    id: newQueryStepId(),
+    name: '',
+    from: '',
+    ...seed,
+  };
+}
+
+export function newQueryStepMapping(seed?: Partial<OcQueryStepMapping>): OcQueryStepMapping {
+  return {
+    id: newQueryStepId(),
+    from: '',
+    to: '',
+    onEmpty: 'zero',
+    ...seed,
+  };
+}
+
+function parseQuerySteps(raw: unknown): OcQueryStep[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => {
+      const row = item as Record<string, unknown>;
+      const parameters = Array.isArray(row.parameters) ? row.parameters : [];
+      const mappings = Array.isArray(row.mappings) ? row.mappings : [];
+      const onEmpty = (value: unknown): OcQueryStepOnEmpty => {
+        const text = String(value ?? 'skip');
+        return text === 'zero' || text === 'false' || text === 'fail' || text === 'skip' ? text : 'skip';
+      };
+      return newQueryStep({
+        dataset: String(row.dataset ?? ''),
+        query: String(row.query ?? ''),
+        parameters: parameters
+          .filter((p) => p && typeof p === 'object')
+          .map((p) => {
+            const param = p as Record<string, unknown>;
+            return newQueryStepParameter({
+              name: String(param.name ?? ''),
+              from: String(param.from ?? ''),
+            });
+          }),
+        mappings: mappings
+          .filter((m) => m && typeof m === 'object')
+          .map((m) => {
+            const mapping = m as Record<string, unknown>;
+            return newQueryStepMapping({
+              from: String(mapping.from ?? ''),
+              to: String(mapping.to ?? ''),
+              onEmpty: onEmpty(mapping.onEmpty),
+            });
+          }),
+      });
+    });
 }
 
 export function newCreateDatasetRowsMapping(
@@ -466,11 +563,19 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
     activitySummary,
     activityType,
     createDatasetRows,
+    querySteps: parseQuerySteps(rule.querySteps),
   };
 }
 
 export function validateWorkspaceRuleDraft(draft: OcWorkspaceRuleDraft): string | null {
   if (!draft.name.trim()) return 'name';
+  for (const step of draft.querySteps) {
+    const started = step.dataset.trim() || step.query.trim() || step.parameters.length || step.mappings.length;
+    if (!started) continue;
+    if (!step.dataset.trim() || !step.query.trim()) return 'querySteps.query';
+    if (!step.mappings.some((m) => m.from.trim() && m.to.trim())) return 'querySteps.mappings';
+    if (step.parameters.some((p) => !p.name.trim() || !p.from.trim())) return 'querySteps.parameters';
+  }
   if (draft.ruleType === 'validation') {
     if (!draft.errorMessage?.trim()) return 'errorMessage';
     if (draft.trigger === 'WorkItemTransition' && !draft.scope.transitionKey?.trim()) {
@@ -567,6 +672,19 @@ export function buildOpRulePayloadFromDraft(
       ];
     }
   }
+
+  body.querySteps = draft.querySteps
+    .filter((step) => step.dataset.trim() && step.query.trim())
+    .map((step) => ({
+      dataset: step.dataset.trim(),
+      query: step.query.trim(),
+      parameters: step.parameters
+        .filter((p) => p.name.trim() && p.from.trim())
+        .map((p) => ({ name: p.name.trim(), from: p.from.trim() })),
+      mappings: step.mappings
+        .filter((m) => m.from.trim() && m.to.trim())
+        .map((m) => ({ from: m.from.trim(), to: m.to.trim(), onEmpty: m.onEmpty })),
+    }));
 
   return body;
 }

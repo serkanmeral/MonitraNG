@@ -133,6 +133,19 @@ namespace MngDataGateway.Application.Services
             Dictionary<string, object> parameters);
 
         /// <summary>
+        /// Run a stored query-write action. The named query returns rows; this method writes them.
+        /// </summary>
+        Task<QueryWriteActionResultDto> ExecuteQueryWriteActionAsync(
+            string datasetName,
+            string actionName,
+            string domainName,
+            string databaseName,
+            string userId,
+            string userEmail,
+            Dictionary<string, object> parameters,
+            string? ipAddress = null);
+
+        /// <summary>
         /// Execute raw MongoDB aggregate pipeline
         /// </summary>
         Task<List<Dictionary<string, object>>> ExecuteRawAggregateAsync(

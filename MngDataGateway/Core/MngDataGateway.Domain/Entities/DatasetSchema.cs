@@ -69,6 +69,13 @@ public class DatasetSchema : BaseEntity
     public List<QueryDefinition> queries { get; set; } = new();
 
     /// <summary>
+    /// Stored actions that run a named query and write its rows into a target dataset.
+    /// The query itself does not write.
+    /// </summary>
+    [BsonElement("queryActions")]
+    public List<QueryWriteAction> queryActions { get; set; } = new();
+
+    /// <summary>
     /// Index definitions (optional - lazy creation on first data insert)
     /// </summary>
     [BsonElement("indexList")]
@@ -310,6 +317,33 @@ public class QueryDefinition
     [BsonElement("parameters")]
     [BsonIgnoreIfNull]
     public MongoDB.Bson.BsonArray? parameters { get; set; }
+}
+
+/// <summary>
+/// Named query plus a write of its rows. Mode is <c>atla</c> (skip existing key) or <c>yenile</c> (overwrite).
+/// </summary>
+[BsonIgnoreExtraElements]
+public class QueryWriteAction
+{
+    public string name { get; set; } = string.Empty;
+
+    public string? description { get; set; }
+
+    /// <summary>Named query on the same dataset.</summary>
+    public string query { get; set; } = string.Empty;
+
+    public string targetDataset { get; set; } = string.Empty;
+
+    public List<string> keyFields { get; set; } = new();
+
+    /// <summary><c>atla</c> or <c>yenile</c>.</summary>
+    public string mode { get; set; } = "atla";
+
+    /// <summary>
+    /// When true, a create, update, or delete on this dataset runs the action once.
+    /// Rows written by the action itself do not run it again.
+    /// </summary>
+    public bool afterWrite { get; set; }
 }
 
 /// <summary>

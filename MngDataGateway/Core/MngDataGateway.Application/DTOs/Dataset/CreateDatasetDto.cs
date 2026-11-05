@@ -60,6 +60,11 @@ public class CreateDatasetDto
     public List<QueryDefinitionDto>? Queries { get; set; }
 
     /// <summary>
+    /// Stored query-write actions (optional)
+    /// </summary>
+    public List<QueryWriteActionDto>? QueryActions { get; set; }
+
+    /// <summary>
     /// Index definitions (optional)
     /// </summary>
     public List<IndexDefinition>? IndexList { get; set; }

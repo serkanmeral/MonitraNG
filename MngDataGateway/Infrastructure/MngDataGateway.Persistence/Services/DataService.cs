@@ -38,6 +38,12 @@ namespace MngDataGateway.Persistence.Services
         private readonly FilterParser _filterParser;
         private readonly SortParser _sortParser;
         private readonly IChatMentionNotifier? _chatMentionNotifier;
+
+        /// <summary>
+        /// While a query-write action is running, row writes do not start another one.
+        /// The action refreshes its target dataset once when it finishes.
+        /// </summary>
+        private static readonly AsyncLocal<int> QueryWriteDepth = new();
         private readonly IGlobalCatalogReadCache? _catalogReadCache;
 
         public DataService(
@@ -149,6 +155,7 @@ namespace MngDataGateway.Persistence.Services
                     datasetName, data.GetValueOrDefault("__dataId"));
 
                 InvalidateCatalogReadCache(datasetName, databaseName);
+                await RunAfterWriteActionsAsync(datasetName, domainName, databaseName, userId, userEmail, ipAddress);
                 return data;
             }
             catch (DataGatewayException)
@@ -264,6 +271,7 @@ namespace MngDataGateway.Persistence.Services
                     datasetName, dataId);
 
                 InvalidateCatalogReadCache(datasetName, databaseName);
+                await RunAfterWriteActionsAsync(datasetName, domainName, databaseName, userId, userEmail, ipAddress);
                 return result;
             }
             catch (DataGatewayException)
@@ -312,6 +320,7 @@ namespace MngDataGateway.Persistence.Services
                 datasetName, dataId, expireAt);
 
             InvalidateCatalogReadCache(datasetName, databaseName);
+            await RunAfterWriteActionsAsync(datasetName, domainName, databaseName, userId, userEmail, ipAddress);
             return true;
         }
 
@@ -351,6 +360,7 @@ namespace MngDataGateway.Persistence.Services
                 "Restored data from archive in dataset {DatasetName} with __dataId: {DataId}",
                 datasetName, dataId);
 
+            await RunAfterWriteActionsAsync(datasetName, domainName, databaseName, userId, userEmail, ipAddress);
             return true;
         }
 
@@ -470,6 +480,11 @@ namespace MngDataGateway.Persistence.Services
                 _logger.LogInformation(
                     "Bulk insert completed for dataset {DatasetName}: {Successful}/{Total} successful, {Failed} failed",
                     datasetName, processedItems.Count, items.Count, validationResults.Count);
+
+                if (processedItems.Count > 0)
+                {
+                    await RunAfterWriteActionsAsync(datasetName, domainName, databaseName, userId, userEmail, ipAddress);
+                }
 
                 return result;
             }
@@ -1348,7 +1363,7 @@ namespace MngDataGateway.Persistence.Services
                                 
                                 // Only replace parameters - no other modifications needed
                                 // BsonValue types (including $sort integers) are preserved as-is
-                                var stageBson = ReplaceParametersInBsonDocument(clonedDoc, parameters);
+                                var stageBson = ReplaceParametersInBsonDocument(clonedDoc, validatedParameters);
                                 
                                 _logger.LogInformation("Stage after parameter replacement: {StageJson}", stageBson.ToJson());
                                 
@@ -1435,6 +1450,246 @@ namespace MngDataGateway.Persistence.Services
                     queryName, datasetName, ex.GetType().Name, ex.Message, ex.InnerException?.Message, ex.StackTrace);
                 throw DgExceptionMapper.Map(ex, $"Failed to execute predefined query '{queryName}'");
             }
+        }
+
+        public async Task<QueryWriteActionResultDto> ExecuteQueryWriteActionAsync(
+            string datasetName,
+            string actionName,
+            string domainName,
+            string databaseName,
+            string userId,
+            string userEmail,
+            Dictionary<string, object> parameters,
+            string? ipAddress = null)
+        {
+            var schema = await LoadSchemaAsync(datasetName, databaseName);
+            var action = schema.queryActions?.FirstOrDefault(a =>
+                string.Equals(a.name, actionName, StringComparison.OrdinalIgnoreCase));
+            if (action == null)
+            {
+                throw new NotFoundException($"Query action '{actionName}' not found in dataset '{datasetName}'")
+                {
+                    ErrorCode = ErrorCodes.QUERY_NOT_FOUND
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(action.query) || string.IsNullOrWhiteSpace(action.targetDataset))
+            {
+                throw new BadRequestException(
+                    $"Query action '{actionName}' is missing query or target dataset.",
+                    ErrorCodes.INVALID_FORMAT);
+            }
+
+            if (action.keyFields == null || action.keyFields.Count == 0)
+            {
+                throw new BadRequestException(
+                    $"Query action '{actionName}' has no key fields.",
+                    ErrorCodes.INVALID_FORMAT);
+            }
+
+            var refresh = IsRefreshMode(action.mode);
+            if (!refresh && !IsSkipMode(action.mode))
+            {
+                throw new BadRequestException(
+                    $"Query action '{actionName}' mode must be atla or yenile.",
+                    ErrorCodes.INVALID_FORMAT);
+            }
+
+            var rows = await ExecutePredefinedQueryAsync(datasetName, action.query, databaseName, parameters);
+            var result = new QueryWriteActionResultDto();
+            var outerAction = QueryWriteDepth.Value == 0;
+            if (outerAction)
+                QueryWriteDepth.Value++;
+
+            try
+            {
+            foreach (var row in rows)
+            {
+                try
+                {
+                    var existingId = await FindRowByKeysAsync(databaseName, action.targetDataset, action.keyFields, row);
+                    if (existingId != null && !refresh)
+                    {
+                        result.Skipped++;
+                        continue;
+                    }
+
+                    var payload = RowForWrite(row);
+                    if (existingId != null)
+                    {
+                        await UpdateAsync(
+                            action.targetDataset,
+                            existingId,
+                            payload,
+                            domainName,
+                            databaseName,
+                            userId,
+                            userEmail,
+                            ipAddress);
+                    }
+                    else
+                    {
+                        await CreateAsync(
+                            action.targetDataset,
+                            payload,
+                            domainName,
+                            databaseName,
+                            userId,
+                            userEmail,
+                            ipAddress);
+                    }
+
+                    result.Written++;
+                }
+                catch (Exception ex)
+                {
+                    result.Failed++;
+                    if (result.Errors.Count < 20)
+                        result.Errors.Add(ex.Message);
+                    _logger.LogWarning(ex, "Query action {Action} failed a row on {Target}", actionName, action.targetDataset);
+                }
+            }
+            }
+            finally
+            {
+                if (outerAction)
+                    QueryWriteDepth.Value--;
+            }
+
+            if (outerAction)
+            {
+                await RunAfterWriteActionsAsync(
+                    action.targetDataset, domainName, databaseName, userId, userEmail, ipAddress);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Runs query actions marked afterWrite. Failures are logged and do not undo the row that was just written.
+        /// </summary>
+        private async Task RunAfterWriteActionsAsync(
+            string datasetName,
+            string domainName,
+            string databaseName,
+            string userId,
+            string userEmail,
+            string? ipAddress)
+        {
+            if (QueryWriteDepth.Value > 0 || string.IsNullOrWhiteSpace(datasetName))
+                return;
+
+            List<string> names;
+            try
+            {
+                var schema = await LoadSchemaAsync(datasetName, databaseName);
+                names = schema.queryActions?
+                    .Where(a => a.afterWrite && !string.IsNullOrWhiteSpace(a.name))
+                    .Select(a => a.name)
+                    .ToList() ?? new List<string>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "afterWrite schema load failed for {Dataset}", datasetName);
+                return;
+            }
+
+            if (names.Count == 0)
+                return;
+
+            QueryWriteDepth.Value++;
+            try
+            {
+                foreach (var name in names)
+                {
+                    try
+                    {
+                        await ExecuteQueryWriteActionAsync(
+                            datasetName,
+                            name,
+                            domainName,
+                            databaseName,
+                            userId,
+                            userEmail,
+                            new Dictionary<string, object>(),
+                            ipAddress);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "afterWrite action {Action} failed on {Dataset}", name, datasetName);
+                    }
+                }
+            }
+            finally
+            {
+                QueryWriteDepth.Value--;
+            }
+        }
+
+        private static bool IsSkipMode(string? mode) =>
+            string.Equals(mode, "atla", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mode, "skip", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsRefreshMode(string? mode) =>
+            string.Equals(mode, "yenile", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mode, "refresh", StringComparison.OrdinalIgnoreCase);
+
+        private async Task<string?> FindRowByKeysAsync(
+            string databaseName,
+            string collectionName,
+            IReadOnlyList<string> keyFields,
+            Dictionary<string, object> row)
+        {
+            var match = new BsonDocument();
+            foreach (var key in keyFields)
+            {
+                row.TryGetValue(key, out var value);
+                match[key] = ToKeyBsonValue(value);
+            }
+
+            var pipeline = new List<BsonDocument>
+            {
+                new("$match", match),
+                new("$limit", 1),
+                new("$project", new BsonDocument("__dataId", 1))
+            };
+
+            var found = await _dataRepository.AggregateAsync(databaseName, collectionName, pipeline);
+            if (found.Count == 0 || !found[0].Contains("__dataId") || found[0]["__dataId"].IsBsonNull)
+                return null;
+
+            return found[0]["__dataId"].ToString();
+        }
+
+        private static BsonValue ToKeyBsonValue(object? value)
+        {
+            return value switch
+            {
+                null => BsonNull.Value,
+                DateTime dt => new BsonDateTime(dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc)),
+                DateTimeOffset dto => new BsonDateTime(dto.UtcDateTime),
+                int i => new BsonInt32(i),
+                long l => new BsonInt64(l),
+                double d => new BsonDouble(d),
+                decimal m => new BsonDecimal128(m),
+                bool b => new BsonBoolean(b),
+                _ => new BsonString(value.ToString() ?? string.Empty)
+            };
+        }
+
+        private static Dictionary<string, object> RowForWrite(Dictionary<string, object> row)
+        {
+            var copy = new Dictionary<string, object>(StringComparer.Ordinal);
+            foreach (var pair in row)
+            {
+                if (pair.Key is "_id" or "__dataId" or "__history" or "__createInfo" or "__lastUpdateInfo")
+                    continue;
+                if (pair.Value == null)
+                    continue;
+                copy[pair.Key] = pair.Value;
+            }
+
+            return copy;
         }
 
         public async Task<List<Dictionary<string, object>>> ExecuteRawAggregateAsync(

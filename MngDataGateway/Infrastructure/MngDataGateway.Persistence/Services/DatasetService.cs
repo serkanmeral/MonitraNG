@@ -91,6 +91,7 @@ public class DatasetService : IDatasetService
             fields = ConvertFieldDefinitions(dto.Fields),
             validations = dto.Validations ?? new(),
             queries = dto.Queries != null ? ConvertQueryDefinitions(dto.Queries) : new(),
+            queryActions = ConvertQueryWriteActions(dto.QueryActions),
             indexList = dto.IndexList ?? new(),
             permissions = processedPermissions,
 
@@ -238,6 +239,17 @@ public class DatasetService : IDatasetService
             
             changes["queries"] = new ChangeDetail { oldValue = $"{entity.queries.Count} queries", newValue = $"{convertedQueries.Count} queries" };
             entity.queries = convertedQueries;
+        }
+
+        if (dto.QueryActions != null)
+        {
+            var convertedActions = ConvertQueryWriteActions(dto.QueryActions);
+            changes["queryActions"] = new ChangeDetail
+            {
+                oldValue = $"{entity.queryActions?.Count ?? 0} actions",
+                newValue = $"{convertedActions.Count} actions"
+            };
+            entity.queryActions = convertedActions;
         }
 
         if (dto.IndexList != null)
@@ -474,6 +486,52 @@ public class DatasetService : IDatasetService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Convert QueryDefinitionDto from DTO to Entity QueryDefinition, handling JsonElement in pipeline
+    /// Supports both new format (List<QueryParameterDefinitionDto>) and legacy format (List<string>)
+    /// </summary>
+    private static List<QueryWriteAction> ConvertQueryWriteActions(
+        List<MngDataGateway.Application.DTOs.Dataset.QueryWriteActionDto>? actions)
+    {
+        if (actions == null || actions.Count == 0)
+            return new List<QueryWriteAction>();
+
+        return actions
+            .Where(a => !string.IsNullOrWhiteSpace(a.Name))
+            .Select(a => new QueryWriteAction
+            {
+                name = a.Name.Trim(),
+                description = a.Description,
+                query = (a.Query ?? string.Empty).Trim(),
+                targetDataset = (a.TargetDataset ?? string.Empty).Trim(),
+                keyFields = a.KeyFields?
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .Select(k => k.Trim())
+                    .ToList() ?? new List<string>(),
+                mode = string.IsNullOrWhiteSpace(a.Mode) ? "atla" : a.Mode.Trim(),
+                afterWrite = a.AfterWrite
+            })
+            .ToList();
+    }
+
+    private static List<MngDataGateway.Application.DTOs.Dataset.QueryWriteActionDto> ConvertQueryWriteActionsForResponse(
+        List<QueryWriteAction>? actions)
+    {
+        if (actions == null || actions.Count == 0)
+            return new List<MngDataGateway.Application.DTOs.Dataset.QueryWriteActionDto>();
+
+        return actions.Select(a => new MngDataGateway.Application.DTOs.Dataset.QueryWriteActionDto
+        {
+            Name = a.name,
+            Description = a.description,
+            Query = a.query,
+            TargetDataset = a.targetDataset,
+            KeyFields = a.keyFields ?? new List<string>(),
+            Mode = a.mode,
+            AfterWrite = a.afterWrite
+        }).ToList();
     }
 
     /// <summary>
@@ -1070,6 +1128,7 @@ public class DatasetService : IDatasetService
             Validations = includeDetails ? entity.validations : null,
             QueriesCount = entity.queries.Count,
             Queries = includeDetails ? ConvertQueriesForResponse(entity.queries) : null,
+            QueryActions = includeDetails ? ConvertQueryWriteActionsForResponse(entity.queryActions) : null,
             IndexListCount = entity.indexList.Count,
             IndexList = includeDetails ? entity.indexList : null,
             Permissions = entity.permissions,

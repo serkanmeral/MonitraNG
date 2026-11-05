@@ -1,0 +1,141 @@
+{
+  "category": {
+    "id": "rcat_izin",
+    "parentId": null,
+    "ancestorIds": [],
+    "name": "Izin",
+    "description": "Personel izin bakiyesi ve donem kullanimi",
+    "sortOrder": 30,
+    "status": "active",
+    "createdBy": "system"
+  },
+  "reports": [
+    {
+      "id": "rpt_izin_bakiye",
+      "title": "Kisi bakiyesi",
+      "description": "Yillik izin ozeti. Personel, birim ve donem. Bakiye yalniz yillik satirda doludur.",
+      "categoryId": "rcat_izin",
+      "datasetName": "izin_ozet",
+      "listConfig": {
+        "enableSearch": true,
+        "defaultSortBy": "donemBaslangic",
+        "defaultSortOrder": "desc",
+        "columns": [
+          { "fieldName": "personelId", "title": "Sicil", "visible": true, "order": 1, "sortable": false, "filterable": true, "width": 120, "relationDisplayField": "sicil" },
+          { "fieldName": "personelId", "title": "Ad", "visible": true, "order": 2, "sortable": false, "filterable": false, "relationDisplayField": "ad" },
+          { "fieldName": "personelId", "title": "Soyad", "visible": true, "order": 3, "sortable": false, "filterable": false, "relationDisplayField": "soyad" },
+          { "fieldName": "birim", "title": "Birim", "visible": true, "order": 4, "sortable": true, "filterable": true, "width": 160 },
+          { "fieldName": "donemBaslangic", "title": "Donem", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 140 },
+          { "fieldName": "hakedis", "title": "Hakedis", "visible": true, "order": 6, "sortable": true, "filterable": false, "width": 110 },
+          { "fieldName": "devir", "title": "Devir", "visible": true, "order": 7, "sortable": true, "filterable": false, "width": 100 },
+          { "fieldName": "bloke", "title": "Bloke", "visible": true, "order": 8, "sortable": true, "filterable": false, "width": 100 },
+          { "fieldName": "kullanim", "title": "Kullanim", "visible": true, "order": 9, "sortable": true, "filterable": false, "width": 110 },
+          { "fieldName": "bakiye", "title": "Bakiye", "visible": true, "order": 10, "sortable": true, "filterable": false, "width": 110 }
+        ]
+      },
+      "expand": {
+        "enabled": false,
+        "hideEmptyFields": true,
+        "heading": "",
+        "intro": "",
+        "sections": [],
+        "fieldCols": {},
+        "actions": [],
+        "tabs": [],
+        "defaultTabId": "fields"
+      },
+      "fieldPolicies": { "policiesByField": {} },
+      "defaultFilters": [
+        { "field": "turKod", "operator": "eq", "value": "yillik" }
+      ],
+      "visibilityPolicies": [],
+      "parameters": [
+        {
+          "id": "donem",
+          "type": "search",
+          "widget": "dateRange",
+          "binding": { "kind": "dateRange", "field": "donemBaslangic", "emptyMeans": "noFilter" },
+          "label": "Donem",
+          "required": false
+        },
+        {
+          "id": "search",
+          "type": "search",
+          "widget": "search",
+          "binding": { "kind": "search" },
+          "label": "Ara",
+          "required": false
+        }
+      ],
+      "summary": {
+        "placement": "cards",
+        "metrics": [
+          { "id": "count", "label": "Kisi donemi", "kind": "count", "format": "integer" },
+          { "id": "bakiye", "label": "Bakiye toplami", "kind": "sum", "field": "bakiye", "format": "number" }
+        ]
+      },
+      "documentBindings": []
+    },
+    {
+      "id": "rpt_izin_kullanim",
+      "title": "Donem kullanimi",
+      "description": "Tum izin turlerinin kullanim alani. Personel, tur ve donem.",
+      "categoryId": "rcat_izin",
+      "datasetName": "izin_ozet",
+      "listConfig": {
+        "enableSearch": true,
+        "defaultSortBy": "donemBaslangic",
+        "defaultSortOrder": "desc",
+        "columns": [
+          { "fieldName": "personelId", "title": "Sicil", "visible": true, "order": 1, "sortable": false, "filterable": true, "width": 120, "relationDisplayField": "sicil" },
+          { "fieldName": "personelId", "title": "Ad", "visible": true, "order": 2, "sortable": false, "filterable": false, "relationDisplayField": "ad" },
+          { "fieldName": "personelId", "title": "Soyad", "visible": true, "order": 3, "sortable": false, "filterable": false, "relationDisplayField": "soyad" },
+          { "fieldName": "turId", "title": "Tur", "visible": true, "order": 4, "sortable": false, "filterable": true, "width": 140, "relationDisplayField": "ad" },
+          { "fieldName": "donemBaslangic", "title": "Donem", "visible": true, "order": 5, "sortable": true, "filterable": true, "width": 140 },
+          { "fieldName": "kullanim", "title": "Kullanim", "visible": true, "order": 6, "sortable": true, "filterable": false, "width": 110 },
+          { "fieldName": "bloke", "title": "Bloke", "visible": true, "order": 7, "sortable": true, "filterable": false, "width": 100 }
+        ]
+      },
+      "expand": {
+        "enabled": false,
+        "hideEmptyFields": true,
+        "heading": "",
+        "intro": "",
+        "sections": [],
+        "fieldCols": {},
+        "actions": [],
+        "tabs": [],
+        "defaultTabId": "fields"
+      },
+      "fieldPolicies": { "policiesByField": {} },
+      "defaultFilters": [],
+      "visibilityPolicies": [],
+      "parameters": [
+        {
+          "id": "donem",
+          "type": "search",
+          "widget": "dateRange",
+          "binding": { "kind": "dateRange", "field": "donemBaslangic", "emptyMeans": "noFilter" },
+          "label": "Donem",
+          "required": false
+        },
+        {
+          "id": "search",
+          "type": "search",
+          "widget": "search",
+          "binding": { "kind": "search" },
+          "label": "Ara",
+          "required": false
+        }
+      ],
+      "summary": {
+        "placement": "cards",
+        "metrics": [
+          { "id": "count", "label": "Satir", "kind": "count", "format": "integer" },
+          { "id": "kullanim", "label": "Kullanim toplami", "kind": "sum", "field": "kullanim", "format": "number" }
+        ]
+      },
+      "documentBindings": []
+    }
+  ]
+}

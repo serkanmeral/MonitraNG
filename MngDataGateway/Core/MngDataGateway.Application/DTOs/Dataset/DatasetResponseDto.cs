@@ -74,6 +74,11 @@ public class DatasetResponseDto
     public List<QueryDefinitionResponseDto>? Queries { get; set; }
 
     /// <summary>
+    /// Stored query-write actions
+    /// </summary>
+    public List<QueryWriteActionDto>? QueryActions { get; set; }
+
+    /// <summary>
     /// Index definitions count
     /// </summary>
     public int IndexListCount { get; set; }

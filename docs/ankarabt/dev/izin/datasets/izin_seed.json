@@ -1,0 +1,55 @@
+{
+  "izin_ayarlar": [
+    {
+      "tekil": "ayar",
+      "donemTipi": "yildonumu",
+      "devirTipi": "sinirsiz",
+      "devirTavanGun": null,
+      "devirSureGun": null,
+      "hakAsimi": "serbest",
+      "hakYazimi": "yilIcinde",
+      "otomatikAcilis": true,
+      "pazartesi": 1,
+      "sali": 1,
+      "carsamba": 1,
+      "persembe": 1,
+      "cuma": 1,
+      "cumartesi": 0.5,
+      "pazar": 0,
+      "talepPersonel": true,
+      "talepYonetici": true,
+      "talepIk": true,
+      "yoneticiBosGrup": "Yonetim",
+      "cikisKeser": true
+    }
+  ],
+  "izin_hak_bantlari": [
+    { "kod": "kidem_1_5", "tip": "kidem", "minYil": 1, "maxYil": 5, "gun": 14, "durum": "acik" },
+    { "kod": "kidem_6_14", "tip": "kidem", "minYil": 6, "maxYil": 14, "gun": 20, "durum": "acik" },
+    { "kod": "kidem_15", "tip": "kidem", "minYil": 15, "maxYil": null, "gun": 26, "durum": "acik" },
+    { "kod": "yas_tabani", "tip": "yas_tabani", "altYas": 18, "ustYas": 50, "minimumGun": 20, "durum": "acik" }
+  ],
+  "izin_turleri": [
+    { "kod": "yillik", "ad": "Yıllık izin", "bakiyedenDuser": true, "belgeZorunlu": false, "yarimGun": true, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 1, "durum": "acik" },
+    { "kod": "mazeret", "ad": "Mazeret", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 2, "durum": "acik" },
+    { "kod": "rapor", "ad": "Rapor", "bakiyedenDuser": false, "belgeZorunlu": true, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 3, "durum": "acik" },
+    { "kod": "ucretsiz", "ad": "Ücretsiz", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": true, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 4, "durum": "acik" },
+    { "kod": "dogum", "ad": "Doğum", "bakiyedenDuser": false, "belgeZorunlu": true, "yarimGun": false, "kimAcar": "kadin", "sureTipi": "takvimHaftasi", "takvimGun": 112, "cogulTakvimGun": 126, "sira": 5, "durum": "acik" },
+    { "kod": "babalik", "ad": "Babalık", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "erkek", "sureTipi": "isGunu", "gunTavan": 5, "sira": 6, "durum": "acik" }
+  ],
+  "izin_mazeret_nedenleri": [
+    { "kod": "evlilik", "ad": "Evlilik", "gunTavan": 3, "durum": "acik" },
+    { "kod": "olum", "ad": "Ölüm", "gunTavan": 3, "durum": "acik" }
+  ],
+  "izin_tatil_kaliplari": [
+    { "kod": "yilbasi", "ad": "Yılbaşı", "tur": "milli", "tekrar": "sabit_gun", "ay": 1, "gun": 1, "sureGun": 1, "arefe": "yok", "durum": "acik" },
+    { "kod": "ulusal_egemenlik", "ad": "Ulusal Egemenlik ve Çocuk Bayramı", "tur": "milli", "tekrar": "sabit_gun", "ay": 4, "gun": 23, "sureGun": 1, "arefe": "yok", "durum": "acik" },
+    { "kod": "emek", "ad": "Emek ve Dayanışma Günü", "tur": "milli", "tekrar": "sabit_gun", "ay": 5, "gun": 1, "sureGun": 1, "arefe": "yok", "durum": "acik" },
+    { "kod": "ataturk", "ad": "Atatürk'ü Anma ve Gençlik ve Spor Bayramı", "tur": "milli", "tekrar": "sabit_gun", "ay": 5, "gun": 19, "sureGun": 1, "arefe": "yok", "durum": "acik" },
+    { "kod": "demokrasi", "ad": "Demokrasi ve Milli Birlik Günü", "tur": "milli", "tekrar": "sabit_gun", "ay": 7, "gun": 15, "sureGun": 1, "arefe": "yok", "durum": "acik" },
+    { "kod": "zafer", "ad": "Zafer Bayramı", "tur": "milli", "tekrar": "sabit_gun", "ay": 8, "gun": 30, "sureGun": 1, "arefe": "yok", "durum": "acik" },
+    { "kod": "cumhuriyet", "ad": "Cumhuriyet Bayramı", "tur": "milli", "tekrar": "sabit_gun", "ay": 10, "gun": 29, "sureGun": 1, "arefe": "yarim", "durum": "acik" },
+    { "kod": "ramazan", "ad": "Ramazan Bayramı", "tur": "dini", "tekrar": "yillik", "ay": null, "gun": null, "sureGun": 3, "arefe": "yarim", "durum": "acik" },
+    { "kod": "kurban", "ad": "Kurban Bayramı", "tur": "dini", "tekrar": "yillik", "ay": null, "gun": null, "sureGun": 4, "arefe": "yarim", "durum": "acik" }
+  ]
+}

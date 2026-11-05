@@ -26,6 +26,7 @@ import {
   collectLookupIdsFromValue,
   lookupStaticItemsToSelectItems,
   parseOcLookupFromFieldOptions,
+  lookupDependsOnHasEmptyFallback,
   resolveLookupDependsOnFilter,
   resolveEffectiveLookupPresentation,
   type OcLookupConfig,
@@ -161,11 +162,16 @@ export function useOcDynamicFormLookups(
   function isFieldDependsOnBlocked(fieldKey: string): boolean {
     const lookup = resolveFieldLookup(fieldKey, context.value?.fields[fieldKey]);
     if (!lookup?.dependsOn) return false;
-    return !parentValueForField(fieldKey);
+    if (parentValueForField(fieldKey)) return false;
+    return !lookupDependsOnHasEmptyFallback(lookup.dependsOn.filterTemplate);
   }
 
   async function loadRelationForField(fieldKey: string, dataset: string, lookup: OcLookupConfig) {
-    if (lookup.dependsOn && !parentValueForField(fieldKey)) {
+    if (
+      lookup.dependsOn &&
+      !parentValueForField(fieldKey) &&
+      !lookupDependsOnHasEmptyFallback(lookup.dependsOn.filterTemplate)
+    ) {
       relationItemsByKey.value = { ...relationItemsByKey.value, [fieldKey]: [] };
       return;
     }

@@ -1,6 +1,7 @@
 import { fetchFromDataGateway } from '@/services/apiService';
 import { diGenerateFromTemplate, diListTemplates } from '@/services/documentIntelligenceService';
 import { ocListStateFlowsForWorkspace } from '@/services/operationCore/flows';
+import { ocGetWorkItemProfileView, ocUpdateWorkItem } from '@/services/operationCoreService';
 import type { OcTransitionDocumentAction } from '@/types/apps/operationCore';
 import { normalizeReportingDocumentBindings } from '@/utils/reportingDocumentBindings';
 import { linkResourceToMatchingChildRow } from '@/utils/reportingChildRowLink';
@@ -79,6 +80,28 @@ function overridesFromRow(row: Record<string, unknown>, action: OcTransitionDocu
   return overrides;
 }
 
+function mappedLabel(action: OcTransitionDocumentAction, field: string, text: string): string {
+  return action.displayMaps?.[field]?.[text] ?? action.displayMaps?.[field]?.[text.toLowerCase()] ?? text;
+}
+
+/** Kaynak satırın boş bıraktığı yer tutucuları iş kaydından doldurur. Görünen ad, kimliğin önüne geçer. */
+function mergeWorkItemValues(
+  values: Record<string, string>,
+  action: OcTransitionDocumentAction,
+  fields: Record<string, unknown>,
+  fieldDisplays?: Record<string, string>
+): void {
+  const fromItem = overridesFromRow(fields, action);
+  for (const [key, value] of Object.entries(fromItem)) {
+    if (!values[key]) values[key] = value;
+  }
+  for (const [key, label] of Object.entries(fieldDisplays ?? {})) {
+    const text = label.trim();
+    if (!text) continue;
+    values[key] = mappedLabel(action, key, text);
+  }
+}
+
 async function templateIdByCode(code: string): Promise<string | null> {
   const listed = await diListTemplates();
   return listed.items.find((item) => item.code === code)?.id ?? null;
@@ -128,7 +151,10 @@ export async function findTransitionDocumentAction(
 export async function writeTransitionDocuments(options: {
   action: OcTransitionDocumentAction;
   workItemKey: string;
+  workItemId?: string;
   fields: Record<string, unknown>;
+  fieldDisplays?: Record<string, string>;
+  libraryDocumentIds?: string[];
 }): Promise<{ written: number; note: string }> {
   const action = options.action;
   const templateCode = action.templateCode.trim();
@@ -146,11 +172,13 @@ export async function writeTransitionDocuments(options: {
   if (!folderId) return { written: 0, note: 'Çıktı klasörü tanımlı değil.' };
 
   const sourceDataset = action.sourceDataset.trim();
+  const attached: string[] = [];
   let written = 0;
   for (const sourceId of sourceIds) {
     const row = await loadSource(sourceDataset, sourceId);
     if (!row) continue;
     const values = overridesFromRow(row, action);
+    mergeWorkItemValues(values, action, options.fields, options.fieldDisplays);
     if (action.parentRefField?.trim()) values[action.parentRefField.trim()] = workItemKey;
     const labelField = action.labelField?.trim();
     const label =
@@ -187,6 +215,20 @@ export async function writeTransitionDocuments(options: {
       });
     }
     written += 1;
+    attached.push(result.resourceId);
+  }
+
+  if (action.attachToWorkItem && options.workItemId && attached.length) {
+    const current = options.libraryDocumentIds
+      ? options.libraryDocumentIds.filter((id) => id.trim())
+      : (await ocGetWorkItemProfileView(options.workItemId, { force: true })).profile.libraryDocumentIds ?? [];
+    const next = [...current];
+    for (const id of attached) {
+      if (!next.some((item) => item.trim().toLowerCase() === id.trim().toLowerCase())) next.push(id);
+    }
+    if (next.length !== current.length) {
+      await ocUpdateWorkItem(options.workItemId, { fields: { libraryDocumentIds: next } });
+    }
   }
 
   return {
