@@ -9,6 +9,7 @@ import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryP
 import {
   parseAfStaticSelectItems,
   resolveChoiceWidget,
+  resolveDirectoryPicker,
   resolveTextWidget,
   type AfChoiceWidget,
   type AfTextWidget,
@@ -66,13 +67,23 @@ const fieldTypeIcon = computed(() => {
   return iconMap[type] || 'mdi-form-select';
 });
 
+const fieldLayout = computed(() => props.form?.formConfig?.fieldLayout?.[props.field.name]);
+
+const fieldHint = computed(() => {
+  const fromLayout = fieldLayout.value?.hint;
+  if (typeof fromLayout === 'string' && fromLayout.trim()) return fromLayout.trim();
+  return props.field.description || '';
+});
+
 const effectiveTextWidget = computed(() =>
-  props.textWidget ?? resolveTextWidget(props.form?.formConfig?.fieldLayout?.[props.field.name])
+  props.textWidget ?? resolveTextWidget(fieldLayout.value)
 );
 
 const effectiveChoiceWidget = computed(() =>
-  props.choiceWidget ?? resolveChoiceWidget(props.field.fieldType, props.form?.formConfig?.fieldLayout?.[props.field.name])
+  props.choiceWidget ?? resolveChoiceWidget(props.field.fieldType, fieldLayout.value)
 );
+
+const directoryPicker = computed(() => resolveDirectoryPicker(props.field.fieldType, fieldLayout.value));
 
 const staticSelectItems = computed(() => {
   if (props.field.fieldType !== 'select') return [];
@@ -397,13 +408,25 @@ const rules = computed(() => {
 </script>
 
 <template>
+  <MngDirectoryPickerField
+    v-if="directoryPicker && (field.fieldType === 'text' || field.fieldType === 'persons' || field.fieldType === 'personGroups')"
+    v-model="localValue"
+    :entity="directoryPicker.entity"
+    :group-value-key="directoryPicker.valueKey"
+    :multiple="field.isArray"
+    :label="fieldLabel"
+    :disabled="disabled || readonly"
+    :error-messages="errorMessages"
+    density="comfortable"
+  />
+
   <!-- Text Field (textbox) -->
   <v-text-field
-    v-if="field.fieldType === 'text' && effectiveTextWidget === 'text'"
+    v-else-if="field.fieldType === 'text' && effectiveTextWidget === 'text'"
     v-model="localValue"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled"
@@ -426,8 +449,8 @@ const rules = computed(() => {
     </div>
     <v-textarea
       v-model="localValue"
-      :hint="field.description"
-      :persistent-hint="!!field.description"
+      :hint="fieldHint"
+      :persistent-hint="!!fieldHint"
       :required="field.mandatory"
       :readonly="readonly"
       :disabled="disabled"
@@ -463,8 +486,8 @@ const rules = computed(() => {
     v-model.number="localValue"
     type="number"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled"
@@ -487,8 +510,8 @@ const rules = computed(() => {
     </div>
     <v-switch
       v-model="localValue"
-      :hint="field.description"
-      :persistent-hint="!!field.description"
+      :hint="fieldHint"
+      :persistent-hint="!!fieldHint"
       :readonly="readonly"
       :disabled="disabled"
       color="primary"
@@ -502,8 +525,8 @@ const rules = computed(() => {
     v-else-if="(field.fieldType === 'datetime' || field.fieldType === 'date') && readonly"
     :model-value="formattedReadonlyDate"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     readonly
     :error-messages="errorMessages"
     variant="outlined"
@@ -518,8 +541,8 @@ const rules = computed(() => {
     v-model="datetimeLocalValue"
     :type="showTime ? 'datetime-local' : 'date'"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled"
@@ -541,7 +564,7 @@ const rules = computed(() => {
     </div>
     <v-textarea
       v-model="objectJsonValue"
-      :hint="field.description || 'JSON formatında object giriniz'"
+      :hint="fieldHint || 'JSON formatında object giriniz'"
       persistent-hint
       :required="field.mandatory"
       :readonly="readonly"
@@ -562,8 +585,8 @@ const rules = computed(() => {
     item-title="title"
     item-value="value"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled"
@@ -588,8 +611,8 @@ const rules = computed(() => {
     item-title="title"
     item-value="value"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled"
@@ -615,8 +638,8 @@ const rules = computed(() => {
     item-title="title"
     item-value="value"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled || relationLoading"
@@ -645,8 +668,8 @@ const rules = computed(() => {
     item-title="title"
     item-value="value"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
+    :hint="fieldHint"
+    :persistent-hint="!!fieldHint"
     :required="field.mandatory"
     :readonly="readonly"
     :disabled="disabled || relationLoading"
@@ -671,36 +694,14 @@ const rules = computed(() => {
     </template>
   </v-autocomplete>
   
-  <!-- Persons Field -->
-  <MngDirectoryPickerField
-    v-else-if="field.fieldType === 'persons'"
-    v-model="localValue"
-    entity="user"
-    :multiple="field.isArray"
-    :label="fieldLabel"
-    :disabled="disabled || readonly"
-    :error-messages="errorMessages"
-    density="comfortable"
-  />
-
-  <!-- Person Groups Field -->
-  <MngDirectoryPickerField
-    v-else-if="field.fieldType === 'personGroups'"
-    v-model="localValue"
-    entity="group"
-    :multiple="field.isArray"
-    :label="fieldLabel"
-    :disabled="disabled || readonly"
-    :error-messages="errorMessages"
-    density="comfortable"
-  />
+  <!-- Persons and person groups use the directory picker above. -->
   
   <!-- Incremental Field (Read-only) -->
   <v-text-field
     v-else-if="field.fieldType === 'incremental'"
     :model-value="localValue || '(Otomatik)'"
     :label="fieldLabel"
-    :hint="field.description || 'Bu alan otomatik olarak oluşturulacaktır'"
+    :hint="fieldHint || 'Bu alan otomatik olarak oluşturulacaktır'"
     persistent-hint
     readonly
     disabled

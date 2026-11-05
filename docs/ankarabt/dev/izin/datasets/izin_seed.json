@@ -20,6 +20,7 @@
       "talepYonetici": true,
       "talepIk": true,
       "yoneticiBosGrup": "Yonetim",
+      "ikGrup": "IK",
       "cikisKeser": true
     }
   ],
@@ -31,15 +32,17 @@
   ],
   "izin_turleri": [
     { "kod": "yillik", "ad": "Yıllık izin", "bakiyedenDuser": true, "belgeZorunlu": false, "yarimGun": true, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 1, "durum": "acik" },
-    { "kod": "mazeret", "ad": "Mazeret", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 2, "durum": "acik" },
-    { "kod": "rapor", "ad": "Rapor", "bakiyedenDuser": false, "belgeZorunlu": true, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 3, "durum": "acik" },
-    { "kod": "ucretsiz", "ad": "Ücretsiz", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": true, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 4, "durum": "acik" },
-    { "kod": "dogum", "ad": "Doğum", "bakiyedenDuser": false, "belgeZorunlu": true, "yarimGun": false, "kimAcar": "kadin", "sureTipi": "takvimHaftasi", "takvimGun": 112, "cogulTakvimGun": 126, "sira": 5, "durum": "acik" },
-    { "kod": "babalik", "ad": "Babalık", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "erkek", "sureTipi": "isGunu", "gunTavan": 5, "sira": 6, "durum": "acik" }
+    { "kod": "evlilik", "ad": "Evlilik", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "gunTavan": 3, "sira": 2, "durum": "acik" },
+    { "kod": "olum", "ad": "Ölüm", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "gunTavan": 3, "sira": 3, "durum": "acik" },
+    { "kod": "rapor", "ad": "Rapor", "bakiyedenDuser": false, "belgeZorunlu": true, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 4, "durum": "acik" },
+    { "kod": "ucretsiz", "ad": "Ücretsiz", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": true, "kimAcar": "herkes", "sureTipi": "isGunu", "donemLimitGun": 30, "sira": 5, "durum": "acik" },
+    { "kod": "dogum", "ad": "Doğum", "bakiyedenDuser": false, "belgeZorunlu": true, "yarimGun": false, "kimAcar": "kadin", "sureTipi": "takvimHaftasi", "takvimGun": 112, "cogulTakvimGun": 126, "sira": 6, "durum": "acik" },
+    { "kod": "babalik", "ad": "Babalık", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "erkek", "sureTipi": "isGunu", "gunTavan": 5, "sira": 7, "durum": "acik" },
+    { "kod": "mazeret", "ad": "Mazeret", "bakiyedenDuser": false, "belgeZorunlu": false, "yarimGun": false, "kimAcar": "herkes", "sureTipi": "isGunu", "sira": 90, "durum": "kapali" }
   ],
   "izin_mazeret_nedenleri": [
-    { "kod": "evlilik", "ad": "Evlilik", "gunTavan": 3, "durum": "acik" },
-    { "kod": "olum", "ad": "Ölüm", "gunTavan": 3, "durum": "acik" }
+    { "kod": "evlilik", "ad": "Evlilik", "gunTavan": 3, "durum": "kapali" },
+    { "kod": "olum", "ad": "Ölüm", "gunTavan": 3, "durum": "kapali" }
   ],
   "izin_tatil_kaliplari": [
     { "kod": "yilbasi", "ad": "Yılbaşı", "tur": "milli", "tekrar": "sabit_gun", "ay": 1, "gun": 1, "sureGun": 1, "arefe": "yok", "durum": "acik" },

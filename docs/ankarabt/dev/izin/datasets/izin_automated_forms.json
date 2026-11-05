@@ -71,23 +71,22 @@
     },
     "formConfig": {
       "visibleFields": [
-        "tekil", "donemTipi", "devirTipi", "devirTavanGun", "devirSureGun", "hakAsimi", "hakYazimi", "otomatikAcilis",
+        "donemTipi", "devirTipi", "devirTavanGun", "devirSureGun", "hakAsimi", "hakYazimi", "otomatikAcilis",
         "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar",
-        "talepPersonel", "talepYonetici", "talepIk", "yoneticiBosGrup", "cikisKeser"
+        "talepPersonel", "talepYonetici", "talepIk", "yoneticiBosGrup", "ikGrup", "cikisKeser"
       ],
       "fieldOrder": [
-        "tekil", "donemTipi", "devirTipi", "devirTavanGun", "devirSureGun", "hakAsimi", "hakYazimi", "otomatikAcilis",
+        "donemTipi", "devirTipi", "devirTavanGun", "devirSureGun", "hakAsimi", "hakYazimi", "otomatikAcilis",
         "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar",
-        "talepPersonel", "talepYonetici", "talepIk", "yoneticiBosGrup", "cikisKeser"
+        "talepPersonel", "talepYonetici", "talepIk", "yoneticiBosGrup", "ikGrup", "cikisKeser"
       ],
       "readonlyFields": ["tekil"],
       "groupOrder": ["Dönem", "Gün karşılığı", "Talep"],
       "fieldLayout": {
-        "tekil": { "columnSpan": 6, "group": "Dönem" },
         "donemTipi": { "columnSpan": 6, "group": "Dönem" },
         "devirTipi": { "columnSpan": 6, "group": "Dönem" },
-        "devirTavanGun": { "columnSpan": 6, "group": "Dönem" },
-        "devirSureGun": { "columnSpan": 6, "group": "Dönem" },
+        "devirTavanGun": { "columnSpan": 6, "group": "Dönem", "visibleWhen": { "field": "devirTipi", "equals": "tavan" } },
+        "devirSureGun": { "columnSpan": 6, "group": "Dönem", "visibleWhen": { "field": "devirTipi", "equals": "tavan" } },
         "hakAsimi": { "columnSpan": 6, "group": "Dönem" },
         "hakYazimi": { "columnSpan": 6, "group": "Dönem" },
         "otomatikAcilis": { "columnSpan": 6, "group": "Dönem" },
@@ -101,8 +100,9 @@
         "talepPersonel": { "columnSpan": 4, "group": "Talep" },
         "talepYonetici": { "columnSpan": 4, "group": "Talep" },
         "talepIk": { "columnSpan": 4, "group": "Talep" },
-        "yoneticiBosGrup": { "columnSpan": 6, "group": "Talep" },
-        "cikisKeser": { "columnSpan": 6, "group": "Talep" }
+        "yoneticiBosGrup": { "columnSpan": 6, "group": "Talep", "directory": "group", "directoryValueKey": "name" },
+        "ikGrup": { "columnSpan": 6, "group": "Talep", "directory": "group", "directoryValueKey": "name" },
+        "cikisKeser": { "columnSpan": 12, "group": "Talep" }
       },
       "dataActions": [
         {
@@ -153,32 +153,34 @@
         { "fieldName": "minYil", "visible": true, "order": 3, "sortable": true, "filterable": false },
         { "fieldName": "maxYil", "visible": true, "order": 4, "sortable": true, "filterable": false },
         { "fieldName": "gun", "visible": true, "order": 5, "sortable": true, "filterable": false },
-        { "fieldName": "minimumGun", "visible": true, "order": 6, "sortable": true, "filterable": false },
-        { "fieldName": "durum", "visible": true, "order": 7, "sortable": true, "filterable": true }
+        { "fieldName": "altYas", "visible": true, "order": 6, "sortable": true, "filterable": false },
+        { "fieldName": "ustYas", "visible": true, "order": 7, "sortable": true, "filterable": false },
+        { "fieldName": "minimumGun", "visible": true, "order": 8, "sortable": true, "filterable": false },
+        { "fieldName": "durum", "visible": true, "order": 9, "sortable": true, "filterable": true }
       ]
     },
     "formConfig": {
-      "visibleFields": ["kod", "tip", "minYil", "maxYil", "gun", "altYas", "ustYas", "minimumGun", "durum"],
-      "fieldOrder": ["kod", "tip", "minYil", "maxYil", "gun", "altYas", "ustYas", "minimumGun", "durum"],
+      "visibleFields": ["kod", "tip", "durum", "minYil", "maxYil", "gun", "altYas", "ustYas", "minimumGun"],
+      "fieldOrder": ["kod", "tip", "durum", "minYil", "maxYil", "gun", "altYas", "ustYas", "minimumGun"],
       "readonlyOnEditFields": ["kod"],
-      "groupOrder": ["Bant"],
+      "groupOrder": ["Bant", "Kıdem", "Yaş tabanı"],
       "fieldLayout": {
-        "kod": { "columnSpan": 6, "group": "Bant" },
-        "tip": { "columnSpan": 6, "group": "Bant" },
-        "minYil": { "columnSpan": 4, "group": "Bant" },
-        "maxYil": { "columnSpan": 4, "group": "Bant" },
-        "gun": { "columnSpan": 4, "group": "Bant" },
-        "altYas": { "columnSpan": 4, "group": "Bant" },
-        "ustYas": { "columnSpan": 4, "group": "Bant" },
-        "minimumGun": { "columnSpan": 4, "group": "Bant" },
-        "durum": { "columnSpan": 6, "group": "Bant" }
+        "kod": { "columnSpan": 4, "group": "Bant", "hint": "Kaydın iç kodu. Düzenlemede değişmez." },
+        "tip": { "columnSpan": 4, "group": "Bant", "hint": "Kıdem aralığı hakediş gününü yazar. Yaş tabanı, genç ve ileri yaşta günün bu sayının altına düşmesini engeller." },
+        "durum": { "columnSpan": 4, "group": "Bant", "hint": "Kapalı bant hesaba girmez." },
+        "minYil": { "columnSpan": 4, "group": "Kıdem", "visibleWhen": { "field": "tip", "equals": "kidem" }, "hint": "Tamamlanan yıl. Bu yıl dahildir. Bir yılı doldurmayan kişiye hakediş yazılmaz." },
+        "maxYil": { "columnSpan": 4, "group": "Kıdem", "visibleWhen": { "field": "tip", "equals": "kidem" }, "hint": "Bu yıl dahildir. Boşsa bant üstten açıktır." },
+        "gun": { "columnSpan": 4, "group": "Kıdem", "visibleWhen": { "field": "tip", "equals": "kidem" }, "hint": "Bu aralığa denk gelen hakediş günü." },
+        "altYas": { "columnSpan": 4, "group": "Yaş tabanı", "visibleWhen": { "field": "tip", "equals": "yas_tabani" }, "hint": "Bu yaştan küçük olan, minimum günün altına düşemez." },
+        "ustYas": { "columnSpan": 4, "group": "Yaş tabanı", "visibleWhen": { "field": "tip", "equals": "yas_tabani" }, "hint": "Bu yaş ve üzeri, minimum günün altına düşemez." },
+        "minimumGun": { "columnSpan": 4, "group": "Yaş tabanı", "visibleWhen": { "field": "tip", "equals": "yas_tabani" }, "hint": "Bant günü bundan küçükse hak bu sayıya çıkar. Bant zaten büyükse ek gün yazılmaz." }
       }
     }
   },
   {
     "formName": "İzin türleri",
     "formCode": "izin-turleri-form",
-    "description": "İzin türü. Babalık tavanı türdedir. Mazeret tavanı neden formundadır. Doğum takvim haftasıdır.",
+    "description": "Türün kim açacağını, süresini ve talep kuralını tutar. Takvim günleri yalnız takvim haftasında görünür.",
     "datasetName": "izin_turleri",
     "isActive": true,
     "sideMenuConfig": {
@@ -197,28 +199,31 @@
         { "fieldName": "ad", "visible": true, "order": 3, "sortable": true, "filterable": true },
         { "fieldName": "kimAcar", "visible": true, "order": 4, "sortable": true, "filterable": true },
         { "fieldName": "sureTipi", "visible": true, "order": 5, "sortable": true, "filterable": true },
-        { "fieldName": "bakiyedenDuser", "visible": true, "order": 6, "sortable": true, "filterable": true },
-        { "fieldName": "durum", "visible": true, "order": 7, "sortable": true, "filterable": true }
+        { "fieldName": "gunTavan", "visible": true, "order": 6, "sortable": true, "filterable": false },
+        { "fieldName": "donemLimitGun", "visible": true, "order": 7, "sortable": true, "filterable": false },
+        { "fieldName": "bakiyedenDuser", "visible": true, "order": 8, "sortable": true, "filterable": true },
+        { "fieldName": "durum", "visible": true, "order": 9, "sortable": true, "filterable": true }
       ]
     },
     "formConfig": {
-      "visibleFields": ["kod", "ad", "sira", "durum", "kimAcar", "bakiyedenDuser", "belgeZorunlu", "yarimGun", "sureTipi", "takvimGun", "cogulTakvimGun", "gunTavan"],
-      "fieldOrder": ["kod", "ad", "sira", "durum", "kimAcar", "bakiyedenDuser", "belgeZorunlu", "yarimGun", "sureTipi", "takvimGun", "cogulTakvimGun", "gunTavan"],
+      "visibleFields": ["kod", "ad", "sira", "durum", "kimAcar", "sureTipi", "takvimGun", "cogulTakvimGun", "gunTavan", "donemLimitGun", "bakiyedenDuser", "belgeZorunlu", "yarimGun"],
+      "fieldOrder": ["kod", "ad", "sira", "durum", "kimAcar", "sureTipi", "takvimGun", "cogulTakvimGun", "gunTavan", "donemLimitGun", "bakiyedenDuser", "belgeZorunlu", "yarimGun"],
       "readonlyOnEditFields": ["kod"],
-      "groupOrder": ["Kimlik", "Kural"],
+      "groupOrder": ["Kimlik", "Süre", "Kural"],
       "fieldLayout": {
-        "kod": { "columnSpan": 6, "group": "Kimlik" },
-        "ad": { "columnSpan": 6, "group": "Kimlik" },
-        "sira": { "columnSpan": 4, "group": "Kimlik" },
-        "durum": { "columnSpan": 4, "group": "Kimlik" },
-        "kimAcar": { "columnSpan": 4, "group": "Kimlik" },
-        "bakiyedenDuser": { "columnSpan": 4, "group": "Kural" },
-        "belgeZorunlu": { "columnSpan": 4, "group": "Kural" },
-        "yarimGun": { "columnSpan": 4, "group": "Kural" },
-        "sureTipi": { "columnSpan": 6, "group": "Kural" },
-        "takvimGun": { "columnSpan": 6, "group": "Kural" },
-        "cogulTakvimGun": { "columnSpan": 6, "group": "Kural" },
-        "gunTavan": { "columnSpan": 6, "group": "Kural" }
+        "kod": { "columnSpan": 4, "group": "Kimlik", "hint": "Kaydın iç kodu. Düzenlemede değişmez." },
+        "ad": { "columnSpan": 8, "group": "Kimlik", "hint": "Talepte ve listede görünen ad." },
+        "sira": { "columnSpan": 4, "group": "Kimlik", "hint": "Listedeki sıra. Küçük sayı üstte durur." },
+        "durum": { "columnSpan": 4, "group": "Kimlik", "hint": "Kapalı tür talep listesinde görünmez. Yeni talep de açılmaz." },
+        "kimAcar": { "columnSpan": 4, "group": "Kimlik", "hint": "Cinsiyeti boş olan kişi yalnız Herkes türlerini görür." },
+        "sureTipi": { "columnSpan": 6, "group": "Süre", "hint": "İş günü hafta karşılığını kullanır. Tatil varsa onun karşılığı geçer. Takvim haftası hafta sonunu da sayar." },
+        "takvimGun": { "columnSpan": 6, "group": "Süre", "visibleWhen": { "field": "sureTipi", "equals": "takvimHaftasi" }, "hint": "Tek doğumun günü. Başlangıç ve bitiş dahildir. Boşsa 112 sayılır." },
+        "cogulTakvimGun": { "columnSpan": 6, "group": "Süre", "visibleWhen": { "field": "sureTipi", "equals": "takvimHaftasi" }, "hint": "Çoğul doğumun günü. Başlangıç ve bitiş dahildir. Boşsa 126 sayılır." },
+        "gunTavan": { "columnSpan": 6, "group": "Süre", "visibleWhen": { "field": "sureTipi", "equals": "isGunu" }, "hint": "Tek talebin üstüdür. Talep daha kısa olabilir. Boşsa tek talep sınırı yoktur." },
+        "donemLimitGun": { "columnSpan": 6, "group": "Süre", "hint": "Aynı yıldönümü döneminde en çok bu kadar gün. Boşsa dönem limiti yoktur. Açık talep de bu sayıya dahildir." },
+        "bakiyedenDuser": { "columnSpan": 4, "group": "Kural", "hint": "Açıksa talep bakiyeden düşer. Kapalıysa satır yazılır, bakiye değişmez." },
+        "belgeZorunlu": { "columnSpan": 4, "group": "Kural", "hint": "Açıksa belge alanı dolmadan talep açılmaz." },
+        "yarimGun": { "columnSpan": 4, "group": "Kural", "hint": "Açıksa tek günde öğleden önce veya sonra seçilebilir." }
       }
     }
   },
@@ -261,7 +266,7 @@
   {
     "formName": "Tatil kalıpları",
     "formCode": "izin-tatil-kaliplari-form",
-    "description": "Tekrar eden tatil tanımı. Sabit günde ay ve gün doludur. Dini kalıpta ay ve gün boştur. Yılı aç yalnız sabit milli kalıbı güne çevirir.",
+    "description": "Her yıl tekrar eden tatil tanımı. Sabit tarihte ay ve gün görünür. Dini bayramın tarihi elle girilir.",
     "datasetName": "izin_tatil_kaliplari",
     "isActive": true,
     "sideMenuConfig": {
@@ -285,27 +290,27 @@
       ]
     },
     "formConfig": {
-      "visibleFields": ["kod", "ad", "tur", "tekrar", "ay", "gun", "sureGun", "arefe", "durum"],
-      "fieldOrder": ["kod", "ad", "tur", "tekrar", "ay", "gun", "sureGun", "arefe", "durum"],
+      "visibleFields": ["kod", "ad", "durum", "tur", "tekrar", "ay", "gun", "sureGun", "arefe"],
+      "fieldOrder": ["kod", "ad", "durum", "tur", "tekrar", "ay", "gun", "sureGun", "arefe"],
       "readonlyOnEditFields": ["kod"],
-      "groupOrder": ["Kalıp"],
+      "groupOrder": ["Kimlik", "Tarih", "Süre"],
       "fieldLayout": {
-        "kod": { "columnSpan": 6, "group": "Kalıp" },
-        "ad": { "columnSpan": 6, "group": "Kalıp" },
-        "tur": { "columnSpan": 6, "group": "Kalıp" },
-        "tekrar": { "columnSpan": 6, "group": "Kalıp" },
-        "ay": { "columnSpan": 4, "group": "Kalıp" },
-        "gun": { "columnSpan": 4, "group": "Kalıp" },
-        "sureGun": { "columnSpan": 4, "group": "Kalıp" },
-        "arefe": { "columnSpan": 6, "group": "Kalıp" },
-        "durum": { "columnSpan": 6, "group": "Kalıp" }
+        "kod": { "columnSpan": 4, "group": "Kimlik", "hint": "Kaydın iç kodu. Düzenlemede değişmez." },
+        "ad": { "columnSpan": 8, "group": "Kimlik", "hint": "Yıl açılınca tatil gününün açıklamasına bu ad yazılır." },
+        "durum": { "columnSpan": 4, "group": "Kimlik", "hint": "Kapalı kalıp yeni güne açılmaz." },
+        "tur": { "columnSpan": 4, "group": "Tarih", "hint": "Milli ya da dini. Yılı açan iş yalnız sabit tarihli milli kalıbı güne çevirir." },
+        "tekrar": { "columnSpan": 4, "group": "Tarih", "hint": "Sabit tarihte ay ve gün girilir. Tarihi sonra girilir seçilirse ay ve gün gizlenir." },
+        "ay": { "columnSpan": 4, "group": "Tarih", "visibleWhen": { "field": "tekrar", "equals": "sabit_gun" }, "hint": "İlk tam günün ayı. 1 Ocak için 1." },
+        "gun": { "columnSpan": 4, "group": "Tarih", "visibleWhen": { "field": "tekrar", "equals": "sabit_gun" }, "hint": "İlk tam gün. 29 Ekim için 29." },
+        "sureGun": { "columnSpan": 4, "group": "Süre", "hint": "İlk tam günden başlayarak kaç tam gün açılacağı. Ramazan 3, Kurban 4." },
+        "arefe": { "columnSpan": 8, "group": "Süre", "hint": "Yarım gün, ilk tam günden önceki güne 0,5 yazar. Öğleden sonrası tatildir. Cumhuriyet Bayramı böyledir." }
       }
     }
   },
   {
     "formName": "Tatil günleri",
     "formCode": "izin-tatil-gunleri-form",
-    "description": "Gerçekleşen tatil günü. Gün hesabı yalnız bu listeyi okur. İdari günün kalıbı yoktur.",
+    "description": "Gerçekleşen tatil günü. İzin hesabı yalnız bu listeyi okur. Aynı tarih bir kez yazılır.",
     "datasetName": "izin_tatil_gunleri",
     "isActive": true,
     "sideMenuConfig": {
@@ -330,17 +335,17 @@
     "formConfig": {
       "visibleFields": ["tarih", "yil", "tur", "gunKarsiligi", "kalipId", "aciklama"],
       "fieldOrder": ["tarih", "yil", "tur", "gunKarsiligi", "kalipId", "aciklama"],
-      "groupOrder": ["Gün"],
+      "groupOrder": ["Gün", "Bağ"],
       "relationFieldConfig": {
         "kalipId": { "idField": "__dataId", "displayField": "ad" }
       },
       "fieldLayout": {
-        "tarih": { "columnSpan": 6, "group": "Gün" },
-        "yil": { "columnSpan": 6, "group": "Gün" },
-        "tur": { "columnSpan": 6, "group": "Gün" },
-        "gunKarsiligi": { "columnSpan": 6, "group": "Gün" },
-        "kalipId": { "columnSpan": 6, "group": "Gün" },
-        "aciklama": { "columnSpan": 12, "group": "Gün", "textWidget": "textarea" }
+        "tarih": { "columnSpan": 6, "group": "Gün", "hint": "Gerçek gün. Aynı tarih ikinci kez yazılmaz." },
+        "yil": { "columnSpan": 6, "group": "Gün", "hint": "Bu günün yılı. 2026 için 2026." },
+        "tur": { "columnSpan": 6, "group": "Gün", "hint": "Milli, dini veya idari. İdari günün kalıbı yoktur." },
+        "gunKarsiligi": { "columnSpan": 6, "group": "Gün", "hint": "Bu günün izne düşen ağırlığı. 0 hiç düşmez. 0,5 yarım gündür. 1 tam iş günü gibi düşer." },
+        "kalipId": { "columnSpan": 6, "group": "Bağ", "hint": "Satır bir kalıptan açıldıysa o kalıp. Elle yazılan günde boş kalabilir." },
+        "aciklama": { "columnSpan": 12, "group": "Bağ", "hint": "Listede görünen ad. Arife gününe kalıbın adı ve arife yazılır.", "textWidget": "textarea" }
       }
     }
   }

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -82,6 +84,9 @@ public class HttpJob : IJob
                 payloadJson = "{}"; // Default empty JSON object
             }
 
+            payloadJson = ApplyJobPlaceholders(payloadJson, dgToken);
+            headersJson = ApplyJobPlaceholders(headersJson, dgToken);
+
             if (string.IsNullOrEmpty(endpointUrl))
             {
                 throw new InvalidOperationException($"EndpointUrl is required for job {jobId}");
@@ -125,6 +130,12 @@ public class HttpJob : IJob
             {
                 foreach (var header in headers)
                 {
+                    if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    {
+                        httpClient.DefaultRequestHeaders.Authorization = AuthenticationHeaderValue.Parse(header.Value);
+                        continue;
+                    }
+
                     if (httpClient.DefaultRequestHeaders.Contains(header.Key))
                     {
                         httpClient.DefaultRequestHeaders.Remove(header.Key);
@@ -420,6 +431,29 @@ public class HttpJob : IJob
             _logger.LogError(ex, "Failed to load job {JobId} from repository", jobId);
             return null;
         }
+    }
+
+    /// <summary>
+    /// {{today}} is the UTC calendar day at midnight. {{year}} is that year. {{serviceToken}} is the Keeper service token.
+    /// A cron after 03:00 UTC matches the Istanbul calendar day.
+    /// </summary>
+    private static string? ApplyJobPlaceholders(string? value, string? serviceToken)
+    {
+        if (string.IsNullOrEmpty(value) || !value.Contains("{{", StringComparison.Ordinal))
+            return value;
+
+        if (value.Contains("{{serviceToken}}", StringComparison.Ordinal) && string.IsNullOrWhiteSpace(serviceToken))
+            throw new InvalidOperationException("Service token is required for this job.");
+
+        var utcNow = DateTime.UtcNow;
+        var today = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc)
+            .ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+        var year = utcNow.Year.ToString(CultureInfo.InvariantCulture);
+
+        return value
+            .Replace("{{serviceToken}}", serviceToken ?? string.Empty, StringComparison.Ordinal)
+            .Replace("{{today}}", today, StringComparison.Ordinal)
+            .Replace("{{year}}", year, StringComparison.Ordinal);
     }
 
     private async Task<string?> GetServiceTokenAsync(CancellationToken cancellationToken)

@@ -16,15 +16,18 @@ public sealed class TransitionQueryStepService
 {
     private readonly IMetadataCache _metadataCache;
     private readonly IMngDataGatewayClient _dg;
+    private readonly IRequestContext _requestContext;
     private readonly ILogger<TransitionQueryStepService> _logger;
 
     public TransitionQueryStepService(
         IMetadataCache metadataCache,
         IMngDataGatewayClient dg,
+        IRequestContext requestContext,
         ILogger<TransitionQueryStepService> logger)
     {
         _metadataCache = metadataCache;
         _dg = dg;
+        _requestContext = requestContext;
         _logger = logger;
     }
 
@@ -60,7 +63,7 @@ public sealed class TransitionQueryStepService
                 if (string.IsNullOrWhiteSpace(dataset) || string.IsNullOrWhiteSpace(query))
                     continue;
 
-                var parameters = TransitionQueryStepApplier.ResolveParameters(step, workItem);
+                var parameters = TransitionQueryStepApplier.ResolveParameters(step, workItem, ActorValues());
                 IReadOnlyList<Dictionary<string, object?>> rows;
                 try
                 {
@@ -83,5 +86,15 @@ public sealed class TransitionQueryStepService
                 WorkItemFieldWriter.Apply(workItem, mutations, catalog);
             }
         }
+    }
+
+    private Dictionary<string, object?> ActorValues()
+    {
+        var groups = _requestContext.UserGroups ?? Array.Empty<string>();
+        return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["personId"] = _requestContext.MngPersonId,
+            ["groups"] = string.Join(",", groups),
+        };
     }
 }

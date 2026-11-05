@@ -165,6 +165,69 @@ def install_seed(access: str) -> None:
                 continue
             request("POST", f"/data/api/v1/data/{dataset}", access, row)
             print(f"tohum yazildi: {dataset}.{value}")
+    ensure_ik_grup(access)
+
+
+def ensure_ik_grup(access: str) -> None:
+    filt = urllib.parse.quote("tekil:eq:ayar")
+    _, found = request("GET", f"/data/api/v1/data/izin_ayarlar?limit=1&filter={filt}", access)
+    rows = items(found)
+    if not rows:
+        return
+    row = rows[0]
+    if row.get("ikGrup"):
+        print("ik grubu duruyor")
+        return
+    row_id = data_id(row)
+    request("PUT", f"/data/api/v1/data/izin_ayarlar/{row_id}", access, {"ikGrup": "IK"})
+    print("ik grubu yazildi: IK")
+
+
+TYPE_ORDER = {
+    "yillik": 1,
+    "evlilik": 2,
+    "olum": 3,
+    "rapor": 4,
+    "ucretsiz": 5,
+    "dogum": 6,
+    "babalik": 7,
+    "mazeret": 90,
+}
+
+
+def reconcile_types(access: str) -> None:
+    for kod, sira in TYPE_ORDER.items():
+        filt = urllib.parse.quote(f"kod:eq:{kod}")
+        _, found = request("GET", f"/data/api/v1/data/izin_turleri?limit=1&filter={filt}", access)
+        rows = items(found)
+        if not rows:
+            print(f"tur yok: {kod}")
+            continue
+        row = rows[0]
+        patch = {}
+        if row.get("sira") != sira:
+            patch["sira"] = sira
+        if kod == "mazeret" and row.get("durum") != "kapali":
+            patch["durum"] = "kapali"
+        if kod == "ucretsiz" and row.get("donemLimitGun") in (None, ""):
+            patch["donemLimitGun"] = 30
+        if not patch:
+            print(f"tur duruyor: {kod}")
+            continue
+        request("PUT", f"/data/api/v1/data/izin_turleri/{data_id(row)}", access, patch)
+        print(f"tur guncellendi: {kod} {patch}")
+    for kod in ("evlilik", "olum"):
+        filt = urllib.parse.quote(f"kod:eq:{kod}")
+        _, found = request("GET", f"/data/api/v1/data/izin_mazeret_nedenleri?limit=1&filter={filt}", access)
+        rows = items(found)
+        if not rows:
+            continue
+        row = rows[0]
+        if row.get("durum") == "kapali":
+            print(f"neden kapali: {kod}")
+            continue
+        request("PUT", f"/data/api/v1/data/izin_mazeret_nedenleri/{data_id(row)}", access, {"durum": "kapali"})
+        print(f"neden kapatildi: {kod}")
 
 
 def install_forms(access: str) -> None:
@@ -189,6 +252,7 @@ def main() -> int:
     category_id = ensure_category(access)
     install_datasets(access, category_id)
     install_seed(access)
+    reconcile_types(access)
     install_forms(access)
     print("izin kurulumu bitti")
     return 0

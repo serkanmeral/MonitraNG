@@ -61,7 +61,8 @@ public static class TransitionQueryStepApplier
 
     public static Dictionary<string, object?> ResolveParameters(
         JsonElement step,
-        IReadOnlyDictionary<string, object?> workItem)
+        IReadOnlyDictionary<string, object?> workItem,
+        IReadOnlyDictionary<string, object?>? actor = null)
     {
         var parameters = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         if (!step.TryGetProperty("parameters", out var list) || list.ValueKind != JsonValueKind.Array)
@@ -74,7 +75,9 @@ public static class TransitionQueryStepApplier
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(from))
                 continue;
 
-            var value = Normalize(ResolveWorkItemValue(workItem, from));
+            var value = from.StartsWith("actor.", StringComparison.OrdinalIgnoreCase)
+                ? Normalize(ResolveActorValue(actor, from["actor.".Length..]))
+                : Normalize(ResolveWorkItemValue(workItem, from));
             // Optional text parameters reject JSON null. An empty work-item field is omitted
             // so the query keeps its own default. False and zero are still sent.
             if (value is null || (value is string text && string.IsNullOrWhiteSpace(text)))
@@ -91,6 +94,23 @@ public static class TransitionQueryStepApplier
         if (!element.TryGetProperty(name, out var prop))
             return null;
         return prop.ValueKind == JsonValueKind.String ? prop.GetString()?.Trim() : prop.ToString().Trim();
+    }
+
+    private static object? ResolveActorValue(IReadOnlyDictionary<string, object?>? actor, string key)
+    {
+        if (actor == null || string.IsNullOrWhiteSpace(key))
+            return null;
+
+        if (actor.TryGetValue(key, out var value))
+            return value;
+
+        foreach (var pair in actor)
+        {
+            if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase))
+                return pair.Value;
+        }
+
+        return null;
     }
 
     private static object? ResolveWorkItemValue(IReadOnlyDictionary<string, object?> workItem, string path)

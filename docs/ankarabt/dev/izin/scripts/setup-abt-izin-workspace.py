@@ -300,15 +300,17 @@ def main() -> int:
         ),
     )
     engel = field(access, "izin_engel", "Engel", "text")
+    hak = field(access, "izin_hakVar", "Talep hakki", "bool")
     donem = field(access, "izin_donemBaslangic", "Donem baslangici", "datetime")
     cakisma = field(access, "izin_cakismaAdet", "Cakisma adedi", "number")
     tavan = field(access, "izin_tavanAsildi", "Tavan asildi", "bool")
+    donem_asildi = field(access, "izin_donemAsildi", "Donem limiti asildi", "bool")
     bloke_key = field(access, "izin_blokeAnahtar", "Bloke anahtari", "text")
     iade_key = field(access, "izin_iadeAnahtar", "Iade anahtari", "text")
     kullanim_key = field(access, "izin_kullanimAnahtar", "Kullanim anahtari", "text")
     field_ids = [
         personel, cinsiyet, tur, neden, baslangic, bitis, yarim, cogul, dusen, eksi, aciklama, belge, yerine,
-        engel, donem, cakisma, tavan, bloke_key, iade_key, kullanim_key,
+        engel, hak, donem, cakisma, tavan, donem_asildi, bloke_key, iade_key, kullanim_key,
     ]
 
     type_id = ensure(
@@ -368,7 +370,7 @@ def main() -> int:
 
     visible = [
         "title", "description", "typeId", "priorityId",
-        "izin_personelId", "izin_turId", "izin_nedenId",
+        "izin_personelId", "izin_turId",
         "izin_baslangic", "izin_bitis", "izin_yarimGun", "izin_cogul",
         "izin_dusenGun", "izin_aciklama", "izin_belgeId", "izin_yerineBakacak",
     ]
@@ -439,7 +441,7 @@ def main() -> int:
         "priority": 100,
         "typeId": type_id,
         "transitionKey": "gonder",
-        "description": "Talep kurali, dusen gun, donem, yazim anahtari, cakisma ve tavan.",
+        "description": "Talep kurali, dusen gun, donem, yazim anahtari, cakisma, tavan ve donem limiti.",
         "actions": [],
         "querySteps": [
             query_step(
@@ -455,6 +457,11 @@ def main() -> int:
                     ("cogul", "izin_cogul"),
                 ],
                 [("engel", "izin_engel", "fail"), ("bitis", "izin_bitis", "skip")],
+            ),
+            query_step(
+                "izin_personel", "talep_hakki",
+                [("personelId", "izin_personelId"), ("actorId", "actor.personId"), ("actorGroups", "actor.groups")],
+                [("hakVar", "izin_hakVar", "fail")],
             ),
             query_step(
                 "izin_ayarlar", "dusen_gun",
@@ -480,6 +487,17 @@ def main() -> int:
                 "izin_turleri", "tavan",
                 [("turId", "izin_turId"), ("nedenId", "izin_nedenId"), ("gun", "izin_dusenGun")],
                 [("asildi", "izin_tavanAsildi", "false")],
+            ),
+            query_step(
+                "izin_turleri", "donem_limit",
+                [
+                    ("turId", "izin_turId"),
+                    ("personelId", "izin_personelId"),
+                    ("donemBaslangic", "izin_donemBaslangic"),
+                    ("gun", "izin_dusenGun"),
+                    ("isKodu", "key"),
+                ],
+                [("asildi", "izin_donemAsildi", "false")],
             ),
         ],
     }
@@ -509,15 +527,29 @@ def main() -> int:
         "priority": 80,
         "typeId": type_id,
         "transitionKey": "gonder",
-        "errorMessage": "Istenen gun, tur veya neden tavanini asiyor.",
+        "errorMessage": "Istenen gun, turun tek talep tavanini asiyor.",
         "conditions": {"op": "and", "items": [{"field": "izin_tavanAsildi", "cmp": "eq", "value": True}]},
         "querySteps": [],
     })
-    for name, code, message, priority in (
+    ensure(access, "op_rules", "IZN - Donem kes", {
+        "name": "IZN - Donem kes",
+        "workspaceId": workspace_id,
+        "ruleType": "validation",
+        "trigger": "WorkItemTransition",
+        "applyMode": "pre",
+        "isActive": True,
+        "priority": 79,
+        "typeId": type_id,
+        "transitionKey": "gonder",
+        "errorMessage": "Bu tur icin donem limiti dolu.",
+        "conditions": {"op": "and", "items": [{"field": "izin_donemAsildi", "cmp": "eq", "value": True}]},
+        "querySteps": [],
+    })
+    for name, code, message, priority, *rest in (
         ("IZN - Cikis kes", "cikis", "Cikis tarihi dolu personel yeni talep acamaz.", 75),
         ("IZN - Kapali tur kes", "kapali", "Kapali izin turu ile talep acilamaz.", 74),
         ("IZN - Cinsiyet kes", "cinsiyet", "Bu izin turu personelin cinsiyetine acik degil.", 73),
-        ("IZN - Neden kes", "neden", "Mazeret izninde neden zorunlu.", 72),
+        ("IZN - Neden kes", "neden", "Mazeret izninde neden zorunlu.", 72, False),
         ("IZN - Belge kes", "belge", "Bu izin turunde belge zorunlu.", 71),
         ("IZN - Yarim gun kes", "yarim", "Yarim gun yalniz yillik ve ucretsiz izinde acik.", 70),
         ("IZN - Yerine kes", "yerine", "Yerine bakacak kisi talep sahibi ya da cikisi dolu biri olamaz.", 69),
@@ -528,7 +560,7 @@ def main() -> int:
             "ruleType": "validation",
             "trigger": "WorkItemTransition",
             "applyMode": "pre",
-            "isActive": True,
+            "isActive": rest[0] if rest else True,
             "priority": priority,
             "typeId": type_id,
             "transitionKey": "gonder",
@@ -536,6 +568,20 @@ def main() -> int:
             "conditions": {"op": "and", "items": [{"field": "izin_engel", "cmp": "eq", "value": code}]},
             "querySteps": [],
         })
+    ensure(access, "op_rules", "IZN - Hak kes", {
+        "name": "IZN - Hak kes",
+        "workspaceId": workspace_id,
+        "ruleType": "validation",
+        "trigger": "WorkItemTransition",
+        "applyMode": "pre",
+        "isActive": True,
+        "priority": 76,
+        "typeId": type_id,
+        "transitionKey": "gonder",
+        "errorMessage": "Bu personel icin talep acma hakkin yok.",
+        "conditions": {"op": "and", "items": [{"field": "izin_hakVar", "cmp": "eq", "value": False}]},
+        "querySteps": [],
+    })
     ensure(access, "op_rules", "IZN - Yonetim ata", {
         "name": "IZN - Yonetim ata",
         "workspaceId": workspace_id,

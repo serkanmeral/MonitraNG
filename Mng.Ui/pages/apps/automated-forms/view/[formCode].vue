@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick, inject, type Ref } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DynamicFormField from '@/components/apps/automated-forms/DynamicFormField.vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
@@ -9,13 +9,16 @@ import {
   type AfFilterColumn,
   type AfListFilter,
 } from '@/utils/afListFilters';
-import { parseAfStaticSelectItems } from '@/utils/afFormFieldPresentation';
+import { isFieldVisibleForValues, parseAfStaticSelectItems } from '@/utils/afFormFieldPresentation';
 import { ocListDatasetPage } from '@/services/operationCoreService';
 import { useAutomatedFormsStore, type AfDataAction } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
 import { fetchFromDataGateway, fetchBlobFromDataGateway, getDataGatewayProxyUrl } from '@/services/apiService';
+import { schedulerGetUserJobExecutions, schedulerListUserJobs } from '@/services/schedulerService';
+import type { SchedulerJob, SchedulerJobExecution } from '@/types/apps/scheduler';
+import { formatScheduleTime, parseScheduleSummary } from '@/utils/ocScheduleCron';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 import { usePagePermissions } from '@/composables/usePagePermissions';
@@ -48,7 +51,8 @@ const datasetStore = useDatasetStore();
 const userStore = useUserStore();
 const authStore = useAuthStore();
 
-const formCode = computed(() => route.params.formCode as string);
+const embeddedFormCode = inject<Ref<string> | null>('afEmbeddedFormCode', null);
+const formCode = computed(() => embeddedFormCode?.value || (route.params.formCode as string) || '');
 
 // Form metadata
 const form = ref<any>(null);
@@ -81,6 +85,24 @@ const loading = ref(false);
 const errorMessage = ref('');
 const actionMessage = ref('');
 const actionRunning = ref(false);
+const actionDialogOpen = ref(false);
+const actionDialog = ref<AfDataAction | null>(null);
+const actionDialogLoading = ref(false);
+const actionDialogDescription = ref('');
+const actionDialogMode = ref('');
+const actionDialogAfterWrite = ref(false);
+const actionDialogSchedule = ref<{
+  name: string;
+  active: boolean;
+  scheduleText: string;
+  lastAt: string;
+  status: string;
+  result: string;
+} | null>(null);
+const actionDialogScheduleError = ref('');
+const actionDialogError = ref('');
+const actionDialogResult = ref('');
+const actionDialogRanAt = ref('');
 
 // Data items (for list view)
 const dataItems = ref<any[]>([]);
@@ -357,6 +379,12 @@ const formFields = computed(() => {
   
   return filteredFields;
 });
+
+const visibleFormFields = computed(() =>
+  formFields.value.filter((field) =>
+    isFieldVisibleForValues(form.value?.formConfig?.fieldLayout?.[field.name], formDialogData.value)
+  )
+);
 
 const isFormFieldReadonly = (fieldName: string): boolean => {
   const formConfig = form.value?.formConfig;
@@ -795,11 +823,148 @@ function resolveDataActionParameters(action: AfDataAction): Record<string, unkno
   return body;
 }
 
+function readActionError(error: unknown): string {
+  const source = error as {
+    data?: any;
+    statusMessage?: string;
+    message?: string;
+  };
+  const data = source?.data;
+  const nested =
+    data?.data?.error?.message ||
+    data?.error?.message ||
+    data?.statusMessage ||
+    (typeof data?.message === 'string' ? data.message : '');
+  const detail =
+    data?.data?.error?.details?.innerException ||
+    data?.error?.details?.innerException ||
+    data?.error?.details?.message ||
+    '';
+  const message = [nested, typeof detail === 'string' ? detail : ''].filter(Boolean).join(' ');
+  if (message.trim()) return message.trim();
+  if (source?.statusMessage && !/internal server error/i.test(source.statusMessage)) return source.statusMessage;
+  if (source?.message && !/^\[(GET|POST|PUT|DELETE)\]/.test(source.message)) return source.message;
+  return t('automated-forms.view.buttons.dataActionFailed');
+}
+
+function describeActionCron(cron: string): string {
+  const summary = parseScheduleSummary(cron);
+  if (summary?.type === 'dailyAt') {
+    return t('automated-forms.view.buttons.dataActionScheduleDaily', {
+      time: formatScheduleTime(summary.hour, summary.minute),
+    });
+  }
+  if (summary?.type === 'everyMinutes') {
+    return t('automated-forms.view.buttons.dataActionScheduleEveryMinutes', { n: summary.n });
+  }
+  if (summary?.type === 'everyHours') {
+    return t('automated-forms.view.buttons.dataActionScheduleEveryHours', { n: summary.n });
+  }
+  return cron;
+}
+
+function summarizeExecution(execution: SchedulerJobExecution | null | undefined): string {
+  if (!execution) return '';
+  if (execution.errorMessage) return execution.errorMessage;
+  const body = execution.responseBody?.trim();
+  if (body) {
+    try {
+      const parsed = JSON.parse(body) as Record<string, unknown>;
+      if (parsed.written != null || parsed.Written != null) {
+        return t('automated-forms.view.buttons.dataActionResult', {
+          written: Number(parsed.written ?? parsed.Written ?? 0),
+          skipped: Number(parsed.skipped ?? parsed.Skipped ?? 0),
+          failed: Number(parsed.failed ?? parsed.Failed ?? 0),
+        });
+      }
+    } catch {
+      return body.length > 400 ? `${body.slice(0, 400)}…` : body;
+    }
+  }
+  if (execution.responseCode) return String(execution.responseCode);
+  return '';
+}
+
+function actionStatusLabel(status: string): string {
+  if (status === 'success') return t('automated-forms.view.buttons.dataActionStatusSuccess');
+  if (status === 'failed') return t('automated-forms.view.buttons.dataActionStatusFailed');
+  return status;
+}
+
+const actionDialogParameters = computed(() => {
+  const action = actionDialog.value;
+  if (!action?.parameters?.length) return '';
+  return action.parameters
+    .map((parameter) => {
+      if (parameter.source === 'today') return t('automated-forms.view.buttons.dataActionParamToday', { name: parameter.name });
+      if (parameter.source === 'now') return t('automated-forms.view.buttons.dataActionParamNow', { name: parameter.name });
+      if (parameter.source === 'year') return t('automated-forms.view.buttons.dataActionParamYear', { name: parameter.name });
+      if (parameter.source === 'literal') {
+        return t('automated-forms.view.buttons.dataActionParamLiteral', { name: parameter.name, value: parameter.value ?? '' });
+      }
+      if (parameter.source === 'field') {
+        return t('automated-forms.view.buttons.dataActionParamField', { name: parameter.name, field: parameter.field ?? '' });
+      }
+      return parameter.name;
+    })
+    .join(' · ');
+});
+
+async function openDataAction(action: AfDataAction) {
+  actionDialog.value = action;
+  actionDialogOpen.value = true;
+  actionDialogLoading.value = true;
+  actionDialogDescription.value = '';
+  actionDialogMode.value = '';
+  actionDialogAfterWrite.value = false;
+  actionDialogSchedule.value = null;
+  actionDialogScheduleError.value = '';
+  actionDialogError.value = '';
+  actionDialogResult.value = '';
+  actionDialogRanAt.value = '';
+  try {
+    const schemaPromise = action.dataset
+      ? fetchFromDataGateway(`/api/v1/datasets/${encodeURIComponent(action.dataset)}`)
+      : Promise.resolve(null);
+    const jobsPromise = schedulerListUserJobs().catch((error: unknown) => {
+      actionDialogScheduleError.value = readActionError(error);
+      return [] as SchedulerJob[];
+    });
+    const [schema, jobs] = await Promise.all([schemaPromise, jobsPromise]);
+    const stored = (schema?.queryActions ?? schema?.QueryActions ?? []) as Array<Record<string, unknown>>;
+    const match = stored.find((item) => (item.name ?? item.Name) === action.action);
+    actionDialogDescription.value = String(match?.description ?? match?.Description ?? '');
+    actionDialogMode.value = String(match?.mode ?? match?.Mode ?? '');
+    actionDialogAfterWrite.value = Boolean(match?.afterWrite ?? match?.AfterWrite);
+    const needle = `/data/${action.dataset}/actions/${action.action}`.toLowerCase();
+    const job = jobs.find((item) => item.endpointUrl.toLowerCase().includes(needle));
+    if (job) {
+      let last = job.lastExecution ?? null;
+      if (!last?.executedAt && job.jobId) {
+        const history = await schedulerGetUserJobExecutions(job.jobId, 1).catch(() => []);
+        last = history[0] ?? null;
+      }
+      actionDialogSchedule.value = {
+        name: job.name,
+        active: job.isActive,
+        scheduleText: describeActionCron(job.cronExpression),
+        lastAt: last?.executedAt ? formatTrDisplayDate(last.executedAt) || last.executedAt : '',
+        status: last?.status || '',
+        result: summarizeExecution(last),
+      };
+    }
+  } catch (error: unknown) {
+    actionDialogError.value = readActionError(error);
+  } finally {
+    actionDialogLoading.value = false;
+  }
+}
+
 async function runDataAction(action: AfDataAction) {
   if (!action.dataset || !action.action) return;
   actionRunning.value = true;
-  errorMessage.value = '';
-  actionMessage.value = '';
+  actionDialogError.value = '';
+  actionDialogResult.value = '';
   try {
     const parameters = resolveDataActionParameters(action);
     const result = await fetchFromDataGateway(
@@ -810,10 +975,17 @@ async function runDataAction(action: AfDataAction) {
     const written = Number(result?.written ?? result?.Written ?? 0);
     const skipped = Number(result?.skipped ?? result?.Skipped ?? 0);
     const failed = Number(result?.failed ?? result?.Failed ?? 0);
-    actionMessage.value = t('automated-forms.view.buttons.dataActionResult', { written, skipped, failed });
+    actionDialogResult.value = t('automated-forms.view.buttons.dataActionResult', { written, skipped, failed });
+    actionDialogRanAt.value = new Date().toLocaleString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
     await refreshData();
-  } catch (error: any) {
-    errorMessage.value = error?.message || String(error);
+  } catch (error: unknown) {
+    actionDialogError.value = readActionError(error);
   } finally {
     actionRunning.value = false;
   }
@@ -1481,14 +1653,14 @@ const getFieldGroup = (fieldName: string): string => {
 
 // Group form fields by their group; order groups by formConfig.groupOrder when present
 const groupedFormFields = computed(() => {
-  if (!formFields.value || formFields.value.length === 0) {
+  if (!visibleFormFields.value || visibleFormFields.value.length === 0) {
     return [];
   }
   
   const groups: { [groupName: string]: any[] } = {};
   const ungrouped: any[] = [];
   
-  formFields.value.forEach(field => {
+  visibleFormFields.value.forEach(field => {
     const groupName = getFieldGroup(field.name);
     if (groupName && groupName.trim()) {
       if (!groups[groupName]) {
@@ -1519,7 +1691,7 @@ const groupedFormFields = computed(() => {
       }
     });
   } else {
-    // Legacy: order = first occurrence in formFields (fieldOrder)
+    // Legacy: order = first occurrence in visibleFormFields (fieldOrder)
     Object.keys(groups).forEach(groupName => {
       result.push({ groupName, fields: groups[groupName] });
     });
@@ -1801,6 +1973,11 @@ const formatCellValue = (value: any, fieldName: string) => {
     }
   }
   
+  if (fieldType === 'select' && field) {
+    const match = parseAfStaticSelectItems(field).find((item) => item.value === String(value));
+    if (match) return match.label;
+  }
+
   // Convert to string first
   let stringValue = String(value);
   
@@ -2573,7 +2750,7 @@ const getFormDescription = (): string => {
 </script>
 
 <template>
-  <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
+  <BaseBreadcrumb v-if="!embeddedFormCode" :title="page.title" :breadcrumbs="breadcrumbs" />
   
   <v-card elevation="10">
     <v-card-item class="af-automated-form-list-card-item">
@@ -2598,8 +2775,7 @@ const getFormDescription = (): string => {
             :key="`${action.dataset}-${action.action}`"
             variant="outlined"
             :disabled="loading || actionRunning || !form"
-            :loading="actionRunning"
-            @click="runDataAction(action)"
+            @click="openDataAction(action)"
           >
             {{ action.label }}
           </v-btn>
@@ -3139,7 +3315,7 @@ const getFormDescription = (): string => {
           <!-- Fallback: Ungrouped Fields (if no grouping) -->
           <v-row v-else>
             <v-col
-              v-for="field in formFields"
+              v-for="field in visibleFormFields"
               :key="field.name"
               cols="12"
               :md="getFieldColumnSpan(field.name)"
@@ -3215,6 +3391,85 @@ const getFormDescription = (): string => {
           <CheckIcon class="mr-2" size="18" />
           {{ formDialogMode === 'edit' ? t('automated-forms.view.buttons.update') : t('automated-forms.view.buttons.save') }}
           <v-chip size="x-small" variant="flat" color="primary" class="ml-2">Enter</v-chip>
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="actionDialogOpen" max-width="640">
+    <v-card v-if="actionDialog">
+      <v-card-title class="text-h6 pa-4">{{ actionDialog.label }}</v-card-title>
+      <v-card-text>
+        <div v-if="actionDialogLoading" class="d-flex align-center py-4">
+          <v-progress-circular indeterminate size="24" width="2" class="mr-3" />
+          {{ t('automated-forms.view.buttons.dataActionLoading') }}
+        </div>
+        <template v-else>
+          <p class="text-body-1 mb-3">
+            {{ actionDialogDescription || t('automated-forms.view.buttons.dataActionNoDescription') }}
+          </p>
+          <p v-if="actionDialogMode === 'atla'" class="text-body-2 text-medium-emphasis mb-2">
+            {{ t('automated-forms.view.buttons.dataActionWriteModeSkip') }}
+          </p>
+          <p v-else-if="actionDialogMode === 'yenile'" class="text-body-2 text-medium-emphasis mb-2">
+            {{ t('automated-forms.view.buttons.dataActionWriteModeRefresh') }}
+          </p>
+          <p v-if="actionDialogAfterWrite" class="text-body-2 text-medium-emphasis mb-2">
+            {{ t('automated-forms.view.buttons.dataActionAfterWrite') }}
+          </p>
+          <p class="text-body-2 mb-4">
+            <span class="font-weight-medium">{{ t('automated-forms.view.buttons.dataActionParameters') }}:</span>
+            {{ actionDialogParameters || t('automated-forms.view.buttons.dataActionNoParameters') }}
+          </p>
+
+          <div class="text-subtitle-2 mb-2">{{ t('automated-forms.view.buttons.dataActionScheduleTitle') }}</div>
+          <v-alert v-if="actionDialogScheduleError" type="warning" variant="tonal" density="compact" class="mb-3">
+            {{ actionDialogScheduleError }}
+          </v-alert>
+          <template v-else-if="actionDialogSchedule">
+            <p class="text-body-2 mb-1">
+              {{ actionDialogSchedule.name }} · {{ actionDialogSchedule.scheduleText }} ·
+              {{ actionDialogSchedule.active
+                ? t('automated-forms.view.buttons.dataActionScheduleActive')
+                : t('automated-forms.view.buttons.dataActionSchedulePassive') }}
+            </p>
+            <p class="text-body-2 mb-1">
+              <span class="font-weight-medium">{{ t('automated-forms.view.buttons.dataActionLastRun') }}:</span>
+              {{ actionDialogSchedule.lastAt || t('automated-forms.view.buttons.dataActionNeverRun') }}
+            </p>
+            <p v-if="actionDialogSchedule.status" class="text-body-2 mb-1">
+              <span class="font-weight-medium">{{ t('automated-forms.view.buttons.dataActionStatus') }}:</span>
+              {{ actionStatusLabel(actionDialogSchedule.status) }}
+            </p>
+            <p v-if="actionDialogSchedule.result" class="text-body-2 mb-3">
+              <span class="font-weight-medium">{{ t('automated-forms.view.buttons.dataActionResultLabel') }}:</span>
+              {{ actionDialogSchedule.result }}
+            </p>
+          </template>
+          <p v-else class="text-body-2 text-medium-emphasis mb-3">
+            {{ t('automated-forms.view.buttons.dataActionNotScheduled') }}
+          </p>
+
+          <v-alert v-if="actionDialogResult" type="success" variant="tonal" density="compact" class="mb-3">
+            {{ actionDialogResult }}
+            <div v-if="actionDialogRanAt">{{ t('automated-forms.view.buttons.dataActionThisRun', { time: actionDialogRanAt }) }}</div>
+          </v-alert>
+          <v-alert v-if="actionDialogError" type="error" variant="tonal" density="compact">
+            {{ actionDialogError }}
+          </v-alert>
+        </template>
+      </v-card-text>
+      <v-card-actions class="pa-4">
+        <v-spacer />
+        <v-btn variant="text" @click="actionDialogOpen = false">{{ t('automated-forms.view.buttons.close') }}</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          :loading="actionRunning"
+          :disabled="actionDialogLoading || actionRunning"
+          @click="actionDialog && runDataAction(actionDialog)"
+        >
+          {{ t('automated-forms.view.buttons.dataActionRun') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -57,6 +57,11 @@
           { "$match": { "durum": "calisiyor", "cikisTarihi": null, "iseGiris": { "$ne": null } } },
           { "$addFields": { "pTarih": ":tarih" } },
           { "$addFields": {
+              "iseGiris": { "$convert": { "input": "$iseGiris", "to": "date", "onError": null, "onNull": null } },
+              "dogumTarihi": { "$convert": { "input": "$dogumTarihi", "to": "date", "onError": null, "onNull": null } },
+              "pTarih": { "$convert": { "input": "$pTarih", "to": "date", "onError": null, "onNull": null } }
+          } },
+          { "$addFields": {
               "ayEsit": { "$eq": [ { "$month": "$iseGiris" }, { "$month": "$pTarih" } ] },
               "gunEsit": { "$eq": [ { "$dayOfMonth": "$iseGiris" }, { "$dayOfMonth": "$pTarih" } ] },
               "kidem": { "$dateDiff": { "startDate": "$iseGiris", "endDate": "$pTarih", "unit": "year" } },
@@ -169,6 +174,11 @@
         "pipeline": [
           { "$match": { "durum": "calisiyor", "cikisTarihi": null, "iseGiris": { "$ne": null } } },
           { "$addFields": { "pTarih": ":tarih" } },
+          { "$addFields": {
+              "iseGiris": { "$convert": { "input": "$iseGiris", "to": "date", "onError": null, "onNull": null } },
+              "dogumTarihi": { "$convert": { "input": "$dogumTarihi", "to": "date", "onError": null, "onNull": null } },
+              "pTarih": { "$convert": { "input": "$pTarih", "to": "date", "onError": null, "onNull": null } }
+          } },
           { "$addFields": {
               "kidem": { "$dateDiff": { "startDate": "$iseGiris", "endDate": "$pTarih", "unit": "year" } },
               "yas": { "$dateDiff": { "startDate": "$dogumTarihi", "endDate": "$pTarih", "unit": "year" } },
@@ -304,6 +314,59 @@
               ] }
           } }
         ]
+      },
+      {
+        "name": "talep_hakki",
+        "description": "Talebi acan kisi, personelin kendisi, yoneticisi veya ayardaki IK grubundaysa hakVar true. Bayraklar kapaliysa o yol sayilmaz. IK grubu bos ise IK yolu kapali.",
+        "parameters": [
+          { "name": "personelId", "type": "text", "required": true },
+          { "name": "actorId", "type": "text", "required": true },
+          { "name": "actorGroups", "type": "text", "required": false }
+        ],
+        "pipeline": [
+          { "$match": { "__dataId": ":personelId" } },
+          { "$limit": 1 },
+          { "$lookup": {
+              "from": "izin_ayarlar",
+              "pipeline": [ { "$limit": 1 } ],
+              "as": "ayarlar"
+          } },
+          { "$addFields": {
+              "ayar": { "$first": "$ayarlar" },
+              "pActor": ":actorId",
+              "pGruplar": ":actorGroups"
+          } },
+          { "$addFields": {
+              "gruplar": { "$map": {
+                  "input": { "$split": [ { "$ifNull": [ "$pGruplar", "" ] }, "," ] },
+                  "as": "g",
+                  "in": { "$toLower": { "$trim": { "input": "$$g" } } }
+              } },
+              "ikAd": { "$toLower": { "$trim": { "input": { "$ifNull": [ "$ayar.ikGrup", "" ] } } } },
+              "kisi": { "$ifNull": [ { "$arrayElemAt": [ "$keeperKisiId", 0 ] }, "$keeperKisiId" ] },
+              "yonetici": { "$ifNull": [ { "$arrayElemAt": [ "$yoneticiId", 0 ] }, "$yoneticiId" ] }
+          } },
+          { "$project": {
+              "_id": 0,
+              "hakVar": { "$or": [
+                { "$and": [
+                  { "$ne": [ "$ayar.talepPersonel", false ] },
+                  { "$ne": [ { "$ifNull": [ "$kisi", "" ] }, "" ] },
+                  { "$eq": [ "$kisi", "$pActor" ] }
+                ] },
+                { "$and": [
+                  { "$ne": [ "$ayar.talepYonetici", false ] },
+                  { "$ne": [ { "$ifNull": [ "$yonetici", "" ] }, "" ] },
+                  { "$eq": [ "$yonetici", "$pActor" ] }
+                ] },
+                { "$and": [
+                  { "$ne": [ "$ayar.talepIk", false ] },
+                  { "$gt": [ { "$strLenCP": "$ikAd" }, 0 ] },
+                  { "$in": [ "$ikAd", "$gruplar" ] }
+                ] }
+              ] }
+          } }
+        ]
       }
     ],
     "queryActions": [
@@ -337,49 +400,50 @@
     "fields": [
       { "fieldType": "text", "name": "tekil", "title": "Tekil anahtar", "mandatory": true, "unique": true, "isArray": false, "defaultValue": "ayar" },
       {
-        "fieldType": "select", "name": "donemTipi", "title": "Donem", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "yildonumu",
+        "fieldType": "select", "name": "donemTipi", "title": "Dönem", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "yildonumu",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "yildonumu", "label": "Ise giris yildonumu" },
-          { "value": "takvim", "label": "Takvim yili" }
+          { "value": "yildonumu", "label": "İşe giriş yıldönümü" },
+          { "value": "takvim", "label": "Takvim yılı" }
         ] } }
       },
       {
         "fieldType": "select", "name": "devirTipi", "title": "Devir", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "sinirsiz",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "sinirsiz", "label": "Sinirsiz" },
-          { "value": "tavan", "label": "Tavanli" }
+          { "value": "sinirsiz", "label": "Sınırsız" },
+          { "value": "tavan", "label": "Tavanlı" }
         ] } }
       },
-      { "fieldType": "number", "name": "devirTavanGun", "title": "Devir tavan gunu", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "devirSureGun", "title": "Devir sure gunu", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "devirTavanGun", "title": "Devir tavan günü", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "devirSureGun", "title": "Devir süre günü", "mandatory": false, "unique": false, "isArray": false },
       {
-        "fieldType": "select", "name": "hakAsimi", "title": "Hak asimi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "serbest",
+        "fieldType": "select", "name": "hakAsimi", "title": "Hak aşımı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "serbest",
         "options": { "lookup": { "source": "static", "staticItems": [
           { "value": "serbest", "label": "Serbest" },
-          { "value": "uyari", "label": "Uyari" },
+          { "value": "uyari", "label": "Uyarı" },
           { "value": "kes", "label": "Kes" }
         ] } }
       },
       {
-        "fieldType": "select", "name": "hakYazimi", "title": "Hak yazimi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "yilIcinde",
+        "fieldType": "select", "name": "hakYazimi", "title": "Hak yazımı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "yilIcinde",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "yilIcinde", "label": "Yil icinde de" },
-          { "value": "donemBasi", "label": "Yalniz donem basi" }
+          { "value": "yilIcinde", "label": "Yıl içinde de" },
+          { "value": "donemBasi", "label": "Yalnız dönem başı" }
         ] } }
       },
-      { "fieldType": "bool", "name": "otomatikAcilis", "title": "Kendiliginden acilis", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
-      { "fieldType": "number", "name": "pazartesi", "title": "Pazartesi karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
-      { "fieldType": "number", "name": "sali", "title": "Sali karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
-      { "fieldType": "number", "name": "carsamba", "title": "Carsamba karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
-      { "fieldType": "number", "name": "persembe", "title": "Persembe karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
-      { "fieldType": "number", "name": "cuma", "title": "Cuma karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
-      { "fieldType": "number", "name": "cumartesi", "title": "Cumartesi karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0.5 },
-      { "fieldType": "number", "name": "pazar", "title": "Pazar karsiligi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
-      { "fieldType": "bool", "name": "talepPersonel", "title": "Personel kendi talebini acar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
-      { "fieldType": "bool", "name": "talepYonetici", "title": "Yonetici ekibini acar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
-      { "fieldType": "bool", "name": "talepIk", "title": "IK herkesi acar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
-      { "fieldType": "text", "name": "yoneticiBosGrup", "title": "Yonetici bosken grup", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "Yonetim" },
-      { "fieldType": "bool", "name": "cikisKeser", "title": "Cikis tarihi yeni talep ve hakedisi keser", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true }
+      { "fieldType": "bool", "name": "otomatikAcilis", "title": "Kendiliğinden açılış", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
+      { "fieldType": "number", "name": "pazartesi", "title": "Pazartesi karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
+      { "fieldType": "number", "name": "sali", "title": "Salı karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
+      { "fieldType": "number", "name": "carsamba", "title": "Çarşamba karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
+      { "fieldType": "number", "name": "persembe", "title": "Perşembe karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
+      { "fieldType": "number", "name": "cuma", "title": "Cuma karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
+      { "fieldType": "number", "name": "cumartesi", "title": "Cumartesi karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0.5 },
+      { "fieldType": "number", "name": "pazar", "title": "Pazar karşılığı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
+      { "fieldType": "bool", "name": "talepPersonel", "title": "Personel kendi talebini açar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
+      { "fieldType": "bool", "name": "talepYonetici", "title": "Yönetici ekibini açar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
+      { "fieldType": "bool", "name": "talepIk", "title": "İK herkesi açar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true },
+      { "fieldType": "text", "name": "yoneticiBosGrup", "title": "Yönetici boşken grup", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "Yonetim" },
+      { "fieldType": "text", "name": "ikGrup", "title": "İK grubu", "mandatory": false, "unique": false, "isArray": false, "defaultValue": "IK" },
+      { "fieldType": "bool", "name": "cikisKeser", "title": "Çıkış tarihi yeni talep ve hakedişi keser", "mandatory": true, "unique": false, "isArray": false, "defaultValue": true }
     ],
     "validations": [],
     "queries": [
@@ -519,21 +583,21 @@
       {
         "fieldType": "select", "name": "tip", "title": "Tip", "mandatory": true, "unique": false, "isArray": false,
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "kidem", "label": "Kidem" },
-          { "value": "yas_tabani", "label": "Yas tabani" }
+          { "value": "kidem", "label": "Kıdem" },
+          { "value": "yas_tabani", "label": "Yaş tabanı" }
         ] } }
       },
-      { "fieldType": "number", "name": "minYil", "title": "Alt yil", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "maxYil", "title": "Ust yil", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "gun", "title": "Gun", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "altYas", "title": "Alt yas", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "ustYas", "title": "Ust yas", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "minimumGun", "title": "Minimum gun", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "minYil", "title": "Alt yıl", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "maxYil", "title": "Üst yıl", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "gun", "title": "Gün", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "altYas", "title": "Alt yaş", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "ustYas", "title": "Üst yaş", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "minimumGun", "title": "Minimum gün", "mandatory": false, "unique": false, "isArray": false },
       {
         "fieldType": "select", "name": "durum", "title": "Durum", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "acik",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "acik", "label": "Acik" },
-          { "value": "kapali", "label": "Kapali" }
+          { "value": "acik", "label": "Açık" },
+          { "value": "kapali", "label": "Kapalı" }
         ] } }
       }
     ],
@@ -552,33 +616,34 @@
     "fields": [
       { "fieldType": "text", "name": "kod", "title": "Kod", "mandatory": true, "unique": true, "isArray": false },
       { "fieldType": "text", "name": "ad", "title": "Ad", "mandatory": true, "unique": false, "isArray": false },
-      { "fieldType": "bool", "name": "bakiyedenDuser", "title": "Bakiyeden duser", "mandatory": true, "unique": false, "isArray": false, "defaultValue": false },
+      { "fieldType": "bool", "name": "bakiyedenDuser", "title": "Bakiyeden düşer", "mandatory": true, "unique": false, "isArray": false, "defaultValue": false },
       { "fieldType": "bool", "name": "belgeZorunlu", "title": "Belge zorunlu", "mandatory": true, "unique": false, "isArray": false, "defaultValue": false },
-      { "fieldType": "bool", "name": "yarimGun", "title": "Yarim gun acik", "mandatory": true, "unique": false, "isArray": false, "defaultValue": false },
+      { "fieldType": "bool", "name": "yarimGun", "title": "Yarım gün", "mandatory": true, "unique": false, "isArray": false, "defaultValue": false },
       {
-        "fieldType": "select", "name": "kimAcar", "title": "Kim acar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "herkes",
+        "fieldType": "select", "name": "kimAcar", "title": "Kim açar", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "herkes",
         "options": { "lookup": { "source": "static", "staticItems": [
           { "value": "herkes", "label": "Herkes" },
-          { "value": "kadin", "label": "Kadin" },
+          { "value": "kadin", "label": "Kadın" },
           { "value": "erkek", "label": "Erkek" }
         ] } }
       },
       {
-        "fieldType": "select", "name": "sureTipi", "title": "Sure tipi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "isGunu",
+        "fieldType": "select", "name": "sureTipi", "title": "Süre tipi", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "isGunu",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "isGunu", "label": "Is gunu" },
-          { "value": "takvimHaftasi", "label": "Takvim haftasi" }
+          { "value": "isGunu", "label": "İş günü" },
+          { "value": "takvimHaftasi", "label": "Takvim haftası" }
         ] } }
       },
-      { "fieldType": "number", "name": "takvimGun", "title": "Takvim gunu", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "cogulTakvimGun", "title": "Cogul takvim gunu", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "gunTavan", "title": "Gun tavani", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "sira", "title": "Sira", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
+      { "fieldType": "number", "name": "takvimGun", "title": "Takvim günü", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "cogulTakvimGun", "title": "Çoğul takvim günü", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "gunTavan", "title": "Gün tavanı", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "donemLimitGun", "title": "Dönem limiti", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "sira", "title": "Sıra", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
       {
         "fieldType": "select", "name": "durum", "title": "Durum", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "acik",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "acik", "label": "Acik" },
-          { "value": "kapali", "label": "Kapali" }
+          { "value": "acik", "label": "Açık" },
+          { "value": "kapali", "label": "Kapalı" }
         ] } }
       }
     ],
@@ -586,7 +651,7 @@
     "queries": [
       {
         "name": "tavan",
-        "description": "Neden verildiyse nedenin gunTavan degeri, yoksa turun gunTavan degeri. Tavan bossa asildi false. gun tavandan buyukse asildi true. Babalik 5 turdedir. Evlilik ve olum 3 nedendedir.",
+        "description": "Neden verildiyse nedenin gunTavan degeri, yoksa turun gunTavan degeri. Tavan bossa asildi false. gun tavandan buyukse asildi true. Evlilik, olum ve babalik tavani turdedir.",
         "parameters": [
           { "name": "turId", "type": "text", "required": true },
           { "name": "nedenId", "type": "text", "required": false },
@@ -708,10 +773,6 @@
                         { "$eq": [ "$kimAcar", "$cinsiyet" ] }
                       ] }
                   ] } ] }, "then": "cinsiyet" },
-                  { "case": { "$and": [
-                      { "$eq": [ "$kod", "mazeret" ] },
-                      { "$eq": [ { "$ifNull": [ "$neden.__dataId", null ] }, null ] }
-                  ] }, "then": "neden" },
                   { "case": { "$and": [ { "$eq": [ "$belgeZorunlu", true ] }, { "$not": [ "$belgeDolu" ] } ] }, "then": "belge" },
                   { "case": { "$and": [ { "$ne": [ "$yarimGun", true ] }, "$yarimDolu" ] }, "then": "yarim" },
                   { "case": { "$and": [
@@ -734,6 +795,58 @@
                     "amount": { "$cond": [ { "$eq": [ "$pCogul", true ] }, 125, 111 ] }
                 } },
                 null
+              ] }
+          } }
+        ]
+      },
+      {
+        "name": "donem_limit",
+        "description": "Donem limiti bos ise asildi false. Doluysa ayni kisi, ayni tur ve ayni donemde acik bloke ile onayli kullanim, bu talebin gunuyle birlikte limiti asarsa asildi true. Red ve iptal neti sifira iner. Kendi is kodu dislanir.",
+        "parameters": [
+          { "name": "turId", "type": "text", "required": true },
+          { "name": "personelId", "type": "text", "required": true },
+          { "name": "donemBaslangic", "type": "datetime", "required": true },
+          { "name": "gun", "type": "number", "required": true },
+          { "name": "isKodu", "type": "text", "required": true }
+        ],
+        "pipeline": [
+          { "$match": { "__dataId": ":turId" } },
+          { "$limit": 1 },
+          { "$addFields": {
+              "pGun": ":gun",
+              "pPersonel": ":personelId",
+              "pDonem": ":donemBaslangic",
+              "pIs": ":isKodu"
+          } },
+          { "$lookup": {
+              "from": "izin_hareketleri",
+              "let": { "pid": "$pPersonel", "tid": "$__dataId", "donem": "$pDonem", "is": "$pIs" },
+              "pipeline": [
+                { "$match": { "$expr": { "$and": [
+                  { "$eq": [ "$personelId", "$$pid" ] },
+                  { "$eq": [ "$turId", "$$tid" ] },
+                  { "$eq": [ "$donemBaslangic", "$$donem" ] },
+                  { "$in": [ "$hareket", [ "bloke", "kullanim", "iade" ] ] },
+                  { "$ne": [ "$isKodu", "$$is" ] }
+                ] } } },
+                { "$group": { "_id": null, "net": { "$sum": "$gun" } } }
+              ],
+              "as": "harcama"
+          } },
+          { "$addFields": {
+              "harcanan": { "$multiply": [ -1, { "$ifNull": [ { "$first": "$harcama.net" }, 0 ] } ] }
+          } },
+          { "$project": {
+              "_id": 0,
+              "limit": "$donemLimitGun",
+              "harcanan": 1,
+              "asildi": { "$cond": [
+                { "$and": [
+                  { "$ne": [ "$donemLimitGun", null ] },
+                  { "$gt": [ { "$add": [ "$harcanan", "$pGun" ] }, "$donemLimitGun" ] }
+                ] },
+                true,
+                false
               ] }
           } }
         ]
@@ -777,7 +890,7 @@
       { "fieldType": "text", "name": "kod", "title": "Kod", "mandatory": true, "unique": true, "isArray": false },
       { "fieldType": "text", "name": "ad", "title": "Ad", "mandatory": true, "unique": false, "isArray": false },
       {
-        "fieldType": "select", "name": "tur", "title": "Tur", "mandatory": true, "unique": false, "isArray": false,
+        "fieldType": "select", "name": "tur", "title": "Tür", "mandatory": true, "unique": false, "isArray": false,
         "options": { "lookup": { "source": "static", "staticItems": [
           { "value": "milli", "label": "Milli" },
           { "value": "dini", "label": "Dini" }
@@ -786,25 +899,25 @@
       {
         "fieldType": "select", "name": "tekrar", "title": "Tekrar", "mandatory": true, "unique": false, "isArray": false,
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "sabit_gun", "label": "Sabit gun" },
-          { "value": "yillik", "label": "Yillik" }
+          { "value": "sabit_gun", "label": "Sabit tarih" },
+          { "value": "yillik", "label": "Tarihi sonra girilir" }
         ] } }
       },
       { "fieldType": "number", "name": "ay", "title": "Ay", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "gun", "title": "Gun", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "number", "name": "sureGun", "title": "Sure gun", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
+      { "fieldType": "number", "name": "gun", "title": "Gün", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "number", "name": "sureGun", "title": "Tam gün sayısı", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 1 },
       {
         "fieldType": "select", "name": "arefe", "title": "Arife", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "yok",
         "options": { "lookup": { "source": "static", "staticItems": [
           { "value": "yok", "label": "Yok" },
-          { "value": "yarim", "label": "Yarim gun" }
+          { "value": "yarim", "label": "Yarım gün" }
         ] } }
       },
       {
         "fieldType": "select", "name": "durum", "title": "Durum", "mandatory": true, "unique": false, "isArray": false, "defaultValue": "acik",
         "options": { "lookup": { "source": "static", "staticItems": [
-          { "value": "acik", "label": "Acik" },
-          { "value": "kapali", "label": "Kapali" }
+          { "value": "acik", "label": "Açık" },
+          { "value": "kapali", "label": "Kapalı" }
         ] } }
       }
     ],
@@ -878,17 +991,17 @@
     "fields": [
       { "fieldType": "datetime", "name": "tarih", "title": "Tarih", "mandatory": true, "unique": true, "isArray": false },
       {
-        "fieldType": "select", "name": "tur", "title": "Tur", "mandatory": true, "unique": false, "isArray": false,
+        "fieldType": "select", "name": "tur", "title": "Tür", "mandatory": true, "unique": false, "isArray": false,
         "options": { "lookup": { "source": "static", "staticItems": [
           { "value": "milli", "label": "Milli" },
           { "value": "dini", "label": "Dini" },
-          { "value": "idari", "label": "Idari" }
+          { "value": "idari", "label": "İdari" }
         ] } }
       },
-      { "fieldType": "number", "name": "gunKarsiligi", "title": "Gun karsiligi", "mandatory": true, "unique": false, "isArray": false },
-      { "fieldType": "relation", "name": "kalipId", "title": "Kalip", "mandatory": false, "unique": false, "isArray": false, "relationDataset": "izin_tatil_kaliplari" },
-      { "fieldType": "number", "name": "yil", "title": "Yil", "mandatory": true, "unique": false, "isArray": false },
-      { "fieldType": "text", "name": "aciklama", "title": "Aciklama", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 200 } }
+      { "fieldType": "number", "name": "gunKarsiligi", "title": "Gün karşılığı", "mandatory": true, "unique": false, "isArray": false },
+      { "fieldType": "relation", "name": "kalipId", "title": "Kalıp", "mandatory": false, "unique": false, "isArray": false, "relationDataset": "izin_tatil_kaliplari" },
+      { "fieldType": "number", "name": "yil", "title": "Yıl", "mandatory": true, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "aciklama", "title": "Açıklama", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 200 } }
     ],
     "validations": [],
     "queries": []

@@ -19,6 +19,7 @@ Tam özlük bu işin ön koşulu değildir. Ücret, aile, adres ve sözleşme ka
 | Onay zinciri | Çalışma alanı kurulurken çizilir. Sonradan çalışma alanı ayarından değiştirilir. Üzerinde iş bulunan durum silinmez |
 | Personel kartı ve bu yılın izin geçmişi | Dosyadan birlikte elle işlenir. Toplu aktarım ekranı yoktur. Keeper bağı da bu iştedir |
 | Görsel durum akışı | Bu iş onu beklemez. Akış tanım listesinden kurulur |
+| Dönemlik limit | 5 Kasım 2026’da tür kaydına alındı. Sorgu `donem_limit` |
 
 ## Ayar kaydı
 
@@ -46,20 +47,41 @@ Yönetici, Keeper kişisidir. Boşsa onay `Yonetim` grubuna düşer. İlk doldur
 
 ## İzin türü
 
-| Tür | Kim açar | Süre | Bakiye | Belge | Yarım gün |
-|---|---|---|---|---|---|
-| Yıllık izin | Herkes | İş günü | Düşer | Hayır | Evet |
-| Mazeret | Herkes | Nedenin tavanı | Düşmez | Hayır | Hayır |
-| Rapor | Herkes | İş günü, tam gün | Düşmez | Evet | Hayır |
-| Ücretsiz | Herkes | İş günü | Düşmez | Hayır | Evet |
-| Doğum | Kadın | 16 veya 18 takvim haftası | Düşmez | Evet | Hayır |
-| Babalık | Erkek | En çok 5 iş günü | Düşmez | Hayır | Hayır |
+| Tür | Kim açar | Süre | Bakiye | Belge | Yarım gün | Tek talep | Dönem |
+|---|---|---|---|---|---|---|---|
+| Yıllık izin | Herkes | İş günü | Düşer | Hayır | Evet | Boş | Boş |
+| Evlilik | Herkes | En çok 3 iş günü | Düşmez | Hayır | Hayır | 3 | Boş |
+| Ölüm | Herkes | En çok 3 iş günü | Düşmez | Hayır | Hayır | 3 | Boş |
+| Rapor | Herkes | İş günü, tam gün | Düşmez | Evet | Hayır | Boş | Boş |
+| Ücretsiz | Herkes | İş günü | Düşmez | Hayır | Evet | Boş | 30 |
+| Doğum | Kadın | 16 veya 18 takvim haftası | Düşmez | Evet | Hayır | Boş | Boş |
+| Babalık | Erkek | En çok 5 iş günü | Düşmez | Hayır | Hayır | 5 | Boş |
 
-Tür kaydında kod, ad, bakiyeden düşer, belge zorunlu, yarım gün, kim açar (`herkes`, `kadın`, `erkek`), süre tipi (`isGunu` veya `takvimHaftasi`), takvim günü, çoğul takvim günü, gün tavanı, sıra ve durum vardır. Babalık tavanı türdedir. Mazeret tavanı nedendedir. Kapalı tür yeni talepte görünmez. Cinsiyet boşsa yalnız `herkes` türleri görünür.
+Tür kaydında kod, ad, bakiyeden düşer, belge zorunlu, yarım gün, kim açar (`herkes`, `kadın`, `erkek`), süre tipi (`isGunu` veya `takvimHaftasi`), takvim günü, çoğul takvim günü, gün tavanı, dönem limiti, sıra ve durum vardır. Kapalı tür yeni talepte görünmez. Cinsiyet boşsa yalnız `herkes` türleri görünür.
 
-Mazeret nedeni ayrı formdur. Ad ve gün tavanı tutar. İlk satırlar evlilik 3, ölüm 3. Ölümde yakınlık alanı yoktur. Yeni neden bu formdan eklenir. Talep tavanın altında kalabilir. Üstüne çıkarsa durur.
+Evlilik ve ölüm kendi türleridir. Gün tavanı türün üzerindedir. Eski mazeret türü kapalıdır. Mazeret nedeni satırları da kapalıdır. Talep neden sormaz. Ölümde yakınlık alanı yoktur.
 
 Doğum tek taleptir. Çoğul değilse 16 hafta (112 takvim günü), çoğulsa 18 hafta (126 takvim günü). Bitiş başlangıçtan yazılır. İş günü tablosu kullanılmaz. Cumartesi ve Pazar iznin içindedir. Kullanım raporuna takvim günü yazılır.
+
+## Dönemlik limit
+
+5 Kasım 2026’da tür kaydına alındı. Alan `donemLimitGun`. Geçiş `donem_limit` sorgusunu okur.
+
+Gün tavanı tek talebin üstüdür. Dönem limiti, aynı kişinin aynı yıldönümü döneminde aynı türden kullandığı günlerin toplamıdır.
+
+| Karar | Değer |
+|---|---|
+| Yer | Tür kaydı. Sayı boşsa dönem limiti yoktur |
+| Dönem | İşe giriş yıldönümü. Ayardaki dönemle aynıdır |
+| Ölçü | Talebin düşen günü |
+| Sayılan | Açık bloke ve onaylı kullanım. Red ve iptal sayılmaz. Aynı işin eski satırı ikinci kez sayılmaz |
+| Aşım | Bu taleple birlikte toplam limitten büyükse geçiş durur |
+| Gün tavanı | Yerinde kalır. Tek talep kendi tavanını, dönem kendi limitini ayrı denetler |
+| Yıllık, evlilik, ölüm, rapor, doğum, babalık | Boş. Yıllığın sınırı hakediş defteridir |
+| Ücretsiz | Başlangıç değeri 30. İK tür kaydından değiştirir |
+| Eski satır | Limit değişince silinmez. Sonraki talep yeni sayıyı okur |
+
+Bu sayılar başlangıç değeridir. Yasal tavan diye kilitlenmedi.
 
 ## Hak bantları
 
@@ -141,7 +163,7 @@ Personel, izni kullanacak kişidir. Açan başka biri olabilir. Tür, kartın ci
 
 Yerine bakacak kişi personel kartından seçilir. Zorunlu değildir. İzni kullanan kişi ve çıkış tarihi dolu olan kişi seçilmez. Gün hesabına ve bakiyeye girmez.
 
-Mazerette neden zorunludur. Doğumda çoğul işaretlenirse 18 hafta, değilse 16. Bitiş haftadan gelir.
+Talep neden sormaz. Doğumda çoğul işaretlenirse 18 hafta, değilse 16. Bitiş haftadan gelir.
 
 Çakışma: aynı personelde açık bloke veya onaylı kullanım o günü tutar. Yeni talep durur. Red ve iptal tutmaz. Öğleden önce ile öğleden sonra çakışmaz. Türler günü paylaşır. Hak aşımının serbest olması çakışmayı açmaz.
 
@@ -168,7 +190,7 @@ Onay bekleyenler çalışma alanının panosudur. Ayrı rapor değildir.
 
 | Yer | Ekran |
 |---|---|
-| Dinamik form | Personel kartı, ayarlar, hak bantları, izin türleri, mazeret nedenleri, tatil kalıpları, tatil günleri. Tanım [datasets/izin_automated_forms.json](datasets/izin_automated_forms.json) |
+| Dinamik form | Personel kartı, ayarlar, hak bantları, izin türleri, tatil kalıpları, tatil günleri. Tanım [datasets/izin_automated_forms.json](datasets/izin_automated_forms.json) |
 | Operasyon Merkezi | İzin talepleri. Form, pano ve onay |
 | Rapor | Kişi bakiyesi, dönem kullanımı |
 | Belge Zekâsı | İzin formu ve talebin belge bağı |
@@ -202,6 +224,7 @@ Formül bu adlandırılmış sorgulardadır. OC-14 tek satır döndürenleri ge�
 | `dusen_gun` | OC-14, `izin_ayarlar` | `baslangic`, `bitis`, `yarimGun`, `turId`, `cogul` | `gun`. Türün süresi takvim haftasıysa 112 veya 126. Değilse iş günü |
 | `cakisma` | OC-14, `izin_hareketleri` | `personelId`, `baslangic`, `bitis`, `yarimGun`, `isKodu` | `adet`. Net günü eksi kalan bloke ve kullanım. Karşıt yarım günler çakışmaz |
 | `tavan` | OC-14, `izin_turleri` | `turId`, `nedenId`, `gun` | `tavan`, `asildi`. Nedenin tavanı varsa o, yoksa türün tavanı. Tavan boşsa aşılmadı |
+| `donem_limit` | OC-14, `izin_turleri` | `turId`, `personelId`, `donemBaslangic`, `gun`, `isKodu` | `limit`, `harcanan`, `asildi`. Limit boşsa aşılmadı |
 | `bakiye` | Okuma, `izin_hareketleri` | `personelId`, `donemBaslangic`, `turId` | `bakiye`. Bakiyeye etki eden günlerin toplamı |
 | `donem_acilis` | DG-01, atla, `izin_personel` | `tarih` | O gün yıldönümü olan kişilerin devir ve hakediş satırları. Anahtar kişi, dönem, hareket |
 | `bant_farki` | DG-01, atla, `izin_personel` | `tarih` | Açık dönemde hakkı yükselen kişilerin fark satırları. Anahtar kişi, dönem, hedef bant |
