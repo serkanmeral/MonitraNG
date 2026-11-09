@@ -6,6 +6,14 @@ export interface ReportingYearOrDateRange {
   to: string;
 }
 
+/** Same bool reading as the data gateway filter parser. */
+function mongoEqValue(value: string): string | boolean {
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
+  return value;
+}
+
 function parseInValues(value: string): string[] {
   const trimmed = value.trim();
   if (!trimmed) return [];
@@ -29,10 +37,10 @@ export function afListFilterToMongoCondition(filter: AfListFilter): Record<strin
 
   switch (op) {
     case 'eq':
-      return { [field]: value };
+      return { [field]: mongoEqValue(value) };
     case 'ne':
     case 'neq':
-      return { [field]: { $ne: value } };
+      return { [field]: { $ne: mongoEqValue(value) } };
     case 'gte':
       return { [field]: { $gte: value } };
     case 'lte':

@@ -66,7 +66,28 @@ export function buildOcNavTree(
   }
 
   sortNav(roots);
-  return roots;
+  return pruneFoldersWithoutWorkspace(roots);
+}
+
+function hasWorkspace(nodes: OcNavNode[]): boolean {
+  return nodes.some(
+    (node) => node.type === 'workspace' || (node.type === 'folder' && hasWorkspace(node.children))
+  );
+}
+
+/** Klasör, altında görünen bir çalışma alanı kalmadıysa ağaçtan düşer. */
+function pruneFoldersWithoutWorkspace(nodes: OcNavNode[]): OcNavNode[] {
+  const kept: OcNavNode[] = [];
+  for (const node of nodes) {
+    if (node.type !== 'folder') {
+      kept.push(node);
+      continue;
+    }
+    const children = pruneFoldersWithoutWorkspace(node.children);
+    if (!hasWorkspace(children)) continue;
+    kept.push({ ...node, children });
+  }
+  return kept;
 }
 
 export function collectFolderDescendantIds(folders: OpWorkspaceFolder[], folderId: string): Set<string> {

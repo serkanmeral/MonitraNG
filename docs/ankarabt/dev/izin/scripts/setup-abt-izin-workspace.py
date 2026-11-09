@@ -120,6 +120,32 @@ def static_select(pairs: list[tuple[str, str]]) -> dict:
     }
 
 
+DOC_API = "/documents/api/v1/resources"
+PERSONEL_FOLDER = "7fb89d06-69e7-4c90-9e40-d0be954fa2b2"
+
+
+def ensure_belge_folder(access: str) -> str:
+    _, current = request("GET", f"{DOC_API}/{PERSONEL_FOLDER}", access)
+    parent = current.get("parentId") if isinstance(current, dict) else None
+    path = f"{DOC_API}/children"
+    if parent:
+        path += "?parentId=" + urllib.parse.quote(parent)
+    _, payload = request("GET", path, access)
+    for row in items(payload):
+        if row.get("type") == "folder" and row.get("name") == "İzin belgeleri":
+            print(f"klasor duruyor: Izin belgeleri {row.get('id')}")
+            return row["id"]
+    body = {"name": "İzin belgeleri"}
+    if parent:
+        body["parentId"] = parent
+    _, created = request("POST", f"{DOC_API}/folder", access, body)
+    folder_id = created.get("id") if isinstance(created, dict) else None
+    if not folder_id:
+        raise RuntimeError(f"belge klasoru olusmadi: {created}")
+    print(f"klasor olustu: Izin belgeleri {folder_id}")
+    return folder_id
+
+
 def field(access: str, key: str, label: str, field_type: str, **extra) -> str:
     body = {
         "key": key,
@@ -195,7 +221,7 @@ def query_step(dataset, query, parameters, mappings):
 
 def ledger_mappings(hareket: str, gun_field: str, gecis: str, anahtar_field: str):
     return [
-        {"target": "personelId", "source": "field", "path": "fields.izin_personelId"},
+        {"target": "personelId", "source": "field", "path": "fields.izin_personelKartId"},
         {"target": "turId", "source": "field", "path": "fields.izin_turId"},
         {"target": "nedenId", "source": "field", "path": "fields.izin_nedenId"},
         {"target": "hareket", "source": "static", "value": hareket},
@@ -257,12 +283,17 @@ def main() -> int:
     )
 
     personel = field(
-        access, "izin_personelId", "Personel", "relation",
-        relationDatasetName="izin_personel",
-        options=relation(
-            "izin_personel", "ad", ["ad", "soyad", "sicil"],
-            copyFields=[{"from": "cinsiyet", "to": "izin_cinsiyet"}],
-        ),
+        access, "izin_personelId", "Personel", "persons",
+        cardinality="single",
+        relationDatasetName="",
+        options={
+            "cardResolve": {
+                "dataset": "izin_ayarlar",
+                "query": "kart_bul",
+                "parameter": "keeperId",
+                "copies": [{"from": "cinsiyet", "to": "izin_cinsiyet"}],
+            }
+        },
     )
     cinsiyet = field(access, "izin_cinsiyet", "Cinsiyet", "text")
     tur = field(
@@ -270,6 +301,7 @@ def main() -> int:
         relationDatasetName="izin_turleri",
         options=relation(
             "izin_turleri", "ad", ["ad", "kod"],
+            presentation="dropdown",
             filter="durum:eq:acik",
             dependsOn={"fieldKey": "izin_cinsiyet", "filterTemplate": "kimAcar:in:herkes,{{parentValue|herkes}}"},
         ),
@@ -286,19 +318,42 @@ def main() -> int:
         options=static_select([("ogleden_once", "Ogleden once"), ("ogleden_sonra", "Ogleden sonra")]),
     )
     cogul = field(access, "izin_cogul", "Cogul dogum", "bool")
-    dusen = field(access, "izin_dusenGun", "Dusen gun", "number")
+    dusen = field(
+        access, "izin_dusenGun", "Dusen gun", "number",
+        options={
+            "compute": {
+                "dataset": "izin_ayarlar",
+                "query": "dusen_gun",
+                "parameters": [
+                    {"name": "baslangic", "from": "izin_baslangic", "required": True},
+                    {"name": "bitis", "from": "izin_bitis", "required": True},
+                    {"name": "yarimGun", "from": "izin_yarimGun"},
+                    {"name": "turId", "from": "izin_turId", "required": True},
+                    {"name": "cogul", "from": "izin_cogul"},
+                ],
+                "copies": [
+                    {"from": "gun", "to": "izin_dusenGun"},
+                    {"from": "eksi", "to": "izin_dusenEksi"},
+                ],
+            }
+        },
+    )
     eksi = field(access, "izin_dusenEksi", "Dusen gun eksi", "number")
     aciklama = field(access, "izin_aciklama", "Aciklama", "text")
-    belge = field(access, "izin_belgeId", "Belge", "text")
-    yerine = field(
-        access, "izin_yerineBakacak", "Yerine bakacak", "relation",
-        relationDatasetName="izin_personel",
-        options=relation(
-            "izin_personel", "ad", ["ad", "soyad", "sicil"],
-            filter="durum:eq:calisiyor",
-            dependsOn={"fieldKey": "izin_personelId", "filterTemplate": "__dataId:ne:{{parentValue}}"},
-        ),
+    belge_folder = ensure_belge_folder(access)
+    belge = field(
+        access, "izin_belgeId", "Belge", "file",
+        relationDatasetName="",
+        options={"folderId": belge_folder, "maxSizeBytes": 10 * 1024 * 1024},
     )
+    yerine = field(
+        access, "izin_yerineBakacak", "Yerine bakacak", "persons",
+        cardinality="single",
+        relationDatasetName="",
+        options={},
+    )
+    personel_kart = field(access, "izin_personelKartId", "Personel karti", "text")
+    yerine_kart = field(access, "izin_yerineKartId", "Yerine bakacak karti", "text")
     engel = field(access, "izin_engel", "Engel", "text")
     hak = field(access, "izin_hakVar", "Talep hakki", "bool")
     donem = field(access, "izin_donemBaslangic", "Donem baslangici", "datetime")
@@ -310,6 +365,7 @@ def main() -> int:
     kullanim_key = field(access, "izin_kullanimAnahtar", "Kullanim anahtari", "text")
     field_ids = [
         personel, cinsiyet, tur, neden, baslangic, bitis, yarim, cogul, dusen, eksi, aciklama, belge, yerine,
+        personel_kart, yerine_kart,
         engel, hak, donem, cakisma, tavan, donem_asildi, bloke_key, iade_key, kullanim_key,
     ]
 
@@ -441,18 +497,27 @@ def main() -> int:
         "priority": 100,
         "typeId": type_id,
         "transitionKey": "gonder",
-        "description": "Talep kurali, dusen gun, donem, yazim anahtari, cakisma, tavan ve donem limiti.",
+        "description": "Once Keeper kisisi sicille karta baglanir. Sonra talep kurali, dusen gun, donem, yazim anahtari, cakisma, tavan ve donem limiti.",
         "actions": [],
         "querySteps": [
+            query_step(
+                "izin_ayarlar", "kart_bul",
+                [("keeperId", "izin_personelId"), ("yerineKeeperId", "izin_yerineBakacak")],
+                [
+                    ("personelKartId", "izin_personelKartId", "fail"),
+                    ("cinsiyet", "izin_cinsiyet", "skip"),
+                    ("yerineKartId", "izin_yerineKartId", "skip"),
+                ],
+            ),
             query_step(
                 "izin_turleri", "talep_uygun",
                 [
                     ("turId", "izin_turId"),
-                    ("personelId", "izin_personelId"),
+                    ("personelId", "izin_personelKartId"),
                     ("nedenId", "izin_nedenId"),
                     ("belgeId", "izin_belgeId"),
                     ("yarimGun", "izin_yarimGun"),
-                    ("yerineId", "izin_yerineBakacak"),
+                    ("yerineId", "izin_yerineKartId"),
                     ("baslangic", "izin_baslangic"),
                     ("cogul", "izin_cogul"),
                 ],
@@ -460,7 +525,7 @@ def main() -> int:
             ),
             query_step(
                 "izin_personel", "talep_hakki",
-                [("personelId", "izin_personelId"), ("actorId", "actor.personId"), ("actorGroups", "actor.groups")],
+                [("personelId", "izin_personelKartId"), ("actorId", "actor.personId"), ("actorGroups", "actor.groups")],
                 [("hakVar", "izin_hakVar", "fail")],
             ),
             query_step(
@@ -470,7 +535,7 @@ def main() -> int:
             ),
             query_step(
                 "izin_personel", "acik_donem",
-                [("personelId", "izin_personelId"), ("tarih", "izin_baslangic")],
+                [("personelId", "izin_personelKartId"), ("tarih", "izin_baslangic")],
                 [("donemBaslangic", "izin_donemBaslangic", "fail")],
             ),
             query_step(
@@ -480,7 +545,7 @@ def main() -> int:
             ),
             query_step(
                 "izin_hareketleri", "cakisma",
-                [("personelId", "izin_personelId"), ("baslangic", "izin_baslangic"), ("bitis", "izin_bitis"), ("yarimGun", "izin_yarimGun"), ("isKodu", "key")],
+                [("personelId", "izin_personelKartId"), ("baslangic", "izin_baslangic"), ("bitis", "izin_bitis"), ("yarimGun", "izin_yarimGun"), ("isKodu", "key")],
                 [("adet", "izin_cakismaAdet", "zero")],
             ),
             query_step(
@@ -492,7 +557,7 @@ def main() -> int:
                 "izin_turleri", "donem_limit",
                 [
                     ("turId", "izin_turId"),
-                    ("personelId", "izin_personelId"),
+                    ("personelId", "izin_personelKartId"),
                     ("donemBaslangic", "izin_donemBaslangic"),
                     ("gun", "izin_dusenGun"),
                     ("isKodu", "key"),

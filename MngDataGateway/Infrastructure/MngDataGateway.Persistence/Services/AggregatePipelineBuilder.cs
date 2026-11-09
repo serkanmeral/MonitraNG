@@ -404,6 +404,7 @@ namespace MngDataGateway.Persistence.Services
                                 ["firstName"] = 1,
                                 ["lastName"] = 1,
                                 ["title"] = 1,
+                                ["department"] = 1,
                                 ["isActive"] = 1
                             }
                         }
@@ -436,6 +437,7 @@ namespace MngDataGateway.Persistence.Services
                                 ["firstName"] = 1,
                                 ["lastName"] = 1,
                                 ["title"] = 1,
+                                ["department"] = 1,
                                 ["isActive"] = 1
                             }
                         }

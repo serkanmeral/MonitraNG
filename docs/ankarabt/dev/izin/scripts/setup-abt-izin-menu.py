@@ -163,7 +163,6 @@ def main() -> int:
         ("dynamicForms.izin.personel.menuTitle", "Personel kartı", "/apps/automated-forms/view/izin-personel-form", "UsersIcon", 299, FULL),
         ("dynamicForms.izin.tanimlar.menuTitle", "Tanımlar", "/apps/izin/tanimlar", "SettingsIcon", 300, FULL),
         ("dynamicForms.izin.bakiye.menuTitle", "Kişi bakiyesi", "/apps/reporting/run/rpt_izin_bakiye", "ReportIcon", 306, FULL),
-        ("dynamicForms.izin.kullanim.menuTitle", "Dönem kullanımı", "/apps/reporting/run/rpt_izin_kullanim", "ReportAnalyticsIcon", 307, FULL),
     ]
     for page_code, title, to, icon, order, perms in children:
         upsert(access, item(page_code, title, to, icon, order, parent_id, perms))
@@ -174,6 +173,7 @@ def main() -> int:
         "dynamicForms.izin.neden.menuTitle",
         "dynamicForms.izin.kalip.menuTitle",
         "dynamicForms.izin.gun.menuTitle",
+        "dynamicForms.izin.kullanim.menuTitle",
     ):
         remove(access, page_code)
     print("izin menusu hazir")

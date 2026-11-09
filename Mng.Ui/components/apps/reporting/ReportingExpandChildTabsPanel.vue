@@ -260,6 +260,33 @@ function updateSelectedParentField(value: unknown) {
   tab.childList.parentField = next || '__dataId';
 }
 
+function extraLinkValue(key: 'linkField' | 'parentField'): string {
+  return selectedTab.value?.childList.extraLinks?.[0]?.[key] ?? '';
+}
+
+function updateExtraLink(key: 'linkField' | 'parentField', value: unknown) {
+  const tab = selectedTab.value;
+  if (!tab) return;
+  const current = tab.childList.extraLinks?.[0] ?? { linkField: '', parentField: '' };
+  const next = {
+    linkField: current.linkField ?? '',
+    parentField: current.parentField ?? '',
+    [key]: typeof value === 'string' ? value.trim() : '',
+  };
+  if (!next.linkField && !next.parentField) {
+    delete tab.childList.extraLinks;
+    return;
+  }
+  tab.childList.extraLinks = [next];
+}
+
+function childLinkSummary(tab: ReportingExpandChildListTab): string {
+  const base = `${tab.childList.datasetName} · ${tab.childList.linkField} ← ${tab.childList.parentField || '__dataId'}`;
+  const extra = tab.childList.extraLinks?.[0];
+  if (!extra?.linkField || !extra.parentField) return base;
+  return `${base} + ${extra.linkField} ← ${extra.parentField}`;
+}
+
 function updateSelectedEmptyMessage(value: unknown) {
   const tab = selectedTab.value;
   if (!tab) return;
@@ -461,8 +488,7 @@ onMounted(async () => {
         >
           <v-list-item-title>{{ tab.title }}</v-list-item-title>
           <v-list-item-subtitle>
-            {{ tab.childList.datasetName }} · {{ tab.childList.linkField }} ←
-            {{ tab.childList.parentField || '__dataId' }}
+            {{ childLinkSummary(tab) }}
           </v-list-item-subtitle>
           <template #append>
             <v-btn
@@ -543,6 +569,28 @@ onMounted(async () => {
               variant="outlined"
               class="mb-3"
               @update:model-value="updateSelectedParentField"
+            />
+            <v-text-field
+              :model-value="extraLinkValue('linkField')"
+              :label="t('reporting.expand.childTabs.formExtraLinkField')"
+              :hint="t('reporting.expand.childTabs.formExtraLinkFieldHint')"
+              :disabled="disabled || !expandConfig.enabled"
+              persistent-hint
+              density="compact"
+              variant="outlined"
+              class="mb-3"
+              @update:model-value="updateExtraLink('linkField', $event)"
+            />
+            <v-text-field
+              :model-value="extraLinkValue('parentField')"
+              :label="t('reporting.expand.childTabs.formExtraParentField')"
+              :hint="t('reporting.expand.childTabs.formExtraParentFieldHint')"
+              :disabled="disabled || !expandConfig.enabled"
+              persistent-hint
+              density="compact"
+              variant="outlined"
+              class="mb-3"
+              @update:model-value="updateExtraLink('parentField', $event)"
             />
             <v-text-field
               :model-value="selectedTab.childList.emptyMessage ?? ''"

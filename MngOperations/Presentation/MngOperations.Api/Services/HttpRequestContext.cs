@@ -63,17 +63,7 @@ public class HttpRequestContext : IRequestContext
 
     public string? DomainName => User?.FindFirst("domain_name")?.Value;
 
-    public IReadOnlyList<string> UserGroups
-    {
-        get
-        {
-            var raw = User?.FindFirst("user_groups")?.Value;
-            if (string.IsNullOrWhiteSpace(raw))
-                return Array.Empty<string>();
-
-            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        }
-    }
+    public IReadOnlyList<string> UserGroups => ReadGroups(User?.FindAll("user_groups"));
 
     public bool IsAdmin => ReadBoolClaim("isAdmin") || ReadBoolClaim("is_admin");
 
@@ -92,4 +82,57 @@ public class HttpRequestContext : IRequestContext
 
     private bool ReadBoolClaim(string claimType) =>
         string.Equals(User?.FindFirst(claimType)?.Value, "true", StringComparison.OrdinalIgnoreCase);
+
+    internal static IReadOnlyList<string> ReadGroups(IEnumerable<Claim>? claims)
+    {
+        if (claims == null)
+            return Array.Empty<string>();
+
+        var groups = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var claim in claims)
+            AddGroupValues(groups, seen, claim.Value);
+
+        return groups;
+    }
+
+    private static void AddGroupValues(List<string> groups, HashSet<string> seen, string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return;
+
+        var trimmed = raw.Trim();
+        if (trimmed.StartsWith('['))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        if (item.ValueKind != JsonValueKind.String)
+                            continue;
+                        AddGroup(groups, seen, item.GetString());
+                    }
+                    return;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        foreach (var part in trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            AddGroup(groups, seen, part);
+    }
+
+    private static void AddGroup(List<string> groups, HashSet<string> seen, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+        var trimmed = name.Trim();
+        if (seen.Add(trimmed))
+            groups.Add(trimmed);
+    }
 }

@@ -19,6 +19,14 @@ public class PermissionEvaluator : IPermissionEvaluator
         _logger = logger;
     }
 
+    public bool CanSeeWorkspace(WorkspaceRecord workspace)
+    {
+        if (HasPlatformBypass() || _context.IsManager)
+            return true;
+
+        return CanViewWorkspace(workspace);
+    }
+
     public void EnsureWorkspace(WorkspaceRecord workspace, WorkspaceAction action)
     {
         if (HasPlatformBypass())

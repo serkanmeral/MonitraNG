@@ -33,6 +33,12 @@ namespace MngKeeper.Application.Interfaces
         Task<IReadOnlyList<KeycloakRealmGroupSnapshot>> ListRealmGroupsAsync(string realmName, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<string>> GetUserGroupNamesAsync(string realmName, string userId, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Reads LDAP group membership into Keycloak, then imports changed LDAP users.
+        /// Realms without an LDAP provider return without error.
+        /// </summary>
+        Task SyncLdapFederationAsync(string realmName, CancellationToken cancellationToken = default);
+
         /// <summary>Keycloak/LDAP kullanıcı profil fotoğrafı (thumbnailPhoto vb.).</summary>
         Task<KeycloakUserPhotoData?> GetRealmUserPhotoAsync(
             string realmName,

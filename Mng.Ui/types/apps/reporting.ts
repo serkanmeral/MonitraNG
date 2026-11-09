@@ -124,6 +124,16 @@ export interface ReportingExpandAction {
   config?: Record<string, unknown>;
 }
 
+/** eq: eşitlik. withinYear: üst tarihten bir yıl. before: üst tarihten önce. */
+export type ReportingChildLinkCompare = 'eq' | 'withinYear' | 'before';
+
+/** Parent satırdaki bir alanın child alana bağlanması. */
+export interface ReportingExpandChildLink {
+  linkField: string;
+  parentField: string;
+  compare?: ReportingChildLinkCompare;
+}
+
 /** Expand panel — parent satıra bağlı alt dataset tablosu. */
 export interface ReportingExpandChildListConfig {
   datasetName: string;
@@ -131,6 +141,13 @@ export interface ReportingExpandChildListConfig {
   linkField: string;
   /** Parent satır alanı; varsayılan __dataId. */
   parentField?: string;
+  /**
+   * İlk bağa ek koşullar. Hepsi sağlanınca satır gelir.
+   * Tarih eşitliği aynı UTC gününü seçer. withinYear ve before izin başlangıcını döneme böler.
+   */
+  extraLinks?: ReportingExpandChildLink[];
+  /** Child listeye her zaman uygulanan süzgeçler. */
+  filters?: { field: string; operator: string; value: string }[];
   listConfig: OdakHubListConfig;
   sort?: string;
   limit?: number;

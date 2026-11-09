@@ -6,6 +6,12 @@ namespace MngOperations.Application.Interfaces;
 
 public interface IPermissionEvaluator
 {
+    /// <summary>
+    /// Admin ve managers grubu her alanı görür. Diğer kullanıcılar görme, düzenleme,
+    /// yönetme veya sahip listesinden biriyle eşleşirse görür. Boş liste herkese açıktır.
+    /// </summary>
+    bool CanSeeWorkspace(WorkspaceRecord workspace);
+
     void EnsureWorkspace(WorkspaceRecord workspace, WorkspaceAction action);
 
     void EnsureWorkItemView(WorkspaceRecord workspace, IReadOnlyDictionary<string, object?> workItem);

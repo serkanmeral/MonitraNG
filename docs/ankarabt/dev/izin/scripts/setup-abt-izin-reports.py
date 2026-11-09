@@ -1,7 +1,8 @@
-"""Install the two leave reports on the abt domain.
+"""Install the leave balance report on the abt domain.
 
-Kisi bakiyesi reads annual summary rows. Donem kullanimi reads every type.
-Re-running updates the same category and reports by logical id.
+Kisi bakiyesi reads annual summary rows. Period and lifetime usage are expand tabs.
+Re-running updates the same category and report by logical id.
+The retired rpt_izin_kullanim report is removed.
 """
 
 from __future__ import annotations
@@ -88,12 +89,25 @@ def upsert(access: str, dataset: str, logical_id: str, body: dict) -> None:
     print(f"olustu: {logical_id}")
 
 
+def remove(access: str, dataset: str, logical_id: str) -> None:
+    filt = urllib.parse.quote(f"id:eq:{logical_id}")
+    _, found = request("GET", f"/data/api/v1/data/{dataset}?limit=1&filter={filt}", access)
+    existing = items(found)
+    if not existing:
+        print(f"yok: {logical_id}")
+        return
+    row_id = data_id(existing[0])
+    request("DELETE", f"/data/api/v1/data/{dataset}/{row_id}", access)
+    print(f"silindi: {logical_id}")
+
+
 def main() -> int:
     access = token()
     seed = json.loads(ROOT.read_text(encoding="utf-8"))
     upsert(access, "@reporting_categories", seed["category"]["id"], seed["category"])
     for report in seed["reports"]:
         upsert(access, "@reporting_reports", report["id"], report)
+    remove(access, "@reporting_reports", "rpt_izin_kullanim")
     print("izin raporlari hazir")
     return 0
 

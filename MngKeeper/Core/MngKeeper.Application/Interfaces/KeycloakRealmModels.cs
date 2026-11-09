@@ -10,6 +10,10 @@ public class KeycloakRealmUserSnapshot
     public bool Enabled { get; set; } = true;
     /// <summary>Dolu ise kullanıcı LDAP/AD federation kaynağından gelir.</summary>
     public string? FederationLink { get; set; }
+    /// <summary>AD title. Boşsa mevcut uygulama değeri korunur.</summary>
+    public string? Title { get; set; }
+    /// <summary>AD department. Boşsa mevcut uygulama değeri korunur.</summary>
+    public string? Department { get; set; }
 }
 
 public class KeycloakUserPhotoData

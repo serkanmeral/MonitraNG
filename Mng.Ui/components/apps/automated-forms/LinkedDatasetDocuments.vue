@@ -34,6 +34,8 @@ const props = withDefaults(
     rootFolderId?: string | null;
     allowUpload?: boolean;
     allowCreateFolder?: boolean;
+    /** İlk belge isteğinde kişi klasörünü açar ve kök olarak döner. */
+    prepareRoot?: (() => Promise<string | null>) | null;
   }>(),
   {
     canEdit: false,
@@ -44,8 +46,31 @@ const props = withDefaults(
     rootFolderId: null,
     allowUpload: true,
     allowCreateFolder: true,
+    prepareRoot: null,
   }
 );
+
+const resolvedRootId = ref<string | null>(null);
+const openingLinker = ref(false);
+
+const dialogRootId = computed(() => resolvedRootId.value || props.rootFolderId);
+
+async function openLinker() {
+  if (!props.canEdit || openingLinker.value) return;
+  openingLinker.value = true;
+  error.value = null;
+  try {
+    if (props.prepareRoot) {
+      const folderId = (await props.prepareRoot())?.trim();
+      if (folderId) resolvedRootId.value = folderId;
+    }
+    linkDialogOpen.value = true;
+  } catch (e: unknown) {
+    error.value = panelError(e, 'operationCore.profile.documents.linkError');
+  } finally {
+    openingLinker.value = false;
+  }
+}
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
@@ -227,7 +252,8 @@ watch(
         rounded="lg"
         class="text-none"
         prepend-icon="mdi-link-plus"
-        @click="linkDialogOpen = true"
+        :loading="openingLinker"
+        @click="openLinker"
       >
         Belge bağla
       </v-btn>
@@ -296,7 +322,7 @@ watch(
       :data-id="dataId"
       :relation-types="relationTypes"
       :excluded-resource-ids="excludedResourceIds"
-      :root-folder-id="rootFolderId"
+      :root-folder-id="dialogRootId"
       :allow-upload="allowUpload"
       :allow-create-folder="allowCreateFolder"
       @linked="load"

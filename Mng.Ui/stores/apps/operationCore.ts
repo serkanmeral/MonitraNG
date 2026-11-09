@@ -5,7 +5,7 @@ import {
   ocGetBoardContext,
   ocGetBoardListPage,
   ocListBoardsForWorkspace,
-  ocListWorkspaces,
+  ocListVisibleWorkspaces,
   ocOperationsLive,
 } from '@/services/operationCoreService';
 import { ocListWorkspaceFolders } from '@/services/operationCore/workspaceFolders';
@@ -91,7 +91,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.loadingWorkspaces = true;
       this.error = null;
       try {
-        this.workspaces = await ocListWorkspaces();
+        this.workspaces = await ocListVisibleWorkspaces();
         this.workspacesLoadedAt = Date.now();
       } catch (e: unknown) {
         this.error = e instanceof Error ? e.message : String(e);

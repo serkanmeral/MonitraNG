@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 using MngKeeper.Application.Interfaces;
 
 namespace MngKeeper.Api.Middleware;
@@ -41,18 +42,11 @@ public class JwtClaimsMiddleware
                 var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
                 var mngPersonId = jwtToken.Claims.FirstOrDefault(c => c.Type == "mng_person_id")?.Value;
                 var domainName = jwtToken.Claims.FirstOrDefault(c => c.Type == "domain_name")?.Value;
-                var userGroupsClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "user_groups")?.Value;
+                var userGroups = ReadGroups(jwtToken.Claims.Where(c => c.Type == "user_groups"));
                 var isAdminClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "isAdmin")?.Value;
                 
                 _logger.LogInformation(">>> [JWT-MW] Claims extracted - User: {Username}, Domain: {DomainName}, IsAdmin: {IsAdmin}", 
                     username, domainName, isAdminClaim);
-                
-                // Parse user_groups (can be string or array)
-                var userGroups = new List<string>();
-                if (!string.IsNullOrEmpty(userGroupsClaim))
-                {
-                    userGroups.Add(userGroupsClaim);
-                }
                 
                 // Parse isAdmin
                 var isAdmin = bool.TryParse(isAdminClaim, out var isAdminValue) && isAdminValue;
@@ -112,6 +106,54 @@ public class JwtClaimsMiddleware
         }
         
         await _next(context);
+    }
+
+    private static List<string> ReadGroups(IEnumerable<Claim> claims)
+    {
+        var groups = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var claim in claims)
+            AddGroupValues(groups, seen, claim.Value);
+        return groups;
+    }
+
+    private static void AddGroupValues(List<string> groups, HashSet<string> seen, string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return;
+
+        var trimmed = raw.Trim();
+        if (trimmed.StartsWith('['))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        if (item.ValueKind == JsonValueKind.String)
+                            AddGroup(groups, seen, item.GetString());
+                    }
+                    return;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        foreach (var part in trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            AddGroup(groups, seen, part);
+    }
+
+    private static void AddGroup(List<string> groups, HashSet<string> seen, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+        var trimmed = name.Trim();
+        if (seen.Add(trimmed))
+            groups.Add(trimmed);
     }
 }
 

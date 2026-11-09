@@ -20,6 +20,8 @@ services:
       - MngGatewaySettings__Cors__AllowedOrigins__1=${CORS_ALLOWED_ORIGIN_2:-http://192.168.1.249:3001}
       - MngGatewaySettings__Cors__AllowedOrigins__2=http://localhost:3000
       - MngGatewaySettings__Cors__AllowedOrigins__3=http://127.0.0.1:3000
+      - MngGatewaySettings__Cors__AllowedOrigins__4=https://mng.ankarabt.com
+      - MngGatewaySettings__Cors__AllowedOrigins__5=https://192.168.1.249
       - Kestrel__Limits__MaxRequestBodySize=83886080
 
   mngkeeper:
@@ -29,6 +31,7 @@ services:
       - "dc01.ankarabt.local:192.168.1.254"
     environment:
       - MngKeeperSettings__OpenApiServerPath=http://192.168.1.249:5001
+      - MngKeeperSettings__UiBaseUrl=https://mng.ankarabt.com
 
   mngdatagateway:
     ports:
@@ -63,6 +66,8 @@ services:
     environment:
       - MngHubSettings__Cors__AllowedOrigins__2=http://localhost:3000
       - MngHubSettings__Cors__AllowedOrigins__3=http://127.0.0.1:3000
+      - MngHubSettings__Cors__AllowedOrigins__4=https://mng.ankarabt.com
+      - MngHubSettings__Cors__AllowedOrigins__5=https://192.168.1.249
 
   mnglogcollector:
     ports:
@@ -71,6 +76,9 @@ services:
   mngscheduler:
     ports:
       - "5090:5090"
+    environment:
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__DomainName=abt
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__Username=abt_admin
 
   mngworkflow:
     ports:
@@ -113,9 +121,9 @@ services:
       - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
       - MngDocumentSettings__OpenApiServerPath=http://192.168.1.249:5040/documents
       - MngDocumentSettings__Collabora__Enabled=true
-      - MngDocumentSettings__Collabora__PublicBaseUrl=${COLLABORA_PUBLIC_URL:-https://app.ankarabt.com}
-      - MngDocumentSettings__Collabora__PostMessageOrigin=https://app.ankarabt.com https://192.168.1.249 http://192.168.1.249:3000 http://abt.localhost:3000 http://127.0.0.1:3000 http://localhost:3000
-      - MngDocumentSettings__Notifications__UiBaseUrl=http://192.168.1.249:3000
+      - MngDocumentSettings__Collabora__PublicBaseUrl=${COLLABORA_PUBLIC_URL:-https://mng.ankarabt.com}
+      - MngDocumentSettings__Collabora__PostMessageOrigin=https://mng.ankarabt.com https://192.168.1.249 http://192.168.1.249:3000 http://abt.localhost:3000 http://127.0.0.1:3000 http://localhost:3000
+      - MngDocumentSettings__Notifications__UiBaseUrl=https://mng.ankarabt.com
       - MngDocumentSettings__Antivirus__Enabled=true
       - MngDocumentSettings__Antivirus__Host=clamav
       - MngDocumentSettings__Antivirus__Port=3310
@@ -123,13 +131,13 @@ services:
 
   collabora:
     environment:
-      - aliasgroup1=${COLLABORA_ALIASGROUP:-https://app.ankarabt.com,http://mngdocument:5095,http://192.168.1.249:5040}
+      - aliasgroup1=${COLLABORA_ALIASGROUP:-https://mng.ankarabt.com,http://mngdocument:5095,http://192.168.1.249:5040}
     command:
       - --o:ssl.enable=false
       - --o:ssl.termination=true
       - --o:user_interface.mode=compact
       - --o:home_mode.enable=true
-      - "--o:net.content_security_policy=frame-ancestors http://localhost:* http://127.0.0.1:* http://abt.localhost:* http://192.168.1.249:* https://localhost:* https://127.0.0.1:* https://app.ankarabt.com https://192.168.1.249:* localhost:* 127.0.0.1:* 192.168.1.249:* mngdocument:*;"
+      - "--o:net.content_security_policy=frame-ancestors http://localhost:* http://127.0.0.1:* http://abt.localhost:* http://192.168.1.249:* https://localhost:* https://127.0.0.1:* https://mng.ankarabt.com https://192.168.1.249:* localhost:* 127.0.0.1:* 192.168.1.249:* mngdocument:*;"
 
   mngadmin:
     ports:
@@ -146,7 +154,7 @@ services:
       context: ../../Mng.Ui
       dockerfile: Dockerfile
       args:
-        GATEWAY_URL: https://app.ankarabt.com
+        GATEWAY_URL: https://mng.ankarabt.com
         HUB_URL: ""
         DRAWIO_PUBLIC_URL: ${DRAWIO_PUBLIC_URL:-http://192.168.1.249:8088}
         SERVER_ADMIN_URL: http://192.168.1.249:5080

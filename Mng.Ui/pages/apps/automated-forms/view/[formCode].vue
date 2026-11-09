@@ -16,13 +16,24 @@ import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
 import { fetchFromDataGateway, fetchBlobFromDataGateway, getDataGatewayProxyUrl } from '@/services/apiService';
+import { diCreateFolder, diGetById, diGetChildren } from '@/services/documentIntelligenceService';
+import { DI_RESOURCE_TYPE } from '@/types/apps/documentIntelligence';
+import { afRecordFolderName } from '@/utils/afRecordFolder';
 import { schedulerGetUserJobExecutions, schedulerListUserJobs } from '@/services/schedulerService';
 import type { SchedulerJob, SchedulerJobExecution } from '@/types/apps/scheduler';
 import { formatScheduleTime, parseScheduleSummary } from '@/utils/ocScheduleCron';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 import { usePagePermissions } from '@/composables/usePagePermissions';
-import { afListViewReportId, isAfReportListView } from '@/utils/afListView';
+import AfListCards, { type AfListCardModel } from '@/components/apps/automated-forms/AfListCards.vue';
+import {
+  afListPresentation,
+  afListViewReportId,
+  isAfReportListView,
+  normalizeAfListView,
+  resolveAfCardSlots,
+  type AfListPresentation,
+} from '@/utils/afListView';
 import ReportingRunnerView from '@/components/apps/reporting/ReportingRunnerView.vue';
 import LinkedDatasetDocuments from '@/components/apps/automated-forms/LinkedDatasetDocuments.vue';
 import { REPORTING_EMBED_SHARE_PATH } from '@/utils/reportingShareLink';
@@ -68,6 +79,7 @@ const catalogDocumentScope = computed(() => {
     title?: string;
     hint?: string;
     relationTypes?: string[];
+    recordFolder?: { idField?: string; nameFields?: string[] };
   };
 });
 const catalogDocumentRootId = computed(() => catalogDocumentScope.value?.rootFolderId?.trim() || null);
@@ -152,11 +164,71 @@ const filePreviewIsImage = ref(false);
 // Track which item is being edited (for update operation)
 const currentEditingItemId = ref<string | null>(null);
 
+function recordFolderConfig(): { idField: string; nameFields: string[] } | null {
+  const folder = catalogDocumentScope.value?.recordFolder;
+  if (!folder || typeof folder !== 'object') return null;
+  const idField = String(folder.idField ?? '').trim();
+  const nameFields = Array.isArray(folder.nameFields)
+    ? folder.nameFields.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+  if (!idField || nameFields.length === 0) return null;
+  return { idField, nameFields };
+}
+
+let ensureFolderTask: Promise<string | null> | null = null;
+
+async function ensureRecordFolder(): Promise<string | null> {
+  const config = recordFolderConfig();
+  const rootId = catalogDocumentRootId.value;
+  const dataId = currentEditingItemId.value?.trim();
+  const datasetName = form.value?.datasetName?.trim();
+  if (!config || !rootId || !dataId || !datasetName) return null;
+
+  const stored = String(formDialogData.value[config.idField] ?? '').trim();
+  if (stored) {
+    try {
+      await diGetById(stored);
+      return stored;
+    } catch {
+      // Stored folder is gone. Open a new one and keep the same record field.
+    }
+  }
+
+  const name = afRecordFolderName(formDialogData.value, config.nameFields);
+  if (!name) throw new Error('Klasör adı boş.');
+
+  const listed = await diGetChildren(rootId, { limit: 500 });
+  const found = listed.items.find(
+    (item) => item.type === DI_RESOURCE_TYPE.folder && item.name === name
+  );
+  const createdId = found?.id || (await diCreateFolder({ name, parentId: rootId })).id;
+  if (!createdId) throw new Error('Klasör açılmadı.');
+
+  await fetchFromDataGateway(
+    `/api/v1/data/${encodeURIComponent(datasetName)}/${encodeURIComponent(dataId)}`,
+    'PUT',
+    { [config.idField]: createdId }
+  );
+  formDialogData.value[config.idField] = createdId;
+  return createdId;
+}
+
+function prepareRecordFolder(): Promise<string | null> {
+  if (!recordFolderConfig()) return Promise.resolve(null);
+  if (!ensureFolderTask) {
+    ensureFolderTask = ensureRecordFolder().finally(() => {
+      ensureFolderTask = null;
+    });
+  }
+  return ensureFolderTask;
+}
+
 /** Rapor listesi modunda runner yenileme sayacı (CRUD sonrası). */
 const reportRefreshToken = ref(0);
 
 const useReportListView = computed(() => isAfReportListView(form.value?.listConfig));
 const embeddedReportId = computed(() => afListViewReportId(form.value?.listConfig));
+const listPresentation = ref<AfListPresentation>('table');
 
 function bumpReportRefresh() {
   reportRefreshToken.value += 1;
@@ -211,6 +283,15 @@ const loadForm = async () => {
     await loadRelationListLabels();
 
     await applyHubRouteQuery();
+
+    listPresentation.value = afListPresentation(loadedForm.listConfig);
+    const defaultSortBy = loadedForm.listConfig?.defaultSortBy;
+    if (defaultSortBy && tableOptions.value.sortBy.length === 0) {
+      tableOptions.value.sortBy = [{
+        key: defaultSortBy,
+        order: loadedForm.listConfig?.defaultSortOrder === 'desc' ? 'desc' : 'asc',
+      }];
+    }
     
     // Load data items (skip when list surface is a report)
     if (!isAfReportListView(loadedForm.listConfig)) {
@@ -542,6 +623,82 @@ const tableHeaders = computed(() => {
   }
   
   return headers;
+});
+
+const sortableListColumns = computed(() =>
+  tableHeaders.value
+    .filter((header) => header.key !== 'actions' && header.sortable !== false)
+    .map((header) => ({ title: header.title, value: header.key }))
+);
+
+const cardSortKey = computed({
+  get: () => tableOptions.value.sortBy[0]?.key ?? null,
+  set: (key: string | null) => {
+    if (!key) {
+      tableOptions.value.sortBy = [];
+      return;
+    }
+    const order = tableOptions.value.sortBy[0]?.order ?? 'asc';
+    tableOptions.value.sortBy = [{ key, order }];
+  },
+});
+
+const cardSortOrder = computed({
+  get: (): 'asc' | 'desc' => tableOptions.value.sortBy[0]?.order ?? 'asc',
+  set: (order: 'asc' | 'desc') => {
+    const key = tableOptions.value.sortBy[0]?.key;
+    if (!key) return;
+    tableOptions.value.sortBy = [{ key, order }];
+  },
+});
+
+function cardImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed;
+  return null;
+}
+
+function cardInitials(title: string): string {
+  const parts = title.split(/\s+/).filter((part) => part && part !== '-');
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toLocaleUpperCase('tr-TR');
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toLocaleUpperCase('tr-TR');
+}
+
+const cardModels = computed<AfListCardModel[]>(() => {
+  const visibleFields = tableHeaders.value
+    .map((header) => header.key)
+    .filter((key) => key !== 'actions');
+  const slots = resolveAfCardSlots(
+    normalizeAfListView(form.value?.listConfig?.listView).card,
+    visibleFields
+  );
+  const labelOf = (fieldName: string) =>
+    tableHeaders.value.find((header) => header.key === fieldName)?.title || fieldName;
+
+  return dataItems.value.map((item) => {
+    const title = slots.titleFields
+      .map((fieldName) => formatCellValue(item[fieldName], fieldName))
+      .filter((value) => value && value !== '-')
+      .join(' ') || '-';
+    const corner = slots.cornerField
+      ? formatCellValue(item[slots.cornerField], slots.cornerField)
+      : null;
+    return {
+      id: String(item.__dataId ?? item.dataId ?? title),
+      title,
+      initials: cardInitials(title),
+      imageUrl: slots.imageField ? cardImageUrl(item[slots.imageField]) : null,
+      lines: slots.lineFields.map((fieldName) => ({
+        key: fieldName,
+        label: labelOf(fieldName),
+        value: String(formatCellValue(item[fieldName], fieldName) ?? '-'),
+      })),
+      corner: corner && corner !== '-' ? String(corner) : null,
+      raw: item,
+    };
+  });
 });
 
 // Server items length
@@ -2833,6 +2990,42 @@ const getFormDescription = (): string => {
             style="max-width: 300px; min-width: 200px;"
             class="flex-grow-0"
           ></v-text-field>
+          <v-btn-toggle
+            v-if="form && dataset && !useReportListView"
+            v-model="listPresentation"
+            mandatory
+            density="compact"
+            color="primary"
+            variant="outlined"
+            divided
+          >
+            <v-btn value="table" size="small">{{ t('automated-forms.view.presentation.table') }}</v-btn>
+            <v-btn value="cards" size="small">{{ t('automated-forms.view.presentation.cards') }}</v-btn>
+          </v-btn-toggle>
+          <v-select
+            v-if="form && dataset && !useReportListView && listPresentation === 'cards'"
+            v-model="cardSortKey"
+            :items="sortableListColumns"
+            item-title="title"
+            item-value="value"
+            :label="t('automated-forms.view.presentation.sort')"
+            density="compact"
+            variant="outlined"
+            hide-details
+            style="min-width: 160px; max-width: 220px;"
+          />
+          <v-btn-toggle
+            v-if="form && dataset && !useReportListView && listPresentation === 'cards' && cardSortKey"
+            v-model="cardSortOrder"
+            mandatory
+            density="compact"
+            color="primary"
+            variant="outlined"
+            divided
+          >
+            <v-btn value="asc" size="small">{{ t('automated-forms.view.presentation.ascending') }}</v-btn>
+            <v-btn value="desc" size="small">{{ t('automated-forms.view.presentation.descending') }}</v-btn>
+          </v-btn-toggle>
           
         </div>
       </div>
@@ -2939,8 +3132,25 @@ const getFormDescription = (): string => {
         {{ t('automated-forms.form.listConfig.listView.reportPlaceholder') }}
       </v-alert>
       
+      <v-progress-linear
+        v-if="form && dataset && !useReportListView && listPresentation === 'cards' && loading"
+        indeterminate
+        color="primary"
+        class="mb-4"
+      />
+      <AfListCards
+        v-if="form && dataset && !useReportListView && listPresentation === 'cards' && dataItems.length > 0"
+        :items="cardModels"
+        :can-update="canUpdate"
+        :can-delete="canDelete"
+        :edit-label="t('automated-forms.view.buttons.edit')"
+        :delete-label="t('automated-forms.view.buttons.delete')"
+        @edit="editItem"
+        @delete="deleteItem"
+      />
+
       <!-- Data Table (yatay scroll: .af-automated-form-list-scroll) -->
-      <div v-if="form && dataset && !useReportListView" class="af-automated-form-list-scroll">
+      <div v-if="form && dataset && !useReportListView && listPresentation === 'table'" class="af-automated-form-list-scroll">
         <v-data-table
           v-model="selectedItems"
           v-model:options="tableOptions"
@@ -3353,6 +3563,7 @@ const getFormDescription = (): string => {
               :root-folder-id="catalogDocumentRootId"
               :allow-upload="catalogDocumentAllowUpload"
               :allow-create-folder="catalogDocumentAllowCreate"
+              :prepare-root="recordFolderConfig() ? prepareRecordFolder : null"
             />
           </v-card-text>
         </v-card>

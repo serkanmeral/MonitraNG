@@ -60,6 +60,7 @@ const folderName = ref('');
 const creatingFolder = ref(false);
 const uploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
+const sessionLinkedIds = ref<Set<string>>(new Set());
 
 const scopeRootId = computed(() => props.rootFolderId?.trim() || null);
 const treeRootLabel = computed(() => scopeLabel.value || t('documentIntelligence.allDocuments'));
@@ -85,7 +86,8 @@ const linkableChildren = computed(() =>
   children.value.filter(
     (r) =>
       (r.type === DI_RESOURCE_TYPE.markdown || r.type === DI_RESOURCE_TYPE.file) &&
-      !excludedSet.value.has(r.id.trim().toLowerCase())
+      !excludedSet.value.has(r.id.trim().toLowerCase()) &&
+      !sessionLinkedIds.value.has(r.id)
   )
 );
 
@@ -201,8 +203,20 @@ async function uploadFile(event: Event) {
       extension: dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : null,
       size: file.size,
     });
+    const datasetName = props.datasetName?.trim() ?? '';
+    const dataId = props.dataId?.trim() ?? '';
+    if (created.id && datasetName && dataId) {
+      await diCreateDatasetRowLink({
+        resourceId: created.id,
+        datasetName,
+        dataId,
+        relationType: relationType.value,
+      });
+      sessionLinkedIds.value = new Set([...sessionLinkedIds.value, created.id]);
+      emit('linked');
+    }
     await selectFolder(selectedFolderId.value);
-    if (created.id) selectedResourceId.value = created.id;
+    if (created.id && !(datasetName && dataId)) selectedResourceId.value = created.id;
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'operationCore.profile.documents.linkError');
   } finally {
@@ -257,6 +271,7 @@ watch(open, (v) => {
   if (!v) {
     selectedResourceId.value = null;
     errorLocal.value = null;
+    sessionLinkedIds.value = new Set();
     return;
   }
   loadTree();

@@ -63,6 +63,12 @@ const childTabs = computed(() =>
 /** Child sekmeler tanımlıysa şerit göster (gizli sekmeler filtrelenir). */
 const showTabStrip = computed(() => allChildTabs.value.length > 0);
 
+const hasFieldsTab = computed(() =>
+  (effectiveExpandConfig.value.sections ?? []).some((section) =>
+    (section.fields ?? []).some((field) => String(field ?? '').trim())
+  )
+);
+
 const fieldsTabTitle = computed(
   () => reportingExpandFieldsTabTitle(effectiveExpandConfig.value) || t('reporting.expand.fieldsTab')
 );
@@ -72,6 +78,7 @@ const initialTab = computed(() => {
   if (preferred && preferred !== 'fields' && childTabs.value.some((tab) => tab.id === preferred)) {
     return preferred;
   }
+  if (!hasFieldsTab.value && childTabs.value[0]) return childTabs.value[0].id;
   return 'fields';
 });
 
@@ -106,9 +113,14 @@ watch(
   }
 );
 
-watch(childTabs, (tabs) => {
+watch([childTabs, hasFieldsTab], () => {
+  const tabs = childTabs.value;
+  if (activeTab.value === 'fields' && !hasFieldsTab.value) {
+    activeTab.value = tabs[0]?.id ?? 'fields';
+    return;
+  }
   if (activeTab.value !== 'fields' && !tabs.some((tab) => tab.id === activeTab.value)) {
-    activeTab.value = 'fields';
+    activeTab.value = hasFieldsTab.value ? 'fields' : (tabs[0]?.id ?? 'fields');
   }
 });
 
@@ -284,14 +296,14 @@ async function generateParentRowDocument(binding: ReportingDocumentBinding) {
       class="mb-3 reporting-expand-tabs"
       show-arrows
     >
-      <v-tab value="fields">{{ fieldsTabTitle }}</v-tab>
+      <v-tab v-if="hasFieldsTab" value="fields">{{ fieldsTabTitle }}</v-tab>
       <v-tab v-for="tab in childTabs" :key="tab.id" :value="tab.id">
         {{ tab.title }}
       </v-tab>
     </v-tabs>
 
     <v-window v-if="showTabStrip" v-model="activeTab">
-      <v-window-item value="fields">
+      <v-window-item v-if="hasFieldsTab" value="fields">
         <ReportingDetailView
           :layout="layout"
           :fields="fields"

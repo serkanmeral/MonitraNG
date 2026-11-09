@@ -43,7 +43,8 @@
           { "value": "calisiyor", "label": "Calisiyor" },
           { "value": "ayrildi", "label": "Ayrildi" }
         ] } }
-      }
+      },
+      { "fieldType": "text", "name": "diFolderId", "title": "Belge klasoru", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 80 } }
     ],
     "validations": [],
     "queries": [
@@ -87,7 +88,10 @@
               "pipeline": [
                 { "$match": { "$expr": { "$and": [
                   { "$eq": [ "$personelId", "$$pid" ] },
-                  { "$eq": [ "$donemBaslangic", "$$once" ] },
+                  { "$eq": [
+                    { "$convert": { "input": "$donemBaslangic", "to": "date", "onError": null, "onNull": null } },
+                    { "$convert": { "input": "$$once", "to": "date", "onError": null, "onNull": null } }
+                  ] },
                   { "$eq": [ "$bakiyeyeEtki", true ] }
                 ] } } },
                 { "$group": { "_id": null, "bakiye": { "$sum": "$gun" } } }
@@ -250,7 +254,10 @@
               "pipeline": [
                 { "$match": { "$expr": { "$and": [
                   { "$eq": [ "$personelId", "$$pid" ] },
-                  { "$eq": [ "$donemBaslangic", "$$donem" ] },
+                  { "$eq": [
+                    { "$convert": { "input": "$donemBaslangic", "to": "date", "onError": null, "onNull": null } },
+                    { "$convert": { "input": "$$donem", "to": "date", "onError": null, "onNull": null } }
+                  ] },
                   { "$in": [ "$hareket", [ "hakedis", "bant_farki" ] ] }
                 ] } } },
                 { "$group": { "_id": null, "gun": { "$sum": "$gun" } } }
@@ -447,6 +454,82 @@
     ],
     "validations": [],
     "queries": [
+      {
+        "name": "kart_bul",
+        "description": "Keeper kullanici kimliginden izin kartini bulur. Eslesme sicil ile kullanici adidir. Yerine bos ise yerine karti yoktur. Yerine secilmis ama kart yoksa yerineKartId yok olur.",
+        "parameters": [
+          { "name": "keeperId", "type": "text", "required": true },
+          { "name": "yerineKeeperId", "type": "text", "required": false }
+        ],
+        "pipeline": [
+          { "$limit": 1 },
+          { "$addFields": { "pYerine": ":yerineKeeperId" } },
+          { "$addFields": {
+              "yerineIstendi": { "$eq": [
+                { "$regexMatch": { "input": { "$ifNull": [ "$pYerine", "" ] }, "regex": "^:yerineKeeperId$" } },
+                false
+              ] }
+          } },
+          { "$lookup": {
+              "from": "@users",
+              "pipeline": [
+                { "$match": { "$expr": { "$eq": [ "$__dataId", ":keeperId" ] } } },
+                { "$project": { "_id": 0, "username": 1 } },
+                { "$limit": 1 }
+              ],
+              "as": "user"
+          } },
+          { "$lookup": {
+              "from": "izin_personel",
+              "let": { "sicil": { "$ifNull": [ { "$first": "$user.username" }, "" ] } },
+              "pipeline": [
+                { "$match": { "$expr": { "$and": [
+                  { "$ne": [ "$$sicil", "" ] },
+                  { "$eq": [ { "$strcasecmp": [ { "$ifNull": [ "$sicil", "" ] }, "$$sicil" ] }, 0 ] }
+                ] } } },
+                { "$project": { "_id": 0, "__dataId": 1, "cinsiyet": 1 } },
+                { "$limit": 1 }
+              ],
+              "as": "kart"
+          } },
+          { "$lookup": {
+              "from": "@users",
+              "let": { "istendi": "$yerineIstendi", "kid": "$pYerine" },
+              "pipeline": [
+                { "$match": { "$expr": { "$and": [
+                  { "$eq": [ "$$istendi", true ] },
+                  { "$eq": [ "$__dataId", "$$kid" ] }
+                ] } } },
+                { "$project": { "_id": 0, "username": 1 } },
+                { "$limit": 1 }
+              ],
+              "as": "yerineUser"
+          } },
+          { "$lookup": {
+              "from": "izin_personel",
+              "let": { "sicil": { "$ifNull": [ { "$first": "$yerineUser.username" }, "" ] } },
+              "pipeline": [
+                { "$match": { "$expr": { "$and": [
+                  { "$ne": [ "$$sicil", "" ] },
+                  { "$eq": [ { "$strcasecmp": [ { "$ifNull": [ "$sicil", "" ] }, "$$sicil" ] }, 0 ] }
+                ] } } },
+                { "$project": { "_id": 0, "__dataId": 1 } },
+                { "$limit": 1 }
+              ],
+              "as": "yerineKart"
+          } },
+          { "$project": {
+              "_id": 0,
+              "personelKartId": { "$ifNull": [ { "$first": "$kart.__dataId" }, null ] },
+              "cinsiyet": { "$ifNull": [ { "$first": "$kart.cinsiyet" }, "" ] },
+              "yerineKartId": { "$cond": [
+                { "$eq": [ "$yerineIstendi", true ] },
+                { "$ifNull": [ { "$first": "$yerineKart.__dataId" }, "yok" ] },
+                null
+              ] }
+          } }
+        ]
+      },
       {
         "name": "dusen_gun",
         "description": "Baslangic ve bitis dahil dusen gun. Tur sureTipi takvimHaftasi ise cogul 126, degilse 112; turdeki takvimGun ve cogulTakvimGun doluysa onlar. Diger turlerde ayardaki hafta karsiligi, ayni tarihte tatil gunu varsa onun gunKarsiligi. Yarim gun yalniz tek gunde: ogleden_once min(0.5, karsilik), ogleden_sonra karsilik 1 ise 0.5 degilse 0. Tarihler gun basi UTC. Ayar satiri yoksa sonuc bostur.",
@@ -740,19 +823,16 @@
           } },
           { "$addFields": {
               "yarimDolu": { "$and": [
-                { "$ne": [ "$pYarim", null ] },
-                { "$ne": [ "$pYarim", "" ] },
-                { "$ne": [ "$pYarim", ":yarimGun" ] }
+                { "$ne": [ { "$ifNull": [ "$pYarim", "" ] }, "" ] },
+                { "$eq": [ { "$regexMatch": { "input": { "$ifNull": [ "$pYarim", "" ] }, "regex": "^:yarimGun$" } }, false ] }
               ] },
               "belgeDolu": { "$and": [
-                { "$ne": [ "$pBelge", null ] },
-                { "$ne": [ "$pBelge", "" ] },
-                { "$ne": [ "$pBelge", ":belgeId" ] }
+                { "$ne": [ { "$ifNull": [ "$pBelge", "" ] }, "" ] },
+                { "$eq": [ { "$regexMatch": { "input": { "$ifNull": [ "$pBelge", "" ] }, "regex": "^:belgeId$" } }, false ] }
               ] },
               "yerineDolu": { "$and": [
-                { "$ne": [ "$pYerine", null ] },
-                { "$ne": [ "$pYerine", "" ] },
-                { "$ne": [ "$pYerine", ":yerineId" ] }
+                { "$ne": [ { "$ifNull": [ "$pYerine", "" ] }, "" ] },
+                { "$eq": [ { "$regexMatch": { "input": { "$ifNull": [ "$pYerine", "" ] }, "regex": "^:yerineId$" } }, false ] }
               ] },
               "cinsiyet": "$person.cinsiyet"
           } },
@@ -825,7 +905,10 @@
                 { "$match": { "$expr": { "$and": [
                   { "$eq": [ "$personelId", "$$pid" ] },
                   { "$eq": [ "$turId", "$$tid" ] },
-                  { "$eq": [ "$donemBaslangic", "$$donem" ] },
+                  { "$eq": [
+                    { "$convert": { "input": "$donemBaslangic", "to": "date", "onError": null, "onNull": null } },
+                    { "$convert": { "input": "$$donem", "to": "date", "onError": null, "onNull": null } }
+                  ] },
                   { "$in": [ "$hareket", [ "bloke", "kullanim", "iade" ] ] },
                   { "$ne": [ "$isKodu", "$$is" ] }
                 ] } } },
@@ -1056,7 +1139,8 @@
       { "fieldType": "text", "name": "isKodu", "title": "Is kodu", "mandatory": false, "unique": false, "isArray": false },
       { "fieldType": "text", "name": "gecis", "title": "Gecis", "mandatory": false, "unique": false, "isArray": false },
       { "fieldType": "text", "name": "hedefBant", "title": "Hedef bant", "mandatory": false, "unique": false, "isArray": false },
-      { "fieldType": "text", "name": "izKodu", "title": "Yazim anahtari", "mandatory": false, "unique": false, "isArray": false }
+      { "fieldType": "text", "name": "izKodu", "title": "Yazim anahtari", "mandatory": false, "unique": false, "isArray": false },
+      { "fieldType": "text", "name": "aciklama", "title": "Açıklama", "mandatory": false, "unique": false, "isArray": false }
     ],
     "validations": [],
     "queries": [
@@ -1116,21 +1200,27 @@
       },
       {
         "name": "ozet",
-        "description": "Personel, donem ve tur basina ozet. Hakedis, hakedis, bant farki ve acilisin artisidir. Devir devir satirlarinin toplamidir. Bloke, iade bloke kadar kapandiktan sonra kalan eksidir. Kullanim, bloke kapandiktan sonra iadenin kullanimdan dusuldugu eksidir. Bakiye yalniz bakiyeye etki eden satir varsa doludur. DG-01 yenile anahtari personelId, donemBaslangic, turId.",
+        "description": "Personel, donem ve tur basina ozet. Hakedis yalniz hakedis ve bant farkidir. Acilis ayri durur. Dosyadan gelen kullanim bakiyeye girmez ve donem satiri acmaz. Bu donem ve gecmis, izin baslangicina gore kullanilan gundur. acikDonem, kisi ve tur icin en son donemdir. DG-01 yenile anahtari personelId, donemBaslangic, turId.",
         "parameters": [],
         "pipeline": [
+          { "$match": { "$expr": { "$not": { "$and": [
+            { "$eq": [ "$kaynak", "dosya" ] },
+            { "$eq": [ "$hareket", "kullanim" ] },
+            { "$ne": [ "$bakiyeyeEtki", true ] }
+          ] } } } },
           { "$group": {
               "_id": {
                 "personelId": "$personelId",
-                "donemBaslangic": "$donemBaslangic",
+                "donemBaslangic": { "$convert": { "input": "$donemBaslangic", "to": "date", "onError": "$donemBaslangic", "onNull": null } },
                 "turId": "$turId",
                 "isKodu": { "$ifNull": [ "$isKodu", "" ] }
               },
               "hakedis": { "$sum": { "$cond": [
                 { "$in": [ "$hareket", [ "hakedis", "bant_farki" ] ] },
                 "$gun",
-                { "$cond": [ { "$and": [ { "$eq": [ "$hareket", "acilis" ] }, { "$gt": [ "$gun", 0 ] } ] }, "$gun", 0 ] }
+                0
               ] } },
+              "acilis": { "$sum": { "$cond": [ { "$eq": [ "$hareket", "acilis" ] }, "$gun", 0 ] } },
               "devir": { "$sum": { "$cond": [ { "$eq": [ "$hareket", "devir" ] }, "$gun", 0 ] } },
               "blokeHam": { "$sum": { "$cond": [ { "$eq": [ "$hareket", "bloke" ] }, "$gun", 0 ] } },
               "kullanimHam": { "$sum": { "$cond": [ { "$eq": [ "$hareket", "kullanim" ] }, "$gun", 0 ] } },
@@ -1152,6 +1242,7 @@
                 "turId": "$_id.turId"
               },
               "hakedis": { "$sum": "$hakedis" },
+              "acilis": { "$sum": "$acilis" },
               "devir": { "$sum": "$devir" },
               "bloke": { "$sum": "$bloke" },
               "kullanim": { "$sum": "$kullanim" },
@@ -1163,10 +1254,23 @@
               "let": { "pid": "$_id.personelId" },
               "pipeline": [
                 { "$match": { "$expr": { "$eq": [ "$__dataId", "$$pid" ] } } },
-                { "$project": { "_id": 0, "birim": 1 } },
+                { "$project": { "_id": 0, "birim": 1, "sicil": 1 } },
                 { "$limit": 1 }
               ],
               "as": "personel"
+          } },
+          { "$lookup": {
+              "from": "@users",
+              "let": { "sicil": { "$trim": { "input": { "$ifNull": [ { "$first": "$personel.sicil" }, "" ] } } } },
+              "pipeline": [
+                { "$match": { "$expr": { "$and": [
+                  { "$ne": [ "$$sicil", "" ] },
+                  { "$eq": [ { "$strcasecmp": [ "$username", "$$sicil" ] }, 0 ] }
+                ] } } },
+                { "$project": { "_id": 0, "department": 1 } },
+                { "$limit": 1 }
+              ],
+              "as": "dizinKullanici"
           } },
           { "$lookup": {
               "from": "izin_turleri",
@@ -1183,14 +1287,72 @@
               "personelId": "$_id.personelId",
               "donemBaslangic": "$_id.donemBaslangic",
               "turId": "$_id.turId",
-              "birim": { "$ifNull": [ { "$first": "$personel.birim" }, "" ] },
+              "birim": { "$let": {
+                "vars": {
+                  "dizinden": { "$ifNull": [ { "$first": "$dizinKullanici.department" }, "" ] },
+                  "karttan": { "$ifNull": [ { "$first": "$personel.birim" }, "" ] }
+                },
+                "in": { "$cond": [ { "$ne": [ "$$dizinden", "" ] }, "$$dizinden", "$$karttan" ] }
+              } },
               "turKod": { "$ifNull": [ { "$first": "$tur.kod" }, "" ] },
               "hakedis": 1,
+              "acilis": 1,
               "devir": 1,
               "bloke": 1,
               "kullanim": 1,
               "bakiye": { "$cond": [ { "$eq": [ "$etkiVar", 1 ] }, "$etkiGun", null ] }
-          } }
+          } },
+          { "$lookup": {
+              "from": "izin_hareketleri",
+              "let": { "pid": "$personelId", "donem": "$donemBaslangic" },
+              "pipeline": [
+                { "$match": { "$expr": { "$and": [
+                  { "$eq": [ "$personelId", "$$pid" ] },
+                  { "$eq": [ "$hareket", "kullanim" ] }
+                ] } } },
+                { "$addFields": {
+                    "gunAbs": { "$abs": "$gun" },
+                    "bas": { "$convert": { "input": "$baslangic", "to": "date", "onError": null, "onNull": null } },
+                    "donemGun": { "$convert": { "input": "$$donem", "to": "date", "onError": null, "onNull": null } }
+                } },
+                { "$addFields": {
+                    "son": { "$dateAdd": { "startDate": "$donemGun", "unit": "year", "amount": 1 } }
+                } },
+                { "$group": {
+                    "_id": null,
+                    "buDonemGun": { "$sum": { "$cond": [
+                      { "$and": [
+                        { "$ne": [ "$bas", null ] },
+                        { "$gte": [ "$bas", "$donemGun" ] },
+                        { "$lt": [ "$bas", "$son" ] }
+                      ] },
+                      "$gunAbs",
+                      0
+                    ] } },
+                    "gecmisGun": { "$sum": { "$cond": [
+                      { "$and": [ { "$ne": [ "$bas", null ] }, { "$lt": [ "$bas", "$donemGun" ] } ] },
+                      "$gunAbs",
+                      0
+                    ] } }
+                } }
+              ],
+              "as": "kullanimlar"
+          } },
+          { "$addFields": {
+              "buDonemGun": { "$ifNull": [ { "$first": "$kullanimlar.buDonemGun" }, 0 ] },
+              "gecmisGun": { "$ifNull": [ { "$first": "$kullanimlar.gecmisGun" }, 0 ] }
+          } },
+          { "$group": {
+              "_id": { "personelId": "$personelId", "turId": "$turId" },
+              "maxDonem": { "$max": "$donemBaslangic" },
+              "rows": { "$push": "$$ROOT" }
+          } },
+          { "$unwind": "$rows" },
+          { "$replaceRoot": { "newRoot": { "$mergeObjects": [
+            "$rows",
+            { "acikDonem": { "$eq": [ "$rows.donemBaslangic", "$maxDonem" ] } }
+          ] } } },
+          { "$project": { "kullanimlar": 0 } }
         ]
       }
     ],
@@ -1222,6 +1384,10 @@
       { "fieldType": "text", "name": "birim", "title": "Birim", "mandatory": false, "unique": false, "isArray": false },
       { "fieldType": "text", "name": "turKod", "title": "Tur kodu", "mandatory": false, "unique": false, "isArray": false },
       { "fieldType": "number", "name": "hakedis", "title": "Hakedis", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
+      { "fieldType": "number", "name": "acilis", "title": "Açılış", "mandatory": false, "unique": false, "isArray": false, "defaultValue": 0 },
+      { "fieldType": "number", "name": "buDonemGun", "title": "Bu dönem", "mandatory": false, "unique": false, "isArray": false, "defaultValue": 0 },
+      { "fieldType": "number", "name": "gecmisGun", "title": "Geçmiş", "mandatory": false, "unique": false, "isArray": false, "defaultValue": 0 },
+      { "fieldType": "bool", "name": "acikDonem", "title": "Açık dönem", "mandatory": false, "unique": false, "isArray": false, "defaultValue": false },
       { "fieldType": "number", "name": "devir", "title": "Devir", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
       { "fieldType": "number", "name": "bloke", "title": "Bloke", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },
       { "fieldType": "number", "name": "kullanim", "title": "Kullanim", "mandatory": true, "unique": false, "isArray": false, "defaultValue": 0 },

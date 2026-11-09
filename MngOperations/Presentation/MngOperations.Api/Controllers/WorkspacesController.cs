@@ -12,10 +12,25 @@ namespace MngOperations.Api.Controllers;
 public sealed class WorkspacesController : ControllerBase
 {
     private readonly IMetadataCacheAdminService _metadataCacheAdmin;
+    private readonly IWorkspaceVisibilityService _visibility;
 
-    public WorkspacesController(IMetadataCacheAdminService metadataCacheAdmin)
+    public WorkspacesController(
+        IMetadataCacheAdminService metadataCacheAdmin,
+        IWorkspaceVisibilityService visibility)
     {
         _metadataCacheAdmin = metadataCacheAdmin;
+        _visibility = visibility;
+    }
+
+    /// <summary>
+    /// Çalışma alanları ağacı. Çağıranın göremediği alanlar dönmez.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListVisible(CancellationToken cancellationToken)
+    {
+        var items = await _visibility.ListVisibleAsync(cancellationToken);
+        return Ok(new { items });
     }
 
     /// <summary>

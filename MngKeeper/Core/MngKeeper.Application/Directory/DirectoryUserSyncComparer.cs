@@ -38,7 +38,21 @@ public static class DirectoryUserSyncComparer
         if (existing.IsActive != keycloakUser.Enabled)
             return true;
 
+        if (DirectoryProfileDiffers(existing.Title, keycloakUser.Title))
+            return true;
+
+        if (DirectoryProfileDiffers(existing.Department, keycloakUser.Department))
+            return true;
+
         return !GroupSetsEqual(existing.Groups, keycloakGroupNames);
+    }
+
+    /// <summary>Boş dizin değeri fark sayılmaz; dolu değer mevcuttan farklıysa senkron gerekir.</summary>
+    public static bool DirectoryProfileDiffers(string? current, string? incoming)
+    {
+        if (string.IsNullOrWhiteSpace(incoming))
+            return false;
+        return !string.Equals(current?.Trim(), incoming.Trim(), StringComparison.Ordinal);
     }
 
     private static bool GroupSetsEqual(IReadOnlyList<string>? mongoGroups, IReadOnlyList<string> keycloakGroups)

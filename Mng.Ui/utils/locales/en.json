@@ -2109,7 +2109,19 @@
           "reportLabel": "Report",
           "reportPlaceholder": "Select a report",
           "reportHint": "The selected report uses its own columns, filters and permissions.",
-          "reportColumnsHint": "When a report is selected, the column settings below are unused; the report design columns apply."
+          "reportColumnsHint": "When a report is selected, the column settings below are unused; the report design columns apply.",
+          "presentationTitle": "Presentation",
+          "presentationDescription": "The same list, filters, sorting and paging stay. Only the surface that prints the rows changes.",
+          "presentationTable": "Table",
+          "presentationCards": "Cards",
+          "cardTitle": "Card title",
+          "cardTitleHint": "Selected fields join into the title. The first visible column is used when this is empty.",
+          "cardLines": "Card lines",
+          "cardLinesHint": "Shown under the title as label and value. Remaining visible columns are used when this is empty.",
+          "cardCorner": "Corner",
+          "cardCornerHint": "A short value at the top right of the card.",
+          "cardImage": "Image",
+          "cardImageHint": "An http address in this field becomes the image. Otherwise the title initials are shown."
         },
         "noDataset": "You must select a dataset first to configure list settings."
       },
@@ -2126,7 +2138,11 @@
           "pickFolder": "Choose folder",
           "clearFolder": "Clear",
           "allowUpload": "Allow upload",
-          "allowCreateFolder": "Allow creating folders"
+          "allowCreateFolder": "Allow creating folders",
+          "recordFolderName": "Record folder name",
+          "recordFolderNameHint": "On the first document request these fields become the folder name under the root.",
+          "recordFolderId": "Field that stores the folder id",
+          "recordFolderIdHint": "The created folder id is stored here. A later name change leaves the folder in place."
         },
         "visibleFields": {
           "label": "Visible Fields",
@@ -2305,6 +2321,13 @@
       "search": {
         "label": "Search...",
         "placeholder": "Enter a term to search..."
+      },
+      "presentation": {
+        "table": "Table",
+        "cards": "Cards",
+        "sort": "Sort",
+        "ascending": "Ascending",
+        "descending": "Descending"
       },
       "filters": {
         "title": "Filters",
@@ -4051,6 +4074,10 @@
         "formLinkFieldHint": "e.g. parentTrainingId — child field equal to the parent record id.",
         "formParentField": "Parent field",
         "formParentFieldHint": "Default __dataId.",
+        "formExtraLinkField": "Second link field (child)",
+        "formExtraLinkFieldHint": "Leave empty to use only the first link. When set, both conditions must match.",
+        "formExtraParentField": "Second parent field",
+        "formExtraParentFieldHint": "Value from the parent row. A date matches records on the same UTC day.",
         "formEmptyMessage": "Empty list message",
         "presentation": "Presentation",
         "presentationTable": "Table",

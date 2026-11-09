@@ -42,6 +42,18 @@ public static class DirectoryUserFieldSets
         target.DirectorySyncedAt = syncedAt;
         target.UpdatedAt = syncedAt;
         target.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser;
+        ApplyDirectoryProfile(target, source);
+    }
+
+    /// <summary>
+    /// AD department ve title doluysa yazar. Boş dizin değeri karttaki metni silmez.
+    /// </summary>
+    public static void ApplyDirectoryProfile(User target, KeycloakRealmUserSnapshot source)
+    {
+        if (!string.IsNullOrWhiteSpace(source.Title))
+            target.Title = source.Title.Trim();
+        if (!string.IsNullOrWhiteSpace(source.Department))
+            target.Department = source.Department.Trim();
     }
 
     public static User CreateDirectoryUser(

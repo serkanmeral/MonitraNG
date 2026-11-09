@@ -1,5 +1,6 @@
 using MngKeeper.Application.Directory;
 using MngKeeper.Application.Features.User.Commands.UpdateUser;
+using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Services;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Domain.Enums;
@@ -110,5 +111,41 @@ public class DirectoryUserUpdateValidatorTests
     var rejected = DirectoryUserUpdateValidator.GetRejectedFields(request, existing);
 
     Assert.Empty(rejected);
+  }
+}
+
+public class DirectoryProfileSyncTests
+{
+  [Fact]
+  public void Copies_department_and_title_when_directory_sends_them()
+  {
+    var user = new User { Title = "Eski", Department = "Eski birim" };
+    DirectoryUserFieldSets.ApplyDirectoryProfile(user, new KeycloakRealmUserSnapshot
+    {
+      Title = "Projeler Koordinatörü",
+      Department = "Yönetim"
+    });
+
+    Assert.Equal("Projeler Koordinatörü", user.Title);
+    Assert.Equal("Yönetim", user.Department);
+  }
+
+  [Fact]
+  public void Empty_directory_profile_keeps_the_current_values()
+  {
+    var user = new User { Title = "Eski", Department = "Eski birim" };
+    DirectoryUserFieldSets.ApplyDirectoryProfile(user, new KeycloakRealmUserSnapshot());
+
+    Assert.Equal("Eski", user.Title);
+    Assert.Equal("Eski birim", user.Department);
+    Assert.False(DirectoryUserSyncComparer.DirectoryProfileDiffers("Eski birim", null));
+    Assert.False(DirectoryUserSyncComparer.DirectoryProfileDiffers("Eski birim", "  "));
+  }
+
+  [Fact]
+  public void Different_directory_department_needs_sync()
+  {
+    Assert.True(DirectoryUserSyncComparer.DirectoryProfileDiffers(null, "Yönetim"));
+    Assert.False(DirectoryUserSyncComparer.DirectoryProfileDiffers(" Yönetim ", "Yönetim"));
   }
 }

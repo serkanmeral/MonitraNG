@@ -1457,6 +1457,17 @@ export async function ocListDataset(
   return parseListResponse(raw);
 }
 
+/** Dataset üzerindeki adlı sorguyu çalıştırır. Gövde parametre sözlüğüdür. */
+export async function ocExecuteDatasetQuery(
+  dataset: string,
+  queryName: string,
+  parameters: Record<string, string | number | boolean>
+): Promise<unknown[]> {
+  const url = `/api/v1/data/${encodeURIComponent(dataset)}/queries/${encodeURIComponent(queryName)}`;
+  const raw = await fetchFromDataGateway(url, 'POST', parameters);
+  return parseListResponse(raw);
+}
+
 /** Sayfalı dataset listesi — modal lookup picker (L4 / TP). */
 export async function ocListDatasetPage(
   dataset: string,
@@ -1830,6 +1841,16 @@ export async function ocListWorkspaces(): Promise<OpWorkspace[]> {
   const rows = await ocListDataset(OC_DATASETS.workspaces, { sort: 'name:asc', limit: 200 });
   return rows
     .map((r) => mapWorkspace(r as Record<string, unknown>))
+    .filter((w) => w.__dataId && w.name);
+}
+
+/** Operasyon ağacı. Operations yalnızca çağıranın görebildiği alanları döner. */
+export async function ocListVisibleWorkspaces(): Promise<OpWorkspace[]> {
+  const raw = await fetchFromOperations('/api/v1/workspaces', 'GET');
+  const body = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null;
+  const items = Array.isArray(body?.items) ? body.items : Array.isArray(raw) ? raw : [];
+  return items
+    .map((item) => mapWorkspace((item && typeof item === 'object' ? item : {}) as Record<string, unknown>))
     .filter((w) => w.__dataId && w.name);
 }
 

@@ -18,8 +18,8 @@ import {
   type AfChoiceWidget,
   type AfTextWidget,
 } from '@/utils/afFormFieldPresentation';
-import type { AfListViewMode } from '@/utils/afListView';
-import { normalizeAfListView } from '@/utils/afListView';
+import type { AfCardTemplate, AfListPresentation, AfListViewMode } from '@/utils/afListView';
+import { emptyAfCardTemplate, normalizeAfListView } from '@/utils/afListView';
 import { bootstrapReportingCatalog } from '@/utils/reportingCatalogBootstrap';
 import {
   ReportingCatalogService,
@@ -138,6 +138,8 @@ const formData = ref({
     listView: {
       mode: 'default' as AfListViewMode,
       reportId: null as string | null,
+      presentation: 'table' as AfListPresentation,
+      card: emptyAfCardTemplate(),
     },
   },
   formConfig: {
@@ -162,6 +164,10 @@ const formData = ref({
       allowUpload: true,
       allowCreateFolder: true,
       relationTypes: ['reference', 'attachment'] as string[],
+      recordFolder: {
+        idField: '',
+        nameFields: [] as string[],
+      },
     },
   },
   isActive: true,
@@ -179,6 +185,7 @@ const listViewMode = computed({
   set: (mode: AfListViewMode) => {
     const current = normalizeAfListView(formData.value.listConfig.listView);
     formData.value.listConfig.listView = {
+      ...current,
       mode,
       reportId: current.reportId ?? null,
     };
@@ -192,11 +199,93 @@ const listViewReportId = computed({
   get: (): string | null =>
     normalizeAfListView(formData.value.listConfig.listView).reportId ?? null,
   set: (reportId: string | null) => {
+    const current = normalizeAfListView(formData.value.listConfig.listView);
     formData.value.listConfig.listView = {
+      ...current,
       mode: 'report',
       reportId,
     };
   },
+});
+
+const listPresentation = computed({
+  get: (): AfListPresentation =>
+    normalizeAfListView(formData.value.listConfig.listView).presentation ?? 'table',
+  set: (presentation: AfListPresentation) => {
+    const current = normalizeAfListView(formData.value.listConfig.listView);
+    formData.value.listConfig.listView = {
+      ...current,
+      presentation,
+    };
+  },
+});
+
+function patchCardTemplate(patch: Partial<AfCardTemplate>) {
+  const current = normalizeAfListView(formData.value.listConfig.listView);
+  formData.value.listConfig.listView = {
+    ...current,
+    card: {
+      ...(current.card ?? emptyAfCardTemplate()),
+      ...patch,
+    },
+  };
+}
+
+const cardTitleFields = computed({
+  get: (): string[] => normalizeAfListView(formData.value.listConfig.listView).card?.titleFields ?? [],
+  set: (titleFields: string[]) => patchCardTemplate({ titleFields }),
+});
+
+const cardLineFields = computed({
+  get: (): string[] => normalizeAfListView(formData.value.listConfig.listView).card?.lineFields ?? [],
+  set: (lineFields: string[]) => patchCardTemplate({ lineFields }),
+});
+
+const cardCornerField = computed({
+  get: (): string | null =>
+    normalizeAfListView(formData.value.listConfig.listView).card?.cornerField ?? null,
+  set: (cornerField: string | null) => patchCardTemplate({ cornerField: cornerField || null }),
+});
+
+const cardImageField = computed({
+  get: (): string | null =>
+    normalizeAfListView(formData.value.listConfig.listView).card?.imageField ?? null,
+  set: (imageField: string | null) => patchCardTemplate({ imageField: imageField || null }),
+});
+
+const documentTextFieldItems = computed(() => {
+  const fields = datasetStore.getDatasetByName(formData.value.datasetName)?.fields ?? [];
+  return fields
+    .filter((field) => field.fieldType === 'text' && !field.name.startsWith('__'))
+    .map((field) => ({ title: field.title || field.name, value: field.name }));
+});
+
+const recordFolderIdField = computed({
+  get: (): string | null => formData.value.formConfig.documentScope.recordFolder.idField || null,
+  set: (idField: string | null) => {
+    formData.value.formConfig.documentScope.recordFolder.idField = idField?.trim() || '';
+  },
+});
+
+const recordFolderNameFields = computed({
+  get: (): string[] => formData.value.formConfig.documentScope.recordFolder.nameFields,
+  set: (nameFields: string[]) => {
+    formData.value.formConfig.documentScope.recordFolder.nameFields = nameFields;
+  },
+});
+
+const cardFieldItems = computed(() => {
+  const fields = datasetStore.getDatasetByName(formData.value.datasetName)?.fields ?? [];
+  const columns = formData.value.listConfig.columns || [];
+  const visible = columns.filter((column) => column.visible);
+  const source = visible.length ? visible : columns;
+  return source.map((column) => {
+    const field = fields.find((item) => item.name === column.fieldName);
+    return {
+      title: field?.title || column.fieldName,
+      value: column.fieldName,
+    };
+  });
 });
 
 const documentFolderName = ref('');
@@ -211,6 +300,10 @@ function emptyDocumentScope() {
     allowUpload: true,
     allowCreateFolder: true,
     relationTypes: ['reference', 'attachment'] as string[],
+    recordFolder: {
+      idField: '',
+      nameFields: [] as string[],
+    },
   };
 }
 
@@ -221,6 +314,12 @@ function documentScopeFrom(raw: unknown) {
   const relations = Array.isArray(scope.relationTypes)
     ? scope.relationTypes.map((item) => String(item).trim()).filter(Boolean)
     : base.relationTypes;
+  const folder = scope.recordFolder && typeof scope.recordFolder === 'object'
+    ? scope.recordFolder as Record<string, unknown>
+    : {};
+  const nameFields = Array.isArray(folder.nameFields)
+    ? folder.nameFields.map((item) => String(item).trim()).filter(Boolean)
+    : [];
   return {
     rootFolderId: String(scope.rootFolderId ?? '').trim(),
     title: String(scope.title ?? '').trim(),
@@ -228,6 +327,10 @@ function documentScopeFrom(raw: unknown) {
     allowUpload: scope.allowUpload !== false,
     allowCreateFolder: scope.allowCreateFolder !== false,
     relationTypes: relations.length ? relations : base.relationTypes,
+    recordFolder: {
+      idField: String(folder.idField ?? '').trim(),
+      nameFields,
+    },
   };
 }
 
@@ -237,7 +340,10 @@ function documentScopePayload() {
   const title = scope.title.trim();
   const hint = scope.hint.trim();
   const relationTypes = scope.relationTypes.map((item) => item.trim()).filter(Boolean);
-  if (!rootFolderId && !title && !hint) return undefined;
+  const idField = scope.recordFolder?.idField?.trim() ?? '';
+  const nameFields = (scope.recordFolder?.nameFields ?? []).map((item) => item.trim()).filter(Boolean);
+  const recordFolder = idField && nameFields.length ? { idField, nameFields } : undefined;
+  if (!rootFolderId && !title && !hint && !recordFolder) return undefined;
   return {
     ...(rootFolderId ? { rootFolderId } : {}),
     ...(title ? { title } : {}),
@@ -245,6 +351,7 @@ function documentScopePayload() {
     allowUpload: scope.allowUpload !== false,
     allowCreateFolder: scope.allowCreateFolder !== false,
     ...(relationTypes.length ? { relationTypes } : {}),
+    ...(recordFolder ? { recordFolder } : {}),
   };
 }
 
@@ -339,6 +446,12 @@ function buildListConfigPayload() {
     listView: {
       mode: listView.mode,
       reportId: listView.mode === 'report' ? listView.reportId ?? null : null,
+      ...(listView.mode === 'default'
+        ? {
+            presentation: listView.presentation ?? 'table',
+            card: listView.card ?? emptyAfCardTemplate(),
+          }
+        : {}),
     },
   };
 }
@@ -2316,6 +2429,94 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                 <!-- Column Config Table (only for default list) -->
                 <template v-if="listViewMode === 'default'">
                 <v-col cols="12">
+                  <h4 class="text-subtitle-1 mb-2">
+                    {{ t('automated-forms.form.listConfig.listView.presentationTitle') }}
+                  </h4>
+                  <p class="text-body-2 text-medium-emphasis mb-3">
+                    {{ t('automated-forms.form.listConfig.listView.presentationDescription') }}
+                  </p>
+                  <v-radio-group
+                    v-model="listPresentation"
+                    :disabled="loading"
+                    hide-details
+                    inline
+                    class="mb-2"
+                  >
+                    <v-radio
+                      :label="t('automated-forms.form.listConfig.listView.presentationTable')"
+                      value="table"
+                      color="primary"
+                    />
+                    <v-radio
+                      :label="t('automated-forms.form.listConfig.listView.presentationCards')"
+                      value="cards"
+                      color="primary"
+                    />
+                  </v-radio-group>
+                </v-col>
+                <template v-if="listPresentation === 'cards'">
+                  <v-col cols="12" md="6">
+                    <v-autocomplete
+                      v-model="cardTitleFields"
+                      :items="cardFieldItems"
+                      item-title="title"
+                      item-value="value"
+                      multiple
+                      chips
+                      closable-chips
+                      :label="t('automated-forms.form.listConfig.listView.cardTitle')"
+                      :hint="t('automated-forms.form.listConfig.listView.cardTitleHint')"
+                      persistent-hint
+                      variant="outlined"
+                      :disabled="loading"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-autocomplete
+                      v-model="cardCornerField"
+                      :items="cardFieldItems"
+                      item-title="title"
+                      item-value="value"
+                      clearable
+                      :label="t('automated-forms.form.listConfig.listView.cardCorner')"
+                      :hint="t('automated-forms.form.listConfig.listView.cardCornerHint')"
+                      persistent-hint
+                      variant="outlined"
+                      :disabled="loading"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-autocomplete
+                      v-model="cardLineFields"
+                      :items="cardFieldItems"
+                      item-title="title"
+                      item-value="value"
+                      multiple
+                      chips
+                      closable-chips
+                      :label="t('automated-forms.form.listConfig.listView.cardLines')"
+                      :hint="t('automated-forms.form.listConfig.listView.cardLinesHint')"
+                      persistent-hint
+                      variant="outlined"
+                      :disabled="loading"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-autocomplete
+                      v-model="cardImageField"
+                      :items="cardFieldItems"
+                      item-title="title"
+                      item-value="value"
+                      clearable
+                      :label="t('automated-forms.form.listConfig.listView.cardImage')"
+                      :hint="t('automated-forms.form.listConfig.listView.cardImageHint')"
+                      persistent-hint
+                      variant="outlined"
+                      :disabled="loading"
+                    />
+                  </v-col>
+                </template>
+                <v-col cols="12">
                   <v-data-table
                     :headers="listColumnConfigHeaders"
                     :items="listColumnConfigs"
@@ -2525,6 +2726,38 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                           >
                             {{ t('automated-forms.form.formConfig.documentScope.clearFolder') }}
                           </v-btn>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-autocomplete
+                            v-model="recordFolderNameFields"
+                            :items="documentTextFieldItems"
+                            item-title="title"
+                            item-value="value"
+                            multiple
+                            chips
+                            closable-chips
+                            :label="t('automated-forms.form.formConfig.documentScope.recordFolderName')"
+                            :hint="t('automated-forms.form.formConfig.documentScope.recordFolderNameHint')"
+                            persistent-hint
+                            variant="outlined"
+                            density="compact"
+                            :disabled="loading"
+                          />
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-autocomplete
+                            v-model="recordFolderIdField"
+                            :items="documentTextFieldItems"
+                            item-title="title"
+                            item-value="value"
+                            clearable
+                            :label="t('automated-forms.form.formConfig.documentScope.recordFolderId')"
+                            :hint="t('automated-forms.form.formConfig.documentScope.recordFolderIdHint')"
+                            persistent-hint
+                            variant="outlined"
+                            density="compact"
+                            :disabled="loading"
+                          />
                         </v-col>
                         <v-col cols="12" md="6">
                           <v-switch

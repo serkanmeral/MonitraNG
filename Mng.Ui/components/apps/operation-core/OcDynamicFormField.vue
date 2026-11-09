@@ -221,6 +221,26 @@ function isAllowedSelectValue(value: unknown): boolean {
   return value != null && value !== '' && allowed.has(String(value));
 }
 
+const selectNavigationKeys = new Set([
+  'Tab',
+  'Escape',
+  'Enter',
+  'ArrowDown',
+  'ArrowUp',
+  'ArrowLeft',
+  'ArrowRight',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown',
+]);
+
+function blockSelectTyping(event: KeyboardEvent) {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (selectNavigationKeys.has(event.key)) return;
+  event.preventDefault();
+}
+
 function onSelectUpdate(value: unknown) {
   if (selectControlDisabled.value) return;
   if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
@@ -335,6 +355,7 @@ function onSelectUpdate(value: unknown) {
     variant="outlined"
     hide-details="auto"
     :class="fieldClass"
+    @keydown="blockSelectTyping"
     @update:model-value="onSelectUpdate"
   >
     <template #label>
@@ -363,6 +384,7 @@ function onSelectUpdate(value: unknown) {
     variant="outlined"
     hide-details="auto"
     :class="fieldClass"
+    @keydown="blockSelectTyping"
     @update:model-value="onSelectUpdate"
   >
     <template #label>
@@ -398,7 +420,7 @@ function onSelectUpdate(value: unknown) {
     :readonly="fieldDisabled"
     :error="showFieldError"
     :error-messages="fieldErrorMessages"
-    clearable
+    :clearable="!fieldDisabled"
     density="comfortable"
     variant="outlined"
     hide-details="auto"

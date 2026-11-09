@@ -5,7 +5,7 @@
 #
 # Portal override'ı (docker-compose.ankarabt.yml) bu makinede kullanılmaz.
 # Üretim Nginx'i (admin.monitrang.com, Let's Encrypt) kapalı kalır.
-# Admin panosu HTTP: http://192.168.1.249
+# Admin panosu HTTP: http://192.168.1.249:3003
 # Uygulama HTTPS: https://192.168.1.249
 # GitLab ve MkDocs "ankarabt-local-disabled" profilindedir.
 
@@ -81,6 +81,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "3003:3003"
     volumes:
       - ./nginx/local:/etc/nginx/conf.d:ro
       - ./nginx/html:/usr/share/nginx/html:ro
@@ -92,7 +93,7 @@ services:
     depends_on:
       - keycloak
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3003/"]
       interval: 30s
       timeout: 5s
       retries: 5

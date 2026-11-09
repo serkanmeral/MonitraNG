@@ -1409,6 +1409,116 @@ namespace MngKeeper.Infrastructure.Services
                 .ToList();
         }
 
+        public async Task SyncLdapFederationAsync(string realmName, CancellationToken cancellationToken = default)
+        {
+            await EnsureAdminTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+            var providers = await GetJsonArrayAsync(
+                $"admin/realms/{realmName}/components?type=org.keycloak.storage.UserStorageProvider",
+                cancellationToken);
+
+            var ldapProviders = providers
+                .Where(component =>
+                    string.Equals(ReadString(component, "providerId"), "ldap", StringComparison.OrdinalIgnoreCase)
+                    && IsComponentEnabled(component))
+                .ToList();
+
+            if (ldapProviders.Count == 0)
+            {
+                _logger.LogInformation("No LDAP user federation in realm {Realm}; LDAP refresh skipped", realmName);
+                return;
+            }
+
+            foreach (var provider in ldapProviders)
+            {
+                var storageId = ReadString(provider, "id");
+                var storageName = ReadString(provider, "name");
+                if (string.IsNullOrWhiteSpace(storageId))
+                    continue;
+
+                var children = await GetJsonArrayAsync(
+                    $"admin/realms/{realmName}/components?parent={Uri.EscapeDataString(storageId)}",
+                    cancellationToken);
+
+                foreach (var child in children)
+                {
+                    if (!string.Equals(ReadString(child, "providerId"), "group-ldap-mapper", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var mapperId = ReadString(child, "id");
+                    if (string.IsNullOrWhiteSpace(mapperId))
+                        continue;
+
+                    await PostLdapSyncAsync(
+                        realmName,
+                        $"admin/realms/{realmName}/user-storage/{storageId}/mappers/{mapperId}/sync?direction=fedToKeycloak",
+                        $"group mapper '{ReadString(child, "name")}' on '{storageName}'",
+                        cancellationToken);
+                }
+
+                await PostLdapSyncAsync(
+                    realmName,
+                    $"admin/realms/{realmName}/user-storage/{storageId}/sync?action=triggerChangedUsersSync",
+                    $"changed users on '{storageName}'",
+                    cancellationToken);
+            }
+        }
+
+        private async Task<JsonElement[]> GetJsonArrayAsync(string path, CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(
+                    $"Keycloak GET {path} failed: {(int)response.StatusCode} {json}");
+            }
+
+            return JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+        }
+
+        private async Task PostLdapSyncAsync(
+            string realmName,
+            string path,
+            string label,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.PostAsync(BuildEndpointPath(path), content: null, cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(
+                    $"Keycloak LDAP sync ({label}) failed for realm {realmName}: {(int)response.StatusCode} {json}");
+            }
+
+            _logger.LogInformation(
+                "Keycloak LDAP sync {Label} realm {Realm}: {Body}",
+                label, realmName, json);
+        }
+
+        private static string? ReadString(JsonElement element, string name)
+        {
+            if (!element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+                return null;
+            return value.GetString();
+        }
+
+        private static bool IsComponentEnabled(JsonElement component)
+        {
+            if (!component.TryGetProperty("config", out var config)
+                || config.ValueKind != JsonValueKind.Object
+                || !config.TryGetProperty("enabled", out var enabled)
+                || enabled.ValueKind != JsonValueKind.Array
+                || enabled.GetArrayLength() == 0)
+            {
+                return true;
+            }
+
+            var flag = enabled[0].GetString();
+            return !string.Equals(flag, "false", StringComparison.OrdinalIgnoreCase);
+        }
+
         public async Task<KeycloakUserPhotoData?> GetRealmUserPhotoAsync(
             string realmName,
             string keycloakUserId,
@@ -1689,8 +1799,27 @@ namespace MngKeeper.Infrastructure.Services
                 FirstName = el.TryGetProperty("firstName", out var fn) ? fn.GetString() : null,
                 LastName = el.TryGetProperty("lastName", out var ln) ? ln.GetString() : null,
                 Enabled = !el.TryGetProperty("enabled", out var en) || en.GetBoolean(),
-                FederationLink = federationLink
+                FederationLink = federationLink,
+                Title = ReadUserAttribute(el, "title"),
+                Department = ReadUserAttribute(el, "department")
             };
+        }
+
+        private static string? ReadUserAttribute(JsonElement el, string name)
+        {
+            if (!el.TryGetProperty("attributes", out var attributes) || attributes.ValueKind != JsonValueKind.Object)
+                return null;
+            if (!attributes.TryGetProperty(name, out var value))
+                return null;
+            if (value.ValueKind == JsonValueKind.Array)
+            {
+                if (value.GetArrayLength() == 0)
+                    return null;
+                return value[0].GetString();
+            }
+            if (value.ValueKind == JsonValueKind.String)
+                return value.GetString();
+            return null;
         }
 
         private static KeycloakRealmGroupSnapshot MapGroupSnapshot(JsonElement el)

@@ -7,7 +7,7 @@ using MngKeeper.Application.Interfaces;
 namespace MngKeeper.Api.Controllers;
 
 /// <summary>
-/// Keycloak → Mongo directory sync (K2). DataGateway sync endpoint'lerinden ayrıdır.
+/// LDAP → Keycloak → Mongo directory sync. DataGateway sync endpoint'lerinden ayrıdır.
 /// </summary>
 [ApiController]
 [Route("api/directory")]
@@ -28,7 +28,7 @@ public class DirectorySyncController : ControllerBase
     }
 
     /// <summary>
-    /// Tek domain için tam Keycloak → Mongo senkronu.
+    /// Tek domain için LDAP grup üyeliğini Keycloak'a okutur, sonra Keycloak → Mongo kopyalar.
     /// </summary>
     [HttpPost("sync")]
     [ProducesResponseType(typeof(DirectorySyncResult), StatusCodes.Status200OK)]

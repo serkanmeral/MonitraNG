@@ -86,56 +86,59 @@ public class PermissionService : IPermissionService
     {
         var user = httpContext.User;
         var userGroups = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Try to get user_groups claim
-        var userGroupsClaim = user.FindFirst("user_groups");
-
-        if (userGroupsClaim != null && !string.IsNullOrWhiteSpace(userGroupsClaim.Value))
-        {
-            try
-            {
-                // Try to parse as JSON array first
-                var jsonElement = JsonSerializer.Deserialize<JsonElement>(userGroupsClaim.Value);
-                
-                if (jsonElement.ValueKind == JsonValueKind.Array)
-                {
-                    // It's a JSON array
-                    foreach (var element in jsonElement.EnumerateArray())
-                    {
-                        if (element.ValueKind == JsonValueKind.String)
-                        {
-                            var groupName = element.GetString();
-                            if (!string.IsNullOrWhiteSpace(groupName))
-                            {
-                                userGroups.Add(groupName);
-                            }
-                        }
-                    }
-                }
-                else if (jsonElement.ValueKind == JsonValueKind.String)
-                {
-                    // Single string value
-                    var groupName = jsonElement.GetString();
-                    if (!string.IsNullOrWhiteSpace(groupName))
-                    {
-                        userGroups.Add(groupName);
-                    }
-                }
-            }
-            catch (JsonException)
-            {
-                // If JSON parsing fails, try as comma-separated string
-                var groups = userGroupsClaim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                userGroups.AddRange(groups.Select(g => g.Trim()));
-            }
-        }
-
-        // Remove empty strings
-        userGroups = userGroups.Where(g => !string.IsNullOrWhiteSpace(g)).ToList();
+        foreach (var userGroupsClaim in user.FindAll("user_groups"))
+            AddGroupValues(userGroups, seen, userGroupsClaim.Value);
 
         _logger.LogDebug("Extracted user groups from token: {Groups}", string.Join(", ", userGroups));
 
         return userGroups;
+    }
+
+    private static void AddGroupValues(List<string> groups, HashSet<string> seen, string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return;
+
+        var trimmed = raw.Trim();
+        if (trimmed.StartsWith('['))
+        {
+            try
+            {
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(trimmed);
+                if (jsonElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var element in jsonElement.EnumerateArray())
+                    {
+                        if (element.ValueKind == JsonValueKind.String)
+                            AddGroup(groups, seen, element.GetString());
+                    }
+                    return;
+                }
+
+                if (jsonElement.ValueKind == JsonValueKind.String)
+                {
+                    AddGroup(groups, seen, jsonElement.GetString());
+                    return;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        foreach (var part in trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            AddGroup(groups, seen, part);
+    }
+
+    private static void AddGroup(List<string> groups, HashSet<string> seen, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+        var trimmed = name.Trim();
+        if (seen.Add(trimmed))
+            groups.Add(trimmed);
     }
 }
 

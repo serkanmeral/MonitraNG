@@ -131,7 +131,9 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
                 await _userRepository.GetByKeycloakUserIdAsync(kcUser.Id, domain.Id)
                 ?? await _userRepository.GetByUsernameAsync(kcUser.Username, domain.Id);
 
-            if (existing != null && existing.ProvisioningSource == UserProvisioningSource.Local)
+            if (existing != null
+                && existing.ProvisioningSource == UserProvisioningSource.Local
+                && string.IsNullOrWhiteSpace(kcUser.FederationLink))
             {
                 result.IsSuccess = true;
                 result.Code = "skipped_local_user";
@@ -239,11 +241,13 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
         var syncedAt = DateTime.UtcNow;
 
         _logger.LogInformation(
-            "[DirectorySync] Keycloak→Mongo sync started domain={DomainId} realm={Realm} trigger={Trigger}",
+            "[DirectorySync] LDAP refresh then Keycloak→Mongo sync started domain={DomainId} realm={Realm} trigger={Trigger}",
             resolvedDomainId, realm, trigger);
 
         try
         {
+            await _keycloakService.SyncLdapFederationAsync(realm, cancellationToken);
+
             var kcGroups = await _keycloakService.ListRealmGroupsAsync(realm, cancellationToken);
             _logger.LogInformation(
                 "[DirectorySync] Keycloak groups listed realm={Realm} count={Count}",
@@ -342,7 +346,9 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
                     await _userRepository.GetByKeycloakUserIdAsync(kcUser.Id, resolvedDomainId)
                     ?? await _userRepository.GetByUsernameAsync(kcUser.Username, resolvedDomainId);
 
-                if (existing != null && existing.ProvisioningSource == UserProvisioningSource.Local)
+                if (existing != null
+                    && existing.ProvisioningSource == UserProvisioningSource.Local
+                    && string.IsNullOrWhiteSpace(kcUser.FederationLink))
                 {
                     result.UsersSkipped++;
                     _logger.LogDebug("Skipping local (break-glass) user during directory sync: {Username}", kcUser.Username);

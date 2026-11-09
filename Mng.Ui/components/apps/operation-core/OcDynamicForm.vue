@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue';
+import { computed, nextTick, toRef, watch } from 'vue';
 import type { OcFormLayoutSectionRuntime, OcFormRuntimeContext } from '@/types/apps/operationCore';
 import { fieldColSpanForLayout, sectionColSpanForLayout } from '@/utils/ocFormLayout';
+import { fieldComputeSignature, runFieldComputes } from '@/utils/ocFieldCompute';
 import { applyOcLookupFieldCopies } from '@/utils/ocLookupCopy';
 import { useOcDynamicFormLookups } from '@/composables/useOcDynamicFormLookups';
 import OcDynamicFormField from '@/components/apps/operation-core/OcDynamicFormField.vue';
@@ -96,10 +97,24 @@ function fieldMdCols(fieldKey: string): number {
 
 const lookupCopyGeneration = new Map<string, number>();
 let pendingLookupCopy: Promise<void> = Promise.resolve();
+/** Son yazılan model. Üst form prop'u dönene kadar yerel okuma bunu kullanır. */
+let draft: Record<string, unknown> | null = null;
+
+function currentModel(): Record<string, unknown> {
+  if (draft && model.value !== draft) return draft;
+  draft = null;
+  return model.value;
+}
+
+function writeModel(next: Record<string, unknown>) {
+  draft = next;
+  model.value = next;
+}
 
 function setFieldValue(key: string, value: unknown) {
   if (props.readonly) return;
-  model.value = { ...model.value, [key]: value };
+  writeModel({ ...currentModel(), [key]: value });
+  queueComputes();
   const generation = (lookupCopyGeneration.get(key) ?? 0) + 1;
   lookupCopyGeneration.set(key, generation);
   const meta = fieldMeta(key);
@@ -107,12 +122,54 @@ function setFieldValue(key: string, value: unknown) {
     applyOcLookupFieldCopies(key, value, meta).then((patch) => {
       if (lookupCopyGeneration.get(key) !== generation) return;
       if (!Object.keys(patch).length) return;
-      model.value = { ...model.value, ...patch };
+      writeModel({ ...currentModel(), ...patch });
     })
   );
 }
 
+let computeTimer: ReturnType<typeof setTimeout> | null = null;
+let computeChain: Promise<void> = Promise.resolve();
+let computeGeneration = 0;
+let lastComputeSignature = '';
+
+function queueComputes() {
+  void nextTick(() => scheduleComputes());
+}
+
+function scheduleComputes() {
+  if (props.readonly) return;
+  const signature = fieldComputeSignature(currentModel(), props.context.fields);
+  if (signature === lastComputeSignature) return;
+  lastComputeSignature = signature;
+  if (computeTimer) clearTimeout(computeTimer);
+  computeTimer = setTimeout(() => {
+    computeTimer = null;
+    computeChain = computeChain.then(() => refreshComputes());
+  }, 350);
+}
+
+async function refreshComputes() {
+  if (props.readonly) return;
+  const generation = ++computeGeneration;
+  const source = currentModel();
+  const patch = await runFieldComputes(source, props.context.fields);
+  if (generation !== computeGeneration) return;
+  const changed = Object.entries(patch).filter(([key, value]) => source[key] !== value);
+  if (!changed.length) return;
+  writeModel({ ...currentModel(), ...Object.fromEntries(changed) });
+}
+
+watch(model, () => queueComputes(), { deep: true, flush: 'post' });
+queueComputes();
+
 async function flushLookupCopies() {
+  if (computeTimer) {
+    clearTimeout(computeTimer);
+    computeTimer = null;
+    lastComputeSignature = '';
+    computeChain = computeChain.then(() => refreshComputes());
+  }
+  await computeChain;
   await pendingLookupCopy;
 }
 
