@@ -211,6 +211,8 @@ function mapWorkspaceDetail(raw: Record<string, unknown>): OpWorkspaceDetail {
     editGroups: resolveRelationIds(raw.editGroups ?? raw.EditGroups),
     adminGroups: resolveRelationIds(raw.adminGroups ?? raw.AdminGroups),
     ownerGroups: resolveRelationIds(raw.ownerGroups ?? raw.OwnerGroups),
+    diPermissionStamp: raw.diPermissionStamp != null ? String(raw.diPermissionStamp) : null,
+    diPermissionDetached: raw.diPermissionDetached === true,
   };
 }
 

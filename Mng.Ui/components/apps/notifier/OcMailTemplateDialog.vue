@@ -2,6 +2,9 @@
 import { ref, computed, watch } from 'vue';
 import DOMPurify from 'dompurify';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { resolveThemedDomainLogoSrc } from '@/composables/useDomain';
+import { useAuthStore } from '@/stores/auth';
+import { useTheme } from 'vuetify';
 import OcMailHtmlEditor from '@/components/apps/notifier/OcMailHtmlEditor.client.vue';
 import { previewMailTemplate } from '@/services/notifier/mailTemplates';
 import type { MailTemplate, MailTemplatePreviewResult } from '@/types/apps/mailTemplates';
@@ -11,6 +14,7 @@ import {
   isSystemMailTemplate,
   newMailTemplateDraft,
   parseMailTemplateToDraft,
+  applyMailDomainBranding,
   parseSampleContextJson,
   validateMailTemplateDraft,
   type OcMailTemplateDraft,
@@ -29,6 +33,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const auth = useAuthStore();
+const theme = useTheme();
 const draft = ref<OcMailTemplateDraft>(newMailTemplateDraft());
 const previewLoading = ref(false);
 const previewError = ref<string | null>(null);
@@ -103,7 +109,19 @@ async function runPreview() {
   previewLoading.value = true;
   previewError.value = null;
   try {
-    previewResult.value = await previewMailTemplate(draft.value.templateKey.trim(), context, {
+    if (!auth.domainInfo) {
+      await auth.loadDomainInfo();
+    }
+    const domain = auth.domainInfo;
+    const branded = applyMailDomainBranding(context, {
+      name: domain?.name,
+      displayName: domain?.displayName,
+      logoUrl:
+        domain?.logoUrl?.trim()
+        || resolveThemedDomainLogoSrc(domain, theme.global.name.value)
+        || null,
+    });
+    previewResult.value = await previewMailTemplate(draft.value.templateKey.trim(), branded, {
       subject: draft.value.subject,
       bodyHtmlOverride: draft.value.bodyHtml,
       layoutKeyOverride: draft.value.layoutKey,

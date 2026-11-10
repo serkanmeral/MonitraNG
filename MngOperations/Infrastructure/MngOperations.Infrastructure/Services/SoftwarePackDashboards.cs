@@ -23,7 +23,6 @@ public static class SoftwarePackDashboards
         {
             CountCard("state_new", "Yeni", "mdi-folder-open-outline", "secondary", stateIds["state.new"]),
             CountCard("state_dev", "Geliştirmede", "mdi-progress-clock", "primary", stateIds["state.dev"]),
-            CountCard("state_review", "İncelemede", "mdi-clipboard-list-outline", "info", stateIds["state.review"]),
             CountCard("state_test", "Testte", "mdi-flag-outline", "warning", stateIds["state.test"]),
             new Dictionary<string, object?>
             {
@@ -41,19 +40,17 @@ public static class SoftwarePackDashboards
             },
             Chart("points_by_state", "Açık puan", "bar", "stateId", "wi_open_workspace", null, sum: true),
             Chart("new_by_priority", "Yeni — öncelik", "bar", "priorityId", "wi_by_workspace_and_state", stateIds["state.new"], sum: false),
-            List("review_list", "İncelemede", "wi_by_workspace_and_state", stateIds["state.review"]),
             List("mine_list", "Bana atanan açık", "wi_assigned_open", null)
         };
 
         var layout = Rows(
             Row(
-                Col("state_new", 6, 3, 2),
-                Col("state_dev", 6, 3, 2),
-                Col("state_review", 6, 3, 2),
-                Col("state_test", 6, 3, 2),
-                Col("open_points", 12, 12, 4)),
+                Col("state_new", 6, 4, 3),
+                Col("state_dev", 6, 4, 3),
+                Col("state_test", 6, 4, 3),
+                Col("open_points", 6, 12, 3)),
             Row(Col("points_by_state", 12, 6), Col("new_by_priority", 12, 6)),
-            Row(Col("review_list", 12, 6), Col("mine_list", 12, 6)));
+            Row(Col("mine_list", 12, 12)));
         return (layout, widgets);
     }
 

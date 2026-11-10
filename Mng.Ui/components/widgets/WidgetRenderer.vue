@@ -341,7 +341,8 @@ const widgetComponent = computed(() => {
       return ChartWidget;
     case 'table': {
       const manifest = config.manifest as { presentation?: { kind?: string } } | undefined;
-      if (config.variant === 'activity' || manifest?.presentation?.kind === 'list') {
+      const kind = manifest?.presentation?.kind ?? config.presentationKind;
+      if (config.variant === 'activity' || kind === 'list') {
         return ListActivityWidget;
       }
       return TableWidget;

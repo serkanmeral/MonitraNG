@@ -3903,7 +3903,7 @@
             }
           },
           "__dataId": "38b66b35-0be8-4d28-86ff-c4d3bbb2fbd4",
-          "to": "/welcome",
+          "to": "/",
           "type": "internal"
         },
         {

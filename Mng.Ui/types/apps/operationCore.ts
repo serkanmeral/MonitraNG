@@ -41,6 +41,10 @@ export interface OpWorkspaceDetail extends OpWorkspace {
   editGroups?: string[];
   adminGroups?: string[];
   ownerGroups?: string[];
+  /** Son yazılan kütüphane izin kopyasının imzası. Boşsa kopya yoktur. */
+  diPermissionStamp?: string | null;
+  /** Kütüphane klasörünün izni bu kopyadan ayrıldı. */
+  diPermissionDetached?: boolean;
 }
 
 export const OC_WORKSPACE_TYPE_VALUES = [

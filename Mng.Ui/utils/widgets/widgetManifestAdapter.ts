@@ -299,6 +299,7 @@ export function manifestToLegacyWidget(
       manifestVersion: source.manifestVersion,
       presentationPreset: presetId,
       presentationKind: kind,
+      interactions: source.interactions,
     },
     isActive: options.isActive ?? ('isActive' in source ? source.isActive : true),
     permissions: source.permissions?.groups ? { groups: source.permissions.groups } : undefined,

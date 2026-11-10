@@ -2,23 +2,59 @@ import { fetchFromDataGateway } from '@/services/apiService';
 import type { DashboardLayout } from '@/stores/apps/dashboard';
 
 export const PERSONNEL_DASHBOARD_SLUG = 'personel';
-const BOARD_VERSION = 4;
+const BOARD_VERSION = 6;
 const CATEGORY_NAME = 'Personel';
+
+interface ColumnSeed {
+  key: string;
+  title: string;
+  format?: 'text' | 'number' | 'chip' | 'datetime-relative';
+  align?: 'left' | 'center' | 'right';
+  color?: string;
+}
 
 interface WidgetSeed {
   name: string;
   title: string;
   description: string;
-  type: 'card' | 'table';
+  type: 'card' | 'table' | 'list';
   order: number;
   serviceRef: string;
   icon?: string;
   color?: string;
-  columns?: Array<{ key: string; title: string }>;
+  emptyText?: string;
+  columns?: ColumnSeed[];
+  list?: {
+    titleField: string;
+    subtitleField: string;
+    timeField: string;
+    badgeField: string;
+    badgeColorField: string;
+  };
   rowClick?: { path: string; paramMap?: Record<string, string> };
 }
 
 const WIDGETS: WidgetSeed[] = [
+  {
+    name: 'personel-work-open-count',
+    title: 'Açık iş',
+    description: 'Üzerindeki açık yük. Aralık bu sayıyı daraltmaz.',
+    type: 'card',
+    order: 8,
+    serviceRef: 'mngui:personnel/work-open-count',
+    icon: 'mdi-clipboard-text-outline',
+    color: 'secondary',
+  },
+  {
+    name: 'personel-work-closed-count',
+    title: 'Kapanan iş',
+    description: 'Seçilen aralıkta kapanan iş sayısı',
+    type: 'card',
+    order: 9,
+    serviceRef: 'mngui:personnel/work-closed-count',
+    icon: 'mdi-check-circle-outline',
+    color: 'success',
+  },
   {
     name: 'personel-points',
     title: 'İş puanı',
@@ -36,8 +72,9 @@ const WIDGETS: WidgetSeed[] = [
     type: 'table',
     order: 20,
     serviceRef: 'mngui:personnel/work-open',
+    emptyText: 'Açık iş yok',
     columns: [
-      { key: 'key', title: 'Kod' },
+      { key: 'key', title: 'Kod', format: 'chip', color: 'primary' },
       { key: 'title', title: 'İş' },
     ],
     rowClick: { path: '/apps/operation-core/work-items/{id}/profile' },
@@ -49,11 +86,12 @@ const WIDGETS: WidgetSeed[] = [
     type: 'table',
     order: 30,
     serviceRef: 'mngui:personnel/work-closed',
+    emptyText: 'Bu aralıkta kapanan iş yok',
     columns: [
-      { key: 'key', title: 'Kod' },
+      { key: 'key', title: 'Kod', format: 'chip', color: 'primary' },
       { key: 'title', title: 'İş' },
-      { key: 'points', title: 'Puan' },
-      { key: 'closedAt', title: 'Kapandı' },
+      { key: 'points', title: 'Puan', format: 'number', align: 'right' },
+      { key: 'closedAt', title: 'Kapandı', format: 'datetime-relative' },
     ],
     rowClick: { path: '/apps/operation-core/work-items/{id}/profile' },
   },
@@ -61,29 +99,36 @@ const WIDGETS: WidgetSeed[] = [
     name: 'personel-meetings',
     title: 'Toplantılar',
     description: 'Aralıkta katıldığı toplantılar',
-    type: 'table',
+    type: 'list',
     order: 40,
     serviceRef: 'mngui:personnel/meetings',
-    columns: [
-      { key: 'when', title: 'Zaman' },
-      { key: 'title', title: 'Toplantı' },
-      { key: 'status', title: 'Durum' },
-      { key: 'presence', title: 'Katılım' },
-    ],
+    icon: 'mdi-account-group-outline',
+    emptyText: 'Bu aralıkta toplantı yok',
+    list: {
+      titleField: 'title',
+      subtitleField: 'subtitle',
+      timeField: 'when',
+      badgeField: 'badge',
+      badgeColorField: 'badgeColor',
+    },
     rowClick: { path: '/apps/meetings', paramMap: { open: '$row.id' } },
   },
   {
     name: 'personel-documents',
     title: 'Belgeler',
     description: 'Aralıkta kütüphaneye eklediği belgeler',
-    type: 'table',
+    type: 'list',
     order: 50,
     serviceRef: 'mngui:personnel/documents',
-    columns: [
-      { key: 'when', title: 'Zaman' },
-      { key: 'title', title: 'Belge' },
-      { key: 'kind', title: 'Tür' },
-    ],
+    icon: 'mdi-file-document-outline',
+    emptyText: 'Bu aralıkta belge yok',
+    list: {
+      titleField: 'title',
+      subtitleField: 'subtitle',
+      timeField: 'when',
+      badgeField: 'badge',
+      badgeColorField: 'badgeColor',
+    },
     rowClick: { path: '/apps/document-intelligence/r/{id}' },
   },
 ];
@@ -131,7 +176,11 @@ export async function ensurePersonnelDashboard(): Promise<string> {
 }
 
 function buildLayout(widgetIds: Map<string, string>): DashboardLayout {
-  const col = (name: string, span: number) => ({ widgetId: widgetIds.get(name) ?? '', span, spanMd: span });
+  const col = (name: string, spanMd: number) => ({
+    widgetId: widgetIds.get(name) ?? '',
+    span: 12,
+    spanMd,
+  });
   return {
     type: 'rows',
     meta: {
@@ -142,7 +191,13 @@ function buildLayout(widgetIds: Map<string, string>): DashboardLayout {
       ],
     },
     rows: [
-      { cols: [col('personel-points', 4)] },
+      {
+        cols: [
+          col('personel-work-open-count', 4),
+          col('personel-work-closed-count', 4),
+          col('personel-points', 4),
+        ],
+      },
       { cols: [col('personel-work-open', 6), col('personel-work-closed', 6)] },
       { cols: [col('personel-meetings', 6), col('personel-documents', 6)] },
     ],
@@ -155,6 +210,7 @@ function widgetBody(seed: WidgetSeed, categoryId: string) {
     from: { $ref: '$timeRange.from' },
     to: { $ref: '$timeRange.to' },
   };
+  const view = presentationConfig(seed);
   const manifest = {
     manifestVersion: '1.0',
     templateId: seed.name,
@@ -164,11 +220,9 @@ function widgetBody(seed: WidgetSeed, categoryId: string) {
     title: seed.title,
     description: seed.description,
     presentation: {
-      kind: seed.type === 'card' ? 'stat' : 'table',
-      defaultPreset: seed.type === 'card' ? 'stat-simple' : 'table-compact',
-      config: seed.type === 'card'
-        ? { format: 'number', icon: seed.icon, color: seed.color }
-        : { dense: true, pageSize: 8, columns: seed.columns ?? [] },
+      kind: seed.type === 'card' ? 'stat' : seed.type === 'list' ? 'list' : 'table',
+      defaultPreset: seed.type === 'card' ? 'stat-simple' : seed.type === 'list' ? 'list-activity' : 'table-inbox',
+      config: view,
     },
     dataBinding: {
       serviceRef: seed.serviceRef,
@@ -182,18 +236,48 @@ function widgetBody(seed: WidgetSeed, categoryId: string) {
     title: seed.title,
     description: seed.description,
     category: categoryId,
-    type: seed.type,
+    type: seed.type === 'list' ? 'table' : seed.type,
     isActive: true,
     order: seed.order,
     dataSource: { type: 'data', dataset: '__manifest_service__', getMethod: 'default' },
     config: {
-      ...(seed.type === 'card'
-        ? { format: 'number', icon: seed.icon, color: seed.color, valueField: 'value' }
-        : { dense: true, pageSize: 8, columns: seed.columns ?? [], density: 'compact' }),
+      ...view,
       templateId: seed.name,
       manifest,
       interactions: manifest.interactions,
     },
+  };
+}
+
+function presentationConfig(seed: WidgetSeed): Record<string, unknown> {
+  if (seed.type === 'card') {
+    return { format: 'number', icon: seed.icon, color: seed.color, valueField: 'value' };
+  }
+  if (seed.type === 'list') {
+    return {
+      icon: seed.icon,
+      emptyText: seed.emptyText,
+      titleField: seed.list?.titleField ?? 'title',
+      subtitleField: seed.list?.subtitleField ?? 'subtitle',
+      timeField: seed.list?.timeField ?? 'when',
+      badgeField: seed.list?.badgeField,
+      badgeColorField: seed.list?.badgeColorField,
+    };
+  }
+  return {
+    presentationStyle: 'inbox',
+    density: 'comfortable',
+    hover: true,
+    pageSize: 8,
+    search: { enabled: false },
+    emptyText: seed.emptyText,
+    columns: (seed.columns ?? []).map((column) => ({
+      key: column.key,
+      title: column.title,
+      format: column.format,
+      align: column.align,
+      formatOptions: column.color ? { color: column.color } : undefined,
+    })),
   };
 }
 

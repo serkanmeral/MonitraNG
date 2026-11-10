@@ -135,7 +135,12 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
 });
 
 const navNodes = computed((): OcNavNode[] =>
-  buildOcNavTree(store.folders, store.workspaces, (workspaceId) => store.boardsForWorkspace(workspaceId))
+  buildOcNavTree(
+    store.folders,
+    store.workspaces,
+    (workspaceId) => store.boardsForWorkspace(workspaceId),
+    { keepEmptyFolders: canManageFolders.value }
+  )
 );
 
 const revealIds = computed(() => {

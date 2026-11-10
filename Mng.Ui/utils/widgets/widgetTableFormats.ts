@@ -11,6 +11,7 @@ export type WidgetTableColumnFormat =
   | 'status-chip'
   | 'datetime-relative'
   | 'alarm-summary'
+  | 'chip'
   | 'custom';
 
 const ALARM_STATUS_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ export function isRichTableColumnFormat(format?: string): boolean {
     format === 'status-chip' ||
     format === 'datetime-relative' ||
     format === 'alarm-summary' ||
+    format === 'chip' ||
     format === 'siem-event-action' ||
     format === 'siem-event-outcome'
   );
@@ -93,12 +95,14 @@ export function formatRelativeTimeSimple(value: unknown, locale = 'tr'): string 
   const absMin = Math.abs(Math.floor(diffMs / 60_000));
   const tr = locale.startsWith('tr');
 
+  const future = diffMs < 0;
+  const tail = tr ? (future ? 'sonra' : 'önce') : future ? 'from now' : 'ago';
   if (absMin < 1) return tr ? 'az önce' : 'just now';
-  if (absMin < 60) return tr ? `${absMin} dk önce` : `${absMin}m ago`;
+  if (absMin < 60) return tr ? `${absMin} dk ${tail}` : `${absMin}m ${tail}`;
   const absHours = Math.floor(absMin / 60);
-  if (absHours < 24) return tr ? `${absHours} sa önce` : `${absHours}h ago`;
+  if (absHours < 24) return tr ? `${absHours} sa ${tail}` : `${absHours}h ${tail}`;
   const absDays = Math.floor(absHours / 24);
-  return tr ? `${absDays} gün önce` : `${absDays}d ago`;
+  return tr ? `${absDays} gün ${tail}` : `${absDays}d ${tail}`;
 }
 
 /** Alarm satır özeti — context alanları veya dedupKey */

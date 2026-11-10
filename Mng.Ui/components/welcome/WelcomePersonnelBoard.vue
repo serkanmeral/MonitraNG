@@ -13,7 +13,7 @@ import {
   DASHBOARD_WIDGET_DATA_KEY,
 } from '@/utils/widgets/dashboardSurfaceKeys';
 import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfaceMutations';
-import { istanbulTrailingDaysRange, readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
+import { istanbulWeekRange, readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
 import { ensurePersonnelDashboard, PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
 
 const nuxtApp = useNuxtApp();
@@ -51,7 +51,7 @@ provide(DASHBOARD_WIDGET_DATA_KEY, dataByWidgetId);
 provide(DASHBOARD_WIDGET_BATCH_MODE_KEY, true);
 
 function applyOpeningRange() {
-  const span = istanbulTrailingDaysRange(7);
+  const span = istanbulWeekRange();
   rangeFrom.value = span.from;
   rangeTo.value = span.to;
   calendarRange.value = true;

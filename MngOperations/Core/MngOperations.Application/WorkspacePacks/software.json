@@ -1,8 +1,8 @@
 {
   "code": "software",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "Yazılım geliştirme",
-  "description": "Geliştirme, inceleme ve test akışı. Üst iş ve iş tipleri.",
+  "description": "Geliştirme ve test akışı. Üst iş ve iş tipleri.",
   "suggestedWorkspaceType": "team",
   "suggestedPrefix": "YZG",
   "states": [
@@ -21,13 +21,11 @@
       "initialStateKey": "state.new",
       "transitions": [
         { "key": "transition.start", "fromStateKey": "state.new", "toStateKey": "state.dev", "label": "Başlat", "requiredFields": ["assignee"] },
-        { "key": "transition.review", "fromStateKey": "state.dev", "toStateKey": "state.review", "label": "İncelemeye gönder", "requiredFields": ["assignee"] },
-        { "key": "transition.test", "fromStateKey": "state.review", "toStateKey": "state.test", "label": "Teste gönder", "requiredFields": ["assignee"] },
-        { "key": "transition.back", "fromStateKey": "state.review", "toStateKey": "state.dev", "label": "Geri gönder", "requiredFields": ["assignee"], "requireComment": true },
+        { "key": "transition.rejectNew", "fromStateKey": "state.new", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
+        { "key": "transition.test", "fromStateKey": "state.dev", "toStateKey": "state.test", "label": "Teste gönder", "requiredFields": ["assignee"] },
+        { "key": "transition.rejectDev", "fromStateKey": "state.dev", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
         { "key": "transition.testFail", "fromStateKey": "state.test", "toStateKey": "state.dev", "label": "Testi geçemedi", "requiredFields": ["assignee"], "requireComment": true },
         { "key": "transition.complete", "fromStateKey": "state.test", "toStateKey": "state.done", "label": "Tamamla" },
-        { "key": "transition.rejectNew", "fromStateKey": "state.new", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
-        { "key": "transition.rejectReview", "fromStateKey": "state.review", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
         { "key": "transition.rejectTest", "fromStateKey": "state.test", "toStateKey": "state.rejected", "label": "Reddet", "requireComment": true },
         { "key": "transition.reopen", "fromStateKey": "state.done", "toStateKey": "state.new", "label": "Yeniden aç", "requiredFields": ["assignee"] },
         { "key": "transition.reopenRejected", "fromStateKey": "state.rejected", "toStateKey": "state.new", "label": "Yeniden aç", "requiredFields": ["assignee"] }
@@ -57,7 +55,7 @@
       "flowKey": "flow.default",
       "formKey": "form.default",
       "typeKey": "type.work",
-      "columnStateKeys": ["state.new", "state.dev", "state.review", "state.test", "state.done", "state.rejected"],
+      "columnStateKeys": ["state.new", "state.dev", "state.test", "state.done", "state.rejected"],
       "visibleFields": ["key", "title", "stateId", "assignee", "priorityId", "storyPoints"],
       "listColumns": [
         { "key": "key", "label": "No" },
@@ -88,13 +86,11 @@
       ],
       "actionKeys": [
         "transition.start",
-        "transition.review",
+        "transition.rejectNew",
         "transition.test",
-        "transition.back",
+        "transition.rejectDev",
         "transition.testFail",
         "transition.complete",
-        "transition.rejectNew",
-        "transition.rejectReview",
         "transition.rejectTest",
         "transition.reopen",
         "transition.reopenRejected"

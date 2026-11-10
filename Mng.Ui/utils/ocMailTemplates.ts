@@ -119,3 +119,32 @@ export function buildMailTemplatePayload(draft: OcMailTemplateDraft, isEdit: boo
 export function isSystemMailTemplate(template: Pick<MailTemplate, 'category'>): boolean {
   return (template.category ?? '').toLowerCase() === 'system';
 }
+
+export interface MailDomainBranding {
+  name?: string | null;
+  displayName?: string | null;
+  logoUrl?: string | null;
+}
+
+/** Preview keeps the sample work item and replaces the baked-in brand with the signed-in domain. */
+export function applyMailDomainBranding(
+  context: Record<string, unknown>,
+  branding: MailDomainBranding | null | undefined
+): Record<string, unknown> {
+  const name = branding?.name?.trim() || '';
+  const displayName = branding?.displayName?.trim() || name;
+  const logoUrl = branding?.logoUrl?.trim() || '';
+  if (!displayName && !logoUrl) return context;
+
+  const current = context.domain;
+  const domain: Record<string, unknown> =
+    current && typeof current === 'object' && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>) }
+      : {};
+
+  if (name) domain.name = name;
+  if (displayName) domain.displayName = displayName;
+  if (logoUrl) domain.logoUrl = logoUrl;
+
+  return { ...context, domain };
+}

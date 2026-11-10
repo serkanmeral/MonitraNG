@@ -21,6 +21,7 @@ import { useDisplay } from 'vuetify';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppToast } from '@/composables/useAppToast';
 import { ocListWorkspaces } from '@/services/operationCoreService';
+import { resolveOcWorkspaceLibrary } from '@/utils/ocWorkspaceLibrary';
 import {
   pmBindWbsEvidence,
   pmBindWbsReference,
@@ -764,6 +765,8 @@ async function saveProject() {
   if (!detail.value) return;
   saving.value = true;
   try {
+    const previousWorkspaceId = detail.value.project.workspaceId || '';
+    const nextWorkspaceId = projectForm.value.workspaceId || '';
     const updated = await pmUpdateProject(detail.value.project.id, {
       name: projectForm.value.name.trim(),
       description: projectForm.value.description.trim(),
@@ -772,6 +775,22 @@ async function saveProject() {
       plannedFinish: pmDatePayload(projectForm.value.plannedFinish),
       workspaceId: projectForm.value.workspaceId || null,
     });
+    if (previousWorkspaceId !== nextWorkspaceId) {
+      if (nextWorkspaceId) {
+        try {
+          await resolveOcWorkspaceLibrary(nextWorkspaceId);
+        } catch {
+          // The project link stays when the library folder cannot be updated.
+        }
+      }
+      if (previousWorkspaceId) {
+        try {
+          await resolveOcWorkspaceLibrary(previousWorkspaceId);
+        } catch {
+          // The previous workspace keeps its own folder on the next library open.
+        }
+      }
+    }
     if (detail.value) detail.value.project = updated;
     toast.push({
       title: t('projectManagement.notify.successTitle'),

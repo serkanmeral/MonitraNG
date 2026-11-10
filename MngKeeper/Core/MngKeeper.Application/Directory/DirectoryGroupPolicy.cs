@@ -1,9 +1,12 @@
 using MngKeeper.Application.Common.Constants;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Directory;
 
 /// <summary>
-/// Varsayılan MonitraNG grupları her zaman Local kalır; diğer KC realm grupları sync ile Directory olur.
+/// Uygulamada Local kaydı olan grup sync sırasında Directory yapılmaz.
+/// Keycloak'ta ilk kez görülen grup LDAP kaynağı sayılır ve Directory olur.
+/// admins, managers, users ve guests isimleri sistem grubudur.
 /// </summary>
 public static class DirectoryGroupPolicy
 {
@@ -15,4 +18,10 @@ public static class DirectoryGroupPolicy
     return SystemGroups.All.Any(
       g => string.Equals(g, name.Trim(), StringComparison.OrdinalIgnoreCase));
   }
+
+  /// <summary>
+  /// Mevcut kayıt Local ise üyelik uygulama üzerinden yönetilmeye devam eder.
+  /// </summary>
+  public static bool StaysLocalDuringSync(UserProvisioningSource existingSource) =>
+    existingSource == UserProvisioningSource.Local;
 }

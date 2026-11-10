@@ -8,7 +8,7 @@ OperationCore maddeleri [OC workspace oluşturma planı](../odak/operationcore/O
 
 Durumlar: **konuşuldu**, **planlandı**, **yapılıyor**, **bitti**.
 
-Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanterin çekirdeği ve günlük kullanım dilimi abt alanındadır; 4 Kasım 2026’da duraklatıldı. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. OC-14 ve DG-01 aynı gün bitti. İzin çalışma alanı, kısa zincir, talep kuralları, izin formu ve iki rapor abt alanına kuruldu. Özet, hareket yazılınca yenilenir. Sıradaki izin işi dönem açılışının zamanlayıcıyla kendiliğinden çalışmasıdır. Özlük ve açılış bakiyesinin dosyadan alınması en sona bırakıldı.
+Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanterin çekirdeği ve günlük kullanım dilimi abt alanındadır; 4 Kasım 2026’da duraklatıldı. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. OC-14 ve DG-01 aynı gün bitti. İzin çalışma alanı, kısa zincir, talep kuralları, izin formu ve iki rapor abt alanına kuruldu. Özet, hareket yazılınca yenilenir. Sıradaki izin işi dönem açılışının zamanlayıcıyla kendiliğinden çalışmasıdır. Özlük ve açılış bakiyesinin dosyadan alınması en sona bırakıldı. Yazılım çalışma alanlarının bildirim politikaları ve bildirim postası 10 Kasım 2026’da abt alanında bitti. Kütüphane klasörünün yetkisi aynı gün çalışma alanının gruplarından kopyalandı. Elle ayrılmış klasörlerin üzerine yazılmadı. Kişisel menü aynı gün kişinin kendi hareket panosuna bağlandı. Pano içinde bulunulan haftayı açar.
 
 ## DI-01 — Yüklenen dosyaların antivirüs taraması
 
@@ -278,6 +278,53 @@ Kural penceresine yeni bir adım girer. Sorgu, koşuldan ve sonraki aksiyonlarda
 Bu aksiyon izin kelimesi taşımaz. İzin talebi ilk kullanıcısıdır. Onaya göndermede sırayla talep kuralı, düşen gün, açık dönem, yazım anahtarı, çakışma ve tavan çalışır. Talep kuralı doğumun bitişini yazar. Çıkış, kapalı tür, cinsiyet, mazeret nedeni, belge, yarım gün ve yerine bakacak kişi koşulla geçişi durdurur. Çakışma adedi ve gün tavanı da öyle. Bloke, kullanım ve iade bugünkü satır yazma aksiyonuyla bu sayıdan üretilir. Dönem açılışı, bant farkı, tatil yılı ve özet satırı bu aksiyon değildir. Onların geçişi yoktur. Onlar DG-01’dedir.
 
 Ayrıntı: [personel izin planı](dev/izin/personel_izin_plani.md).
+
+## OC-15 — Bildirimler ve bildirim postası
+
+| | |
+|---|---|
+| Durum | Bitti (2026-11-10). |
+| Sıra | Yedi yazılım çalışma alanı abt alanına indikten sonra. |
+
+Yedi yazılım çalışma alanında altışar bildirim politikası açıktır: HEY, CarbonIT, TAS-DHMI, TAS-TEI, Caykur, WebPortal, ERP. Kanal e-posta ve uygulama içidir. İş açılınca atanan ve izleyenler gider. Geliştirmede, Testte ve yeniden açılışta aynı kişiler gider. Tamamlandı ve Reddedildi’de talep eden de eklenir. İşlemi yapan kişi alıcıdan düşer. E-posta `work-item-created` ve `work-item-transitioned` şablonlarını kullanır. Uygulama içi şablonlar bunların `-inapp` karşılıklarıdır.
+
+Monitra Yardım, IT Help Desk ve Tasarım bu politikalara girmedi. Mesaj sekmesi (`@message_templates`) bu işe girmedi.
+
+Posta, domain kaydındaki SMTP ile `webmaster@ankarabt.com` adresinden çıkar. Deneme kayıtları HEY-0001, HEY-0002 ve HEY-0003 `smeral@ankarabt.com` adresine ulaştı.
+
+Şablon önizlemesi örnek iş metnini korur. Adı ve logoyu oturumdaki domainden basar. Örnek bağlamdaki Odak markası ekranda kalmaz. Varsayılan düzenin başlığı satır içi renkle yazılır; mor bant ve beyaz şirket adı posta istemcisinde durur. `abt` logo adresi `https://ankarabt.com/images/logo-white.png` oldu. Logo açık renktir ve mor bandın üstünde durur.
+
+## OC-16 — Kütüphane klasörünün yetkisi
+
+| | |
+|---|---|
+| Durum | Bitti (2026-11-10). |
+| Sıra | Bildirim postası kapandıktan sonra. |
+
+Bağımsız klasör Belge Zekâsı’nda kalır. Çalışma alanına bağlı klasörün iznini alanın görme, düzenleme ve yönetim listesi yazar. Proje klasörünün iznini projenin iş alanı yazar. Toplantı alanı aynı klasörü açar, izin yazmaz.
+
+Görme `view` ve `download` alır. Düzenleme `create`, `edit`, `delete`, `upload` ve `move` ekler. Yönetim `share` ekler. Sahip grubu belge izni almaz. Listeler boşsa klasör mirasa döner. Doluysa miras kırılır. Alt klasörün kırık mirasına dokunulmaz.
+
+Kök izin son kopyayla aynıysa yeniden yazılır. Farklıysa klasör ayrılır ve üzerine yazılmaz. Kütüphane paneli “Klasör yetkisi alandan ayrıldı” der. Yönetim grubu veya `share` yetkisi “Alandan yeniden yaz” ile güncel listeyi basar. Kopya, klasör ilk açılınca, genel sekme kaydedilince ve proje bağı değişince çalışır.
+
+10 Kasım 2026 abt turu yazılanlar: HEY Dev-ÇŞB ve Yonetim, TAS-DHMI Dev-DHMI ve Yonetim, TAS-TEI Dev-TEIAS ve Yonetim, Caykur Dev-Caykur ve Yonetim, WebPortal ve ERP Dev-PTT ve Yonetim. PM ASYS ile Zimmet Depo Yonetim. Personel Zimmet, Personel izin ve Tasarım Abt Calisan, Yonetim, admins ve managers. PM HEY açık kaldı.
+
+Ayrılanlar durdu: Monitra Yardım ve IT Help Desk üzerinde Abt Calisan, Yonetim, admins ve managers. CarbonIT klasöründe CarbonIT ve Yonetim duruyor. Dev-CarbonIT bu turda yazılmadı. Yeniden yaz, Dev-CarbonIT ve Yonetim basar.
+
+## OC-17 — Kişisel hareket panosu
+
+| | |
+|---|---|
+| Durum | Bitti (2026-11-10). |
+| Sıra | Kütüphane yetkisi kapandıktan sonra. |
+
+Giriş menüsündeki Kişisel, kişinin kendi hareket panosuna bakar. Adres ana sayfadır. Pano dashboard kaydıdır, slug `personel`. Yönetici menüsündeki Personel hareketi aynı kaydı açar ve başkasını seçebilir. Kişisel sayfa kişiyi kendine kilitler. Yönetici olmayan kişi `/dashboards/personel` adresine girmez.
+
+Açılış, içinde bulunulan haftadır. Hafta İstanbul takviminde pazartesiden pazara gider. Açık iş sayısı ve açık iş listesi aralıktan bağımsızdır. Kapanan iş, puan, toplantı ve belge haftanın içindendir.
+
+Üstte üç sayı durur: açık iş, kapanan iş, iş puanı. İş listesinde kod etiket olarak durur. Toplantı ve belge tablo değildir. Satırda başlık, zaman ve durum etiketi vardır. Boş kutuda sayfalama yoktur.
+
+İzin bakiyesi ve zimmet listesi bu pane girmedi. `abt` menüsündeki Kişisel kaydı `/` adresine alındı.
 
 ## DG-01 — Sorgunun satırlarını yazmak
 

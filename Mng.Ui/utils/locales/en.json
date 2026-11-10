@@ -7730,7 +7730,10 @@
         "boards": "Boards",
         "hint": "Documents for this workspace. Creating folders and documents follows Document Intelligence permissions.",
         "rootLabel": "Library",
-        "missingRoot": "The document root was not found. The library stays closed when the Documents folder is missing."
+        "missingRoot": "The document root was not found. The library stays closed when the Documents folder is missing.",
+        "detached": "Folder permissions have left the workspace.",
+        "rewrite": "Rewrite from workspace",
+        "rewriteError": "Folder permissions could not be written."
       }
     },
     "calendar": {

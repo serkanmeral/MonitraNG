@@ -5,6 +5,7 @@ import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
+import { resolveOcWorkspaceLibrary } from '@/utils/ocWorkspaceLibrary';
 import { mergeOcWorkspaceViews, readOcWorkspaceViews } from '@/utils/ocWorkspaceViews';
 import type { OpWorkspaceDetail } from '@/types/apps/operationCore';
 import { OC_WORKSPACE_TYPE_VALUES } from '@/types/apps/operationCore';
@@ -115,6 +116,11 @@ async function saveGeneral() {
     });
     await catalog.refresh();
     await loadWorkspace();
+    try {
+      await resolveOcWorkspaceLibrary(props.workspaceId);
+    } catch {
+      // The workspace lists are saved even when the library folder cannot be updated.
+    }
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.general.saveError');

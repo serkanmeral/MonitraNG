@@ -43,11 +43,12 @@ interface TableColumn {
   filterable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';
-  format?: 'text' | 'number' | 'currency' | 'date' | 'boolean' | 'severity' | 'severity-chip' | 'status-chip' | 'datetime-relative' | 'alarm-summary' | 'siem-event-action' | 'siem-event-outcome' | 'custom';
+  format?: 'text' | 'number' | 'currency' | 'date' | 'boolean' | 'severity' | 'severity-chip' | 'status-chip' | 'datetime-relative' | 'alarm-summary' | 'siem-event-action' | 'siem-event-outcome' | 'chip' | 'custom';
   formatOptions?: {
     currency?: string;
     decimalPlaces?: number;
     dateFormat?: string;
+    color?: string;
   };
   fieldType?: string; // Dataset field type (person, personGroups, etc.)
   isArray?: boolean; // Is field an array
@@ -425,6 +426,11 @@ const lbl = (key: string) => {
   };
   return fallbacks[key] ?? key;
 };
+
+const emptyLabel = computed(() => {
+  const custom = (props.widget.config as Record<string, unknown> | undefined)?.emptyText;
+  return typeof custom === 'string' && custom.trim() ? custom : lbl('noData');
+});
 </script>
 
 <template>
@@ -476,7 +482,7 @@ const lbl = (key: string) => {
           'table-cross-filter': !!interactions?.crossFilter || !!interactions?.rowClick,
           'ac-style-table': presentationStyle === 'inbox',
         }"
-        :hide-default-footer="!tableConfig.pagination?.enabled"
+        :hide-default-footer="!tableConfig.pagination?.enabled || filteredItems.length === 0"
         @click:row="onRowClick"
       >
         <!-- Dynamic Column Slots -->
@@ -520,6 +526,17 @@ const lbl = (key: string) => {
                   {{ formatSiemEventOutcome(cellRawValue(item, column)) }}
                 </v-chip>
               </template>
+              <template v-else-if="column.format === 'chip'">
+                <v-chip
+                  v-if="String(cellRawValue(item, column) ?? '').trim()"
+                  size="small"
+                  :color="column.formatOptions?.color || 'primary'"
+                  variant="tonal"
+                >
+                  {{ cellRawValue(item, column) }}
+                </v-chip>
+                <span v-else class="text-medium-emphasis">—</span>
+              </template>
             </template>
             <!-- Array fields with chips -->
             <template v-else-if="column.isArray && Array.isArray(getNestedValue(item, column.key))">
@@ -561,7 +578,7 @@ const lbl = (key: string) => {
               :class="{ 'opacity-60': presentationStyle === 'inbox' }"
             />
             <div class="text-body-1 text-medium-emphasis">
-              {{ lbl('noData') || 'Veri bulunamadı' }}
+              {{ emptyLabel }}
             </div>
           </div>
         </template>

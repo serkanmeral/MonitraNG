@@ -276,11 +276,9 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
                     await _groupRepository.AddAsync(group);
                     result.GroupsCreated++;
                 }
-                else if (
-                    existing.ProvisioningSource == UserProvisioningSource.Local
-                    && DirectoryGroupPolicy.IsProtectedLocalGroupName(existing.Name))
+                else if (DirectoryGroupPolicy.StaysLocalDuringSync(existing.ProvisioningSource))
                 {
-                    // admins / managers / users / guests — MonitraNG yerel grupları
+                    // Application-local groups stay local, including admins / managers / users / guests.
                     if (string.IsNullOrWhiteSpace(existing.KeycloakGroupId) && !string.IsNullOrWhiteSpace(kcGroup.Id))
                     {
                         existing.KeycloakGroupId = kcGroup.Id;
@@ -292,7 +290,7 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
                 }
                 else
                 {
-                    // KC realm'de olan diğer tüm gruplar (eski kayıtlar dahil) → Directory
+                    // First seen in Keycloak, or already Directory → Directory
                     var changed = false;
                     if (existing.ProvisioningSource != UserProvisioningSource.Directory)
                     {

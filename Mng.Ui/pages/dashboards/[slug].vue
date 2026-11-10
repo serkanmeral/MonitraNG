@@ -19,7 +19,7 @@ import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfac
 import type { DashboardLayout, WidgetConfigOverrides } from '@/stores/apps/dashboard';
 import { isSiemCenterDashboardMeta } from '@/types/apps/siemDashboardSurface';
 import { istanbulWeekRange, readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
-import { PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
+import { ensurePersonnelDashboard, PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
 
 const route = useRoute();
 const router = useRouter();
@@ -159,6 +159,7 @@ async function load() {
   if (!slug.value) return;
   redirectingSiemCenter.value = false;
   try {
+    if (slug.value === PERSONNEL_DASHBOARD_SLUG) await ensurePersonnelDashboard();
     await dashboardStore.fetchDashboardBySlug(slug.value);
     const d = dashboardStore.currentDashboard;
     if (d && isSiemCenterDashboardMeta(d.layout?.meta) && !d.layout?.rows?.length) {

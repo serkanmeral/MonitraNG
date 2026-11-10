@@ -7818,7 +7818,10 @@
         "boards": "Panolar",
         "hint": "Bu workspace’in belgeleridir. Klasör ve belge eklemek Belge Zekâsının yetkisine bağlıdır.",
         "rootLabel": "Kütüphane",
-        "missingRoot": "Belge kökü bulunamadı. Dökümanlar klasörü yoksa kütüphane açılmaz."
+        "missingRoot": "Belge kökü bulunamadı. Dökümanlar klasörü yoksa kütüphane açılmaz.",
+        "detached": "Klasör yetkisi alandan ayrıldı.",
+        "rewrite": "Alandan yeniden yaz",
+        "rewriteError": "Klasör yetkisi yazılamadı."
       }
     },
     "calendar": {

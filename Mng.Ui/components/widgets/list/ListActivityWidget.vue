@@ -37,6 +37,14 @@ const subtitleField = computed(() => (config.value.subtitleField as string | und
 const timeField = computed(() => (config.value.timeField as string | undefined) ?? 'updatedAt');
 const severityField = computed(() => config.value.severityField as string | undefined);
 const statusField = computed(() => config.value.statusField as string | undefined);
+const badgeField = computed(() => config.value.badgeField as string | undefined);
+const badgeColorField = computed(() => config.value.badgeColorField as string | undefined);
+const itemIcon = computed(() => (typeof config.value.icon === 'string' && config.value.icon) || 'mdi-format-list-bulleted');
+const lbl = (key: string) => props.t?.(`widgets.listActivity.${key}`) ?? key;
+const emptyText = computed(() => {
+  const custom = config.value.emptyText;
+  return typeof custom === 'string' && custom.trim() ? custom : lbl('noData');
+});
 const useAlarmSummary = computed(() => config.value.useAlarmSummary === true);
 const clickable = computed(
   () => hasDrillDown(props.interactions ?? null) || !!props.interactions?.crossFilter,
@@ -70,7 +78,17 @@ function onItemClick(row: Record<string, unknown>) {
   emit('row-activate', row);
 }
 
-const lbl = (key: string) => props.t?.(`widgets.listActivity.${key}`) ?? key;
+function badgeText(row: Record<string, unknown>): string {
+  const key = badgeField.value;
+  if (!key || row[key] == null) return '';
+  return String(row[key]).trim();
+}
+
+function badgeColor(row: Record<string, unknown>): string {
+  const key = badgeColorField.value;
+  const color = key ? row[key] : undefined;
+  return typeof color === 'string' && color.trim() ? color : 'primary';
+}
 </script>
 
 <template>
@@ -90,7 +108,7 @@ const lbl = (key: string) => props.t?.(`widgets.listActivity.${key}`) ?? key;
           color="primary"
           class="mb-2 opacity-60"
         />
-        <div>{{ lbl('noData') }}</div>
+        <div>{{ emptyText }}</div>
       </div>
       <v-list v-else density="compact" lines="two" class="py-0 rounded-lg">
         <v-list-item
@@ -112,7 +130,7 @@ const lbl = (key: string) => props.t?.(`widgets.listActivity.${key}`) ?? key;
               {{ formatSeverityChipLabel(row[severityField]) }}
             </v-chip>
             <v-avatar v-else color="primary" variant="tonal" size="36">
-              <v-icon size="20">mdi-format-list-bulleted</v-icon>
+              <v-icon size="20">{{ itemIcon }}</v-icon>
             </v-avatar>
           </template>
           <v-list-item-title class="text-body-2 font-weight-medium">
@@ -129,6 +147,11 @@ const lbl = (key: string) => props.t?.(`widgets.listActivity.${key}`) ?? key;
           <template v-if="statusField && row[statusField] != null && severityField" #append>
             <v-chip size="x-small" :color="alarmStatusChipColor(row[statusField])" variant="tonal">
               {{ formatAlarmStatusLabel(row[statusField]) }}
+            </v-chip>
+          </template>
+          <template v-else-if="badgeText(row)" #append>
+            <v-chip size="x-small" :color="badgeColor(row)" variant="tonal">
+              {{ badgeText(row) }}
             </v-chip>
           </template>
         </v-list-item>

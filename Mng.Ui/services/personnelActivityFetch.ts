@@ -30,6 +30,8 @@ interface ActivityBundle {
   meetings: Record<string, unknown>[];
   openItems: Record<string, unknown>[];
   closedItems: Record<string, unknown>[];
+  openCount: number;
+  closedCount: number;
   points: number;
   documents: Record<string, unknown>[];
 }
@@ -45,6 +47,12 @@ export async function fetchPersonnelServiceRef(
   const bundle = await loadBundle(transport, parameters);
   if (kind === 'story-points') {
     return { data: [{ value: bundle.points }], total: 1 };
+  }
+  if (kind === 'work-open-count') {
+    return { data: [{ value: bundle.openCount }], total: 1 };
+  }
+  if (kind === 'work-closed-count') {
+    return { data: [{ value: bundle.closedCount }], total: 1 };
   }
   const rows =
     kind === 'meetings'
@@ -101,13 +109,15 @@ async function buildBundle(
     meetings,
     openItems: work.openItems,
     closedItems: work.closedItems,
+    openCount: work.openCount,
+    closedCount: work.closedCount,
     points: work.points,
     documents,
   };
 }
 
 function emptyBundle(): ActivityBundle {
-  return { meetings: [], openItems: [], closedItems: [], points: 0, documents: [] };
+  return { meetings: [], openItems: [], closedItems: [], openCount: 0, closedCount: 0, points: 0, documents: [] };
 }
 
 async function resolvePerson(transport: GatewayTransport, requestedPersonId: string): Promise<PersonIdentity> {
@@ -181,12 +191,14 @@ async function loadMeetings(
     .slice(0, ROW_CAP)
     .map((row) => {
       const id = text(row.__dataId ?? row.dataId);
+      const presence = presenceByMeeting.get(id) ?? '';
       return {
         id,
         title: text(row.title) || 'Toplantı',
-        when: formatWhen(text(row.startAt)),
-        status: meetingStatusLabel(text(row.status)),
-        presence: presenceLabel(presenceByMeeting.get(id) ?? ''),
+        subtitle: meetingStatusLabel(text(row.status)),
+        when: text(row.startAt),
+        badge: presenceLabel(presence),
+        badgeColor: presenceColor(presence),
       };
     });
 }
@@ -196,20 +208,24 @@ async function loadWork(
   personId: string,
   from: string,
   to: string,
-): Promise<{ openItems: Record<string, unknown>[]; closedItems: Record<string, unknown>[]; points: number }> {
+): Promise<{
+  openItems: Record<string, unknown>[];
+  closedItems: Record<string, unknown>[];
+  openCount: number;
+  closedCount: number;
+  points: number;
+}> {
   const rows = await dgList(transport, 'op_work_items', {
     filter: `assignee:eq:${personId}`,
     limit: 1000,
     expand: false,
   });
-  const openItems = rows
-    .filter((row) => !text(row.closedAt))
-    .slice(0, ROW_CAP)
-    .map((row) => ({
-      id: text(row.__dataId ?? row.dataId),
-      key: text(row.key),
-      title: text(row.title) || 'İş',
-    }));
+  const open = rows.filter((row) => !text(row.closedAt));
+  const openItems = open.slice(0, ROW_CAP).map((row) => ({
+    id: text(row.__dataId ?? row.dataId),
+    key: text(row.key),
+    title: text(row.title) || 'İş',
+  }));
   const closed = rows
     .filter((row) => text(row.closedAt) && inRange(text(row.closedAt), from, to))
     .sort((a, b) => instant(text(b.closedAt)) - instant(text(a.closedAt)));
@@ -219,9 +235,9 @@ async function loadWork(
     key: text(row.key),
     title: text(row.title) || 'İş',
     points: storyPoints(row),
-    closedAt: formatWhen(text(row.closedAt)),
+    closedAt: text(row.closedAt),
   }));
-  return { openItems, closedItems, points };
+  return { openItems, closedItems, openCount: open.length, closedCount: closed.length, points };
 }
 
 async function loadDocuments(
@@ -247,12 +263,17 @@ async function loadDocuments(
     .filter((item) => item.created && item.created.authors.some((author) => keys.has(author)) && inRange(item.created.at, from, to))
     .sort((a, b) => instant(b.created!.at) - instant(a.created!.at))
     .slice(0, ROW_CAP)
-    .map((item) => ({
-      id: text(item.row.__dataId ?? item.row.dataId),
-      title: text(item.row.title ?? item.row.name) || 'Belge',
-      kind: text(item.row.type) || 'file',
-      when: formatWhen(item.created!.at),
-    }));
+    .map((item) => {
+      const kind = documentKind(text(item.row.type));
+      return {
+        id: text(item.row.__dataId ?? item.row.dataId),
+        title: text(item.row.title ?? item.row.name) || 'Belge',
+        subtitle: '',
+        when: item.created!.at,
+        badge: kind.label,
+        badgeColor: kind.color,
+      };
+    });
 }
 
 function createdStamp(row: Record<string, unknown>): { at: string; authors: string[] } | null {
@@ -285,6 +306,22 @@ function presenceLabel(presence: string): string {
   if (presence === 'excused') return 'Mazur';
   if (presence === 'invited') return 'Davetli';
   return presence;
+}
+
+function presenceColor(presence: string): string {
+  if (presence === 'attended') return 'success';
+  if (presence === 'confirmed') return 'info';
+  if (presence === 'absent') return 'error';
+  if (presence === 'excused') return 'warning';
+  if (presence === 'invited') return 'secondary';
+  return 'primary';
+}
+
+function documentKind(type: string): { label: string; color: string } {
+  const key = normalize(type);
+  if (key.includes('image') || key === 'görsel' || key === 'gorsel') return { label: 'Görsel', color: 'info' };
+  if (key.includes('pdf')) return { label: 'PDF', color: 'error' };
+  return { label: 'Belge', color: 'primary' };
 }
 
 async function dgList(
@@ -343,16 +380,6 @@ function inRange(value: string, from: string, to: string): boolean {
   const end = instant(to);
   if (!time || !start || !end) return false;
   return time >= start && time <= end;
-}
-
-function formatWhen(value: string): string {
-  const time = instant(value);
-  if (!time) return value;
-  return new Intl.DateTimeFormat('tr-TR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'Europe/Istanbul',
-  }).format(new Date(time));
 }
 
 function decodeJwt(token: string | undefined): Record<string, unknown> {

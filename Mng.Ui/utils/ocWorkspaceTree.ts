@@ -37,7 +37,8 @@ function sortNav(nodes: OcNavNode[]) {
 export function buildOcNavTree(
   folders: OpWorkspaceFolder[],
   workspaces: OpWorkspace[],
-  boardsFor: (workspaceId: string) => OpBoard[]
+  boardsFor: (workspaceId: string) => OpBoard[],
+  options?: { keepEmptyFolders?: boolean }
 ): OcNavNode[] {
   const folderNodes = new Map<string, Extract<OcNavNode, { type: 'folder' }>>();
   for (const folder of folders) {
@@ -66,6 +67,7 @@ export function buildOcNavTree(
   }
 
   sortNav(roots);
+  if (options?.keepEmptyFolders) return roots;
   return pruneFoldersWithoutWorkspace(roots);
 }
 
