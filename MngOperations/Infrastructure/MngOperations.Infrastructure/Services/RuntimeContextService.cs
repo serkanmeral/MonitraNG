@@ -1485,6 +1485,7 @@ public partial class RuntimeContextService : IRuntimeContextService
             Title = WorkItemDataHelper.GetString(row, "title") ?? string.Empty,
             StateId = WorkItemDataHelper.GetString(row, "stateId"),
             Assignee = WorkItemDataHelper.GetString(row, "assignee"),
+            Reporter = WorkItemDataHelper.GetString(row, "reporter"),
             PriorityId = WorkItemDataHelper.GetString(row, "priorityId"),
             TypeId = WorkItemDataHelper.GetString(row, "typeId"),
             SprintId = EmptyToNull(WorkItemDataHelper.GetString(row, "sprintId")),

@@ -189,6 +189,10 @@ public sealed class WorkItemCardDto
     public required string Title { get; init; }
     public string? StateId { get; init; }
     public string? Assignee { get; init; }
+
+    /// <summary>Talep eden (op_work_items.reporter). Ad çözümü people haritasından.</summary>
+    public string? Reporter { get; init; }
+
     public string? PriorityId { get; init; }
     public string? TypeId { get; init; }
 

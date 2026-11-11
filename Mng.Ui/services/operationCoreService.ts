@@ -2175,6 +2175,7 @@ function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
     title: pickStr(raw, 'title', 'Title') ?? '',
     stateId: pickStr(raw, 'stateId', 'StateId'),
     assignee: pickStr(raw, 'assignee', 'Assignee'),
+    reporter: pickStr(raw, 'reporter', 'Reporter') ?? null,
     priorityId: pickStr(raw, 'priorityId', 'PriorityId'),
     typeId: pickStr(raw, 'typeId', 'TypeId'),
     sprintId: pickStr(raw, 'sprintId', 'SprintId') ?? null,

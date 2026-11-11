@@ -23,6 +23,7 @@ public partial class RuntimeContextService
         foreach (var card in cards)
         {
             AddPersonId(ids, card.Assignee);
+            AddPersonId(ids, card.Reporter);
             AddPersonId(ids, card.CreatedBy);
 
             if (card.Fields is not { ValueKind: JsonValueKind.Object } fields)

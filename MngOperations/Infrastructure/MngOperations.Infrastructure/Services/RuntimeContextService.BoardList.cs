@@ -163,6 +163,7 @@ public partial class RuntimeContextService
                 Title = card.Title,
                 StateId = card.StateId,
                 Assignee = card.Assignee,
+                Reporter = card.Reporter,
                 PriorityId = card.PriorityId,
                 TypeId = card.TypeId,
                 SprintId = card.SprintId,

@@ -576,6 +576,8 @@ const listRows = computed(() =>
         });
       } else if (key === 'dueDate') {
         row[key] = formatCellValue(item.dueDate, 'date', { locale: locale(), dateOnly: true });
+      } else if (key === 'reporter') {
+        row[key] = resolvePersonValue(item.reporter);
       } else if (isCoreListColumn(key)) {
         row[key] = listTableCellValue(item, key, {
           stateLabel: stateLabel ?? undefined,

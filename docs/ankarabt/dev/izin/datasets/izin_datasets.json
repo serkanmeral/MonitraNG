@@ -299,6 +299,10 @@
           { "$limit": 1 },
           { "$addFields": { "pTarih": ":tarih" } },
           { "$addFields": {
+              "iseGiris": { "$convert": { "input": "$iseGiris", "to": "date", "onError": null, "onNull": null } },
+              "pTarih": { "$convert": { "input": "$pTarih", "to": "date", "onError": null, "onNull": null } }
+          } },
+          { "$addFields": {
               "aday": { "$dateFromParts": {
                 "year": { "$year": "$pTarih" },
                 "month": { "$month": "$iseGiris" },
@@ -350,8 +354,8 @@
                   "in": { "$toLower": { "$trim": { "input": "$$g" } } }
               } },
               "ikAd": { "$toLower": { "$trim": { "input": { "$ifNull": [ "$ayar.ikGrup", "" ] } } } },
-              "kisi": { "$ifNull": [ { "$arrayElemAt": [ "$keeperKisiId", 0 ] }, "$keeperKisiId" ] },
-              "yonetici": { "$ifNull": [ { "$arrayElemAt": [ "$yoneticiId", 0 ] }, "$yoneticiId" ] }
+              "kisi": { "$arrayElemAt": [ { "$cond": [ { "$isArray": "$keeperKisiId" }, "$keeperKisiId", [ { "$ifNull": [ "$keeperKisiId", "" ] } ] ] }, 0 ] },
+              "yonetici": { "$arrayElemAt": [ { "$cond": [ { "$isArray": "$yoneticiId" }, "$yoneticiId", [ { "$ifNull": [ "$yoneticiId", "" ] } ] ] }, 0 ] }
           } },
           { "$project": {
               "_id": 0,
@@ -754,7 +758,12 @@
           } },
           { "$addFields": {
               "pGun": ":gun",
-              "tavan": { "$ifNull": [ { "$first": "$neden.gunTavan" }, "$gunTavan" ] }
+              "tavan": { "$convert": {
+                  "input": { "$ifNull": [ { "$first": "$neden.gunTavan" }, "$gunTavan" ] },
+                  "to": "double",
+                  "onError": null,
+                  "onNull": null
+              } }
           } },
           { "$project": {
               "_id": 0,
@@ -896,7 +905,13 @@
               "pGun": ":gun",
               "pPersonel": ":personelId",
               "pDonem": ":donemBaslangic",
-              "pIs": ":isKodu"
+              "pIs": ":isKodu",
+              "limit": { "$convert": {
+                  "input": "$donemLimitGun",
+                  "to": "double",
+                  "onError": null,
+                  "onNull": null
+              } }
           } },
           { "$lookup": {
               "from": "izin_hareketleri",
@@ -921,12 +936,12 @@
           } },
           { "$project": {
               "_id": 0,
-              "limit": "$donemLimitGun",
+              "limit": 1,
               "harcanan": 1,
               "asildi": { "$cond": [
                 { "$and": [
-                  { "$ne": [ "$donemLimitGun", null ] },
-                  { "$gt": [ { "$add": [ "$harcanan", "$pGun" ] }, "$donemLimitGun" ] }
+                  { "$ne": [ "$limit", null ] },
+                  { "$gt": [ { "$add": [ "$harcanan", "$pGun" ] }, "$limit" ] }
                 ] },
                 true,
                 false

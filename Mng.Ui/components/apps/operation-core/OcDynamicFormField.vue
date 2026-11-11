@@ -196,6 +196,19 @@ const selectControlDisabled = computed(
 
 const fieldClass = computed(() => (props.preview ? 'oc-dynamic-form__field--preview' : ''));
 
+const externalUrl = computed(() => {
+  if (widget.value === 'password' || widget.value === 'textarea' || isRichTextWidget.value) return null;
+  const text = String(model.value ?? '').trim();
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+});
+
 const showFieldError = computed(() => !!props.errorMessage?.trim());
 
 const fieldErrorMessages = computed(() =>
@@ -523,6 +536,17 @@ function onSelectUpdate(value: unknown) {
     <template #label>
       <span>{{ label }}</span>
       <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
+    </template>
+    <template v-if="externalUrl" #append-inner>
+      <v-btn
+        :href="externalUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        icon="mdi-open-in-new"
+        size="small"
+        variant="text"
+        :aria-label="t('operationCore.profile.openLink')"
+      />
     </template>
   </v-text-field>
 </template>

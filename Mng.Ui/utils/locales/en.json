@@ -8001,6 +8001,7 @@
       "title": "Work item profile",
       "readonlyHint": "Read-only view of the selected form.",
       "readonlyChip": "Read-only",
+      "openLink": "Open link",
       "loadingHint": "Loading profile…",
       "edit": {
         "edit": "Edit",
@@ -9612,6 +9613,7 @@
           "stateId": "State",
           "sprintId": "Sprint",
           "assignee": "Assignee",
+          "reporter": "Requester",
           "priorityId": "Priority",
           "dueDate": "Due",
           "typeId": "Type",

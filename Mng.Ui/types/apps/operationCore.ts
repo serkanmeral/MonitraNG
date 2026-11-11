@@ -564,6 +564,8 @@ export interface OcWorkItemCard {
   title: string;
   stateId?: string;
   assignee?: string;
+  /** Talep eden kişi id'si. Ad çözümü people haritasından. */
+  reporter?: string | null;
   priorityId?: string;
   typeId?: string;
   /** Bağlı sprint. Boşsa backlog. */

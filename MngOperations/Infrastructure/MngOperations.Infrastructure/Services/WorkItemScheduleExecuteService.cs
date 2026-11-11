@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Schedules;
 using MngOperations.Application.Contracts.WorkItems;
@@ -89,7 +91,7 @@ public sealed class WorkItemScheduleExecuteService : IWorkItemScheduleExecuteSer
             BoardId = schedule.BoardId,
             Assignee = schedule.Assignee,
             PriorityId = schedule.PriorityId,
-            Fields = schedule.Fields,
+            Fields = PrepareFields(schedule.Fields),
             InitialTransitionKey = schedule.InitialTransitionKey,
             Origin = new WorkItemOriginInput
             {
@@ -131,6 +133,56 @@ public sealed class WorkItemScheduleExecuteService : IWorkItemScheduleExecuteSer
         }
 
         return schedule;
+    }
+
+    /// <summary>
+    /// dueDate "today" means the end of the creation day in Istanbul.
+    /// A stored clock time would stay on the day the template was written.
+    /// </summary>
+    private static JsonElement? PrepareFields(JsonElement? fields)
+    {
+        if (fields is not { ValueKind: JsonValueKind.Object } element)
+            return fields;
+
+        var root = JsonNode.Parse(element.GetRawText()) as JsonObject;
+        if (root is null)
+            return fields;
+
+        if (root["dueDate"] is JsonValue due
+            && due.TryGetValue<string>(out var token)
+            && string.Equals(token?.Trim(), "today", StringComparison.OrdinalIgnoreCase))
+        {
+            root["dueDate"] = EndOfCreationDayIso();
+        }
+
+        return JsonSerializer.SerializeToElement(root);
+    }
+
+    private static string EndOfCreationDayIso()
+    {
+        var zone = IstanbulTimeZone();
+        var local = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone);
+        var end = new DateTimeOffset(local.Year, local.Month, local.Day, 23, 59, 0, local.Offset);
+        return end.ToString("yyyy-MM-dd'T'HH:mm:sszzz");
+    }
+
+    private static TimeZoneInfo IstanbulTimeZone()
+    {
+        foreach (var id in new[] { "Europe/Istanbul", "Turkey Standard Time" })
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(id);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
+        }
+
+        return TimeZoneInfo.CreateCustomTimeZone("TRT", TimeSpan.FromHours(3), "TRT", "TRT");
     }
 
     private static void ValidateScheduleForExecute(WorkItemScheduleRecord schedule)

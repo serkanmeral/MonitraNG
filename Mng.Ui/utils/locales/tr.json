@@ -8089,6 +8089,7 @@
       "title": "İş profili",
       "readonlyHint": "Seçili formun salt-okunur görünümü.",
       "readonlyChip": "Salt-okunur",
+      "openLink": "Bağlantıyı aç",
       "loadingHint": "Profil yükleniyor…",
       "edit": {
         "edit": "Düzenle",
@@ -9700,6 +9701,7 @@
           "stateId": "Durum",
           "sprintId": "Sprint",
           "assignee": "Atanan",
+          "reporter": "Talep eden",
           "priorityId": "Öncelik",
           "dueDate": "Vade",
           "typeId": "Tip",
