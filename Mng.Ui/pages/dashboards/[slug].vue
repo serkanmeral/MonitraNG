@@ -20,6 +20,8 @@ import type { DashboardLayout, WidgetConfigOverrides } from '@/stores/apps/dashb
 import { isSiemCenterDashboardMeta } from '@/types/apps/siemDashboardSurface';
 import { istanbulWeekRange, readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
 import { ensurePersonnelDashboard, PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
+import PersonnelIdentityStrip from '@/components/welcome/PersonnelIdentityStrip.vue';
+import PersonnelMeetingWeek from '@/components/welcome/PersonnelMeetingWeek.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -78,6 +80,11 @@ const siemCenterSurface = computed(() => {
 
 const redirectingSiemCenter = ref(false);
 
+const personnelBoard = computed(() => slug.value === PERSONNEL_DASHBOARD_SLUG);
+const headRows = computed(() =>
+  personnelBoard.value ? (layout.value?.rows ?? []).slice(0, 2) : (layout.value?.rows ?? []),
+);
+const tailRows = computed(() => (personnelBoard.value ? (layout.value?.rows ?? []).slice(2) : []));
 const layoutWidgetIds = computed(() => collectWidgetIdsFromLayout(layout.value));
 
 const surfaceVariableDefs = computed(() => readSurfaceVariables(dashboardStore.currentDashboard?.layout?.meta));
@@ -357,8 +364,23 @@ onUnmounted(() => {
     </template>
 
     <template v-else-if="layout && hasViewPermission">
+      <PersonnelIdentityStrip v-if="personnelBoard" :person-id="personId" />
       <dashboards-dashboard-layout-renderer
-        :rows="layout.rows"
+        :rows="headRows"
+        :can-edit="canEdit"
+        :surface-context="surfaceContext"
+        :t="t"
+        @update:widget-overrides="onWidgetOverridesChange"
+      />
+      <PersonnelMeetingWeek
+        v-if="personnelBoard"
+        :person-id="personId"
+        :from="rangeFrom"
+        :to="rangeTo"
+      />
+      <dashboards-dashboard-layout-renderer
+        v-if="tailRows.length"
+        :rows="tailRows"
         :can-edit="canEdit"
         :surface-context="surfaceContext"
         :t="t"

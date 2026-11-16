@@ -31,7 +31,8 @@ const saving = ref(false);
 const notice = ref('');
 const noticeColor = ref<'error' | 'success'>('error');
 const publishOpen = ref(false);
-const form = ref({ ad: '', departman: '', sira: 0, oturan: '', calisanlar: [] as string[] });
+const editorOpen = ref(false);
+const form = ref({ departman: '', sira: 0, oturan: '', calisanlar: [] as string[] });
 
 const flowNodes = ref<Node[]>([]);
 const flowEdges = ref<Edge[]>([]);
@@ -120,13 +121,7 @@ async function dg(path: string, method = 'GET', body?: object) {
   });
 }
 
-function isStockName(name: string) {
-  return ['kök mevki', 'yeni mevki', 'mevki'].includes(name.trim().toLocaleLowerCase('tr'));
-}
-
 function boxHeadline(seat: SeatRow) {
-  const name = seat.ad.trim();
-  if (name && !isStockName(name)) return name;
   return seat.departman.trim();
 }
 
@@ -134,12 +129,6 @@ function personInitial(name: string) {
   const clean = name.trim();
   if (!clean || clean === 'Boş koltuk' || clean === 'Kişi') return '';
   return clean.charAt(0).toLocaleUpperCase('tr');
-}
-
-function boxMeta(seat: SeatRow) {
-  const department = seat.departman.trim();
-  if (!department || department === boxHeadline(seat)) return '';
-  return department;
 }
 
 function paint() {
@@ -153,8 +142,8 @@ function paint() {
       type: 'seat',
       position: { x: box.x, y: box.y },
       data: {
-        ad: boxHeadline(seat),
-        departman: boxMeta(seat),
+        ad: boxHeadline(seat) || 'Departman',
+        unnamed: !boxHeadline(seat),
         oturan: userTitle.value(seat.oturan) || (seat.oturan ? 'Kişi' : 'Boş koltuk'),
         staff: staffNames.slice(0, STAFF_PREVIEW),
         staffAll: staffNames,
@@ -213,7 +202,6 @@ function show(text: string, color: 'error' | 'success' = 'error') {
 
 function copyForm(row: SeatRow | null) {
   form.value = {
-    ad: row?.ad || '',
     departman: row?.departman || '',
     sira: row?.sira || 0,
     oturan: row?.oturan || '',
@@ -252,7 +240,18 @@ function acceptedStaff(ids: string[]) {
   return { next, message };
 }
 
-watch(selected, (row) => copyForm(row), { immediate: true });
+watch(selected, (row) => {
+  copyForm(row);
+  if (!row) editorOpen.value = false;
+}, { immediate: true });
+
+function openEditor(id: string) {
+  const row = seats.value.find((seat) => seat.id === id) || null;
+  if (!row) return;
+  selectedId.value = id;
+  copyForm(row);
+  editorOpen.value = true;
+}
 
 watch(
   () => form.value.oturan,
@@ -315,11 +314,6 @@ async function createChild() {
 
 async function saveSeat() {
   if (!selected.value) return;
-  const ad = form.value.ad.trim();
-  if (!ad) {
-    show('Mevki adı boş kalmaz.');
-    return;
-  }
   const staff = acceptedStaff(form.value.calisanlar);
   if (staff.message) {
     form.value.calisanlar = staff.next;
@@ -331,13 +325,14 @@ async function saveSeat() {
     return;
   }
   const ok = await write(`/data/api/v1/data/org_mevkiler/${selected.value.id}`, 'PUT', {
-    ad,
     departman: form.value.departman.trim(),
     sira: Number(form.value.sira) || 0,
     oturan: form.value.oturan || '',
     calisanlar: staff.next,
   });
-  if (ok) show('Mevki kaydedildi.', 'success');
+  if (!ok) return;
+  editorOpen.value = false;
+  show('Mevki kaydedildi.', 'success');
 }
 
 async function clearSeat() {
@@ -456,6 +451,9 @@ onMounted(async () => {
       <v-spacer />
       <v-btn variant="outlined" :disabled="saving || !hasPeople" @click="askPublish">Yayınla</v-btn>
     </div>
+    <p class="text-body-2 text-medium-emphasis mb-3">
+      Kutuyu başka kutunun üzerine bırakınca o mevkinin altına bağlanır.
+    </p>
     <v-alert v-if="notice" :type="noticeColor" variant="tonal" class="mb-3" closable @click:close="notice = ''">
       {{ notice }}
     </v-alert>
@@ -463,9 +461,9 @@ onMounted(async () => {
       <v-card class="pa-4">
         <div class="text-h6 mb-2">Yayın</div>
         <p class="text-body-2 mb-4">
-          Oturan kişilerin unvanı ve departmanı yazılır. Çalışanların departmanı yazılır, unvanı durur.
-          İzin kartı varsa oturanın yöneticisi üst koltuktaki kişi, çalışanın yöneticisi oturan olur.
-          Üst koltuk veya oturan boşsa yönetici boşalır.
+          Oturan kişinin unvanı ve departmanı, kutunun departmanından yazılır. Çalışanın departmanı yazılır, unvanı durur.
+          İzin kartı varsa oturanın yöneticisi üst koltuktaki kişidir. Çalışanın yöneticisi oturandır.
+          Oturan boşsa çalışanın yöneticisi bir üst koltuğun oturanı olur.
         </p>
         <div class="d-flex justify-end ga-2">
           <v-btn variant="text" @click="publishOpen = false">Vazgeç</v-btn>
@@ -473,9 +471,35 @@ onMounted(async () => {
         </div>
       </v-card>
     </v-dialog>
-    <v-row>
-      <v-col cols="12" lg="8">
-        <v-card variant="outlined" class="rounded-lg org-canvas" :loading="loading">
+    <v-dialog v-model="editorOpen" max-width="560" :persistent="saving">
+      <v-card v-if="selected" class="pa-4">
+        <div class="text-h6 mb-3">{{ boxHeadline(selected) || 'Departman' }}</div>
+        <v-text-field v-model="form.departman" label="Departman" density="comfortable" />
+        <v-text-field v-model.number="form.sira" type="number" min="0" label="Sıra" density="comfortable" />
+        <MngDirectoryPickerField
+          v-model="form.oturan"
+          entity="user"
+          label="Oturan"
+          density="comfortable"
+          variant="outlined"
+        />
+        <MngDirectoryPickerField
+          v-model="form.calisanlar"
+          entity="user"
+          multiple
+          label="Çalışanlar"
+          density="comfortable"
+          variant="outlined"
+        />
+        <div class="d-flex flex-wrap ga-2">
+          <v-btn color="primary" :loading="saving" @click="saveSeat">Kaydet</v-btn>
+          <v-btn variant="text" :disabled="saving || !form.oturan" @click="clearSeat">Koltuğu boşalt</v-btn>
+          <v-spacer />
+          <v-btn variant="text" :disabled="saving" @click="editorOpen = false">Vazgeç</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+    <v-card variant="outlined" class="rounded-lg org-canvas" :loading="loading">
           <VueFlow
             class="org-flow"
             :nodes="flowNodes"
@@ -493,16 +517,23 @@ onMounted(async () => {
             <template #node-seat="{ data, id }">
               <div
                 class="seat"
-                role="button"
-                tabindex="0"
+                role="group"
                 :aria-label="data.ad"
                 :class="{ selected: id === selectedId, empty: data.empty }"
                 :style="{ minHeight: `${data.h}px`, width: `${SEAT_W}px` }"
               >
                 <div class="seat-accent" />
                 <div class="seat-body">
-                  <div class="seat-title">{{ data.ad }}</div>
-                  <div v-if="data.departman" class="seat-meta">{{ data.departman }}</div>
+                  <button
+                    type="button"
+                    class="seat-title nodrag nopan"
+                    :class="{ 'is-empty': data.unnamed }"
+                    @click.stop="openEditor(id)"
+                    @mousedown.stop
+                    @pointerdown.stop
+                  >
+                    {{ data.ad }}
+                  </button>
                   <div class="person occupant" :class="{ vacant: data.empty }">
                     <span v-if="data.empty" class="avatar occupant">
                       <v-icon size="16" icon="mdi-account-outline" />
@@ -551,45 +582,12 @@ onMounted(async () => {
             </template>
           </VueFlow>
         </v-card>
-      </v-col>
-      <v-col cols="12" lg="4">
-        <v-card variant="outlined" class="rounded-lg pa-4">
-          <div v-if="!selected" class="text-body-2 text-medium-emphasis">
-            Bir mevki seçin. Kutuyu başka kutunun üzerine bırakınca o mevkinin altına bağlanır.
-          </div>
-          <template v-else>
-            <v-text-field v-model="form.ad" label="Mevki" density="comfortable" />
-            <v-text-field v-model="form.departman" label="Departman" density="comfortable" />
-            <v-text-field v-model.number="form.sira" type="number" min="0" label="Sıra" density="comfortable" />
-            <MngDirectoryPickerField
-              v-model="form.oturan"
-              entity="user"
-              label="Oturan"
-              density="comfortable"
-              variant="outlined"
-            />
-            <MngDirectoryPickerField
-              v-model="form.calisanlar"
-              entity="user"
-              multiple
-              label="Çalışanlar"
-              density="comfortable"
-              variant="outlined"
-            />
-            <div class="d-flex ga-2">
-              <v-btn color="primary" :loading="saving" @click="saveSeat">Kaydet</v-btn>
-              <v-btn variant="text" :disabled="saving || !form.oturan" @click="clearSeat">Koltuğu boşalt</v-btn>
-            </div>
-          </template>
-        </v-card>
-      </v-col>
-    </v-row>
   </div>
 </template>
 
 <style scoped>
 .org-canvas {
-  height: calc(100vh - 230px);
+  height: calc(100vh - 268px);
   min-height: 480px;
 }
 .org-flow {
@@ -644,9 +642,26 @@ onMounted(async () => {
   box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.22), 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 .seat-title {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+.seat-title:hover {
+  color: rgb(var(--v-theme-primary));
+}
+.seat-title.is-empty {
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  font-weight: 600;
 }
 .seat-meta {
   margin-top: 2px;

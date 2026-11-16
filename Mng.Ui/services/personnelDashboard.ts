@@ -2,15 +2,17 @@ import { fetchFromDataGateway } from '@/services/apiService';
 import type { DashboardLayout } from '@/stores/apps/dashboard';
 
 export const PERSONNEL_DASHBOARD_SLUG = 'personel';
-const BOARD_VERSION = 6;
+const BOARD_VERSION = 8;
 const CATEGORY_NAME = 'Personel';
 
 interface ColumnSeed {
   key: string;
   title: string;
-  format?: 'text' | 'number' | 'chip' | 'datetime-relative';
+  format?: 'text' | 'number' | 'chip' | 'date' | 'datetime-relative' | 'route-link';
   align?: 'left' | 'center' | 'right';
   color?: string;
+  hrefField?: string;
+  dateFormat?: string;
 }
 
 interface WidgetSeed {
@@ -74,10 +76,13 @@ const WIDGETS: WidgetSeed[] = [
     serviceRef: 'mngui:personnel/work-open',
     emptyText: 'Açık iş yok',
     columns: [
-      { key: 'key', title: 'Kod', format: 'chip', color: 'primary' },
+      { key: 'key', title: 'Kod', format: 'route-link', color: 'primary', hrefField: 'profileHref' },
       { key: 'title', title: 'İş' },
+      { key: 'workspace', title: 'Çalışma alanı' },
+      { key: 'state', title: 'Durum' },
+      { key: 'opened', title: 'Açılış' },
+      { key: 'due', title: 'Vade' },
     ],
-    rowClick: { path: '/apps/operation-core/work-items/{id}/profile' },
   },
   {
     name: 'personel-work-closed',
@@ -88,12 +93,11 @@ const WIDGETS: WidgetSeed[] = [
     serviceRef: 'mngui:personnel/work-closed',
     emptyText: 'Bu aralıkta kapanan iş yok',
     columns: [
-      { key: 'key', title: 'Kod', format: 'chip', color: 'primary' },
+      { key: 'key', title: 'Kod', format: 'route-link', color: 'primary', hrefField: 'profileHref' },
       { key: 'title', title: 'İş' },
       { key: 'points', title: 'Puan', format: 'number', align: 'right' },
       { key: 'closedAt', title: 'Kapandı', format: 'datetime-relative' },
     ],
-    rowClick: { path: '/apps/operation-core/work-items/{id}/profile' },
   },
   {
     name: 'personel-meetings',
@@ -199,7 +203,7 @@ function buildLayout(widgetIds: Map<string, string>): DashboardLayout {
         ],
       },
       { cols: [col('personel-work-open', 6), col('personel-work-closed', 6)] },
-      { cols: [col('personel-meetings', 6), col('personel-documents', 6)] },
+      { cols: [col('personel-documents', 12)] },
     ],
   };
 }
@@ -276,7 +280,10 @@ function presentationConfig(seed: WidgetSeed): Record<string, unknown> {
       title: column.title,
       format: column.format,
       align: column.align,
-      formatOptions: column.color ? { color: column.color } : undefined,
+      formatOptions:
+        column.color || column.hrefField || column.dateFormat
+          ? { color: column.color, hrefField: column.hrefField, dateFormat: column.dateFormat }
+          : undefined,
     })),
   };
 }

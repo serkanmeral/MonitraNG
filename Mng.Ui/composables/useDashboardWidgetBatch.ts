@@ -2,7 +2,11 @@ import { ref, watch, type Ref } from 'vue';
 import type { SurfaceContext } from '@/types/apps/widgetManifest';
 import type { WidgetDataResponse } from '@/services/widgetDataService';
 import { useWidgetStore } from '@/stores/apps/widget';
-import { fetchDashboardWidgetsBatch, clearWidgetDataDedupCache } from '@/services/widgetBatchDataService';
+import {
+  clearWidgetDataDedupCache,
+  fetchWidgetDataWithDedup,
+  resolveBatchWidgetId,
+} from '@/services/widgetBatchDataService';
 
 export function useDashboardWidgetBatch(
   widgetIds: Ref<string[]>,
@@ -31,10 +35,18 @@ export function useDashboardWidgetBatch(
       );
       if (token !== runToken) return;
 
-      const map = await fetchDashboardWidgetsBatch(widgets, surfaceContext.value);
-      if (token !== runToken) return;
-
-      dataByWidgetId.value = map;
+      dataByWidgetId.value = new Map();
+      await Promise.allSettled(
+        widgets.filter((widget) => widget != null).map(async (widget) => {
+          const id = resolveBatchWidgetId(widget);
+          if (!id) return;
+          const data = await fetchWidgetDataWithDedup(widget, surfaceContext.value);
+          if (token !== runToken) return;
+          const next = new Map(dataByWidgetId.value);
+          next.set(id, data);
+          dataByWidgetId.value = next;
+        }),
+      );
     } catch (e: unknown) {
       if (token !== runToken) return;
       error.value = e instanceof Error ? e.message : 'Widget verisi toplu yüklenemedi';

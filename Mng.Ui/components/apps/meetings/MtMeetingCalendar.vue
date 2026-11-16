@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -10,7 +10,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { useLocaleStore } from '@/stores/locale';
 import { meetingTopicColorHex, type OrgMeeting, type OrgMeetingStatus, type OrgMeetingTopic } from '@/services/meetingsService';
 
-const props = defineProps<{ meetings: OrgMeeting[]; topics?: OrgMeetingTopic[] }>();
+const props = defineProps<{ meetings: OrgMeeting[]; topics?: OrgMeetingTopic[]; weekStart?: string }>();
 const emit = defineEmits<{
   create: [payload: { start: string; end: string }];
   open: [id: string];
@@ -65,19 +65,32 @@ const events = computed<EventInput[]>(() =>
     })),
 );
 
+const calendarRef = ref<{ getApi: () => { gotoDate: (date: string) => void } } | null>(null);
+const locked = computed(() => /^\d{4}-\d{2}-\d{2}$/.test(props.weekStart ?? ''));
+
+watch(
+  () => props.weekStart,
+  (value) => {
+    if (value && locked.value) calendarRef.value?.getApi().gotoDate(value);
+  },
+);
+
 const options = computed<CalendarOptions>(() => ({
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
   locale: english.value ? 'en' : trLocale,
   initialView: 'timeGridWeek',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay',
-  },
+  initialDate: locked.value ? props.weekStart : undefined,
+  headerToolbar: locked.value
+    ? false
+    : {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay',
+      },
   firstDay: 1,
-  height: 680,
+  height: locked.value ? 560 : 680,
   nowIndicator: true,
-  selectable: true,
+  selectable: !locked.value,
   selectMirror: true,
   editable: false,
   allDaySlot: false,
@@ -96,7 +109,7 @@ const options = computed<CalendarOptions>(() => ({
 </script>
 
 <template>
-  <FullCalendar :options="options" />
+  <FullCalendar ref="calendarRef" :options="options" />
 </template>
 
 <style scoped>

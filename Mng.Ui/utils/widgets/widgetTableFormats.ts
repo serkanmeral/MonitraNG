@@ -12,6 +12,7 @@ export type WidgetTableColumnFormat =
   | 'datetime-relative'
   | 'alarm-summary'
   | 'chip'
+  | 'route-link'
   | 'custom';
 
 const ALARM_STATUS_LABELS: Record<string, string> = {
@@ -32,6 +33,7 @@ export function isRichTableColumnFormat(format?: string): boolean {
     format === 'datetime-relative' ||
     format === 'alarm-summary' ||
     format === 'chip' ||
+    format === 'route-link' ||
     format === 'siem-event-action' ||
     format === 'siem-event-outcome'
   );

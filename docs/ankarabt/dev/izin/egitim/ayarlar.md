@@ -162,6 +162,12 @@ Düğmeler listedeki ayar satırının üstündedir. Tıklanınca işlem hemen �
 
 Üç sabah işi açıktır. Son çalışma kaydı yoksa pencerede henüz çalışmamış yazar.
 
+16 Kasım 2026 akşamı zamanlayıcı kaydı okundu. Üç izin işi 10–16 Kasım arasında her sabah 07:00’de bitmiş ve HTTP 200 dönmüş. Dönem açılışı yalnız o gün yıldönümü olana yazar. İş kartındaki sayaç yazılmıyor; kayıtta `__dataId` yok. Çalışma geçmişi `@job_executions` içindedir.
+
+Aynı akşam `system-backup-daily` eklendi. Her gece 00:45’te `mngadmin` tam yedek alır. İlk çalışma bu saati bekler.
+
+İzin kartının Keeper alanı aktarımda boş bırakılmıştı. Sicili kullanıcı adıyla tutan 14 kart bağlandı. 31 sicilin kullanıcısı yoktur. Personel panosu bakiyeyi bu bağ ile bulur.
+
 Bu pencere yerel arayüzdedir. Canlı arayüz imajı yenilenene kadar canlıdaki düğme işlemi pencereden geçmeden çalıştırır.
 
 ## Ne değildir?

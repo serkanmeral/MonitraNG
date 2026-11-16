@@ -1,6 +1,6 @@
 # Organizasyon şeması — yol haritası
 
-Son güncelleme: 16 Kasım 2026.
+Son güncelleme: 16 Kasım 2026, akşam.
 
 Durum: Şema ofiste kullanılıyor (16 Kasım 2026). Yayın yapıldı. Unvan ve departmanın sahibi şemadır. Çalışanlar aynı kutudadır. Active Directory’ye yazılmaz.
 
@@ -22,10 +22,10 @@ Active Directory’ye unvan, departman veya yönetici yazılmaz. Bu karar 16 Kas
 4. Bir kullanıcı tek mevkide durur. Ya oturandır ya da çalışandır. Koltuk boş kalabilir. Çalışan ayrı kutu değildir.
 5. Tuval üstten alta ağaçtır. Kutu başka kutunun altına bırakılır. Serbest ok çizilmez.
 6. Tuval, alarm akış laboratuvarındaki yüzeyin ağaç halidir. Keşif ekranındaki ağaç ve graf yerleşimi taşınmaz. Onlar üç katmanlı ve salt okunurdur.
-7. Yayın, oturanın unvanını mevki adından, departmanını etiketten yazar. Çalışanın unvanı durur. Departmanı bu koltuğun etiketidir. Yöneticisi oturandır.
+7. Yayın, oturanın unvanını ve departmanını kutunun departmanından yazar. Çalışanın unvanı durur. Departmanı bu koltuğun etiketidir. Yöneticisi oturandır. Oturan boşsa yöneticisi bir üst koltuğun oturanıdır.
 8. Yayın, dizin kullanıcısında ad, e-posta ve gruba dokunmaz. Unvan ve departman yalnızca MonitraNG kartına yazılır.
 9. Şema bu iki alanın sahibi olduktan sonra dizin senkronu, AD dolu gelse bile unvan ve departmanı ezmez. Sahiplik yalnızca yayınla yazılır. Elle unvan düzenlemesi sahipliği açmaz ve açık sahipliği silmez.
-10. Yönetici, Keeper kullanıcısında ayrı bir alan değildir. İzin personel kartındaki kişi alanına yazılır. Üst koltuk boşsa yönetici boş kalır. İzindeki yedek, `Yonetim` grubu, durur.
+10. Yönetici, Keeper kullanıcısında ayrı bir alan değildir. İzin personel kartındaki kişi alanına yazılır. Çalışanın koltuğunda oturan yoksa yönetici bir üst koltuğun oturanıdır. O da boşsa yönetici boş kalır. İzindeki yedek, `Yonetim` grubu, durur.
 11. Onay hedefi mevki olunca karar anında koltukta kim varsa o bakar. Koltuk boşsa üst mevki, o da boşsa bugünkü grup yedeği devreye girer.
 12. Active Directory’ye unvan, departman veya yönetici yazılmaz. Şema MonitraNG’de kalır.
 
@@ -46,9 +46,9 @@ Mevki, alan verisidir. Dataset `org_mevkiler`.
 
 | Alan | Anlamı |
 |---|---|
-| Ad | Mevki adı. Yayında unvan olur |
+| Ad | Kayıtta durur. Kutuda ve pencerede görünmez. Yeni kutu açılırken zorunlu alan boş kalmasın diye yer tutucu yazılır |
 | Üst | Tek mevki. Kökte boş |
-| Departman | Etiket. Yayında departman olur. Boş kalabilir |
+| Departman | Kutunun başlığı. Yayında oturanın unvanı ve departmanı olur. Boş kalabilir |
 | Oturan | Keeper kullanıcısı. Boş kalabilir. Kullanıcı tek satırda durur |
 | Çalışanlar | Aynı kutudaki kişiler. Ayrı mevki değildir. Oturan bu listede duramaz |
 | Sıra | Kardeşler arasındaki diziliş |
@@ -57,15 +57,17 @@ Ağaç kuralı kayıt yazılırken durur. Tuval aynı kuralı ikinci kez çizeme
 
 Keeper kartında `title` ve `department` durur. Yönetici alanı yoktur. Dizin kullanıcısında unvan ve departman uygulama tarafından düzenlenebilir. Dizin senkronu, şemanın sahip olmadığı kartta bu iki alanı doluysa yazar. `orgOwnsProfile` açık kartta unvan ve departman farkı senkron tetiklemez ve yazılmaz. İlk dizin kullanıcısı açılırken bayrak kapalıdır; AD unvanı o anda kopyalanır.
 
-İzin personel kartındaki `yoneticiId` Keeper kişisidir. Boşsa onay `Yonetim` grubuna düşer. Yayında oturanın yöneticisi üst koltuğun oturanıdır. Çalışanın yöneticisi kendi koltuğunun oturanıdır. Oturan boşsa çalışanın yöneticisi boşalır.
+İzin personel kartındaki `yoneticiId` Keeper kişisidir. Boşsa onay `Yonetim` grubuna düşer. Yayında oturanın yöneticisi üst koltuğun oturanıdır. Çalışanın yöneticisi kendi koltuğunun oturanıdır. Oturan boşsa bir üst koltuğun oturanıdır. O da boşsa yönetici boşalır.
 
 ## Tuval
 
 Sayfa Mng.Ui içindedir. Yerleşim üstten alta ağaçtır. Kaydırma, sığdırma ve küçük harita durur.
 
-Kök varsa Kök mevki düğmesi görünmez. Yeni mevki, seçili kutunun altına açılır. Yer tutucu adlar (Kök mevki, Yeni mevki) kutuda yazılmaz; başlık departman olur. Gerçek mevki adı başlıkta kalır.
+Kök varsa Kök mevki düğmesi görünmez. Yeni mevki, seçili kutunun altına açılır. Kutunun başlığı departmandır. Departman boşsa başlıkta Departman yazar. Ayar penceresinde mevki adı yoktur.
 
-Oturan mavi, çalışan turkuazdır. Kutuda en fazla üç çalışan görünür. Fazlası **ve N kişi** satırındadır. Satır, salt okunur liste açar. Liste ada göre sıralanır, adla aranır ve 20’şer sayfalanır. Sağ panel açılmaz. Kişi penceresi açılışta Ad Soyad sütununa göre A’dan Z’ye gelir.
+Kutuya tıklamak seçer. Alt mevki ve Sil bu seçime bakar. Başlığa tıklamak ayar penceresini açar. Pencerede departman, sıra, oturan ve çalışanlar durur. Kayıt pencereyi kapatır. Vazgeç kutuyu eski halinde bırakır. Sağ panel yoktur.
+
+Oturan mavi, çalışan turkuazdır. Kutuda en fazla üç çalışan görünür. Fazlası **ve N kişi** satırındadır. Satır, salt okunur liste açar. Liste ada göre sıralanır, adla aranır ve 20’şer sayfalanır. Kişi penceresi açılışta Ad Soyad sütununa göre A’dan Z’ye gelir.
 
 Kullanıcı Keeper listesinden koltuğa oturtulur veya çalışanlara eklenir. Bırakılan kutu yeni üstün çocuğu olur. Kayıt bunu reddederse tuval eski üstte kalır.
 
@@ -77,8 +79,8 @@ Tek işlem. Sürükleme ara kayıt yazabilir. Kart güncellemesi yalnızca yayı
 
 | Kart | Yazılan | Yazılmayan |
 |---|---|---|
-| Oturan, yerel veya dizin | Unvan, departman | Ad, e-posta, grup. Dizin kullanıcısında hesap durumu da durur |
-| Çalışan | Departman. Yönetici, oturandır | Unvan. Ad, e-posta, grup |
+| Oturan, yerel veya dizin | Unvan ve departman, ikisi de kutunun departmanı | Ad, e-posta, grup. Dizin kullanıcısında hesap durumu da durur |
+| Çalışan | Departman. Yönetici, oturan. Oturan boşsa bir üst koltuğun oturanı | Unvan. Ad, e-posta, grup |
 | İzin personel kartı | Yönetici | Sicil, işe giriş, bakiye |
 
 Oturanın yöneticisi üst mevkinin oturan kişisidir. Üst yoksa veya üstün koltuğu boşsa izin kartındaki yönetici boşaltılır. `Yonetim` yedeği aynen kalır. 16 Kasım 2026’da abt şeması yayınlandı.
@@ -93,6 +95,16 @@ ORG-03, izin yöneticisini kişi alanında bırakır. Şema o kişiyi günceller
 
 ORG-04, akış geçişine mevki ekler. İzin ve zimmet aynı düzenleyiciyi kullanır. Geçişte mevki seçilmişse karar anında oturan kullanıcı çözülür. Koltuk boşsa üst mevkiye çıkılır. Zincir boşsa geçişteki grup durur. Talep alanı adlandırılmış ama boşsa talep grupta kalır. Yönetici ve platform yöneticisi bu kontrolden önce geçer.
 
+16 Kasım 2026 öğleden sonra kilitlendi. Normal yol tek mevkidir ve şemadan gelir. Talep onaya giderken personelin yöneticisinin oturduğu mevki `izin_onayMevki` alanına yazılır. Karar anında o koltukta kim varsa o bakar. Koltuk boşsa üst mevkiye çıkılır. Zincir boşsa `Yonetim` durur. Alanı boş eski talepler grupta kalır.
+
+İstisna iki türlüdür.
+
+Aynı adımda bir koltuk daha bakabilsin. Ek mevki listesi talebin üzerindedir. Kalıcı istisna personel kartında durur ve onaya gönderilirken talebe kopyalanır. Tek seferlik istisna yalnız o talepte durur. Asıl koltuğun oturanı ya da ek koltuklardan birinin oturanı adımı kapatır. Biri kapatınca adım biter. Liste boşsa tek koltuk kuralı durur. Boş ek koltuk da üste yürür.
+
+Sırayla iki onay, ikinci bir adımdır. Her adımın tek mevkisi vardır. İkinci adım her talepte aynı koltuksa geçişe sabit mevki yazılır. Talebe göre değişiyorsa o adımın kendi alanı olur. Boş koltuğun üste yürümesi ikinci onayın yerine geçmez.
+
+Ek listeye kişi değil mevki yazılır. Zimmet aynı kabı kullanır. Duraklatılmış eski zimmet akışına liste kendiliğinden yazılmaz. Bu karar konuşuldu. Kod yok.
+
 ## Dilimler
 
 | Dilim | İş | Durum |
@@ -102,6 +114,7 @@ ORG-04, akış geçişine mevki ekler. İzin ve zimmet aynı düzenleyiciyi kull
 | ORG-03 | Yayın: unvan, departman, izin yöneticisi | Açıldı (2026-11-16). Deneme kartları eski haline alındı |
 | ORG-04 | Şema unvan ve departmanın sahibi olur. Onay hedefi mevki olur | Açıldı (2026-11-16). Keeper, Operations ve arayüz yenilendi |
 | ORG-05 | AD’ye unvan, departman, yönetici yazmak | Yok. 16 Kasım 2026’da kapatıldı |
+| ORG-06 | Onay mevkisi şemadan gelsin. İstisna ek mevki listesi olsun | Konuşuldu (2026-11-16). Kod yok |
 
 ### ORG-01 — Mevki kaydı
 
@@ -134,3 +147,7 @@ Yayın, oturan her kullanıcıya unvan ve departman yazar. İzin kartı varsa y�
 ### ORG-05 — AD’ye yazma
 
 16 Kasım 2026’da kapatıldı. Unvan ve departman MonitraNG kartında kalır. Ad, e-posta, grup ve hesap durumu dizinde kalır. Yönetici izin personel kartındadır.
+
+### ORG-06 — Onay mevkisi ve istisna
+
+Normal yol tek mevkidir. Talep onaya giderken yöneticinin oturduğu mevki yazılır. İstisna, aynı adımda ek mevki listesidir. Sırayla ikinci onay ayrı adımdır. Ayrıntı yukarıdaki Onay bölümündedir. 16 Kasım 2026 öğleden sonra konuşuldu. Kod yok.

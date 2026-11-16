@@ -37,11 +37,16 @@ export function planOrgPublish(seats: PublishSeat[], cards: PublishCard[]): OrgP
     const staff = (seat.calisanlar || []).map((id) => id.trim()).filter(Boolean);
     const occupant = seat.oturan.trim();
     if (occupant && staff.includes(occupant)) return emptyPlan('Oturan kişi çalışanlar arasında olamaz.');
-    if (occupant && !seat.ad.trim()) return emptyPlan('Mevki adı boş kalmaz.');
+    const department = seat.departman.trim();
+    if (occupant && !department) return emptyPlan('Departman boş kalmaz.');
 
     const people = [
-      occupant ? { userId: occupant, title: seat.ad.trim(), managerId: '' } : null,
-      ...staff.map((userId) => ({ userId, title: null as string | null, managerId: occupant })),
+      occupant ? { userId: occupant, title: department, managerId: '' } : null,
+      ...staff.map((userId) => ({
+        userId,
+        title: null as string | null,
+        managerId: occupant || (seats.find((item) => item.id === seat.ust)?.oturan || '').trim(),
+      })),
     ].filter((item): item is { userId: string; title: string | null; managerId: string } => !!item);
 
     for (const person of people) {
@@ -50,7 +55,7 @@ export function planOrgPublish(seats: PublishSeat[], cards: PublishCard[]): OrgP
       placements.push({
         userId: person.userId,
         title: person.title,
-        department: seat.departman.trim(),
+        department,
         managerId: person.managerId,
       });
     }
@@ -81,7 +86,7 @@ export function planOrgPublish(seats: PublishSeat[], cards: PublishCard[]): OrgP
     const parent = seat.ust ? byId.get(seat.ust) : undefined;
     const assignments = [
       occupant ? { userId: occupant, yoneticiId: parent?.oturan || '' } : null,
-      ...staff.map((userId) => ({ userId, yoneticiId: occupant })),
+      ...staff.map((userId) => ({ userId, yoneticiId: occupant || (parent?.oturan || '').trim() })),
     ].filter((item): item is { userId: string; yoneticiId: string } => !!item);
 
     for (const assignment of assignments) {

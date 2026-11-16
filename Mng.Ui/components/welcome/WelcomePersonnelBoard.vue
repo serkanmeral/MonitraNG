@@ -15,6 +15,8 @@ import {
 import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfaceMutations';
 import { istanbulWeekRange, readSurfaceVariables } from '@/utils/widgets/dashboardSurfaceVariables';
 import { ensurePersonnelDashboard, PERSONNEL_DASHBOARD_SLUG } from '@/services/personnelDashboard';
+import PersonnelIdentityStrip from '@/components/welcome/PersonnelIdentityStrip.vue';
+import PersonnelMeetingWeek from '@/components/welcome/PersonnelMeetingWeek.vue';
 
 const nuxtApp = useNuxtApp();
 const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
@@ -38,6 +40,8 @@ const toolbarVariables = computed(() => surfaceVariableDefs.value.filter((item) 
 const selfPersonId = computed(() => authStore.userInfo?.mng_person_id?.trim() || '');
 
 const layout = computed(() => dashboardStore.currentDashboard?.layout ?? null);
+const headRows = computed(() => (layout.value?.rows ?? []).slice(0, 2));
+const tailRows = computed(() => (layout.value?.rows ?? []).slice(2));
 const layoutWidgetIds = computed(() => collectWidgetIdsFromLayout(layout.value));
 
 const { dataByWidgetId, loading: batchLoading, refresh: refreshBatch } = useDashboardWidgetBatch(
@@ -87,6 +91,7 @@ onMounted(async () => {
   <v-container v-if="ready && layout" class="welcome-personnel pt-0">
     <div class="text-h6 mb-1">{{ t('welcome.personnel.title') }}</div>
     <p class="text-body-2 text-medium-emphasis mb-3">{{ t('welcome.personnel.hint') }}</p>
+    <PersonnelIdentityStrip :person-id="personId" />
     <DashboardSurfaceToolbar
       time-preset="24h"
       :severity="null"
@@ -103,7 +108,9 @@ onMounted(async () => {
       @update:range-to="rangeTo = $event"
       @refresh="refreshBatch()"
     />
-    <DashboardLayoutRenderer class="mt-4" :rows="layout.rows" :surface-context="surfaceContext" :t="t" />
+    <DashboardLayoutRenderer class="mt-4" :rows="headRows" :surface-context="surfaceContext" :t="t" />
+    <PersonnelMeetingWeek :person-id="personId" :from="rangeFrom" :to="rangeTo" />
+    <DashboardLayoutRenderer v-if="tailRows.length" :rows="tailRows" :surface-context="surfaceContext" :t="t" />
   </v-container>
   <v-container v-else-if="failed" class="pt-0">
     <v-alert type="warning" variant="tonal" density="compact">

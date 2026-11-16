@@ -43,12 +43,13 @@ interface TableColumn {
   filterable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';
-  format?: 'text' | 'number' | 'currency' | 'date' | 'boolean' | 'severity' | 'severity-chip' | 'status-chip' | 'datetime-relative' | 'alarm-summary' | 'siem-event-action' | 'siem-event-outcome' | 'chip' | 'custom';
+  format?: 'text' | 'number' | 'currency' | 'date' | 'boolean' | 'severity' | 'severity-chip' | 'status-chip' | 'datetime-relative' | 'alarm-summary' | 'siem-event-action' | 'siem-event-outcome' | 'chip' | 'route-link' | 'custom';
   formatOptions?: {
     currency?: string;
     decimalPlaces?: number;
     dateFormat?: string;
     color?: string;
+    hrefField?: string;
   };
   fieldType?: string; // Dataset field type (person, personGroups, etc.)
   isArray?: boolean; // Is field an array
@@ -415,6 +416,12 @@ function onRowClick(_event: Event, row: { item: Record<string, unknown> }) {
   emit('row-activate', row.item);
 }
 
+function routeLinkHref(item: Record<string, unknown>, column: TableColumn): string {
+  const field = column.formatOptions?.hrefField || 'profileHref';
+  const href = getNestedValue(item, field);
+  return typeof href === 'string' ? href.trim() : '';
+}
+
 const lbl = (key: string) => {
   const i18nKey = `widgets.table.${key}`;
   const raw = props.t?.(i18nKey);
@@ -526,9 +533,26 @@ const emptyLabel = computed(() => {
                   {{ formatSiemEventOutcome(cellRawValue(item, column)) }}
                 </v-chip>
               </template>
-              <template v-else-if="column.format === 'chip'">
+              <template v-else-if="column.format === 'chip' || column.format === 'route-link'">
+                <a
+                  v-if="column.format === 'route-link' && routeLinkHref(item, column)"
+                  class="text-decoration-none"
+                  :href="routeLinkHref(item, column)"
+                  target="_blank"
+                  rel="noopener"
+                  @click.stop
+                >
+                  <v-chip
+                    v-if="String(cellRawValue(item, column) ?? '').trim()"
+                    size="small"
+                    :color="column.formatOptions?.color || 'primary'"
+                    variant="tonal"
+                  >
+                    {{ cellRawValue(item, column) }}
+                  </v-chip>
+                </a>
                 <v-chip
-                  v-if="String(cellRawValue(item, column) ?? '').trim()"
+                  v-else-if="String(cellRawValue(item, column) ?? '').trim()"
                   size="small"
                   :color="column.formatOptions?.color || 'primary'"
                   variant="tonal"

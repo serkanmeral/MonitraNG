@@ -324,7 +324,7 @@ Açılış, içinde bulunulan haftadır. Hafta İstanbul takviminde pazartesiden
 
 Üstte üç sayı durur: açık iş, kapanan iş, iş puanı. İş listesinde kod etiket olarak durur. Toplantı ve belge tablo değildir. Satırda başlık, zaman ve durum etiketi vardır. Boş kutuda sayfalama yoktur.
 
-İzin bakiyesi ve zimmet listesi bu pane girmedi. `abt` menüsündeki Kişisel kaydı `/` adresine alındı.
+16 Kasım 2026 akşamı pane kimlik şeridi, açık yıllık izin bakiyesi, şemadan yönetici, fotoğraf, açık işin açılış tarihi ve yeni sekmede iş profili eklendi. Toplantılar haftalık takvimdedir. Zimmet bu pane girmedi. Ayrıntı [personel hareket panosu](dev/personel/personel_hareket_panosu.md). `abt` menüsündeki Kişisel kaydı `/` adresine alındı.
 
 ## OC-18 — Pano listesinde talep eden
 
@@ -597,15 +597,17 @@ Ayrıntı: [PDKS kapı ekranı planı](dev/pdks/pdks_plani.md).
 | | |
 |---|---|
 | Durum | Şema ofiste kullanılıyor (2026-11-16). Yayın yapıldı. Çalışanlar aynı kutudadır. |
-| Sıra | Dört dilim açıldı. AD’ye yazılmaz. Yeni dilim yok. Ortam AbtAppServer. Erişim [server/access.md](server/access.md). |
+| Sıra | ORG-06 konuşuldu (2026-11-16). Normal onay tek mevki. İstisna ek mevki listesi. Kod yok. AD’ye yazılmaz. Ortam AbtAppServer. Erişim [server/access.md](server/access.md). |
 
 Düğüm mevkidir. Departman kutunun etiketidir. Kullanıcı yerel veya dizin olabilir ve tek koltuğa oturur. Tuval ağaçtır. Kutu başka kutunun altına bırakılır. Serbest ok çizilmez. Keşif ağacı taşınmaz.
 
-Yayın, oturanın unvan ve departmanını Keeper kartına yazar ve bu iki alanın sahipliğini işaretler. Çalışanın unvanı durur; departmanı koltuğun etiketidir; yöneticisi oturandır. Oturanın yöneticisi üst koltuğun oturan kişisidir. Üst boşsa yönetici boş kalır. `Yonetim` yedeği durur. Dizin kullanıcısında ad, e-posta ve grup yazılmaz. Sahiplik açıkken dizin senkronu unvan ve departmanı ezmez. AD’ye yazılmaz. Bu karar 16 Kasım 2026’da kilitlendi. Aynı gün abt şeması yayınlandı.
+Yayın, oturanın unvanını ve departmanını kutunun departmanından yazar ve bu iki alanın sahipliğini işaretler. Çalışanın unvanı durur; departmanı koltuğun etiketidir. Yöneticisi oturandır. Oturan boşsa yöneticisi bir üst koltuğun oturanıdır. Oturanın yöneticisi üst koltuğun oturan kişisidir. Üst boşsa yönetici boş kalır. Departmanı boş koltuğa oturan varsa yayın durur. `Yonetim` yedeği durur. Dizin kullanıcısında ad, e-posta ve grup yazılmaz. Sahiplik açıkken dizin senkronu unvan ve departmanı ezmez. AD’ye yazılmaz. Bu karar 16 Kasım 2026’da kilitlendi. Aynı gün abt şeması yayınlandı. Akşamki kural bir sonraki yayını bekler.
 
-Çalışan ayrı kutu değildir. Kutuda üç isim görünür. Fazlası **ve N kişi** listesindedir. Liste salt okunurdur, ada göre sıralanır, aranır ve 20’şer sayfalanır. Kişi penceresi açılışta ada göre sıralıdır.
+Çalışan ayrı kutu değildir. Kutuda üç isim görünür. Fazlası **ve N kişi** listesindedir. Liste salt okunurdur, ada göre sıralanır, aranır ve 20’şer sayfalanır. Kişi penceresi açılışta ada göre sıralıdır. Kutu başlığı departmandır. Başlığa tıklamak ayar penceresini açar. Sağ panel yoktur. Mevki adı pencerede durmaz.
 
 Onay geçişinde mevki seçilmemişse grup durur. Seçilmişse karar anında koltuktaki kişi bakar. Boş koltuk üste, o da boşsa gruba çıkar. İzin talebinde onaylayan mevki boşsa `Yonetim` durur. Zimmet aynı seçimi akış düzenleyicisinden yapar.
+
+16 Kasım 2026 öğleden sonra ORG-06 konuşuldu. Normal yol tek mevkidir. Talep onaya giderken yöneticinin oturduğu mevki yazılır. Aynı adımda ek yetki, talebin ek mevki listesidir. Kalıcı istisna personel kartından kopyalanır. Listedeki koltuklardan biri adımı kapatır. Sırayla ikinci onay ayrı adımdır. Listeye kişi yazılmaz. Eski talepler ve duraklatılmış zimmet akışı kendiliğinden değişmez. Kod yok.
 
 | Dilim | İş | Durum |
 |---|---|---|
@@ -614,5 +616,6 @@ Onay geçişinde mevki seçilmemişse grup durur. Seçilmişse karar anında kol
 | ORG-03 | Yayın: unvan, departman, izin yöneticisi | Açıldı (2026-11-16). Deneme kartları eski haline alındı |
 | ORG-04 | Alan sahipliği ve onay mevkisi | Açıldı (2026-11-16). Üç imaj yenilendi |
 | ORG-05 | AD’ye yazma | Yok. 16 Kasım 2026’da kapatıldı |
+| ORG-06 | Onay mevkisi şemadan. İstisna ek mevki listesi | Konuşuldu (2026-11-16). Kod yok |
 
 Ayrıntı: [Organizasyon şeması](dev/org/organizasyon_semasi.md).
