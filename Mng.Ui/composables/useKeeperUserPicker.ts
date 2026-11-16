@@ -20,7 +20,16 @@ export function useKeeperUserPicker() {
   const page = ref(1);
   const itemsPerPage = ref(KEEPER_DIRECTORY_PICKER_PAGE_SIZE);
   const searchTerm = ref('');
+  const sortBy = ref<string | undefined>('firstName');
+  const sortOrder = ref<'asc' | 'desc' | undefined>('asc');
   const labelCache = ref<Record<string, string>>({});
+
+  const sortFields: Record<string, string> = {
+    title: 'firstName',
+    extra_username: 'username',
+    extra_email: 'email',
+    extra_department: 'department',
+  };
 
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let fetchGeneration = 0;
@@ -40,13 +49,21 @@ export function useKeeperUserPicker() {
       .filter((x): x is KeeperDirectoryPickerRow => x != null);
   }
 
-  async function fetchPage(options?: { page?: number; itemsPerPage?: number; search?: string }) {
+  async function fetchPage(options?: {
+    page?: number;
+    itemsPerPage?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
     if (import.meta.server) return;
 
     const generation = ++fetchGeneration;
     const nextPage = options?.page ?? page.value;
     const nextItemsPerPage = options?.itemsPerPage ?? itemsPerPage.value;
     const nextSearch = options?.search ?? searchTerm.value;
+    const nextSortBy = options && 'sortBy' in options ? options.sortBy : sortBy.value;
+    const nextSortOrder = options && 'sortOrder' in options ? options.sortOrder : sortOrder.value;
 
     loading.value = true;
     try {
@@ -54,6 +71,8 @@ export function useKeeperUserPicker() {
         page: nextPage,
         pageSize: nextItemsPerPage,
         search: nextSearch.trim() || undefined,
+        sortBy: nextSortBy,
+        sortOrder: nextSortOrder,
       });
 
       if (generation !== fetchGeneration) return;
@@ -64,6 +83,8 @@ export function useKeeperUserPicker() {
       page.value = userStore.page ?? nextPage;
       itemsPerPage.value = nextItemsPerPage;
       searchTerm.value = nextSearch;
+      sortBy.value = nextSortBy;
+      sortOrder.value = nextSortOrder;
       cacheLabels(mapped);
     } catch {
       if (generation !== fetchGeneration) return;
@@ -90,8 +111,20 @@ export function useKeeperUserPicker() {
     }, 300);
   }
 
-  async function onTableOptionsUpdate(options: { page: number; itemsPerPage: number }) {
-    await fetchPage({ page: options.page, itemsPerPage: options.itemsPerPage });
+  async function onTableOptionsUpdate(options: {
+    page: number;
+    itemsPerPage: number;
+    sortBy?: { key: string; order?: boolean | 'asc' | 'desc' }[];
+  }) {
+    const primary = options.sortBy?.find((item) => item?.key);
+    const field = primary?.key ? sortFields[primary.key] : undefined;
+    const order = primary?.order === 'desc' ? 'desc' : primary?.order === 'asc' ? 'asc' : undefined;
+    await fetchPage({
+      page: options.page,
+      itemsPerPage: options.itemsPerPage,
+      sortBy: field,
+      sortOrder: field ? order ?? 'asc' : undefined,
+    });
   }
 
   async function ensureSelectedLabels(ids: string[]) {
@@ -142,6 +175,8 @@ export function useKeeperUserPicker() {
           page: batchPage,
           pageSize: batchSize,
           search,
+          sortBy: sortBy.value,
+          sortOrder: sortOrder.value,
         });
         return mapUsersFromStore();
       },

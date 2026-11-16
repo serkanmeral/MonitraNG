@@ -14,6 +14,7 @@ using MngDataGateway.Application.Services;
 using MngDataGateway.Domain.Entities;
 using MngDataGateway.Domain.Constants;
 using MngDataGateway.Domain.Exceptions;
+using MngDataGateway.Domain.Trees;
 using MngDataGateway.Persistence.Extensions;
 using MngDataGateway.Persistence.Helpers;
 using MngDataGateway.Persistence.Services;
@@ -109,6 +110,8 @@ namespace MngDataGateway.Persistence.Services
                 {
                     throw ValidationException.FromErrors("Validation failed", validationResult.Errors);
                 }
+
+                PrepareTreeCreate(schema, data);
 
                 // 3. Pre-process
                 _dataProcessService.ApplyDefaultValues(schema, data);
@@ -233,6 +236,8 @@ namespace MngDataGateway.Persistence.Services
                     throw ValidationException.FromErrors("Validation failed", validationResult.Errors);
                 }
 
+                var treeUnsets = PrepareTreeUpdate(schema, updates);
+
                 // 4. Add history if logging mode is "self"
                 if (schema.logging == "self")
                 {
@@ -241,7 +246,7 @@ namespace MngDataGateway.Persistence.Services
 
                 // 5. Update data
                 var success = await _dataRepository.UpdateOneAsync(
-                    databaseName, schema.CollectionName, dataId, updates);
+                    databaseName, schema.CollectionName, dataId, updates, unsetFields: treeUnsets);
 
                 if (!success)
                 {
@@ -296,6 +301,10 @@ namespace MngDataGateway.Persistence.Services
             bool skipEventPublish = false)
         {
             var schema = await LoadSchemaAsync(datasetName, databaseName);
+
+            var treeDelete = await _validationService.ValidateTreeDeleteAsync(schema, databaseName, dataId);
+            if (!treeDelete.IsValid)
+                throw ValidationException.FromErrors("Validation failed", treeDelete.Errors);
             
             // Get retention days from settings
             var settings = _configuration.GetSection("MngDataGatewaySettings").Get<MngDataGatewaySettings>();
@@ -430,6 +439,7 @@ namespace MngDataGateway.Persistence.Services
                     foreach (var (index, item) in validItems)
                     {
                         var processedItem = new Dictionary<string, object>(item);
+                        PrepareTreeCreate(schema, processedItem);
                         _dataProcessService.ApplyDefaultValues(schema, processedItem);
                         _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                         await _dataProcessService.GenerateIncrementalFieldsAsync(schema, processedItem, databaseName, domainName, session: null);
@@ -639,6 +649,7 @@ namespace MngDataGateway.Persistence.Services
                     foreach (var (index, item) in validItems)
                     {
                         var processedItem = new Dictionary<string, object>(item);
+                        PrepareTreeCreate(schema, processedItem);
                         _dataProcessService.ApplyDefaultValues(schema, processedItem);
                         _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                         await _dataProcessService.GenerateIncrementalFieldsAsync(
@@ -678,6 +689,7 @@ namespace MngDataGateway.Persistence.Services
                 foreach (var (index, item) in validItems)
                 {
                     var processedItem = new Dictionary<string, object>(item);
+                    PrepareTreeCreate(schema, processedItem);
                     _dataProcessService.ApplyDefaultValues(schema, processedItem);
                     _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                     await _dataProcessService.GenerateIncrementalFieldsAsync(
@@ -692,6 +704,33 @@ namespace MngDataGateway.Persistence.Services
                         databaseName, schema.CollectionName, processedItems, session: null);
                 }
             }
+        }
+
+        private static void PrepareTreeCreate(DatasetSchema schema, Dictionary<string, object> data)
+        {
+            var tree = schema.tree;
+            if (tree == null || string.IsNullOrWhiteSpace(tree.parentField))
+                return;
+
+            TreeWriteRules.RemoveBlankReferences(tree, data);
+            var parentEmpty = !data.ContainsKey(tree.parentField);
+            TreeWriteRules.ApplyRootMarker(tree, data, parentTouched: true, parentEmpty, unsets: null);
+        }
+
+        private static HashSet<string> PrepareTreeUpdate(DatasetSchema schema, Dictionary<string, object> updates)
+        {
+            var unsets = new HashSet<string>(StringComparer.Ordinal);
+            var tree = schema.tree;
+            if (tree == null || string.IsNullOrWhiteSpace(tree.parentField))
+                return unsets;
+
+            var parentTouched = updates.ContainsKey(tree.parentField);
+            foreach (var field in TreeWriteRules.RemoveBlankReferences(tree, updates))
+                unsets.Add(field);
+
+            var parentEmpty = parentTouched && !updates.ContainsKey(tree.parentField);
+            TreeWriteRules.ApplyRootMarker(tree, updates, parentTouched, parentEmpty, unsets);
+            return unsets;
         }
 
         private bool ShouldPublishEvent(DatasetSchema schema)

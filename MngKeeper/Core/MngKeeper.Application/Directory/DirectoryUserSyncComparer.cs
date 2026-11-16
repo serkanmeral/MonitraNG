@@ -38,11 +38,14 @@ public static class DirectoryUserSyncComparer
         if (existing.IsActive != keycloakUser.Enabled)
             return true;
 
-        if (DirectoryProfileDiffers(existing.Title, keycloakUser.Title))
-            return true;
+        if (!existing.OrgOwnsProfile)
+        {
+            if (DirectoryProfileDiffers(existing.Title, keycloakUser.Title))
+                return true;
 
-        if (DirectoryProfileDiffers(existing.Department, keycloakUser.Department))
-            return true;
+            if (DirectoryProfileDiffers(existing.Department, keycloakUser.Department))
+                return true;
+        }
 
         return !GroupSetsEqual(existing.Groups, keycloakGroupNames);
     }

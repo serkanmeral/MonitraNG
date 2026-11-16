@@ -138,7 +138,7 @@ public partial class RuntimeContextService : IRuntimeContextService
         {
             var stateFlow = stateFlowTask.Result;
             var order = 0;
-            foreach (var transition in _permissions.GetAvailableTransitions(workspace, stateFlow, currentStateId))
+            foreach (var transition in await _permissions.GetAvailableTransitions(workspace, stateFlow, currentStateId, workItem, cancellationToken))
             {
                 var key = StateFlowCatalog.GetStringProperty(transition, "transitionKey") ?? string.Empty;
                 availableActions.Add(new ProfileActionDto
@@ -148,7 +148,7 @@ public partial class RuntimeContextService : IRuntimeContextService
                         ?? StateFlowCatalog.GetStringProperty(transition, "name"),
                     FromStateId = StateFlowCatalog.GetStringProperty(transition, "fromStateId"),
                     ToStateId = StateFlowCatalog.GetStringProperty(transition, "toStateId") ?? string.Empty,
-                    Enabled = _permissions.CanApplyTransition(workspace, transition),
+                    Enabled = true,
                     Order = order++,
                     RequiredFields = StateFlowCatalog.GetRequiredFields(transition),
                     RequireComment = StateFlowCatalog.RequiresComment(transition)
@@ -1108,6 +1108,7 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         var poolFields = await _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
         cards = (await EnrichBoardListCardsAsync(cards, listColumns, poolFields, token, cancellationToken)).ToList();
+        await ResolveBoardListLabelsAsync(cards, listColumns, token, cancellationToken);
         await AttachChildCountsAsync(cards, token, cancellationToken);
         var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
         var groups = await ResolveGroupsForCardsAsync(cards, token, cancellationToken);
@@ -1496,7 +1497,10 @@ public partial class RuntimeContextService : IRuntimeContextService
             LastStateChangeAt = WorkItemDataHelper.GetDateTime(row, "lastStateChangeAt"),
             ClosedAt = WorkItemDataHelper.GetDateTime(row, "closedAt"),
             Sla = SlaSnapshotHelper.MapFromWorkItem(row),
-            Fields = GetExtraFieldsElement(row)
+            Fields = GetExtraFieldsElement(row),
+            Labels = WorkItemDataHelper.GetStringList(row, "labels")
+                .Select(id => new WorkItemLabelChipDto { Id = id, Name = id })
+                .ToList()
         };
 
     private static JsonElement? GetExtraFieldsElement(IReadOnlyDictionary<string, object?> row)

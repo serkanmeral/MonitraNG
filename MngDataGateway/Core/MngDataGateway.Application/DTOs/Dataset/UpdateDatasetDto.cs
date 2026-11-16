@@ -63,6 +63,11 @@ public class UpdateDatasetDto
     public List<IndexDefinition>? IndexList { get; set; }
 
     /// <summary>
+    /// Write-time tree. Sent value replaces the stored tree.
+    /// </summary>
+    public TreeConstraint? Tree { get; set; }
+
+    /// <summary>
     /// Permissions definitions (optional - replaces entire permissions if provided)
     /// null = no authorization check (everyone can access)
     /// </summary>

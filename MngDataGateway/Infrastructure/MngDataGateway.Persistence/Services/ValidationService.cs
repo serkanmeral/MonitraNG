@@ -91,6 +91,13 @@ namespace MngDataGateway.Persistence.Services
             if (!expressionResult.IsValid)
                 errors.AddRange(expressionResult.Errors);
 
+            if (!errors.Any() && schema.tree != null && !string.IsNullOrWhiteSpace(schema.tree.parentField))
+            {
+                var treeResult = await ValidateTreeAsync(schema, data, databaseName, isUpdate, dataId);
+                if (!treeResult.IsValid)
+                    errors.AddRange(treeResult.Errors);
+            }
+
             // Chat Room: cht_messages oda / yazar / Keeper grup üyeliği (F1 Adım 1)
             if (!errors.Any() && string.Equals(schema.name, "cht_messages", StringComparison.OrdinalIgnoreCase))
             {

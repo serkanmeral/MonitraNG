@@ -89,6 +89,11 @@ public class DatasetResponseDto
     public List<IndexDefinition>? IndexList { get; set; }
 
     /// <summary>
+    /// Write-time tree. Null means this dataset is not a tree.
+    /// </summary>
+    public TreeConstraint? Tree { get; set; }
+
+    /// <summary>
     /// Creation information
     /// </summary>
     public CreateInfo CreateInfo { get; set; } = null!;

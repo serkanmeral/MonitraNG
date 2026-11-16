@@ -20,6 +20,12 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public List<string>? GroupIds { get; set; } // Nullable: if null, preserve existing groups; if empty list, clear groups; if has items, update groups
         public bool IsActive { get; set; } = true;
         public bool IncludeInApplication { get; set; } = true;
+
+        /// <summary>
+        /// Organizasyon yayını unvan ve departmanı sahiplenir.
+        /// Yok sayılır veya false gelirse mevcut sahiplik silinmez.
+        /// </summary>
+        public bool OwnProfileByOrg { get; set; }
         
         /// <summary>
         /// Custom data dictionary - MngDataGateway MongoDB'ye sync edilecek

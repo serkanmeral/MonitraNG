@@ -69,6 +69,7 @@ public static class ServiceRegistration
         services.AddScoped<IMetadataCacheAdminService, MetadataCacheAdminService>();
         services.AddScoped<ICatalogService, CatalogService>();
         services.AddScoped<IWorkItemKeyGenerator, WorkItemKeyGenerator>();
+        services.AddScoped<IOrgSeatLookup, OrgSeatLookup>();
         services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();
         services.AddScoped<IRuleEngine, RuleEngineService>();
         services.AddScoped<ICreateDatasetRowsActionExecutor, CreateDatasetRowsActionExecutor>();

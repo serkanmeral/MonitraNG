@@ -98,5 +98,13 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("directorySyncedAt")]
         public DateTime? DirectorySyncedAt { get; set; }
+
+        /// <summary>
+        /// Organizasyon yayını unvan ve departmanın sahibidir.
+        /// Dizin senkronu bu iki alanı ezmez. Varsayılan kapalıdır ve elle açılmaz.
+        /// </summary>
+        [BsonElement("orgOwnsProfile")]
+        [BsonIgnoreIfDefault]
+        public bool OrgOwnsProfile { get; set; }
     }
 }

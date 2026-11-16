@@ -8,7 +8,7 @@ OperationCore maddeleri [OC workspace oluşturma planı](../odak/operationcore/O
 
 Durumlar: **konuşuldu**, **planlandı**, **yapılıyor**, **bitti**.
 
-Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanterin çekirdeği ve günlük kullanım dilimi abt alanındadır; 4 Kasım 2026’da duraklatıldı. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. OC-14 ve DG-01 aynı gün bitti. İzin çalışma alanı, kısa zincir, talep kuralları, izin formu ve iki rapor abt alanına kuruldu. Özet, hareket yazılınca yenilenir. Sıradaki izin işi dönem açılışının zamanlayıcıyla kendiliğinden çalışmasıdır. Özlük ve açılış bakiyesinin dosyadan alınması en sona bırakıldı. Yazılım çalışma alanlarının bildirim politikaları ve bildirim postası 10 Kasım 2026’da abt alanında bitti. Kütüphane klasörünün yetkisi aynı gün çalışma alanının gruplarından kopyalandı. Elle ayrılmış klasörlerin üzerine yazılmadı. Kişisel menü aynı gün kişinin kendi hareket panosuna bağlandı. Pano içinde bulunulan haftayı açar. PDKS kapı geçişi 11 Kasım 2026 akşamında lokasyon, kapı ve saat formlarında kaldı. Saat satırı henüz yazılmadı. Sıradaki kod işi gün listesidir. Aynı gün pano listesindeki talep eden adı abt imajına girdi. Yanlışlıkla açılan PM HEY alanı ve HEY projesi, TEIAS-Taşınır alanı ve TEIAS-Turnike’deki Turnike panosu kaldırıldı. Yazılım alanı HEY duruyor. İzin talebi abt alanında açılıp onaylandı. Boş gün tavanı ve boş dönem limiti talebi kesmez. Deneme kayıtları silindi.
+Toplantı modülünde konuşulan işler bitti. Takvim dosyası ve kabul-ret bu işe girmedi. Antivirüs taraması, belge indeksi hatası ve yazılım paketinin toplanması bitti. Yazılım paketinin özet ve sprint panosu pakete girdi. Help Desk paketi kuruldu. Bağı olmayan çalışma alanının kütüphane klasörü artık alanın adını taşır. Kullanıcı eğitim seti yazıldı ve indekslendi. Envanterin çekirdeği ve günlük kullanım dilimi abt alanındadır; 4 Kasım 2026’da duraklatıldı. OperationCore’da sıradaki kod işi OC-03 görsel akıştır. OC-14 ve DG-01 aynı gün bitti. İzin çalışma alanı, kısa zincir, talep kuralları, izin formu ve iki rapor abt alanına kuruldu. Özet, hareket yazılınca yenilenir. Sıradaki izin işi dönem açılışının zamanlayıcıyla kendiliğinden çalışmasıdır. Özlük ve açılış bakiyesinin dosyadan alınması en sona bırakıldı. Yazılım çalışma alanlarının bildirim politikaları ve bildirim postası 10 Kasım 2026’da abt alanında bitti. Kütüphane klasörünün yetkisi aynı gün çalışma alanının gruplarından kopyalandı. Elle ayrılmış klasörlerin üzerine yazılmadı. Kişisel menü aynı gün kişinin kendi hareket panosuna bağlandı. Pano içinde bulunulan haftayı açar. PDKS kapı geçişi 12 Kasım 2026 öğleden sonra canlı telefon denemesinde kaldı. Saat satırı 09:00, 18:00 ve 15 dakika olarak yazıldı. Gün listesi menüde. Şifre yazılırken kodun bir kez tutulması kodlandı. Sıradaki iş devam grubunun adıdır. Aynı akşam organizasyon şeması planlandı. 16 Kasım 2026’da mevki kaydı AbtAppServer üzerindeki abt alanına kuruldu. Aynı gün tuval `/apps/organizasyon` sayfasında açıldı ve yayın denendi. Şemanın unvan ve departmana sahip olması ile onay mevkisi aynı gün AbtAppServer imajlarına alındı. Aynı gün pano listesindeki talep eden adı abt imajına girdi. Yanlışlıkla açılan PM HEY alanı ve HEY projesi, TEIAS-Taşınır alanı ve TEIAS-Turnike’deki Turnike panosu kaldırıldı. Yazılım alanı HEY duruyor. İzin talebi abt alanında açılıp onaylandı. Boş gün tavanı ve boş dönem limiti talebi kesmez. Deneme kayıtları silindi.
 
 ## DI-01 — Yüklenen dosyaların antivirüs taraması
 
@@ -551,39 +551,68 @@ Proje sayfaları proline eğitiminden kopyalandı. Proline’daki asıllar durur
 
 | | |
 |---|---|
-| Durum | Yapılıyor (2026-11-11 akşam). Tanımlar dinamik formda. Saat satırı yok. Gün listesi yazılmadı. |
-| Sıra | Yarın gün listesinden devam. Saat değerini kullanıcı Saatler formuna yazar. |
+| Durum | Yapılıyor (2026-11-12 öğleden sonra). Şifre tutması kodlandı. Geçiş hâlâ devam grubunu bekliyor. |
+| Sıra | Karşılama penceresi ve lokasyon panosu. `smeral` hesabı `Abt Calisan` grubunda olmadığı için geçiş henüz kabul edilmiyor. |
 
-Personel, kapı monitöründeki kısa ömürlü kodu telefon kamerasıyla okutur. Kimlik, telefonundaki Keycloak oturumudur. Kayıt bir kapı olayıdır. Kapı ekranı Mng.Ui içinde menüsüz bir sayfadır. Prosedür MngExtensions içindedir. MngNotifier iskeletindedir ve MngGateway arkasında `/extensions` önekiyle durur. Servis henüz AbtAppServer’a alınmadı. Yerel süreç 11 Kasım akşamı durduruldu. Kontrol, kurulumdan sonra sunucuda yapılır.
+Personel, kapı monitöründeki kısa ömürlü kodu telefon kamerasıyla okutur. Kimlik, telefonundaki Keycloak oturumudur. Kayıt bir kapı olayıdır. Kapı ekranı Mng.Ui içinde menüsüz bir sayfadır. Prosedür MngExtensions içindedir. MngNotifier iskeletindedir ve MngGateway arkasında `/extensions` önekiyle durur. MngExtensions ve kapı arayüzü 12 Kasım 2026’da AbtAppServer’a alındı. Kapı adresi `https://mng.ankarabt.com/kapi` dir.
 
 Dört dataset abt alanındadır. Kapı, lokasyon ve saati yönetici kendi oturumuyla yazar. Geçiş satırını bugün yerel ortamda `abt_admin` yazar. Ayrı teknik kullanıcı henüz seçilmedi. Personelin telefon jetonu kimliği kanıtlar. Kod bu dataset’lerde durmaz. Dataset yetkileri boş bırakıldı.
 
 | Dataset | İş |
 |---|---|
-| `pdks_lokasyonlar` | Yer. İsteğe bağlı varsayılan saat |
-| `pdks_kapilar` | Kapı, lokasyon, jeton özeti, pano, yön kipi, isteğe bağlı saat |
+| `pdks_lokasyonlar` | Yer, isteğe bağlı saat. Pano seçimi buraya taşınacak. |
+| `pdks_kapilar` | Kapı, lokasyon, jeton özeti, yön kipi, isteğe bağlı saat. Eski pano alanı seçimin kaynağı değil. |
 | `pdks_gecisler` | Kişi, kapı, yazıldığı andaki lokasyon anahtarı, yön, zaman, sonuç |
-| `pdks_ayarlar` | Beklenen giriş ve çıkış saati, tolerans. Satır yazılmadı |
+| `pdks_ayarlar` | Giriş 09:00, çıkış 18:00, tolerans 15. Karşılama cümleleri aynı satırda. |
 
 Abt alanında lokasyon `merkez` ve kapı `merkez-giris` durur. Eski kapı anahtarı `merkez` artık kapı değildir. Jeton özeti bu yeniden adlandırmada korundu.
 
-Kapı adresi `http://localhost:3000/kapi` dir. Adreste kapı anahtarı ve jeton yoktur. İlk açılışta ekran bağlanmamış der. Yönetici parolasıyla lokasyon ve kapı seçilir. Sunucu jetonu döndürür, sayfa bunu tarayıcıda saklar. Aynı kapıya ikinci monitör bağlanırsa eski ekranın jetonu düşer. Eski uzun adres, kayıt boşsa bir kez kabul edilir ve `/kapi` adresine döner. Seçili alanın koyu tema logosu ve adı sol üsttedir. Tek alan olduğu için Alan kutusu gizlidir.
+Kapı adresi `https://mng.ankarabt.com/kapi` dir. Yerel prova `http://localhost:3000/kapi` dir. Adreste kapı anahtarı ve jeton yoktur. İlk açılışta ekran bağlanmamış der. Yönetici parolasıyla lokasyon ve kapı seçilir. Sunucu jetonu döndürür, sayfa bunu tarayıcıda saklar. Aynı kapıya ikinci monitör bağlanırsa eski ekranın jetonu düşer. Eski uzun adres, kayıt boşsa bir kez kabul edilir ve `/kapi` adresine döner. Seçili alanın koyu tema logosu ve adı sol üsttedir. Tek alan olduğu için Alan kutusu gizlidir.
 
 Kod yaklaşık on saniye yaşar ve bir kez kullanılır. Aynı kişinin otuz saniye içindeki ikinci okutması yok sayılır, kod yine döner. Yön, Europe/Istanbul günündeki son kabul edilmiş olaya göredir. Kapının yön kipi sabit giriş veya çıkışsa bu kural uygulanmaz. Üst bant kodu ve son geçişleri gösterir. Alt bant yer tutucudur. Pano, sunucuda layout ucu açılınca bağlanır.
 
-Telefon sayfası `/gecis` yazıldı. Oturum yoksa girişe döner ve aynı koda geri gelir. Yenileme ikinci kayıt açmaz. Canlı okutma yapılmadı. Devam grubu boş olduğu için okutma yetki diye reddedilir. Grup adı kullanıcıdan gelecek.
+Telefon sayfası `/gecis` canlıda denendi. Girişten sonra ana sayfaya düşme düzeltildi ve yalnızca arayüz yeniden yayınlandı. İlk okutmada şifre sırasında kodun süresi doldu. İkinci okutmada “Bu hesapla geçiş açılamaz” geldi. Devam grubu `Abt Calisan`. `smeral` bu grupta değil. Yenileme ikinci kayıt açmaz.
 
 Tanımlar elle yazılmış sayfa değildir. AnkaraBT menüsünde **PDKS / Tanımlamalar** altındadır. Lokasyonlar, Kapılar ve Saatler dinamik formdur. Anahtar kayıt açıldıktan sonra değişmez. Silme kapalıdır. Kapatma aktif alanıyla yapılır. Jeton formda üretilmez. Saat formunda ilk satırın tekil değeri `ayar` olmalıdır. Kapı saati doluysa lokasyonun saatini ezer. Kapı boşsa lokasyonun saati, o da boşsa `ayar` satırı geçerlidir. Bu seçim kuralı sınıf sorgusunda okunacak. Saat değeri uydurulmadı.
 
 | Dilim | İş | Durum |
 |---|---|---|
-| PDKS-01 | Dört dataset şeması | Abt alanında kuruldu. Saat satırı yok. |
-| PDKS-02 | Kod üretme, tüketme, ekran bağlama | Kod yazıldı. Yerelde denendi. Sunucu kurulumu sırada. Yazıcı hâlâ `abt_admin`. |
-| PDKS-03 | Menüsüz kapı sayfası | `/kapi` bağlama, kod ve şerit yazıldı. Pano bandı layout ucunu bekliyor. |
-| PDKS-04 | Telefon sayfası | Yazıldı. Canlı okutma, devam grubu adını bekliyor. |
-| PDKS-05 | Tanımlar | Lokasyon, kapı ve saat formları menüde. Gün listesi yok. |
-| PDKS-06 | Erken, zamanında, geç | Sırada. Saat satırı yazılınca anlam kazanır. |
+| PDKS-01 | Dört dataset şeması | Abt alanında kuruldu. Saat satırı yazıldı. |
+| PDKS-02 | Kod üretme, tüketme, ekran bağlama | Sunucuda çalışıyor. Yazıcı hâlâ `abt_admin`. |
+| PDKS-03 | Menüsüz kapı sayfası | `/kapi` canlıda. Alt bant iş özeti vitrinini çizer. |
+| PDKS-04 | Telefon sayfası | Canlıda denendi. Dönüş düzeldi. Yetki, grup adını bekliyor. |
+| PDKS-05 | Tanımlar ve gün listesi | Formlar ve gün listesi menüde. |
+| PDKS-06 | Erken, zamanında, geç | Sırada. Saat satırı hazır. |
+| PDKS-07 | Şifre sırasında kodu tutma | Kodlandı. Oturum yoksa kod bir kez doksan saniye tutulur. |
+| PDKS-08 | Karşılama | Şerit kodlandı. Kabul edilen geçişte ad soyad ve cümle şeritte durur. QR ekranda kalır. |
+| PDKS-09 | Lokasyon panosu | Pano alanı lokasyon formunda. Örnek `kapi-is-ozeti` kapı alt bandında çiziliyor. Yenileme süresi saat ayarındadır. |
+| PDKS-10 | Mobil uygulama | Karar 12 Kasım 2026 akşamı kilitlendi. Kod yok. |
 
-Yarın sıra gün listesindedir. Liste yönetim kabuğundadır, kapı monitörüne konmaz. Ondan önce Saatler formuna giriş, çıkış ve tolerans yazılır. Telefon denemesi devam grubunun adını ve çalışan MngExtensions sürecini bekler. Erken, zamanında ve geç sorgusu gün listesinden sonra gelir. Kapı panosu layout ucunu bekler.
+12 Kasım akşamı mobil uygulama kilitlendi. Telefonu tanıyan şey, telefonda üretilen ve İK’nın onayladığı anahtardır. IMEI, telefon numarası, yüz ve parmak izi kapıyı açmaz. Keycloak açık anahtarı ve onayı tutar. QR aynı `https` adresidir. Uygulama yüklüyse link uygulamayı açar. Yüklü değilse tarayıcıdaki şifreli geçiş durur. Ayrıntı plandadır.
 
 Ayrıntı: [PDKS kapı ekranı planı](dev/pdks/pdks_plani.md).
+
+## ORG — Organizasyon şeması
+
+| | |
+|---|---|
+| Durum | Şema ofiste kullanılıyor (2026-11-16). Yayın yapıldı. Çalışanlar aynı kutudadır. |
+| Sıra | Dört dilim açıldı. AD’ye yazılmaz. Yeni dilim yok. Ortam AbtAppServer. Erişim [server/access.md](server/access.md). |
+
+Düğüm mevkidir. Departman kutunun etiketidir. Kullanıcı yerel veya dizin olabilir ve tek koltuğa oturur. Tuval ağaçtır. Kutu başka kutunun altına bırakılır. Serbest ok çizilmez. Keşif ağacı taşınmaz.
+
+Yayın, oturanın unvan ve departmanını Keeper kartına yazar ve bu iki alanın sahipliğini işaretler. Çalışanın unvanı durur; departmanı koltuğun etiketidir; yöneticisi oturandır. Oturanın yöneticisi üst koltuğun oturan kişisidir. Üst boşsa yönetici boş kalır. `Yonetim` yedeği durur. Dizin kullanıcısında ad, e-posta ve grup yazılmaz. Sahiplik açıkken dizin senkronu unvan ve departmanı ezmez. AD’ye yazılmaz. Bu karar 16 Kasım 2026’da kilitlendi. Aynı gün abt şeması yayınlandı.
+
+Çalışan ayrı kutu değildir. Kutuda üç isim görünür. Fazlası **ve N kişi** listesindedir. Liste salt okunurdur, ada göre sıralanır, aranır ve 20’şer sayfalanır. Kişi penceresi açılışta ada göre sıralıdır.
+
+Onay geçişinde mevki seçilmemişse grup durur. Seçilmişse karar anında koltuktaki kişi bakar. Boş koltuk üste, o da boşsa gruba çıkar. İzin talebinde onaylayan mevki boşsa `Yonetim` durur. Zimmet aynı seçimi akış düzenleyicisinden yapar.
+
+| Dilim | İş | Durum |
+|---|---|---|
+| ORG-01 | `org_mevkiler` ve ağaç kuralı | Kuruldu (2026-11-16). Deneme satırları silindi |
+| ORG-02 | Ağaç tuvali | Açıldı (2026-11-16). Menüde. Deneme satırları silindi |
+| ORG-03 | Yayın: unvan, departman, izin yöneticisi | Açıldı (2026-11-16). Deneme kartları eski haline alındı |
+| ORG-04 | Alan sahipliği ve onay mevkisi | Açıldı (2026-11-16). Üç imaj yenilendi |
+| ORG-05 | AD’ye yazma | Yok. 16 Kasım 2026’da kapatıldı |
+
+Ayrıntı: [Organizasyon şeması](dev/org/organizasyon_semasi.md).

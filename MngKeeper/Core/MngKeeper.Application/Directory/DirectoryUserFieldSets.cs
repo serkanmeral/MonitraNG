@@ -47,9 +47,13 @@ public static class DirectoryUserFieldSets
 
     /// <summary>
     /// AD department ve title doluysa yazar. Boş dizin değeri karttaki metni silmez.
+    /// Şema bu iki alanın sahibiyse dizin değeri yok sayılır.
     /// </summary>
     public static void ApplyDirectoryProfile(User target, KeycloakRealmUserSnapshot source)
     {
+        if (target.OrgOwnsProfile)
+            return;
+
         if (!string.IsNullOrWhiteSpace(source.Title))
             target.Title = source.Title.Trim();
         if (!string.IsNullOrWhiteSpace(source.Department))

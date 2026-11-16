@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MngDataGateway.Application.Services;
 using MngDataGateway.Domain.Entities;
+using MngDataGateway.Domain.Trees;
 
 namespace MngDataGateway.Persistence.Services
 {
@@ -163,6 +164,20 @@ namespace MngDataGateway.Persistence.Services
                 if (schema.indexList != null && schema.indexList.Any())
                 {
                     await CreateIndexesAsync(database, collectionName, schema.indexList);
+                }
+
+                if (schema.tree?.singleRoot == true)
+                {
+                    await CreateIndexesAsync(database, collectionName, new List<IndexDefinition>
+                    {
+                        new()
+                        {
+                            name = "idx___treeRoot",
+                            fields = new Dictionary<string, int> { [TreeWriteRules.RootMarkerField] = 1 },
+                            unique = true,
+                            sparse = true
+                        }
+                    });
                 }
 
                 // Add to cache

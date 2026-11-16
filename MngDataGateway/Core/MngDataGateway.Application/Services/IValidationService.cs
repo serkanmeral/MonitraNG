@@ -53,6 +53,11 @@ namespace MngDataGateway.Application.Services
         /// Validate expression-based validation rules
         /// </summary>
         ValidationResult ValidateExpressions(DatasetSchema schema, Dictionary<string, object> data, bool isUpdate);
+
+        /// <summary>
+        /// Reject delete when a tree row still has children.
+        /// </summary>
+        Task<ValidationResult> ValidateTreeDeleteAsync(DatasetSchema schema, string databaseName, string dataId);
     }
 }
 

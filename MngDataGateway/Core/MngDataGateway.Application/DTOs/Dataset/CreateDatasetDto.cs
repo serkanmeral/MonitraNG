@@ -70,6 +70,11 @@ public class CreateDatasetDto
     public List<IndexDefinition>? IndexList { get; set; }
 
     /// <summary>
+    /// Write-time tree. Null means this dataset is not a tree.
+    /// </summary>
+    public TreeConstraint? Tree { get; set; }
+
+    /// <summary>
     /// Permissions definitions (optional - access control)
     /// null or undefined = no authorization check (everyone can access)
     /// </summary>

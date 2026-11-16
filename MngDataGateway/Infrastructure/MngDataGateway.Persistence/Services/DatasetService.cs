@@ -93,6 +93,7 @@ public class DatasetService : IDatasetService
             queries = dto.Queries != null ? ConvertQueryDefinitions(dto.Queries) : new(),
             queryActions = ConvertQueryWriteActions(dto.QueryActions),
             indexList = dto.IndexList ?? new(),
+            tree = dto.Tree,
             permissions = processedPermissions,
 
             __createInfo = new CreateInfo
@@ -114,6 +115,7 @@ public class DatasetService : IDatasetService
 
         // Validate field definitions
         ValidateFieldDefinitions(entity.fields);
+        ValidateTreeConstraint(entity.name, entity.fields, entity.tree);
 
         // Validate incremental fields
         ValidateIncrementalFields(entity.fields);
@@ -252,6 +254,16 @@ public class DatasetService : IDatasetService
             entity.queryActions = convertedActions;
         }
 
+        if (dto.Tree != null && !SameTree(entity.tree, dto.Tree))
+        {
+            changes["tree"] = new ChangeDetail
+            {
+                oldValue = entity.tree?.parentField,
+                newValue = dto.Tree.parentField
+            };
+            entity.tree = dto.Tree;
+        }
+
         if (dto.IndexList != null)
         {
             // Add new indexes (keep old ones)
@@ -300,6 +312,9 @@ public class DatasetService : IDatasetService
                 }
             }
         }
+
+        if (dto.Fields != null || dto.Tree != null)
+            ValidateTreeConstraint(entity.name, entity.fields, entity.tree);
 
         // Eğer değişiklik yoksa
         if (changes.Count == 0)
@@ -924,6 +939,46 @@ public class DatasetService : IDatasetService
         }
     }
 
+    private static bool SameTree(TreeConstraint? left, TreeConstraint right) =>
+        left != null
+        && left.parentField == right.parentField
+        && left.singleRoot == right.singleRoot
+        && left.occupantField == right.occupantField
+        && left.staffField == right.staffField;
+
+    private static void ValidateTreeConstraint(string datasetName, List<FieldDefinition> fields, TreeConstraint? tree)
+    {
+        if (tree == null || string.IsNullOrWhiteSpace(tree.parentField))
+            return;
+
+        var parent = fields.FirstOrDefault(f => f.name == tree.parentField);
+        if (parent == null)
+            throw new InvalidOperationException($"Ağaç üst alanı yok: '{tree.parentField}'");
+
+        if (parent.fieldType != "relation" || parent.isArray || !string.Equals(parent.relationDataset, datasetName, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Ağaç üst alanı aynı veri kümesine giden tek ilişki olmalıdır: '{tree.parentField}'");
+
+        if (string.IsNullOrWhiteSpace(tree.occupantField))
+            return;
+
+        var occupant = fields.FirstOrDefault(f => f.name == tree.occupantField);
+        if (occupant == null)
+            throw new InvalidOperationException($"Ağaç oturan alanı yok: '{tree.occupantField}'");
+
+        if (occupant.isArray || (occupant.fieldType != "persons" && occupant.fieldType != "text"))
+            throw new InvalidOperationException($"Ağaç oturan alanı tek kişi olmalıdır: '{tree.occupantField}'");
+
+        if (string.IsNullOrWhiteSpace(tree.staffField))
+            return;
+
+        var staff = fields.FirstOrDefault(f => f.name == tree.staffField);
+        if (staff == null)
+            throw new InvalidOperationException($"Ağaç çalışan alanı yok: '{tree.staffField}'");
+
+        if (!staff.isArray || staff.fieldType != "persons")
+            throw new InvalidOperationException($"Ağaç çalışan alanı çoklu kişi olmalıdır: '{tree.staffField}'");
+    }
+
     /// <summary>
     /// Incremental fields validation
     /// </summary>
@@ -1131,6 +1186,7 @@ public class DatasetService : IDatasetService
             QueryActions = includeDetails ? ConvertQueryWriteActionsForResponse(entity.queryActions) : null,
             IndexListCount = entity.indexList.Count,
             IndexList = includeDetails ? entity.indexList : null,
+            Tree = entity.tree,
             Permissions = entity.permissions,
             CreateInfo = entity.__createInfo,
             LastUpdateInfo = entity.__lastUpdateInfo,

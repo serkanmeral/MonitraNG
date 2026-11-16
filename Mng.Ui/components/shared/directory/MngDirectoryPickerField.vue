@@ -50,6 +50,13 @@ const draftSelection = ref<string[]>([]);
 const tableSearch = ref('');
 const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
+const tableSortKey = ref(props.entity === 'user' ? 'title' : '');
+const tableSortOrder = ref(props.entity === 'user' ? 'asc' : '');
+const tableSortBy = computed(() => {
+  if (props.entity !== 'user' || !tableSortKey.value) return [];
+  const order = tableSortOrder.value === 'desc' ? 'desc' : 'asc';
+  return [{ key: tableSortKey.value, order }];
+});
 const selectingAll = ref(false);
 
 const tableLoading = computed(() => picker.value.loading.value || selectingAll.value);
@@ -87,10 +94,10 @@ const displayText = computed(() => {
 const tableHeaders = computed(() => {
   if (props.entity === 'user') {
     return [
-      { title: t('directoryPicker.user.columnName'), key: 'title', sortable: false },
-      { title: t('directoryPicker.user.columnUsername'), key: 'extra_username', sortable: false },
-      { title: t('directoryPicker.user.columnEmail'), key: 'extra_email', sortable: false },
-      { title: t('directoryPicker.user.columnDepartment'), key: 'extra_department', sortable: false },
+      { title: t('directoryPicker.user.columnName'), key: 'title' },
+      { title: t('directoryPicker.user.columnUsername'), key: 'extra_username' },
+      { title: t('directoryPicker.user.columnEmail'), key: 'extra_email' },
+      { title: t('directoryPicker.user.columnDepartment'), key: 'extra_department' },
     ];
   }
   return [
@@ -155,7 +162,19 @@ async function openDialog() {
   draftSelection.value = [...selectedIds.value];
   tableSearch.value = picker.value.searchTerm.value;
   tablePage.value = 1;
+  if (props.entity === 'user') {
+    tableSortKey.value = 'title';
+    tableSortOrder.value = 'asc';
+  }
   dialogOpen.value = true;
+  if (props.entity === 'user') {
+    await picker.value.onTableOptionsUpdate({
+      page: 1,
+      itemsPerPage: tableItemsPerPage.value,
+      sortBy: [{ key: 'title', order: 'asc' }],
+    });
+    return;
+  }
   await picker.value.resetAndFetch(tableSearch.value);
 }
 
@@ -176,12 +195,25 @@ function onTableSearchUpdate(query: string) {
   picker.value.onSearchUpdate(tableSearch.value);
 }
 
-function onTableOptionsUpdate(opts: { page: number; itemsPerPage: number }) {
-  tablePage.value = opts.page;
+function onTableOptionsUpdate(opts: {
+  page: number;
+  itemsPerPage: number;
+  sortBy?: { key: string; order?: boolean | 'asc' | 'desc' }[];
+}) {
+  const sort = opts.sortBy?.find((item) => item?.key);
+  const incomingKey = sort?.key ?? '';
+  const incomingOrder = sort?.order === 'desc' ? 'desc' : sort?.order === 'asc' ? 'asc' : '';
+  const key = incomingKey || (props.entity === 'user' ? 'title' : '');
+  const order = incomingKey ? incomingOrder : (props.entity === 'user' ? 'asc' : '');
+  const sortChanged = key !== tableSortKey.value || order !== tableSortOrder.value;
+  tableSortKey.value = key;
+  tableSortOrder.value = order;
+  tablePage.value = sortChanged ? 1 : opts.page;
   tableItemsPerPage.value = opts.itemsPerPage > 0 ? opts.itemsPerPage : 20;
   void picker.value.onTableOptionsUpdate({
     page: tablePage.value,
     itemsPerPage: tableItemsPerPage.value,
+    sortBy: key ? [{ key, order: order === 'desc' ? 'desc' : 'asc' }] : undefined,
   });
 }
 
@@ -385,6 +417,7 @@ async function selectAllMatching() {
             density="comfortable"
             class="border rounded-md mng-directory-picker-field__table"
             :show-select="multiple"
+            :sort-by="entity === 'user' ? tableSortBy : undefined"
             :model-value="multiple ? draftSelection : undefined"
             @update:model-value="onDraftSelectionUpdate"
             @update:options="onTableOptionsUpdate"

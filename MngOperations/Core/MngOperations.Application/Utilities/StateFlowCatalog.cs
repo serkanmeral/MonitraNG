@@ -59,6 +59,106 @@ public static class StateFlowCatalog
         return GroupListParser.Parse(groups);
     }
 
+    /// <summary>
+    /// Talep alanı doluysa o mevki kullanılır. Alan tanımlı ama boşsa grup yolu durur.
+    /// Alan yoksa geçişteki sabit mevki kullanılır.
+    /// </summary>
+    public static MevkiChoice ReadMevkiChoice(JsonElement transition, IReadOnlyDictionary<string, object?>? workItem)
+    {
+        var permissions = GetPermissions(transition);
+        var field = PermissionText(permissions, "mevkiField");
+        if (!string.IsNullOrWhiteSpace(field))
+        {
+            var fromItem = workItem == null
+                ? null
+                : RelationId(WorkItemDataHelper.GetFieldValue(workItem, field));
+            return string.IsNullOrWhiteSpace(fromItem)
+                ? new MevkiChoice(false, null)
+                : new MevkiChoice(true, fromItem);
+        }
+
+        var fixedId = PermissionText(permissions, "mevkiId");
+        return string.IsNullOrWhiteSpace(fixedId)
+            ? new MevkiChoice(false, null)
+            : new MevkiChoice(true, fixedId);
+    }
+
+    public readonly record struct MevkiChoice(bool UseSeat, string? SeatId);
+
+    private static string? PermissionText(JsonElement? permissions, string name)
+    {
+        if (permissions is not { ValueKind: JsonValueKind.Object })
+            return null;
+
+        if (permissions.Value.TryGetProperty(name, out var prop))
+            return Text(prop);
+
+        if (name.Length > 0)
+        {
+            var pascal = char.ToUpperInvariant(name[0]) + name[1..];
+            if (permissions.Value.TryGetProperty(pascal, out prop))
+                return Text(prop);
+        }
+
+        return null;
+    }
+
+    private static string? Text(JsonElement prop)
+    {
+        if (prop.ValueKind != JsonValueKind.String)
+            return null;
+        var value = prop.GetString();
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string? RelationId(object? value)
+    {
+        switch (value)
+        {
+            case null:
+                return null;
+            case string text:
+                return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+            case JsonElement el when el.ValueKind == JsonValueKind.String:
+                return string.IsNullOrWhiteSpace(el.GetString()) ? null : el.GetString()!.Trim();
+            case JsonElement el when el.ValueKind == JsonValueKind.Object:
+                return ObjectId(el);
+            case IDictionary<string, object?> map:
+                return MapId(key => map.TryGetValue(key, out var id) ? id : null);
+            case System.Collections.IDictionary map:
+                return MapId(key => map.Contains(key) ? map[key] : null);
+            default:
+                return null;
+        }
+    }
+
+    private static string? MapId(Func<string, object?> read)
+    {
+        foreach (var key in new[] { "__dataId", "dataId", "id" })
+        {
+            var id = read(key);
+            if (id != null && !string.IsNullOrWhiteSpace(id.ToString()))
+                return id.ToString()!.Trim();
+        }
+
+        return null;
+    }
+
+    private static string? ObjectId(JsonElement element)
+    {
+        foreach (var key in new[] { "__dataId", "dataId", "id" })
+        {
+            if (element.TryGetProperty(key, out var id)
+                && id.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(id.GetString()))
+            {
+                return id.GetString()!.Trim();
+            }
+        }
+
+        return null;
+    }
+
     public static void EnsureTransitionValid(JsonElement transition, string transitionKey, string workItemStateId)
     {
         var from = GetString(transition, "fromStateId");

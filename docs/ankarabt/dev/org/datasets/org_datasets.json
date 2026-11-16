@@ -1,0 +1,76 @@
+[
+  {
+    "name": "org_mevkiler",
+    "description": "Organizasyon şemasının mevkisi. Kişi düğüm değildir. Üst boşsa bu satır köktür. Tek kök vardır. Bir kullanıcı ya oturan ya da çalışan olarak tek mevkide durur.",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "tree": {
+      "parentField": "ust",
+      "occupantField": "oturan",
+      "staffField": "calisanlar",
+      "singleRoot": true
+    },
+    "indexList": [
+      { "name": "idx_ust", "fields": { "ust": 1 }, "unique": false },
+      { "name": "idx_oturan", "fields": { "oturan": 1 }, "unique": true, "sparse": true },
+      { "name": "idx_calisanlar", "fields": { "calisanlar": 1 }, "unique": true, "sparse": true }
+    ],
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "ad",
+        "title": "Mevki",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 120 }
+      },
+      {
+        "fieldType": "relation",
+        "name": "ust",
+        "title": "Üst mevki",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "org_mevkiler"
+      },
+      {
+        "fieldType": "text",
+        "name": "departman",
+        "title": "Departman",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 120 }
+      },
+      {
+        "fieldType": "persons",
+        "name": "oturan",
+        "title": "Oturan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "persons",
+        "name": "calisanlar",
+        "title": "Çalışanlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "number",
+        "name": "sira",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "min": 0 }
+      }
+    ],
+    "validations": [],
+    "queries": []
+  }
+]

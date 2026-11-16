@@ -18,18 +18,28 @@ public interface IPermissionEvaluator
 
     void EnsureWorkItemUpdate(WorkspaceRecord workspace, IReadOnlyDictionary<string, object?> workItem);
 
-    void EnsureTransition(WorkspaceRecord workspace, JsonElement transition, IReadOnlyDictionary<string, object?> workItem);
+    Task EnsureTransition(
+        WorkspaceRecord workspace,
+        JsonElement transition,
+        IReadOnlyDictionary<string, object?> workItem,
+        CancellationToken cancellationToken = default);
 
     bool CanViewWorkItem(WorkspaceRecord workspace, IReadOnlyDictionary<string, object?> workItem);
 
     bool CanEditWorkItem(WorkspaceRecord workspace, IReadOnlyDictionary<string, object?> workItem);
 
-    bool CanApplyTransition(WorkspaceRecord workspace, JsonElement transition);
+    Task<bool> CanApplyTransition(
+        WorkspaceRecord workspace,
+        JsonElement transition,
+        IReadOnlyDictionary<string, object?>? workItem = null,
+        CancellationToken cancellationToken = default);
 
-    IReadOnlyList<JsonElement> GetAvailableTransitions(
+    Task<IReadOnlyList<JsonElement>> GetAvailableTransitions(
         WorkspaceRecord workspace,
         StateFlowRecord stateFlow,
-        string currentStateId);
+        string currentStateId,
+        IReadOnlyDictionary<string, object?>? workItem = null,
+        CancellationToken cancellationToken = default);
 
     void EnsureBoardView(WorkspaceRecord workspace, BoardRecord board);
 

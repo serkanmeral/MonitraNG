@@ -11,11 +11,16 @@ namespace MngOperations.Infrastructure.Services;
 public class PermissionEvaluator : IPermissionEvaluator
 {
     private readonly IRequestContext _context;
+    private readonly IOrgSeatLookup _seats;
     private readonly ILogger<PermissionEvaluator> _logger;
 
-    public PermissionEvaluator(IRequestContext context, ILogger<PermissionEvaluator> logger)
+    public PermissionEvaluator(
+        IRequestContext context,
+        IOrgSeatLookup seats,
+        ILogger<PermissionEvaluator> logger)
     {
         _context = context;
+        _seats = seats;
         _logger = logger;
     }
 
@@ -97,10 +102,11 @@ public class PermissionEvaluator : IPermissionEvaluator
         return CanEditInWorkspace(workspace) || IsAssignee(workItem);
     }
 
-    public void EnsureTransition(
+    public async Task EnsureTransition(
         WorkspaceRecord workspace,
         JsonElement transition,
-        IReadOnlyDictionary<string, object?> workItem)
+        IReadOnlyDictionary<string, object?> workItem,
+        CancellationToken cancellationToken = default)
     {
         var transitionKey = StateFlowCatalog.GetStringProperty(transition, "transitionKey") ?? "?";
 
@@ -115,8 +121,7 @@ public class PermissionEvaluator : IPermissionEvaluator
 
         EnsureWorkItemUpdate(workspace, workItem);
 
-        var groups = StateFlowCatalog.GetPermissionGroups(StateFlowCatalog.GetPermissions(transition));
-        if (!GroupListParser.Intersects(_context.UserGroups, groups))
+        if (!await AllowsSeatOrGroups(transition, workItem, cancellationToken))
         {
             throw new OperationCoreException(
                 "TRANSITION_FORBIDDEN",
@@ -126,7 +131,11 @@ public class PermissionEvaluator : IPermissionEvaluator
         }
     }
 
-    public bool CanApplyTransition(WorkspaceRecord workspace, JsonElement transition)
+    public async Task<bool> CanApplyTransition(
+        WorkspaceRecord workspace,
+        JsonElement transition,
+        IReadOnlyDictionary<string, object?>? workItem = null,
+        CancellationToken cancellationToken = default)
     {
         if (HasPlatformBypass() || _context.IsManager)
             return true;
@@ -134,18 +143,41 @@ public class PermissionEvaluator : IPermissionEvaluator
         if (!CanEditInWorkspace(workspace) && !CanViewWorkspace(workspace))
             return false;
 
-        var groups = StateFlowCatalog.GetPermissionGroups(StateFlowCatalog.GetPermissions(transition));
-        return GroupListParser.Intersects(_context.UserGroups, groups);
+        return await AllowsSeatOrGroups(transition, workItem, cancellationToken);
     }
 
-    public IReadOnlyList<JsonElement> GetAvailableTransitions(
+    public async Task<IReadOnlyList<JsonElement>> GetAvailableTransitions(
         WorkspaceRecord workspace,
         StateFlowRecord stateFlow,
-        string currentStateId)
+        string currentStateId,
+        IReadOnlyDictionary<string, object?>? workItem = null,
+        CancellationToken cancellationToken = default)
     {
-        return StateFlowCatalog.ListFromState(stateFlow.Transitions, currentStateId)
-            .Where(t => CanApplyTransition(workspace, t))
-            .ToList();
+        var matched = new List<JsonElement>();
+        foreach (var transition in StateFlowCatalog.ListFromState(stateFlow.Transitions, currentStateId))
+        {
+            if (await CanApplyTransition(workspace, transition, workItem, cancellationToken))
+                matched.Add(transition);
+        }
+
+        return matched;
+    }
+
+    private async Task<bool> AllowsSeatOrGroups(
+        JsonElement transition,
+        IReadOnlyDictionary<string, object?>? workItem,
+        CancellationToken cancellationToken)
+    {
+        var choice = StateFlowCatalog.ReadMevkiChoice(transition, workItem);
+        if (choice.UseSeat)
+        {
+            var occupant = await _seats.ResolveOccupantAsync(choice.SeatId, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(occupant))
+                return string.Equals(occupant, _context.MngPersonId, StringComparison.Ordinal);
+        }
+
+        var groups = StateFlowCatalog.GetPermissionGroups(StateFlowCatalog.GetPermissions(transition));
+        return GroupListParser.Intersects(_context.UserGroups, groups);
     }
 
     public void EnsureBoardView(WorkspaceRecord workspace, BoardRecord board)

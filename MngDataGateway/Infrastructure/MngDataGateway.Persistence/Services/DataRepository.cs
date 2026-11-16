@@ -196,7 +196,8 @@ namespace MngDataGateway.Persistence.Services
             string collectionName,
             string dataId,
             Dictionary<string, object> updates,
-            IClientSessionHandle? session = null)
+            IClientSessionHandle? session = null,
+            IReadOnlyCollection<string>? unsetFields = null)
         {
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
@@ -206,6 +207,18 @@ namespace MngDataGateway.Persistence.Services
             var updateBuilder = Builders<BsonDocument>.Update;
             var updateDefinitions = updates.Select(kvp =>
                 updateBuilder.Set(kvp.Key, BsonValue.Create(kvp.Value))).ToList();
+
+            if (unsetFields != null)
+            {
+                foreach (var field in unsetFields)
+                {
+                    if (!string.IsNullOrWhiteSpace(field) && !updates.ContainsKey(field))
+                        updateDefinitions.Add(updateBuilder.Unset(field));
+                }
+            }
+
+            if (updateDefinitions.Count == 0)
+                return true;
 
             var update = updateBuilder.Combine(updateDefinitions);
 

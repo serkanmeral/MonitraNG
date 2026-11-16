@@ -189,6 +189,8 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 existingUser.LastName = request.LastName;
                 existingUser.Title = request.Title;
                 existingUser.Department = request.Department;
+                if (request.OwnProfileByOrg)
+                    existingUser.OrgOwnsProfile = true;
                 existingUser.Gender = request.Gender;
                 existingUser.PhoneNumber = request.PhoneNumber;
                 if (request.TelegramUsername != null || request.TelegramChatId != null)
@@ -357,6 +359,8 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         {
             existingUser.Title = request.Title;
             existingUser.Department = request.Department;
+            if (request.OwnProfileByOrg)
+                existingUser.OrgOwnsProfile = true;
             existingUser.Gender = request.Gender;
             existingUser.PhoneNumber = request.PhoneNumber;
             if (request.TelegramUsername != null || request.TelegramChatId != null)

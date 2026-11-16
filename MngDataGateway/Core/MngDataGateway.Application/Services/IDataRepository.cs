@@ -55,7 +55,8 @@ namespace MngDataGateway.Application.Services
             string collectionName,
             string dataId,
             Dictionary<string, object> updates,
-            IClientSessionHandle? session = null);
+            IClientSessionHandle? session = null,
+            IReadOnlyCollection<string>? unsetFields = null);
 
         /// <summary>
         /// Hard delete document and archive to __deletedDatas

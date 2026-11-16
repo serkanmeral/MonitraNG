@@ -96,7 +96,11 @@ export function useKeeperGroupPicker(options?: KeeperGroupPickerOptions) {
     }, 300);
   }
 
-  async function onTableOptionsUpdate(options: { page: number; itemsPerPage: number }) {
+  async function onTableOptionsUpdate(options: {
+    page: number;
+    itemsPerPage: number;
+    sortBy?: { key: string; order?: boolean | 'asc' | 'desc' }[];
+  }) {
     await fetchPage({ page: options.page, itemsPerPage: options.itemsPerPage });
   }
 

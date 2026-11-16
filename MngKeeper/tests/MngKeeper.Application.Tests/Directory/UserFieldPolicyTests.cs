@@ -148,4 +148,56 @@ public class DirectoryProfileSyncTests
     Assert.True(DirectoryUserSyncComparer.DirectoryProfileDiffers(null, "Yönetim"));
     Assert.False(DirectoryUserSyncComparer.DirectoryProfileDiffers(" Yönetim ", "Yönetim"));
   }
+
+  [Fact]
+  public void Owned_profile_keeps_title_and_department()
+  {
+    var user = new User
+    {
+      Title = "Genel Müdür",
+      Department = "Yönetim",
+      OrgOwnsProfile = true
+    };
+
+    DirectoryUserFieldSets.ApplyDirectoryProfile(user, new KeycloakRealmUserSnapshot
+    {
+      Title = "AD unvan",
+      Department = "AD birim"
+    });
+
+    Assert.Equal("Genel Müdür", user.Title);
+    Assert.Equal("Yönetim", user.Department);
+  }
+
+  [Fact]
+  public void Owned_profile_does_not_sync_when_only_title_and_department_differ()
+  {
+    var existing = new User
+    {
+      ProvisioningSource = UserProvisioningSource.Directory,
+      KeycloakUserId = "kc-1",
+      Username = "jdoe",
+      Email = "a@x.com",
+      FirstName = "J",
+      LastName = "D",
+      IsActive = true,
+      Title = "Genel Müdür",
+      Department = "Yönetim",
+      OrgOwnsProfile = true,
+      Groups = new List<string> { "Yonetim" }
+    };
+    var directory = new KeycloakRealmUserSnapshot
+    {
+      Id = "kc-1",
+      Username = "jdoe",
+      Email = "a@x.com",
+      FirstName = "J",
+      LastName = "D",
+      Enabled = true,
+      Title = "AD unvan",
+      Department = "AD birim"
+    };
+
+    Assert.False(DirectoryUserSyncComparer.ShouldSyncFromKeycloak(existing, directory, new[] { "Yonetim" }));
+  }
 }

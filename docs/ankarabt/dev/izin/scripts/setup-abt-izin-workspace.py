@@ -178,7 +178,7 @@ def field(access: str, key: str, label: str, field_type: str, **extra) -> str:
     return row_id
 
 
-def transition(key, source, target, label, order, required=None, groups=None, document_action=None):
+def transition(key, source, target, label, order, required=None, groups=None, document_action=None, mevki_field=None):
     body = {
         "transitionKey": key,
         "fromStateId": source,
@@ -188,8 +188,13 @@ def transition(key, source, target, label, order, required=None, groups=None, do
     }
     if required:
         body["requiredFields"] = required
+    permissions = {}
     if groups:
-        body["permissions"] = {"groups": groups}
+        permissions["groups"] = groups
+    if mevki_field:
+        permissions["mevkiField"] = mevki_field
+    if permissions:
+        body["permissions"] = permissions
     if document_action:
         body["documentAction"] = document_action
     return body
@@ -352,6 +357,11 @@ def main() -> int:
         relationDatasetName="",
         options={},
     )
+    onay_mevki = field(
+        access, "izin_onayMevki", "Onaylayan mevki", "relation",
+        relationDatasetName="org_mevkiler",
+        options=relation("org_mevkiler", "ad", ["ad"]),
+    )
     personel_kart = field(access, "izin_personelKartId", "Personel karti", "text")
     yerine_kart = field(access, "izin_yerineKartId", "Yerine bakacak karti", "text")
     engel = field(access, "izin_engel", "Engel", "text")
@@ -364,7 +374,7 @@ def main() -> int:
     iade_key = field(access, "izin_iadeAnahtar", "Iade anahtari", "text")
     kullanim_key = field(access, "izin_kullanimAnahtar", "Kullanim anahtari", "text")
     field_ids = [
-        personel, cinsiyet, tur, neden, baslangic, bitis, yarim, cogul, dusen, eksi, aciklama, belge, yerine,
+        personel, cinsiyet, tur, neden, baslangic, bitis, yarim, cogul, dusen, eksi, aciklama, belge, yerine, onay_mevki,
         personel_kart, yerine_kart,
         engel, hak, donem, cakisma, tavan, donem_asildi, bloke_key, iade_key, kullanim_key,
     ]
@@ -416,8 +426,8 @@ def main() -> int:
         "isActive": True,
         "transitions": [
             transition("gonder", taslak, onay, "Onaya gonder", 0, ["izin_personelId", "izin_turId", "izin_baslangic", "izin_bitis"], document_action=kept_documents.get("gonder")),
-            transition("onayla", onay, onaylandi, "Onayla", 1, groups=["Yonetim"], document_action=kept_documents.get("onayla")),
-            transition("reddet", onay, reddedildi, "Reddet", 2, groups=["Yonetim"], document_action=kept_documents.get("reddet")),
+            transition("onayla", onay, onaylandi, "Onayla", 1, groups=["Yonetim"], mevki_field="izin_onayMevki", document_action=kept_documents.get("onayla")),
+            transition("reddet", onay, reddedildi, "Reddet", 2, groups=["Yonetim"], mevki_field="izin_onayMevki", document_action=kept_documents.get("reddet")),
             transition("iptal", onay, iptal, "Iptal", 3, document_action=kept_documents.get("iptal")),
             transition("iptal_taslak", taslak, iptal, "Iptal", 4, document_action=kept_documents.get("iptal_taslak")),
         ],
@@ -428,7 +438,7 @@ def main() -> int:
         "title", "description", "typeId", "priorityId",
         "izin_personelId", "izin_turId",
         "izin_baslangic", "izin_bitis", "izin_yarimGun", "izin_cogul",
-        "izin_dusenGun", "izin_aciklama", "izin_belgeId", "izin_yerineBakacak",
+        "izin_dusenGun", "izin_aciklama", "izin_belgeId", "izin_yerineBakacak", "izin_onayMevki",
     ]
     behaviors = {key: {"visible": True} for key in visible}
     behaviors["title"]["required"] = True

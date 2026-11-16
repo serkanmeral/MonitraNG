@@ -73,6 +73,12 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
   const permissionGroups = Array.isArray(groupsRaw)
     ? groupsRaw.map((x) => String(x).trim()).filter(Boolean)
     : undefined;
+  const mevkiId = permsRaw && typeof permsRaw === 'object'
+    ? String(permsRaw.mevkiId ?? permsRaw.MevkiId ?? '').trim()
+    : '';
+  const mevkiField = permsRaw && typeof permsRaw === 'object'
+    ? String(permsRaw.mevkiField ?? permsRaw.MevkiField ?? '').trim()
+    : '';
 
   return {
     transitionKey,
@@ -83,6 +89,8 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
     requiredFields: requiredFields?.length ? requiredFields : undefined,
     requireComment: Boolean(o.requireComment ?? o.RequireComment ?? false),
     permissionGroups: permissionGroups?.length ? permissionGroups : undefined,
+    permissionMevkiId: mevkiId || undefined,
+    permissionMevkiField: mevkiField || undefined,
     documentAction: mapDocumentAction(o.documentAction ?? o.DocumentAction),
   };
 }

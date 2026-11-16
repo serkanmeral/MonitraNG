@@ -69,6 +69,10 @@ export interface OpStateFlowTransition {
   requireComment?: boolean;
   /** Geçişi uygulayabilecek Keeper grup id'leri; boş = kısıtlama yok (MO `permissions.groups`). */
   permissionGroups?: string[];
+  /** Geçişin onay mevkisi (`permissions.mevkiId`). Karar anında oturan kişi çözülür. */
+  permissionMevkiId?: string;
+  /** Talep alanındaki mevki (`permissions.mevkiField`). Boş talep grupta kalır. */
+  permissionMevkiField?: string;
   /** Geçiş tamamlanınca her kayıt için belge üretir. Şablon kodu boşsa yok sayılır. */
   documentAction?: OcTransitionDocumentAction;
 }
@@ -587,6 +591,14 @@ export interface OcWorkItemCard {
   fields?: Record<string, unknown>;
   /** MO tarafında çözülmüş pool alan görünen metinleri (relation vb.). */
   fieldDisplays?: Record<string, string>;
+  /** Çekirdek etiketler. Liste sütunu açıksa ad ve renkle gelir. */
+  labels?: OcWorkItemLabelChip[];
+}
+
+export interface OcWorkItemLabelChip {
+  id: string;
+  name: string;
+  color?: string | null;
 }
 
 /** Keeper kişi (person) görünen ad map'i — MO cache'inden gelir. */

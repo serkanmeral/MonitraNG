@@ -82,6 +82,13 @@ public class DatasetSchema : BaseEntity
     public List<IndexDefinition> indexList { get; set; } = new();
 
     /// <summary>
+    /// Parent link checked on write. Empty means this dataset is not a tree.
+    /// </summary>
+    [BsonElement("tree")]
+    [BsonIgnoreIfNull]
+    public TreeConstraint? tree { get; set; }
+
+    /// <summary>
     /// Permissions definitions (optional - access control)
     /// null or undefined = no authorization check (everyone can access)
     /// </summary>
@@ -372,6 +379,31 @@ public class IndexDefinition
     /// null/missing values are allowed while real values stay unique.
     /// </summary>
     public bool sparse { get; set; } = false;
+}
+
+/// <summary>
+/// Write-time tree. The parent field is one relation to this same dataset.
+/// </summary>
+[BsonIgnoreExtraElements]
+public class TreeConstraint
+{
+    /// <summary>Single-value relation field that stores the parent <c>__dataId</c>.</summary>
+    [BsonElement("parentField")]
+    public string parentField { get; set; } = string.Empty;
+
+    /// <summary>When true, only one row may have an empty parent.</summary>
+    [BsonElement("singleRoot")]
+    public bool singleRoot { get; set; } = true;
+
+    /// <summary>Optional single person or text field. One non-empty value may appear on one row.</summary>
+    [BsonElement("occupantField")]
+    [BsonIgnoreIfNull]
+    public string? occupantField { get; set; }
+
+    /// <summary>Optional person array. Each person may appear once, and not as an occupant.</summary>
+    [BsonElement("staffField")]
+    [BsonIgnoreIfNull]
+    public string? staffField { get; set; }
 }
 
 /// <summary>

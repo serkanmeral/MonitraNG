@@ -33,10 +33,14 @@ const deleting = ref(false);
 const errorLocal = ref<string | null>(null);
 const successLocal = ref<string | null>(null);
 
+const auth = useAuthStore();
+const config = useRuntimeConfig();
+
 const flows = ref<OpStateFlow[]>([]);
 const states = ref<OpState[]>([]);
 const poolFields = ref<OpField[]>([]);
 const workspaceDefaultFlowId = ref<string | null>(null);
+const seatItems = ref<{ title: string; value: string }[]>([]);
 
 const dialog = ref(false);
 const editId = ref<string | null>(null);
@@ -196,7 +200,11 @@ function buildPayload(): Record<string, unknown> {
     order: tr.order != null && Number.isFinite(tr.order) ? tr.order : idx,
     requiredFields: Array.isArray(tr.requiredFields) ? [...tr.requiredFields] : [],
     requireComment: tr.requireComment === true,
-    permissions: { groups: Array.isArray(tr.permissionGroups) ? [...tr.permissionGroups] : [] },
+    permissions: {
+      groups: Array.isArray(tr.permissionGroups) ? [...tr.permissionGroups] : [],
+      ...(tr.permissionMevkiId?.trim() ? { mevkiId: tr.permissionMevkiId.trim() } : {}),
+      ...(tr.permissionMevkiField?.trim() ? { mevkiField: tr.permissionMevkiField.trim() } : {}),
+    },
     ...(documentActionPayload(tr.documentAction)
       ? { documentAction: documentActionPayload(tr.documentAction) }
       : {}),
@@ -229,10 +237,55 @@ async function loadAll() {
     states.value = stateRows;
     poolFields.value = fieldRows;
     workspaceDefaultFlowId.value = ws?.defaultStateFlowId ?? null;
+    void loadSeats();
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.flows.loadError');
   } finally {
     loading.value = false;
+  }
+}
+
+const mevkiFieldItems = computed(() =>
+  poolFields.value
+    .filter((field) => field.key)
+    .map((field) => ({
+      title: field.label ? `${field.label} (${field.key})` : field.key,
+      value: field.key,
+    }))
+);
+
+function gateway() {
+  return String(config.public.gatewayUrl || '').replace(/\/$/, '');
+}
+
+function asRows(payload: unknown): Record<string, unknown>[] {
+  if (Array.isArray(payload)) return payload as Record<string, unknown>[];
+  if (payload && typeof payload === 'object') {
+    const data = (payload as { data?: unknown }).data;
+    if (Array.isArray(data)) return data as Record<string, unknown>[];
+  }
+  return [];
+}
+
+async function loadSeats() {
+  const base = gateway();
+  if (!base || !auth.accessToken) {
+    seatItems.value = [];
+    return;
+  }
+  try {
+    const payload = await $fetch(`${base}/data/api/v1/data/org_mevkiler`, {
+      query: { limit: 500, expand: false },
+      headers: { Authorization: `Bearer ${auth.accessToken}` },
+    });
+    seatItems.value = asRows(payload)
+      .map((row) => ({
+        title: String(row.ad || row.__dataId || ''),
+        value: String(row.__dataId || row.dataId || ''),
+      }))
+      .filter((row) => row.value);
+  } catch {
+    seatItems.value = [];
   }
 }
 
@@ -291,6 +344,8 @@ function addTransition() {
     requiredFields: [],
     requireComment: false,
     permissionGroups: [],
+    permissionMevkiId: '',
+    permissionMevkiField: '',
   });
 }
 
@@ -786,6 +841,33 @@ async function confirmDelete() {
                 <p class="text-caption text-medium-emphasis mt-1 mb-0">
                   {{ t('operationCore.workspaceDefinitions.flows.permissionGroupsHint') }}
                 </p>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-autocomplete
+                  v-model="tr.permissionMevkiId"
+                  :items="seatItems"
+                  item-title="title"
+                  item-value="value"
+                  clearable
+                  :label="t('operationCore.workspaceDefinitions.flows.fieldPermissionMevki')"
+                  :hint="t('operationCore.workspaceDefinitions.flows.permissionMevkiHint')"
+                  persistent-hint
+                  density="compact"
+                  variant="outlined"
+                />
+                <v-autocomplete
+                  v-model="tr.permissionMevkiField"
+                  :items="mevkiFieldItems"
+                  item-title="title"
+                  item-value="value"
+                  clearable
+                  class="mt-3"
+                  :label="t('operationCore.workspaceDefinitions.flows.fieldPermissionMevkiField')"
+                  :hint="t('operationCore.workspaceDefinitions.flows.permissionMevkiFieldHint')"
+                  persistent-hint
+                  density="compact"
+                  variant="outlined"
+                />
               </v-col>
             </v-row>
           </v-card>

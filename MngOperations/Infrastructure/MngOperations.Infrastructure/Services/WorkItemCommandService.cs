@@ -335,7 +335,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         }
 
         StateFlowCatalog.EnsureTransitionValid(transitionElement, transitionKey, currentStateId);
-        _permissions.EnsureTransition(workspace, transitionElement, existing);
+        await _permissions.EnsureTransition(workspace, transitionElement, existing, cancellationToken);
 
         var toStateId = StateFlowCatalog.GetToStateId(transitionElement);
         if (string.IsNullOrEmpty(toStateId))
@@ -526,8 +526,8 @@ public class WorkItemCommandService : IWorkItemCommandService
                 toStateId),
             snapshot);
 
-        var available = _permissions
-            .GetAvailableTransitions(workspace, stateFlow, toStateId)
+        var available = (await _permissions
+            .GetAvailableTransitions(workspace, stateFlow, toStateId, updated, cancellationToken))
             .Select(MapAvailableTransition)
             .ToList();
 
