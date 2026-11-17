@@ -1,0 +1,82 @@
+[
+  {
+    "name": "ui_karsilama_mesajlari",
+    "description": "Mng.Ui girişinden sonra gösterilen karşılama mesajı. Başlangıç ve bitiş günleri dahildir. Grup boşsa herkes görür.",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "permissions": {
+      "create": { "groups": ["admins", "managers", "Yonetim", "idari isler"] },
+      "update": { "groups": ["admins", "managers", "Yonetim", "idari isler"] },
+      "delete": { "groups": ["admins", "managers", "Yonetim", "idari isler"] }
+    },
+    "indexList": [
+      { "name": "idx_baslangic", "fields": { "baslangic": 1 }, "unique": false },
+      { "name": "idx_sira", "fields": { "sira": 1 }, "unique": false }
+    ],
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "baslik",
+        "title": "Başlık",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 160 }
+      },
+      {
+        "fieldType": "text",
+        "name": "html",
+        "title": "Metin",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "file",
+        "name": "gorsel",
+        "title": "Görsel",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "baslangic",
+        "title": "Başlangıç",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "datetimeOptions": { "showTime": false }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "bitis",
+        "title": "Bitiş",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "datetimeOptions": { "showTime": false }
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "gruplar",
+        "title": "Gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true
+      },
+      {
+        "fieldType": "number",
+        "name": "sira",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "min": 0 }
+      }
+    ],
+    "validations": [],
+    "queries": []
+  }
+]

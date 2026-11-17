@@ -81,6 +81,9 @@ export interface AutomatedForm {
         group?: string; // Field group name (for grouping fields)
         textWidget?: 'text' | 'textarea' | 'richtext';
         choiceWidget?: 'select' | 'autocomplete';
+        hint?: string;
+        /** Grup seçicisinde saklanan değer. Karşılama hedefi grup adıdır. */
+        directoryValueKey?: 'id' | 'name';
       };
     };
     groupOrder?: string[]; // Display order of groups. Groups not listed appear after.
@@ -168,6 +171,9 @@ export interface CreateAutomatedFormDto {
         group?: string; // Field group name (for grouping fields)
         textWidget?: 'text' | 'textarea' | 'richtext';
         choiceWidget?: 'select' | 'autocomplete';
+        hint?: string;
+        /** Grup seçicisinde saklanan değer. Karşılama hedefi grup adıdır. */
+        directoryValueKey?: 'id' | 'name';
       };
     };
     groupOrder?: string[];
@@ -238,6 +244,9 @@ export interface UpdateAutomatedFormDto {
         group?: string; // Field group name (for grouping fields)
         textWidget?: 'text' | 'textarea' | 'richtext';
         choiceWidget?: 'select' | 'autocomplete';
+        hint?: string;
+        /** Grup seçicisinde saklanan değer. Karşılama hedefi grup adıdır. */
+        directoryValueKey?: 'id' | 'name';
       };
     };
     groupOrder?: string[];

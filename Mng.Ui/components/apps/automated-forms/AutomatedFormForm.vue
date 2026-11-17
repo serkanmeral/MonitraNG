@@ -1848,8 +1848,11 @@ const updateFieldLayoutFromConfigs = () => {
       group?: string;
       textWidget?: AfTextWidget;
       choiceWidget?: AfChoiceWidget;
+      hint?: string;
+      directoryValueKey?: 'id' | 'name';
     };
   } = {};
+  const previousLayout = formData.value.formConfig.fieldLayout || {};
   
   fieldLayoutConfigs.value.forEach(config => {
     const field = dataset.fields?.find(f => f.name === config.fieldName);
@@ -1860,13 +1863,20 @@ const updateFieldLayoutFromConfigs = () => {
     const hasSpan = config.columnSpan !== defaultColumnSpan;
     const hasText = supportsTextWidget(field?.fieldType ?? '') && config.textWidget !== defaultText;
     const hasChoice = supportsChoiceWidget(field?.fieldType ?? '') && config.choiceWidget !== defaultChoice;
+    const prev = previousLayout[config.fieldName];
+    const hint = typeof prev?.hint === 'string' ? prev.hint.trim() : '';
+    const directoryValueKey = prev?.directoryValueKey === 'name' || prev?.directoryValueKey === 'id'
+      ? prev.directoryValueKey
+      : undefined;
 
-    if (hasSpan || hasGroup || hasText || hasChoice) {
+    if (hasSpan || hasGroup || hasText || hasChoice || hint || directoryValueKey) {
       layout[config.fieldName] = {
         columnSpan: hasSpan ? config.columnSpan : undefined,
         group: hasGroup ? config.group.trim() : undefined,
         textWidget: hasText ? config.textWidget : undefined,
         choiceWidget: hasChoice ? config.choiceWidget : undefined,
+        ...(hint ? { hint } : {}),
+        ...(directoryValueKey ? { directoryValueKey } : {}),
       };
     }
   });
@@ -1955,11 +1965,17 @@ const saveFieldSettings = () => {
     group?: string;
     textWidget?: AfTextWidget;
     choiceWidget?: AfChoiceWidget;
+    hint?: string;
+    directoryValueKey?: 'id' | 'name';
   } = {
     columnSpan: prev.columnSpan,
     group: prev.group,
     textWidget: prev.textWidget,
     choiceWidget: prev.choiceWidget,
+    hint: typeof prev.hint === 'string' ? prev.hint : undefined,
+    directoryValueKey: prev.directoryValueKey === 'name' || prev.directoryValueKey === 'id'
+      ? prev.directoryValueKey
+      : undefined,
   };
 
   if (columnSpan !== defaultSpan) entry.columnSpan = columnSpan;

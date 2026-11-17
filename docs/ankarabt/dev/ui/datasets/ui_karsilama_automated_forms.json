@@ -1,0 +1,73 @@
+[
+  {
+    "formName": "Karşılama mesajları",
+    "formCode": "ui-karsilama-mesajlari-form",
+    "description": "Girişten sonra açılan karşılama. Aynı güne denk gelen mesajlar sıra alanına göre ardışık açılır.",
+    "datasetName": "ui_karsilama_mesajlari",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": false,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/ui-karsilama-mesajlari-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "sira",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "sira", "visible": true, "order": 1, "sortable": true, "filterable": false },
+        { "fieldName": "baslik", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        { "fieldName": "baslangic", "visible": true, "order": 3, "sortable": true, "filterable": false },
+        { "fieldName": "bitis", "visible": true, "order": 4, "sortable": true, "filterable": false },
+        { "fieldName": "gruplar", "visible": true, "order": 5, "sortable": false, "filterable": false }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["baslik", "html", "gorsel", "baslangic", "bitis", "gruplar", "sira"],
+      "readonlyFields": [],
+      "readonlyOnEditFields": [],
+      "fieldOrder": ["baslik", "sira", "baslangic", "bitis", "gruplar", "html", "gorsel"],
+      "groupOrder": ["Mesaj", "Süre", "Hedef"],
+      "fieldLayout": {
+        "baslik": {
+          "columnSpan": 8,
+          "group": "Mesaj",
+          "hint": "Modal başlığı. Boşsa Karşılama yazılır."
+        },
+        "sira": {
+          "columnSpan": 4,
+          "group": "Mesaj",
+          "hint": "Küçük sayı önce açılır. Boşsa başlangıç günü, o da yoksa oluşturulma zamanı sırayı belirler."
+        },
+        "baslangic": {
+          "columnSpan": 6,
+          "group": "Süre",
+          "hint": "Bu gün dahildir."
+        },
+        "bitis": {
+          "columnSpan": 6,
+          "group": "Süre",
+          "hint": "Bu gün dahildir. Başlangıçtan önce olursa mesaj açılmaz."
+        },
+        "gruplar": {
+          "columnSpan": 12,
+          "group": "Hedef",
+          "hint": "Birden fazla grup seçilebilir. Boş bırakılırsa giriş yapan herkes görür.",
+          "directoryValueKey": "name"
+        },
+        "html": {
+          "columnSpan": 12,
+          "group": "Mesaj",
+          "textWidget": "richtext",
+          "hint": "Metin, görsel veya ikisi birden. İkisi de boşsa mesaj açılmaz."
+        },
+        "gorsel": {
+          "columnSpan": 12,
+          "group": "Mesaj",
+          "hint": "Modal yalnız resim dosyasını basar. Metinle birlikte de durabilir."
+        }
+      }
+    }
+  }
+]

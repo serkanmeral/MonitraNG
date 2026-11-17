@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { loginToMngKeeper, refreshMngKeeperToken, revokeMngKeeperToken, type TokenResponse } from "@/services/apiService";
 import { decodeJwt } from "jose";
 import { userHasManagerRole } from "@/utils/authRoles";
+import { clearLoginWelcomePending, markLoginWelcomePending } from "@/utils/loginWelcomeFlag";
 import { isTokenExpired, shouldUseSecureCookie } from "@/utils/tokenUtils";
 import type { Domain } from "@/composables/useDomain";
 import { useDomain } from "@/composables/useDomain";
@@ -150,7 +151,8 @@ export const useAuthStore = defineStore("auth", {
         } catch (error) {
           throw new Error("Token decode hatası");
         }
-        
+
+        markLoginWelcomePending();
         return { success: true };
       } catch (error) {
         this.isAuthenticated = false;
@@ -412,6 +414,7 @@ export const useAuthStore = defineStore("auth", {
       // Clear localStorage
       if (process.client) {
         localStorage.removeItem("userInfo");
+        clearLoginWelcomePending();
         
         // Clear user preferences
         try {

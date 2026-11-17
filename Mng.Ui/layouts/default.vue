@@ -4,6 +4,7 @@ import { useLocaleStore } from '@/stores/locale';
 import { computed, watch } from 'vue';
 import ChatbotWidget from '@/components/apps/chatbot/ChatbotWidget.vue'
 import AppGlobalToast from '@/components/shared/AppGlobalToast.vue'
+import LoginWelcomeHost from '@/components/shell/LoginWelcomeHost.vue'
 
 const route = useRoute();
 const customizer = useCustomizerStore();
@@ -84,6 +85,7 @@ if (process.client) {
             <!-- Chatbot Widget -->
             <ChatbotWidget />
             <AppGlobalToast />
+            <LoginWelcomeHost />
         </v-app>
     </v-locale-provider>
 
@@ -120,6 +122,7 @@ if (process.client) {
             <!-- Chatbot Widget -->
             <ChatbotWidget />
             <AppGlobalToast />
+            <LoginWelcomeHost />
         </v-app>
     </v-locale-provider>
 </template>
