@@ -551,8 +551,8 @@ Proje sayfaları proline eğitiminden kopyalandı. Proline’daki asıllar durur
 
 | | |
 |---|---|
-| Durum | Yapılıyor (2026-11-12 öğleden sonra). Şifre tutması kodlandı. Geçiş hâlâ devam grubunu bekliyor. |
-| Sıra | Karşılama penceresi ve lokasyon panosu. `smeral` hesabı `Abt Calisan` grubunda olmadığı için geçiş henüz kabul edilmiyor. |
+| Durum | Yapılıyor (2026-11-17). Kapı, pano ve tarayıcı geçişi canlıda. Mobilde MBL-01’den MBL-05’e kadar Expo Go ile denendi. |
+| Sıra | Yayın (MBL-07) bir Play Console hesabına kadar durur. Şirket hesabında paket incelemeye girer. 13 Kasım 2023 sonrası kişisel hesapta önce 12 kişi ve 14 gün kapalı test gerekir. Paket Android 16’yı (API 36) hedefler. Bildirim (MBL-06) şirket kararına bırakıldı. Oturumun 30 gün dolmadan düşmesi ayrıca duruyor. |
 
 Personel, kapı monitöründeki kısa ömürlü kodu telefon kamerasıyla okutur. Kimlik, telefonundaki Keycloak oturumudur. Kayıt bir kapı olayıdır. Kapı ekranı Mng.Ui içinde menüsüz bir sayfadır. Prosedür MngExtensions içindedir. MngNotifier iskeletindedir ve MngGateway arkasında `/extensions` önekiyle durur. MngExtensions ve kapı arayüzü 12 Kasım 2026’da AbtAppServer’a alındı. Kapı adresi `https://mng.ankarabt.com/kapi` dir.
 
@@ -586,9 +586,9 @@ Tanımlar elle yazılmış sayfa değildir. AnkaraBT menüsünde **PDKS / Tanım
 | PDKS-07 | Şifre sırasında kodu tutma | Kodlandı. Oturum yoksa kod bir kez doksan saniye tutulur. |
 | PDKS-08 | Karşılama | Şerit kodlandı. Kabul edilen geçişte ad soyad ve cümle şeritte durur. QR ekranda kalır. |
 | PDKS-09 | Lokasyon panosu | Pano alanı lokasyon formunda. Örnek `kapi-is-ozeti` kapı alt bandında çiziliyor. Yenileme süresi saat ayarındadır. |
-| PDKS-10 | Mobil uygulama | Karar 12 Kasım 2026 akşamı kilitlendi. Kod yok. |
+| PDKS-10 | Mobil uygulama | 17 Kasım 2026. MBL-01’den MBL-05’e kadar Expo Go ile denendi. Güncelleme yolu kilitlendi. Android yayın bir Play Console hesabına kadar durur. Bildirim (MBL-06) şirket kararına bırakıldı. |
 
-12 Kasım akşamı mobil uygulama kilitlendi. Telefonu tanıyan şey, telefonda üretilen ve İK’nın onayladığı anahtardır. IMEI, telefon numarası, yüz ve parmak izi kapıyı açmaz. Keycloak açık anahtarı ve onayı tutar. QR aynı `https` adresidir. Uygulama yüklüyse link uygulamayı açar. Yüklü değilse tarayıcıdaki şifreli geçiş durur. Ayrıntı plandadır.
+12 Kasım akşamı mobil uygulama kilitlendi. 17 Kasım 2026’da araç React Native ve Expo oldu. Flutter kabuğu bırakıldı. Telefonu tanıyan şey, telefonda üretilen ve İK’nın onayladığı anahtardır. Gizli anahtar telefonda kalır. AD kullanıcısı Keycloak’ta salt okunur olduğu için açık anahtar ve onay Keeper’daki personel kaydındadır. IMEI, telefon numarası, yüz ve parmak izi kapıyı açmaz. `smeral` kendi telefonunu onaylayamaz; onayı başka bir yönetici verdi. PDKS arka kamerayla QR okur. İK isterse ön kamera kareyi aynı istekle gönderir. Kare doksan gün sonra silinir. Karşılama cümlesi telefonda da görünür. Aynı gün giriş ve sonraki çıkış yapılmışsa gün kapanır. QR aynı `https` adresidir. Uygulama kurulunca link uygulamayı açar. Kurulu değilse tarayıcıdaki şifreli geçiş durur. Expo Go kurulu uygulama değildir. Güncelleme mağaza sürümüdür. Anahtar, onay ve sunucu adresi sürüm değişince durur. İlk paket bu yolu taşır. Oturum, 30 gün kuralından önce düşebiliyor. Düşünce şifre bir kez sorulur; anahtar ve onay durur. Bu düşüşün silme kaydı yok. Sıradaki dilim yayın. Android tarafı bir Play Console hesabına kadar durur. Bildirim şirket kararına bırakıldı. Ayrıntı plandadır.
 
 Ayrıntı: [PDKS kapı ekranı planı](dev/pdks/pdks_plani.md).
 
