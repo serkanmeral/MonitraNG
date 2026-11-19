@@ -1,9 +1,9 @@
 # PDKS Kapı Ekranı Planı
 
 **Tarih:** 5 Kasım 2026  
-**Son düzenleme:** 17 Kasım 2026  
-**Durum:** Geliştirme sırasında. İlk dilim PDKS-01.  
-**Hedef:** Personel devamını, kapı monitöründeki tek kullanımlık kod ve personelin telefon tarayıcısı ile kaydetmek. Kapı monitörü Mng.Ui içinde menüsüz, başlıksız ve günlük giriş istemeyen bir sayfadır. Aynı sayfada dashboard designer ile hazırlanmış bir pano da durur.
+**Son düzenleme:** 19 Kasım 2026  
+**Durum:** Kapı, tarayıcı geçişi, mola ve devam panosu canlıda. Panonun kişi listesi, geçiş saati metin kaldığı için boş kalabiliyor.  
+**Hedef:** Personel devamını, kapı monitöründeki tek kullanımlık kod ve personelin telefon tarayıcısı ile kaydetmek. Kapı monitörü Mng.Ui içinde menüsüz, başlıksız ve günlük giriş istemeyen bir sayfadır. Aynı sayfada o günün devam panosu durur.
 
 Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındadır. Uygulama kodu bu belgeyle yazılmaz.
 
@@ -14,7 +14,7 @@ Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındad�
 | Menüsüz yerleşim | `Mng.Ui/layouts/blank.vue` | Kapı sayfası bu yerleşimi kullanır. Side menu ve header basılmaz. |
 | Oturum zorunluluğu | `Mng.Ui/middleware/auth.global.js` | Kapı adresi buradaki herkese açık yollara eklenir. Aksi halde sayfa `/auth/login` adresine düşer. |
 | Menü izni | `Mng.Ui/middleware/menu-permission.global.ts` | Kapı adresi menü izninden de muaftır. |
-| Pano çizimi | `DashboardLayoutRenderer` | Kapı sayfası panoyu bu bileşenle çizer. |
+| Pano çizimi | Kapı sayfası | `kapi-is-ozeti` devam panosunu sunucunun hazırladığı paketle çizer. |
 | Pano sayfası | `/dashboards/:slug` | Olduğu gibi kullanılmaz. Ekmek kırıntısı, araç çubuğu ve kullanıcı oturumu vardır. |
 | Pano tanımı | `@dashboards` | Kapıya bağlanacak pano, dashboard designer ile burada hazırlanır. |
 
@@ -36,6 +36,8 @@ Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındad�
 12. Başarılı geçiş hem telefonda hem kapı şeridinde görünür. Kapı şeridinde ad ve saat yeter. Soyad, sicil ve telefon gösterilmez.
 13. 12 Kasım 2026: Şifre her okutmada sorulabilir. Birkaç günlük oturum bu fazın şartı değildir. Telefon, kodun on saniyesi içinde linki açarsa sunucu o kodu bir kez tutar ve şifre için yaklaşık doksan saniye ekler. Süre dolmuşsa şifre sorulmaz. Şifre yetişirse aynı kod yazılır. Süre ikinci kez uzamaz. Fotoğrafı geç açan kişi ek süreyi alamaz.
 14. 17 Kasım 2026: Mağaza uygulaması `Mng.Mobile` içindedir. MBL-01’den MBL-05’e kadar Expo Go ile denendi. Güncelleme mağaza sürümüdür. Android herkese açık yayın, bir Play Console hesabı bulunana kadar durur. Tarayıcıdaki şifreli geçiş durur.
+15. 19 Kasım 2026: Mola aynı kapı koduyla yazılır. Yönler `break` ve `return` dir. Gün mola ile kapanmaz. Erken ve geç, ilk giriş ile son çıkışa bakar. Otuz saniyelik yok sayma yalnız aynı işlem içindir. Açık moladayken çıkış, aynı anda sessiz bir dönüş satırı yazar.
+16. 19 Kasım 2026: `kapi-is-ozeti` kapı bandı iş grafiği çizmez. Devam panosu bugün gelen, içeride, molada ve çıkan kişileri sayar. Kabul edilen her satır damgayı artırır. Kapı sayfası kod yoklamasında damga değişince panoyu yeniler.
 
 ---
 
@@ -96,9 +98,9 @@ Sayfa iki banta ayrılır.
 +--------------------------------------------------+
 ```
 
-Üst bant geçişin kendisidir. Alt bant, o kapıya bağlanmış panodur. Pano, kod yenilendikçe baştan yüklenmez. Kendi yenileme aralığında kalır.
+Üst bant geçişin kendisidir. Alt bant, o kapıya bağlanmış panodur. Pano, kodun her yenilenişinde baştan yüklenmez. Kabul edilen harekette damga değişince yenilenir. Damga durursa kendi yenileme aralığında kalır.
 
-Başarılı geçişte üst bant kısa selamlamayı gösterir. Bununla birlikte üç saniyelik bir pencere açılır. Pencerede ad ve soyad birlikte durur. Alt şerit yalnız ad tutar. Girişte varsayılan cümle “İyi çalışmalar.” Zamanında girişte “Zamanında geldiğiniz için teşekkürler.” Geç girişte “Yolunuz düştü, yine de hoş geldiniz.” Çıkışta “Güle güle.” Bu dört cümle `pdks_ayarlar` satırındadır. Boş alan varsayılana döner. Sınıf geçiş yazılırken hesaplanır. Erken giriş, giriş cümlesini kullanır. Çıkışta saat bakılmaz. Reddedilen okutma pencere açmaz. Kapı ekranı bu pencereyi üç saniye gösterir.
+Başarılı geçişte üst bant kısa selamlamayı gösterir. Şerit yaklaşık sekiz saniye durur. Pencerede ad ve soyad birlikte durur. Girişte varsayılan cümle “İyi çalışmalar.” Zamanında girişte “Zamanında geldiğiniz için teşekkürler.” Geç girişte “Yolunuz düştü, yine de hoş geldiniz.” Çıkışta “Güle güle.” Molada “Mola başladı.” Dönüşte “Hoş geldiniz.” Giriş ve çıkış cümleleri `pdks_ayarlar` satırındadır. Boş alan varsayılana döner. Mola ve dönüş cümleleri sabittir. Sınıf yalnız giriş ve çıkışta hesaplanır. Erken giriş, giriş cümlesini kullanır. Çıkışta saat bakılmaz. Mola ve dönüş sınıfa girmez. Reddedilen okutma pencere açmaz. Telefondaki sonuç yaklaşık üç saniye sonra ana sayfaya döner.
 
 Bağlantı kopunca eski kod ekranda bırakılmaz. Üst bant “bağlantı yok” der. Süresi dolmuş bir kod okutulamaz.
 
@@ -106,33 +108,46 @@ Bağlantı kopunca eski kod ekranda bırakılmaz. Üst bant “bağlantı yok”
 
 Pano, dashboard designer’da hazırlanır ve `@dashboards` kaydında durur. Panoyu lokasyon seçer. Aynı lokasyondaki kapılar aynı panoyu gösterir. Farklı lokasyonlar farklı pano seçebilir. Kapı kaydındaki eski pano alanı bu seçimin kaynağı değildir. Kapı sayfası `/dashboards/{slug}` rotasını iframe ile açmaz. O rotada ekmek kırıntısı, dışa aktarma ve kullanıcı oturumu vardır.
 
-Örnek pano `kapi-is-ozeti` adını taşır. Üç karttır: çalışma alanı sayısı (`op_workspaces`), pano sayısı (`op_boards`) ve kapanmamış iş sayısı (`op_work_items`). Proje sayısı yerine açık iş önerilir; kapıdan geçen kişi yığının büyüklüğünü görür. Ücret, kişi listesi ve kimlik numarası bu panoya konmaz. Kapı bandı bu panoyu, sunucuda layout ucu açılınca çizer.
+Örnek pano `kapi-is-ozeti` adını taşır. Bu slug kapı bandında iş grafiği çizmez. Başlık **Devam** dır. Dört kart kişi sayar, olay saymaz. Hepsi bugünün kabul edilmiş geçişidir. Kapıya bölünmez. Gün sınırı Europe/Istanbul’dur.
 
-Kapı sayfası layout satırlarını `DashboardLayoutRenderer` ile çizer. `canEdit` kapalıdır. Widget ayarı, düzenle ve sil kapı ekranında yoktur.
+| Kart | Kim girer |
+|------|-----------|
+| Bugün gelen | Kabul edilmiş girişi olan kişi |
+| İçeride | Girişi var, çıkışı yok, açık molası yok |
+| Molada | Açık molası olan kişi |
+| Çıkan | Kabul edilmiş çıkışı olan kişi |
 
-Kapı jetonu tek bir panoyu okuyabilir: kapı kaydında seçili olan. Başka bir `slug` bu jetonla açılmaz. Widget verisi, tarayıcıdaki bir yönetici oturumuyla çekilmez. Sunucu, kapı jetonunu doğruladıktan sonra o panonun verisini kendi tarafında hazırlar. Tarayıcıya Keycloak kullanıcı oturumu yazılmaz.
+İki liste durur. **Gün** adı, giriş saatini ve çıkış saatini gösterir. Çıkış yoksa çıkış hücresi boş kalır. Sıra giriş saatinedir. **Molada** adı, mola başlangıcını ve geçen süreyi gösterir. Süre sayfa saatiyle ilerler. Red ve yok sayılan satır listelenmez. Moladaki kişi içeride sayılmaz. Açık moladayken çıkış, kişiyi çıkanlara alır.
 
-Panoya konacak widget’lar kapı ortamına uygun seçilir. Personel listesi, ücret veya kimlik numarası taşıyan widget bu ekrana konmaz. Kapı herkese açık bir alanda durur.
+Ücret ve kimlik numarası bu panoya konmaz. Kapı jetonu panoyu sunucudan ister. Tarayıcıya Keycloak oturumu yazılmaz.
+
+Pano Redis’te `pdks:board:v4:{doorKey}` anahtarıyla durur. Ömrü, saat ayarındaki pano yenileme süresidir. Varsayılan altmış saniyedir ve on beş ile altı yüz arasına sıkışır. Kabul edilen her geçiş `pdks:board:stamp` damgasını bir artırır. Açık molayı kapatan sessiz dönüş de damgayı artırır. Önbellek, içindeki damga güncel damgayla aynıysa kullanılır. Kod yoklaması yaklaşık üç saniyede bir `boardStamp` döner. Kapı sayfası damga değişince panoyu yeniden ister. Dakikalık süre yedek olarak durur.
+
+19 Kasım 2026 akşamı canlı kayıtta `occurredAt` metin olarak duruyor. Pano sorgusu bu alanı tarih diye süzüyor ve satırı görmüyor. Damga artsa da liste boş kalabiliyor. Bu açık.
+
+Kapı jetonu tek bir panoyu okuyabilir: lokasyonda seçili olan. Başka bir `slug` bu jetonla açılmaz. `kapi-is-ozeti` dışında slug boş pano döner. Sunucu, kapı jetonunu doğruladıktan sonra panoyu kendi tarafında hazırlar. Tarayıcıya Keycloak kullanıcı oturumu yazılmaz. Ücret ve kimlik numarası bu ekrana konmaz. Ad ve saat, kapının baktığı alanda durur.
 
 ---
 
 ## 5. Telefon sayfası
 
-Kodun içindeki adres `/gecis?n={nonce}` biçimindedir. `nonce` tek kullanımlık geçiş kodudur.
+Kodun içindeki adres `https://mng.ankarabt.com/gecis?n={nonce}` biçimindedir. `nonce` tek kullanımlık geçiş kodudur. Sayfa `n` olmadan açılır. Eksik kod “Kod tanınmadı” yazmaz.
 
-1. Sayfa oturum arar.
-2. Oturum yoksa Keycloak girişine gider. Dönüş adresi aynı `nonce` değerini taşır.
-3. Oturum varsa sunucu kodu doğrular: imza veya kayıt geçerli, süre dolmamış, daha önce kullanılmamış, kapı aktif.
-4. Kullanıcı, devam kaydı açmaya yetkili gruptadır ve hesabı aktiftir.
-5. Yön, son olaya göre yazılır. Olay kaydı oluşur. Kod tüketilir.
-6. Telefonda sonuç görünür: ad, yön, saat, kapı adı.
-7. Aynı sonuç kapı ekranının üst bandına iletilir.
+Canlı yol tarayıcıdır. Telefon, şifreyle bir kez tanınır. Gizli anahtar tarayıcıda kalır ve dışarı çıkmaz. Kimlik bu anahtarın imzasıdır. IMEI ve telefon numarası okunmaz.
+
+Üç ekran vardır.
+
+1. **Ana sayfa.** Ad büyük durur. PDKS satırı “Kapı kodunu okut” der. Kamera bu satıra basılınca açılır. Adreste `n` varsa sayfa önizlemeye gider.
+2. **Okuma.** Arka kamera kodu çerçeveye alır. Geçiş bu karede yazılmaz.
+3. **Karar.** Ad, yer ve sunucunun açtığı butonlar durur. Fotoğraf isteniyorsa ön kamera küçük karede durur. Buton geçişi yazar. Kabul ya da gün kapanışı yaklaşık üç saniye sonra ana sayfaya döner. Red, Geri’ye kadar durur.
+
+Butonlar o anki duruma göredir. Giriş yoksa yalnız **Giriş** vardır. Giriş varsa ve mola açık değilse **Çıkış** ile **Mola** vardır. Mola açıksa **Çıkış** ile **Dönüş** vardır. Gün kapanmışsa buton ve fotoğraf yoktur. Yazı “Bugünkü geçiş tamam.” olur. Satır yazılmaz ve kod tutulmaz.
+
+Fotoğraf, İK’nın “Geçişte fotoğraf iste” anahtarı açıksa ve geçiş kabul edilecekse istenir. Mola ve dönüş de bu kurala girer. Kare kimlik doğrulamaz. Saklama, geçiş anından doksan gündür. Silme MngExtensions içindeki `PassagePhotoRetentionService` ile yapılır.
 
 Sayfayı yenilemek ikinci kayıt açmaz. Kod ilk başarılı istekte tüketilmiştir.
 
-Keycloak istemcisi public istemcidir. Uygulamaya gizli anahtar konmaz. Giriş, Authorization Code ve PKCE ile yapılır. Dönüş adresleri Keycloak’ta tek tek yazılıdır.
-
-12 Kasım 2026 kararı: şifre her okutmada sorulabilir. Birkaç günlük oturum şartı kalktı. Şifre yazılırken on saniyelik kodun düşmemesi için tutma kuralı uygulanır. Oturum yoksa ve kod hâlâ geçerliyse sayfa, girişe gitmeden önce sunucudan kodu bir kez tutar. Tutma, bitiş anını yaklaşık doksan saniye ileri alır. Kod zaten düşmüşse giriş açılmaz. Girişten sonra aynı kod tüketilir. Aynı kod ikinci kez tutulmaz. Oturum zaten açıksa tutma yapılmaz; on saniyelik ömür geçerlidir.
+12 Kasım 2026 kararı durur: şifre sırasında on saniyelik kod bir kez yaklaşık doksan saniye tutulur. Süre dolmuşsa şifre sorulmaz. Aynı kod ikinci kez tutulmaz.
 
 ---
 
@@ -143,8 +158,10 @@ Keycloak istemcisi public istemcidir. Uygulamaya gizli anahtar konmaz. Giriş, A
 | Kod ömrü | Ekranda yaklaşık 10 saniye. Okunmasa da süre dolunca yenilenir. |
 | Şifre tutması | Link on saniye içinde açılırsa kod bir kez yaklaşık 90 saniye tutulur. Geç açılırsa tutulmaz. |
 | Kullanım | Bir başarılı geçişte bir kez. |
-| Çift okuma | Aynı kişi, 30 saniye içinde tekrar okutursa olay yazılmaz. |
-| Yön | Son olay giriş ise çıkış. Çıkış veya gün içinde olay yoksa giriş. |
+| Çift okuma | Aynı kişinin aynı işlemi 30 saniye içinde ikinci kez okutması yok sayılır. Satır `ignored` olarak yazılır ve kod döner. Girişten hemen sonra mola, ayrı işlemdir ve sayılır. |
+| Yön | Son iş yönü giriş ise çıkış. Çıkış veya gün içinde iş yönü yoksa giriş. Mola ve dönüş bu sırayı değiştirmez. |
+| Gün kapanışı | Aynı İstanbul gününde kabul edilmiş bir giriş ve ondan sonraki bir çıkış günü kapatır. Sonraki okutma “Bugünkü geçiş tamam.” der, satır yazmaz. Yalnız çıkış günü kapatmaz. Mola kapatmaz. Kapının sabit giriş veya çıkış kilidi günü yeniden açmaz. |
+| Mola | Girişten sonra açılır. Süresi sabit değildir. Günde birden fazla mola olur. Dün açık kalan mola bugüne taşınmaz. Akşam kendiliğinden kapanmaz. |
 | Yetki | Keycloak’ta devam kaydı grubunda olan aktif kullanıcı. |
 | Saat | Kayıt UTC. Ekranda Europe/Istanbul. |
 | Kapı şeridi | Ad, yön, saat, kapı adı. |
@@ -181,7 +198,7 @@ Merkez ve şube için iki kayıt açılır. İkisi aynı panoyu da kullanabilir,
 | `personId` | Keycloak kullanıcı kimliği. |
 | `displayName` | Kapı şeridi ve telefon sonucu için ad. |
 | `doorKey` | Kapı. |
-| `direction` | `in` veya `out`. |
+| `direction` | `in`, `out`, `break`, `return`. |
 | `occurredAt` | UTC zaman. |
 | `result` | `accepted`, `ignored` (çift okuma), `rejected`. |
 | `rejectReason` | Süre, kullanılmış kod, yetki, pasif kapı. Kabul edilen kayıtta boş. |
@@ -244,9 +261,9 @@ Oluşturma yetkisi teknik kullanıcının grubundadır. Okuma, gün listesini ve
 
 Kod **MngExtensions** içindedir. İskelet MngNotifier ile aynıdır: Domain, Application, Infrastructure, Persistence, Api. PDKS bu servisin ilk modülüdür. Yarınki başka bir kurum prosedürü aynı serviste yeni bir modül olur.
 
-Servis MngGateway arkasındadır. Dış adres `/extensions` önekidir. Operation Core’un `/operations` öneki ile aynı kalıp. Kapı sayfası ve telefon, servisin kendi portuna değil, ağ geçidinin yayınladığı adrese gider. AbtApp üzerinde bu adres bugün `http://portal.ankarabt.com:5040/extensions` biçimindedir.
+Servis MngGateway arkasındadır. Dış adres `/extensions` önekidir. Operation Core’un `/operations` öneki ile aynı kalıp. Kapı sayfası ve telefon, servisin kendi portuna değil, yayınlanan adrese gider. Canlı adres `https://mng.ankarabt.com` dir. Kapı `https://mng.ankarabt.com/kapi` dir.
 
-Kurulum `ApplicationResources/mng_apps` altındaki production compose ile `docker-compose.ankarabt.apps.yml` override’ıdır. İmaj AbtAppServer’a alınır. Kodun çalıştığı kontrol bu sunucuda yapılır. Yerel çalıştırma geliştirme içindir. Kapı jetonu, telefon oturumu ve geçiş satırı sunucudaki Keeper, DataGateway ve Redis ile doğrulanır.
+Kurulum `ApplicationResources/mng_apps` altındaki production compose ile `docker-compose.ankarabt.local.apps.yml` override’ıdır. İmaj ofisteki `192.168.1.249` sunucusuna alınır. Kapı jetonu, telefon anahtarı ve geçiş satırı sunucudaki Keeper, DataGateway ve Redis ile doğrulanır. Geçiş satırını servis hesabı yazar. Bu hesap bugün `abt_admin` dir.
 
 ---
 
@@ -368,7 +385,7 @@ PDKS açılınca arka kamera görünür ve bu QR’ı okur. Personel adresi yazm
 
 Personel PDKS ekranındaki arka kamerayı monitördeki koda tutar. Uygulama kodu okur okumaz ayırır. Ekrandaki kod yenilense bile bu okutma düşmez. Sunucu bu anda geçiş yazmaz. Telefonun kendi kamerasıyla okutulan link de aynı ayırmayı açar; bu, uygulama kuruluyken geçerlidir.
 
-Uygulama saati, lokasyonu, kapıyı, kişinin adını ve yönü gösterir. Yönü personel seçmez. Son geçişe göre buton **Giriş** veya **Çıkış** olur.
+Uygulama saati, lokasyonu, kapıyı, kişinin adını ve yönü gösterir. Yönü personel serbestçe seçmez. Sunucunun açtığı buton **Giriş**, **Çıkış**, **Mola** veya **Dönüş** olur. Kuralları bölüm 6 ile aynıdır. Kurulu önizleme paketi mola butonunu taşımayabilir. Canlı mola tarayıcıdadır.
 
 Fotoğraf parametresi açıksa ve telefon kameraya izin vermişse ekranda ön kamera durur. Personel kendi yüzünü görür. Butona basınca o anki kare alınır, onaylı anahtar kodu imzalar ve geçiş yazılır. Kare kimlik doğrulamaz.
 
