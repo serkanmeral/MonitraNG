@@ -227,8 +227,13 @@ async function usableToken(): Promise<string> {
   return next.accessToken;
 }
 
+function leaveWaiting() {
+  if (phase.value === 'boot' || phase.value === 'pending' || phase.value === 'login') phase.value = 'home';
+}
+
 async function claim(nextNonce: string) {
-  if (!phone.value || busy.value) return;
+  if (!phone.value) return;
+  const ownsBusy = !busy.value;
   busy.value = true;
   errorText.value = '';
   result.value = null;
@@ -242,6 +247,7 @@ async function claim(nextNonce: string) {
     }
     if (view.status !== 'ready' && view.status !== 'complete') {
       errorText.value = view.message || 'Kod ayrılamadı.';
+      leaveWaiting();
       return;
     }
     nonce.value = nextNonce;
@@ -253,9 +259,11 @@ async function claim(nextNonce: string) {
     errorText.value = error instanceof Error ? error.message : 'Kod ayrılamadı.';
     if (errorText.value.includes('Yeniden giriş')) {
       await dropSession();
+      return;
     }
+    leaveWaiting();
   } finally {
-    busy.value = false;
+    if (ownsBusy) busy.value = false;
   }
 }
 
@@ -387,6 +395,7 @@ async function applyStatus(status: string, name: string) {
   const arrived = String(route.query.n || '').trim();
   if (arrived) {
     await claim(arrived);
+    if (phase.value === 'boot' || phase.value === 'login') phase.value = 'home';
     return;
   }
   phase.value = 'home';
@@ -420,6 +429,24 @@ async function goHome() {
   phase.value = 'home';
 }
 
+const chromeHandoff = computed(() => {
+  if (!import.meta.client) return false;
+  const ua = navigator.userAgent;
+  if (!/Android/i.test(ua)) return false;
+  if (String(route.query.hop || '') === '1') return false;
+  const otherBrowser = /SamsungBrowser|EdgA|OPR\/|Opera|UCBrowser|YaBrowser|MiuiBrowser|HeyTap|HuaweiBrowser|Vivaldi|DuckDuckGo|Firefox|wv\)/i.test(ua);
+  const chrome = /Chrome\/\d+/i.test(ua) && !otherBrowser;
+  return !chrome;
+});
+
+function openChrome() {
+  const target = new URL(window.location.href);
+  target.searchParams.set('hop', '1');
+  const body = `${target.host}${target.pathname}${target.search}`;
+  const fallback = encodeURIComponent(target.toString());
+  window.location.href = `intent://${body}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
+}
+
 async function openPassage() {
   errorText.value = '';
   cameraError.value = '';
@@ -430,6 +457,10 @@ async function openPassage() {
 async function boot() {
   now.value = clock.format(new Date());
   clockTimer = window.setInterval(() => { now.value = clock.format(new Date()); }, 1000);
+  if (chromeHandoff.value) {
+    openChrome();
+    return;
+  }
   try {
     phone.value = await readPhone();
   } catch {
@@ -467,14 +498,15 @@ onUnmounted(() => {
     <header class="bar">
       <button v-if="phase === 'scan' || phase === 'decision'" type="button" class="back" @click="goHome">Geri</button>
       <span v-else class="brand">
-        <img src="/images/logos/monitrang-icon.png" alt="" />
-        Monitra<span>NG</span>
+        <img src="/images/logos/monitra-horizontal.png" alt="MonitraNG" />
       </span>
       <time>{{ now }}</time>
     </header>
 
     <section v-if="phase === 'boot'" class="panel">
-      <p class="title">Hazırlanıyor</p>
+      <p class="title">{{ chromeHandoff ? 'Chrome açılıyor' : 'Hazırlanıyor' }}</p>
+      <p v-if="chromeHandoff" class="muted">Telefon kaydı Chrome'da durur.</p>
+      <button v-if="chromeHandoff" type="button" @click="openChrome">Chrome'da aç</button>
     </section>
 
     <form v-else-if="phase === 'login'" class="panel" @submit.prevent="enter">
@@ -496,6 +528,7 @@ onUnmounted(() => {
 
     <section v-else-if="phase === 'home'" class="home">
       <p class="headline">{{ personName || 'Merhaba' }}</p>
+      <p v-if="errorText" class="danger home-note">{{ errorText }}</p>
       <button type="button" class="tile" @click="openPassage">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 2h2v2h-2v-2zm4 0h2v2h-2v-2zM14 18h2v2h-2v-2zm4 0h2v2h-2v-2z" /></svg>
         <span>
@@ -559,12 +592,12 @@ onUnmounted(() => {
   padding: 16px 20px;
   font-variant-numeric: tabular-nums;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
-.brand img { width: 36px; height: 36px; border-radius: 9px; }
-.brand span { color: #38bdf8; font-weight: 700; }
+.brand { display: flex; align-items: center; }
+.brand img { height: 36px; width: auto; }
 .back { border: 0; background: transparent; color: #1d4ed8; font: inherit; font-size: 16px; min-height: 40px; padding: 0; }
 .home { padding: 28px 24px; }
 .headline { margin: 0; font-size: 32px; font-weight: 650; letter-spacing: -0.6px; }
+.home-note { margin-top: 16px; }
 .tile {
   margin-top: 36px;
   width: 100%;

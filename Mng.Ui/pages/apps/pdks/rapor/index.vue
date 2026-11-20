@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import { fetchFromDataGateway } from '@/services/apiService';
 
 definePageMeta({ layout: 'default' });
 
@@ -161,9 +162,7 @@ function choose(start: string, end: string) {
 }
 
 async function loadLocations() {
-  const payload = await $fetch(`${gateway()}/data/api/v1/data/pdks_lokasyonlar?limit=200&expand=false`, {
-    headers: { Authorization: `Bearer ${auth.accessToken}` },
-  });
+  const payload = await fetchFromDataGateway('/api/v1/data/pdks_lokasyonlar?limit=200&expand=false');
   locations.value = asRows(payload).filter((row) => row.active !== false && row.locationKey);
 }
 

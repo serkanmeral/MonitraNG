@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import { fetchFromDataGateway } from '@/services/apiService';
 
 definePageMeta({ layout: 'default' });
 
 type Row = Record<string, unknown>;
 
 const ZONE = 'Europe/Istanbul';
-const auth = useAuthStore();
-const config = useRuntimeConfig();
 
 const day = ref(todayInIstanbul());
 const locationKey = ref('');
@@ -99,10 +98,6 @@ function nextDay(value: string) {
   return `${y}-${m}-${d}`;
 }
 
-function gateway() {
-  return String(config.public.gatewayUrl || '').replace(/\/$/, '');
-}
-
 function idOf(row: Row) {
   return String(row.__dataId || row.dataId || '');
 }
@@ -118,7 +113,7 @@ function asRows(payload: unknown): Row[] {
 
 function messageOf(error: unknown) {
   const data = (error as { data?: { message?: string; error?: { message?: string } } })?.data;
-  return data?.error?.message || data?.message || '';
+  return data?.error?.message || data?.message || (error instanceof Error ? error.message : '');
 }
 
 function clock(value: unknown) {
@@ -161,9 +156,7 @@ function reasonLabel(value: unknown) {
 }
 
 async function dg(path: string) {
-  return $fetch(`${gateway()}${path}`, {
-    headers: { Authorization: `Bearer ${auth.accessToken}` },
-  });
+  return fetchFromDataGateway(path.replace(/^\/data/, ''));
 }
 
 async function loadLookups() {

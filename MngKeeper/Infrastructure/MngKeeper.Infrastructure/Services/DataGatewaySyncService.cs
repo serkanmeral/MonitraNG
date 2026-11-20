@@ -10,6 +10,7 @@ using MngKeeper.Application.Common;
 using MngKeeper.Application.Configuration;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Domain.Enums;
 using System.Text.Json;
 
 namespace MngKeeper.Infrastructure.Services
@@ -152,6 +153,10 @@ namespace MngKeeper.Infrastructure.Services
                     }
                 }
 
+                // This replace is the same @users document Keeper reads back.
+                // Leaving these out makes a directory user look local and drops the phone key.
+                WritePreservedAccountFields(userDocument, existingUser, user);
+
                 if (existingUser == null)
                 {
                     // Insert new user
@@ -172,6 +177,59 @@ namespace MngKeeper.Infrastructure.Services
                 _logger.LogError(ex, "Error syncing user to DataGateway MongoDB: UserId={UserId}, DomainId={DomainId}", user.Id, domainId);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Keeper reads this document back. A profile sync must keep the directory
+        /// mark, its sync time, and the phone key when the incoming user does not carry a newer value.
+        /// </summary>
+        private static void WritePreservedAccountFields(BsonDocument target, BsonDocument? existing, User user)
+        {
+            var source = (int)user.ProvisioningSource;
+            if (source == (int)UserProvisioningSource.Local
+                && ReadInt(existing, "provisioningSource") == (int)UserProvisioningSource.Directory)
+            {
+                source = (int)UserProvisioningSource.Directory;
+            }
+            target["provisioningSource"] = source;
+
+            if (user.DirectorySyncedAt.HasValue)
+                target["directorySyncedAt"] = user.DirectorySyncedAt.Value;
+            else if (TryGet(existing, "directorySyncedAt", out var synced) && !synced.IsBsonNull)
+                target["directorySyncedAt"] = synced;
+
+            WriteText(target, existing, "mobileApprovedKey", user.MobileApprovedKey);
+            WriteText(target, existing, "mobilePendingKey", user.MobilePendingKey);
+            WriteText(target, existing, "mobileDisplayName", user.MobileDisplayName);
+            target["mobilePhotoRequired"] = user.MobilePhotoRequired
+                || (existing != null
+                    && existing.TryGetValue("mobilePhotoRequired", out var photo)
+                    && photo.IsBoolean
+                    && photo.AsBoolean);
+        }
+
+        private static void WriteText(BsonDocument target, BsonDocument? existing, string name, string? value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                target[name] = value;
+                return;
+            }
+            if (TryGet(existing, name, out var stored) && stored.IsString && !string.IsNullOrEmpty(stored.AsString))
+                target[name] = stored.AsString;
+        }
+
+        private static int? ReadInt(BsonDocument? document, string name)
+        {
+            if (!TryGet(document, name, out var value) || !value.IsInt32)
+                return null;
+            return value.AsInt32;
+        }
+
+        private static bool TryGet(BsonDocument? document, string name, out BsonValue value)
+        {
+            value = BsonNull.Value;
+            return document != null && document.TryGetValue(name, out value);
         }
 
         public async Task SyncGroupToDataGatewayAsync(

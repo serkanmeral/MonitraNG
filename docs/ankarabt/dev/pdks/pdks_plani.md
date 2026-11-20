@@ -2,7 +2,7 @@
 
 **Tarih:** 5 Kasım 2026  
 **Son düzenleme:** 20 Kasım 2026  
-**Durum:** Kapı, tarayıcı geçişi, mola ve devam panosu canlıda. Anlık durum ve rapor yazıldı. Prova yerel arayüzde. Canlı arayüz imajı bu iki sayfayı henüz taşımıyor.  
+**Durum:** Kapı, tarayıcı geçişi, mola, devam panosu, anlık durum ve rapor canlıdadır. Android’de kamera penceresi Chrome’a bırakılır.  
 **Hedef:** Personel devamını, kapı monitöründeki tek kullanımlık kod ve personelin telefon tarayıcısı ile kaydetmek. Kapı monitörü Mng.Ui içinde menüsüz, başlıksız ve günlük giriş istemeyen bir sayfadır. Aynı sayfada o günün devam panosu durur.
 
 Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındadır. Uygulama kodu bu belgeyle yazılmaz.
@@ -40,6 +40,10 @@ Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındad�
 16. 19 Kasım 2026: `kapi-is-ozeti` kapı bandı iş grafiği çizmez. Devam panosu bugün gelen, içeride, molada ve çıkan kişileri sayar. Kabul edilen her satır damgayı artırır. Kapı sayfası kod yoklamasında damga değişince panoyu yeniler.
 17. 20 Kasım 2026: Anlık durum ayrı bir sayfadır. Dashboard designer sayfası değildir. Seçilen lokasyon için kapı panosunun aynı dört sayısını ve listelerini çizer. Yenileme, geçiş damgası değişince olur.
 18. 20 Kasım 2026: Rapor personel satırı ve gün gruplarıdır. Gün, geç geldi, erken çıktı ve geç çıktı sayaçları bu sürümde yoktur. Her günün altında giriş, çıkış, mola sayısı, mola süresi ve çalışma durur.
+19. 20 Kasım 2026: Anlık durum, rapor ve gün listesi lokasyonu `https://mng.ankarabt.com/api/data` üzerinden okur. Canlı arayüz `/data` yolunu veri kapısına ulaştırmaz. Boş lokasyon kutusu panoyu açmaz.
+20. 20 Kasım 2026: Onay kontrolü, kapı kodu açıkken de ekranı ilerletir. Süresi dolmuş kod “Hazırlanıyor”da bırakmaz. Kişi ana sayfaya döner ve kodun dolduğunu görür.
+21. 20 Kasım 2026: Telefonun kendi kamerası kodu, onayın durduğu tarayıcıdan başka bir pencerede açabilir. Android’de bu pencere Chrome değilse aynı adres Chrome’a verilir. iPhone kamerası Safari’yi açar. Kayıtlı anahtar yoksa şifre sorulur ve yeni anahtar İK onayına düşer. Oturum düşünce yalnız şifre sorulur. Anahtar duruyorsa onay başa dönmez.
+22. 20 Kasım 2026: Dizin kullanıcısının şifresi Active Directory’ye yazılır. Keycloak kopyası salt okunursa bu uyarıdır. Kayıtta dizin işareti yoksa hesap yerel sayılır ve aynı red 500 olur. Kullanıcı basımı dizin işaretini, senkron zamanını ve telefon anahtarını silmez.
 
 ---
 
@@ -151,6 +155,12 @@ Sayfayı yenilemek ikinci kayıt açmaz. Kod ilk başarılı istekte tüketilmi�
 
 20 Kasım 2026: iPhone’daki Safari kapı kodunu yerel okuyucuyla görmez. Sayfa o zaman kodu jsQR ile okur. Android’deki yerel okuyucu durur. Aynı gün iPhone’da denendi.
 
+Aynı gün: telefonun kamera uygulaması bağlantıyı kendi tarayıcısında açabilir. Samsung telefonda bu pencere Samsung Internet oldu. Onaylı anahtar orada yoktur. Sayfa şifre sorar ve yeni anahtar yazar. Android’de Chrome olmayan bu açılış aynı adresi Chrome’a bırakır. Chrome’da anahtar varsa şifre ve yeni onay gerekmez. Chrome yoksa giriş bu pencerede kalır. iPhone’da kamera Safari’yi açtığı için ilk onay Safari’de durur.
+
+Onay düğmesi, kapı kodu adresindeyken kodu da açar. Düğme meşgulken bu adım atlanırsa ekran “Onay bekleniyor”da kalır. Kodun süresi dolduysa yenileme “Hazırlanıyor”da kalmaz. Kişi ana sayfaya döner.
+
+Geçiş grubu tam olarak `Abt Calisan` dir. `idari isler` anlık durumu ve raporu görür. Kapıdan geçiş yazamaz. Reddedilen satırın sebebi `yetki` dir. Telefonda başlık “Giriş kaydedilemedi” olur.
+
 12 Kasım 2026 kararı durur: şifre sırasında on saniyelik kod bir kez yaklaşık doksan saniye tutulur. Süre dolmuşsa şifre sorulmaz. Aynı kod ikinci kez tutulmaz.
 
 ---
@@ -166,7 +176,7 @@ Sayfayı yenilemek ikinci kayıt açmaz. Kod ilk başarılı istekte tüketilmi�
 | Yön | Son iş yönü giriş ise çıkış. Çıkış veya gün içinde iş yönü yoksa giriş. Mola ve dönüş bu sırayı değiştirmez. |
 | Gün kapanışı | Aynı İstanbul gününde kabul edilmiş bir giriş ve ondan sonraki bir çıkış günü kapatır. Sonraki okutma “Bugünkü geçiş tamam.” der, satır yazmaz. Yalnız çıkış günü kapatmaz. Mola kapatmaz. Kapının sabit giriş veya çıkış kilidi günü yeniden açmaz. |
 | Mola | Girişten sonra açılır. Süresi sabit değildir. Günde birden fazla mola olur. Dün açık kalan mola bugüne taşınmaz. Akşam kendiliğinden kapanmaz. |
-| Yetki | Keycloak’ta devam kaydı grubunda olan aktif kullanıcı. |
+| Yetki | Aktif kullanıcı ve grubu tam olarak `Abt Calisan`. `idari isler` geçiş yazmaz. |
 | Saat | Kayıt UTC. Ekranda Europe/Istanbul. |
 | Kapı şeridi | Ad, yön, saat, kapı adı. |
 | Red | Süresi dolmuş, kullanılmış, yetkisiz ve tanımsız kapı denemeleri de yazılır. |
@@ -443,7 +453,7 @@ Aynı akşam Android herkese açık yayının şartları konuşuldu. Bir Play Co
 
 ## 15. Anlık durum ve rapor
 
-20 Kasım 2026. İkisi de yönetim kabuğundadır. Menüde PDKS altındadır. Görme, yöneticiler, `Yonetim` ve `idari isler` içindir. Dashboard designer sayfası değildir. Uç ofisteki MngExtensions’tadır. Sayfa kodu depodadır. Canlı arayüz imajı aynı gün yenilenmedi. Prova, ofis ağ geçidine bakan yerel arayüzdedir.
+20 Kasım 2026. İkisi de yönetim kabuğundadır. Menüde PDKS altındadır. Görme, yöneticiler, `Yonetim` ve `idari isler` içindir. Dashboard designer sayfası değildir. Uç ofisteki MngExtensions’tadır. Canlı arayüz aynı gün yenilendi. Lokasyon listesi `/api/data` yolundan gelir. `/data` canlı sitede arayüz sayfasına düşer ve kutu boş kalır.
 
 ### 15.1 Anlık durum
 

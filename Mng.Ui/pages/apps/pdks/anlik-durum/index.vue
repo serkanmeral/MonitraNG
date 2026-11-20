@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import { fetchFromDataGateway } from '@/services/apiService';
 
 definePageMeta({ layout: 'default' });
 
@@ -66,7 +67,7 @@ function asRows(payload: unknown): Row[] {
 
 function messageOf(error: unknown) {
   const data = (error as { data?: { message?: string; error?: { message?: string } } })?.data;
-  return data?.error?.message || data?.message || '';
+  return data?.error?.message || data?.message || (error instanceof Error ? error.message : '');
 }
 
 function elapsed(startedAt?: string | null) {
@@ -82,11 +83,10 @@ function elapsed(startedAt?: string | null) {
 }
 
 async function loadLocations() {
-  const payload = await $fetch(`${gateway()}/data/api/v1/data/pdks_lokasyonlar?limit=200&expand=false`, {
-    headers: { Authorization: `Bearer ${auth.accessToken}` },
-  });
+  const payload = await fetchFromDataGateway('/api/v1/data/pdks_lokasyonlar?limit=200&expand=false');
   locations.value = asRows(payload).filter((row) => row.active !== false && row.locationKey);
   if (!locationKey.value && locationItems.value.length) locationKey.value = locationItems.value[0].value;
+  if (!locationItems.value.length) errorText.value = 'Lokasyon bulunamadı.';
 }
 
 async function refresh(force = false) {
