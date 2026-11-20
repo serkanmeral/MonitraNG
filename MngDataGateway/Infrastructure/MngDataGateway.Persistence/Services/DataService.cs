@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -123,6 +124,7 @@ namespace MngDataGateway.Persistence.Services
                 // 5. Generate incremental fields (before transaction decision)
                 await _dataProcessService.GenerateIncrementalFieldsAsync(
                     schema, data, databaseName, domainName, session: null);
+                CoerceDateTimeFields(schema, data);
 
                 // 6. Transaction decision
                 var needsTransaction = DetermineTransactionNeed(schema);
@@ -236,6 +238,7 @@ namespace MngDataGateway.Persistence.Services
                     throw ValidationException.FromErrors("Validation failed", validationResult.Errors);
                 }
 
+                CoerceDateTimeFields(schema, updates);
                 var treeUnsets = PrepareTreeUpdate(schema, updates);
 
                 // 4. Add history if logging mode is "self"
@@ -443,6 +446,7 @@ namespace MngDataGateway.Persistence.Services
                         _dataProcessService.ApplyDefaultValues(schema, processedItem);
                         _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                         await _dataProcessService.GenerateIncrementalFieldsAsync(schema, processedItem, databaseName, domainName, session: null);
+                        CoerceDateTimeFields(schema, processedItem);
                         processedItems.Add(processedItem);
                     }
 
@@ -654,6 +658,7 @@ namespace MngDataGateway.Persistence.Services
                         _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                         await _dataProcessService.GenerateIncrementalFieldsAsync(
                             schema, processedItem, databaseName, domainName, session);
+                        CoerceDateTimeFields(schema, processedItem);
                         processedItems.Add(processedItem);
                     }
 
@@ -694,6 +699,7 @@ namespace MngDataGateway.Persistence.Services
                     _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                     await _dataProcessService.GenerateIncrementalFieldsAsync(
                         schema, processedItem, databaseName, domainName, session: null);
+                    CoerceDateTimeFields(schema, processedItem);
                     processedItems.Add(processedItem);
                 }
 
@@ -704,6 +710,65 @@ namespace MngDataGateway.Persistence.Services
                         databaseName, schema.CollectionName, processedItems, session: null);
                 }
             }
+        }
+
+        /// <summary>
+        /// Schema datetime fields arrive as ISO text. Store them as UTC BSON dates so range filters match.
+        /// </summary>
+        private static void CoerceDateTimeFields(DatasetSchema schema, Dictionary<string, object> data)
+        {
+            if (schema.fields == null || data.Count == 0)
+                return;
+
+            foreach (var field in schema.fields)
+            {
+                if (!string.Equals(field.fieldType, "datetime", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (field.isArray)
+                    continue;
+                if (!data.TryGetValue(field.name, out var value) || value is null)
+                    continue;
+                var utc = CoerceUtc(value);
+                if (utc is not null)
+                    data[field.name] = utc.Value;
+            }
+        }
+
+        private static DateTime? CoerceUtc(object value)
+        {
+            switch (value)
+            {
+                case DateTime dateTime:
+                    return AsUtc(dateTime);
+                case DateTimeOffset offset:
+                    return offset.UtcDateTime;
+                case string text when TryParseUtc(text, out var parsed):
+                    return parsed;
+                default:
+                    return null;
+            }
+        }
+
+        private static bool TryParseUtc(string text, out DateTime utc)
+        {
+            utc = default;
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+            if (!DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+                return false;
+            utc = AsUtc(parsed);
+            return true;
+        }
+
+        private static DateTime AsUtc(DateTime value)
+        {
+            var utc = value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            };
+            return DateTime.SpecifyKind(utc, DateTimeKind.Utc);
         }
 
         private static void PrepareTreeCreate(DatasetSchema schema, Dictionary<string, object> data)

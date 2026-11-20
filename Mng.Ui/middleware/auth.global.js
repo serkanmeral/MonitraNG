@@ -22,7 +22,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     ];
     
     // Public route kontrolü
-    const isPublicRoute = publicRoutes.some(route => to.path.startsWith(route)) || 
+    const isKapi = to.path === '/kapi' || to.path.startsWith('/kapi/');
+    const isGecis = to.path === '/gecis' || to.path.startsWith('/gecis/');
+    const isPublicRoute = isKapi || isGecis || publicRoutes.some(route => to.path.startsWith(route)) || 
         to.name === 'auth-login' || 
         to.name === 'auth-register' || 
         to.name === 'auth-reset-password' ||
@@ -39,10 +41,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
     
     const authStore = useAuthStore();
+    const loginTarget = '/auth/login';
     
     // Token yoksa login sayfasına yönlendir
     if (!authStore.accessToken) {
-      return navigateTo('/auth/login');
+      return navigateTo(loginTarget);
     }
     
     // Token expire olmuş mu kontrol et ve gerekirse refresh et
@@ -50,6 +53,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     
     if (!isValid) {
       // Token refresh başarısız, login sayfasına yönlendir
-      return navigateTo('/auth/login');
+      return navigateTo(loginTarget);
     }
   })

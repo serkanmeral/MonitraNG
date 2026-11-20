@@ -1,0 +1,430 @@
+[
+  {
+    "name": "pdks_ayarlar",
+    "description": "Kapı geçiş ayarı. Beklenen giriş ve çıkış saati. İlk kayıt tekildir. İkinci satır, kapı ayrı saat kullanınca açılır.",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "indexList": [
+      { "name": "idx_tekil", "fields": { "tekil": 1 }, "unique": true }
+    ],
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "tekil",
+        "title": "Tekil anahtar",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "defaultValue": "ayar",
+        "validation": { "maxLength": 40 }
+      },
+      {
+        "fieldType": "text",
+        "name": "girisSaati",
+        "title": "Giriş saati",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": {
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+          "maxLength": 5,
+          "message": "Saat SS:dd biçimindedir. Örnek: 08:30."
+        }
+      },
+      {
+        "fieldType": "text",
+        "name": "cikisSaati",
+        "title": "Çıkış saati",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": {
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+          "maxLength": 5,
+          "message": "Saat SS:dd biçimindedir. Örnek: 17:30."
+        }
+      },
+      {
+        "fieldType": "number",
+        "name": "toleransDakika",
+        "title": "Tolerans dakika",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": 0,
+        "validation": { "min": 0, "message": "Tolerans sıfır veya daha büyük bir dakikadır." }
+      },
+      {
+        "fieldType": "number",
+        "name": "panoYenilemeSaniye",
+        "title": "Pano yenileme (saniye)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": 60,
+        "validation": { "min": 15, "max": 600, "message": "Pano 15 ile 600 saniye arasında yenilenir." }
+      },
+      {
+        "fieldType": "text",
+        "name": "karsilamaGiris",
+        "title": "Giriş cümlesi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": "İyi çalışmalar.",
+        "validation": { "maxLength": 160 }
+      },
+      {
+        "fieldType": "text",
+        "name": "karsilamaZamaninda",
+        "title": "Zamanında giriş cümlesi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": "Zamanında geldiğiniz için teşekkürler.",
+        "validation": { "maxLength": 160 }
+      },
+      {
+        "fieldType": "text",
+        "name": "karsilamaGec",
+        "title": "Geç giriş cümlesi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": "Yolunuz düştü, yine de hoş geldiniz.",
+        "validation": { "maxLength": 160 }
+      },
+      {
+        "fieldType": "text",
+        "name": "karsilamaCikis",
+        "title": "Çıkış cümlesi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": "Güle güle.",
+        "validation": { "maxLength": 160 }
+      }
+    ],
+    "validations": [],
+    "queries": []
+  },
+  {
+    "name": "pdks_lokasyonlar",
+    "description": "Kapıların bağlı olduğu yer. Merkez, ÇŞB ve SGK aynı domain içinde lokasyondur.",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "indexList": [
+      { "name": "idx_locationKey", "fields": { "locationKey": 1 }, "unique": true }
+    ],
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "locationKey",
+        "title": "Lokasyon anahtarı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "validation": { "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 40 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 80 }
+      },
+      {
+        "fieldType": "text",
+        "name": "dashboardSlug",
+        "title": "Pano",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 80 }
+      },
+      {
+        "fieldType": "bool",
+        "name": "active",
+        "title": "Aktif",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": true
+      },
+      {
+        "fieldType": "relation",
+        "name": "ayar",
+        "title": "Varsayılan geçiş ayarı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "pdks_ayarlar"
+      }
+    ],
+    "validations": [],
+    "queries": []
+  },
+  {
+    "name": "pdks_kapilar",
+    "description": "Bir lokasyondaki fiziksel kapı. Jetonun kendisi bu satırda durmaz.",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "indexList": [
+      { "name": "idx_doorKey", "fields": { "doorKey": 1 }, "unique": true }
+    ],
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "doorKey",
+        "title": "Kapı anahtarı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "validation": { "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 40 }
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 80 }
+      },
+      {
+        "fieldType": "relation",
+        "name": "lokasyon",
+        "title": "Lokasyon",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "pdks_lokasyonlar"
+      },
+      {
+        "fieldType": "text",
+        "name": "dashboardSlug",
+        "title": "Pano",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 80 }
+      },
+      {
+        "fieldType": "select",
+        "name": "directionMode",
+        "title": "Yön",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": "auto",
+        "options": {
+          "lookup": {
+            "source": "static",
+            "staticItems": [
+              { "value": "auto", "label": "Son olaya göre" },
+              { "value": "in", "label": "Yalnız giriş" },
+              { "value": "out", "label": "Yalnız çıkış" }
+            ]
+          }
+        }
+      },
+      {
+        "fieldType": "bool",
+        "name": "active",
+        "title": "Aktif",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": true
+      },
+      {
+        "fieldType": "text",
+        "name": "kioskTokenHash",
+        "title": "Jeton özeti",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 128 }
+      },
+      {
+        "fieldType": "relation",
+        "name": "ayar",
+        "title": "Geçiş ayarı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "pdks_ayarlar"
+      }
+    ],
+    "validations": [],
+    "queries": []
+  },
+  {
+    "name": "pdks_gecisler",
+    "description": "Kapı olayı. Lokasyon, yazıldığı andaki kapıdan kopyalanır. Satırı teknik kullanıcı yazar.",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "indexList": [
+      { "name": "idx_kisi_zaman", "fields": { "personId": 1, "occurredAt": -1 }, "unique": false },
+      { "name": "idx_kapi_zaman", "fields": { "doorKey": 1, "occurredAt": -1 }, "unique": false },
+      { "name": "idx_lokasyon_zaman", "fields": { "locationKey": 1, "occurredAt": -1 }, "unique": false }
+    ],
+    "fields": [
+      {
+        "fieldType": "persons",
+        "name": "personId",
+        "title": "Kişi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "displayName",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 80 }
+      },
+      {
+        "fieldType": "text",
+        "name": "fullName",
+        "title": "Ad soyad",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 120 }
+      },
+      {
+        "fieldType": "text",
+        "name": "greeting",
+        "title": "Karşılama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 160 }
+      },
+      {
+        "fieldType": "text",
+        "name": "sinif",
+        "title": "Sınıf",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 20 }
+      },
+      {
+        "fieldType": "text",
+        "name": "doorKey",
+        "title": "Kapı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 40 }
+      },
+      {
+        "fieldType": "text",
+        "name": "locationKey",
+        "title": "Lokasyon",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 40 }
+      },
+      {
+        "fieldType": "select",
+        "name": "direction",
+        "title": "Yön",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "options": {
+          "lookup": {
+            "source": "static",
+            "staticItems": [
+              { "value": "in", "label": "Giriş" },
+              { "value": "out", "label": "Çıkış" },
+              { "value": "break", "label": "Mola" },
+              { "value": "return", "label": "Dönüş" }
+            ]
+          }
+        }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "occurredAt",
+        "title": "Zaman",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "select",
+        "name": "result",
+        "title": "Sonuç",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "options": {
+          "lookup": {
+            "source": "static",
+            "staticItems": [
+              { "value": "accepted", "label": "Kabul" },
+              { "value": "ignored", "label": "Çift okuma" },
+              { "value": "rejected", "label": "Red" }
+            ]
+          }
+        }
+      },
+      {
+        "fieldType": "text",
+        "name": "rejectReason",
+        "title": "Red nedeni",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 80 }
+      },
+      {
+        "fieldType": "file",
+        "name": "photo",
+        "title": "Geçiş karesi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "fileOptions": {
+          "maxSize": 800000,
+          "allowedExtensions": [".jpg", ".jpeg"],
+          "defaultCompression": false,
+          "defaultEncryption": true
+        }
+      },
+      {
+        "fieldType": "datetime",
+        "name": "photoExpiresAt",
+        "title": "Kare silinme zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "photoState",
+        "title": "Kare durumu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "validation": { "maxLength": 10 }
+      }
+    ],
+    "validations": [],
+    "queries": []
+  }
+]

@@ -1,8 +1,8 @@
 # PDKS Kapı Ekranı Planı
 
 **Tarih:** 5 Kasım 2026  
-**Son düzenleme:** 19 Kasım 2026  
-**Durum:** Kapı, tarayıcı geçişi, mola ve devam panosu canlıda. Panonun kişi listesi, geçiş saati metin kaldığı için boş kalabiliyor.  
+**Son düzenleme:** 20 Kasım 2026  
+**Durum:** Kapı, tarayıcı geçişi, mola ve devam panosu canlıda. Anlık durum ve rapor yazıldı. Prova yerel arayüzde. Canlı arayüz imajı bu iki sayfayı henüz taşımıyor.  
 **Hedef:** Personel devamını, kapı monitöründeki tek kullanımlık kod ve personelin telefon tarayıcısı ile kaydetmek. Kapı monitörü Mng.Ui içinde menüsüz, başlıksız ve günlük giriş istemeyen bir sayfadır. Aynı sayfada o günün devam panosu durur.
 
 Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındadır. Uygulama kodu bu belgeyle yazılmaz.
@@ -38,6 +38,8 @@ Bu belge faz 1’in ürün ve ekran sınırıdır. Ağ kurulumu IT kapsamındad�
 14. 17 Kasım 2026: Mağaza uygulaması `Mng.Mobile` içindedir. MBL-01’den MBL-05’e kadar Expo Go ile denendi. Güncelleme mağaza sürümüdür. Android herkese açık yayın, bir Play Console hesabı bulunana kadar durur. Tarayıcıdaki şifreli geçiş durur.
 15. 19 Kasım 2026: Mola aynı kapı koduyla yazılır. Yönler `break` ve `return` dir. Gün mola ile kapanmaz. Erken ve geç, ilk giriş ile son çıkışa bakar. Otuz saniyelik yok sayma yalnız aynı işlem içindir. Açık moladayken çıkış, aynı anda sessiz bir dönüş satırı yazar.
 16. 19 Kasım 2026: `kapi-is-ozeti` kapı bandı iş grafiği çizmez. Devam panosu bugün gelen, içeride, molada ve çıkan kişileri sayar. Kabul edilen her satır damgayı artırır. Kapı sayfası kod yoklamasında damga değişince panoyu yeniler.
+17. 20 Kasım 2026: Anlık durum ayrı bir sayfadır. Dashboard designer sayfası değildir. Seçilen lokasyon için kapı panosunun aynı dört sayısını ve listelerini çizer. Yenileme, geçiş damgası değişince olur.
+18. 20 Kasım 2026: Rapor personel satırı ve gün gruplarıdır. Gün, geç geldi, erken çıktı ve geç çıktı sayaçları bu sürümde yoktur. Her günün altında giriş, çıkış, mola sayısı, mola süresi ve çalışma durur.
 
 ---
 
@@ -121,9 +123,9 @@ Pano, dashboard designer’da hazırlanır ve `@dashboards` kaydında durur. Pan
 
 Ücret ve kimlik numarası bu panoya konmaz. Kapı jetonu panoyu sunucudan ister. Tarayıcıya Keycloak oturumu yazılmaz.
 
-Pano Redis’te `pdks:board:v4:{doorKey}` anahtarıyla durur. Ömrü, saat ayarındaki pano yenileme süresidir. Varsayılan altmış saniyedir ve on beş ile altı yüz arasına sıkışır. Kabul edilen her geçiş `pdks:board:stamp` damgasını bir artırır. Açık molayı kapatan sessiz dönüş de damgayı artırır. Önbellek, içindeki damga güncel damgayla aynıysa kullanılır. Kod yoklaması yaklaşık üç saniyede bir `boardStamp` döner. Kapı sayfası damga değişince panoyu yeniden ister. Dakikalık süre yedek olarak durur.
+Pano Redis’te `pdks:board:v5:{doorKey}` anahtarıyla durur. Ömrü, saat ayarındaki pano yenileme süresidir. Varsayılan altmış saniyedir ve on beş ile altı yüz arasına sıkışır. Kabul edilen her geçiş `pdks:board:stamp` damgasını bir artırır. Açık molayı kapatan sessiz dönüş de damgayı artırır. Önbellek, içindeki damga güncel damgayla aynıysa kullanılır. Kod yoklaması yaklaşık üç saniyede bir `boardStamp` döner. Kapı sayfası damga değişince panoyu yeniden ister. Dakikalık süre yedek olarak durur.
 
-19 Kasım 2026 akşamı canlı kayıtta `occurredAt` metin olarak duruyor. Pano sorgusu bu alanı tarih diye süzüyor ve satırı görmüyor. Damga artsa da liste boş kalabiliyor. Bu açık.
+20 Kasım 2026: Pano, gün süzgecini veritabanına bırakmaz. Kabul edilmiş satırı alır ve İstanbul gününü bellekte ayırır. Eski metin saat de, yeni UTC tarih de okunur. Yeni geçiş satırında şema tipi tarih olan alan UTC tarih olarak yazılır.
 
 Kapı jetonu tek bir panoyu okuyabilir: lokasyonda seçili olan. Başka bir `slug` bu jetonla açılmaz. `kapi-is-ozeti` dışında slug boş pano döner. Sunucu, kapı jetonunu doğruladıktan sonra panoyu kendi tarafında hazırlar. Tarayıcıya Keycloak kullanıcı oturumu yazılmaz. Ücret ve kimlik numarası bu ekrana konmaz. Ad ve saat, kapının baktığı alanda durur.
 
@@ -146,6 +148,8 @@ Butonlar o anki duruma göredir. Giriş yoksa yalnız **Giriş** vardır. Giriş
 Fotoğraf, İK’nın “Geçişte fotoğraf iste” anahtarı açıksa ve geçiş kabul edilecekse istenir. Mola ve dönüş de bu kurala girer. Kare kimlik doğrulamaz. Saklama, geçiş anından doksan gündür. Silme MngExtensions içindeki `PassagePhotoRetentionService` ile yapılır.
 
 Sayfayı yenilemek ikinci kayıt açmaz. Kod ilk başarılı istekte tüketilmiştir.
+
+20 Kasım 2026: iPhone’daki Safari kapı kodunu yerel okuyucuyla görmez. Sayfa o zaman kodu jsQR ile okur. Android’deki yerel okuyucu durur. Aynı gün iPhone’da denendi.
 
 12 Kasım 2026 kararı durur: şifre sırasında on saniyelik kod bir kez yaklaşık doksan saniye tutulur. Süre dolmuşsa şifre sorulmaz. Aynı kod ikinci kez tutulmaz.
 
@@ -199,7 +203,7 @@ Merkez ve şube için iki kayıt açılır. İkisi aynı panoyu da kullanabilir,
 | `displayName` | Kapı şeridi ve telefon sonucu için ad. |
 | `doorKey` | Kapı. |
 | `direction` | `in`, `out`, `break`, `return`. |
-| `occurredAt` | UTC zaman. |
+| `occurredAt` | UTC zaman. Şemada tarih tipidir. Yeni satır UTC tarih olarak durur. |
 | `result` | `accepted`, `ignored` (çift okuma), `rejected`. |
 | `rejectReason` | Süre, kullanılmış kod, yetki, pasif kapı. Kabul edilen kayıtta boş. |
 
@@ -434,3 +438,27 @@ Bir dilim bitmeden sonrakine geçilmez.
 17 Kasım 2026’da kilitlendi. Güncelleme bir bankacılık uygulamasındaki gibi mağaza sürümüdür. Yeni sürüm Play ve App Store’a çıkar. Otomatik güncellemesi açık telefonlar paketi kendisi alır. Sürüm, sunucunun işaret ettiği eşikten eskiyse uygulama mağazaya yollar. Anahtar, onay ve sunucu adresi güncellemede durur. Yazı ve renk gibi küçük düzeltmeler mağaza incelemesi olmadan da inebilir. Geçişin ortasında uygulanmaz. Bildirim ve sonraki işler aynı yoldan iner. Bildirim kütüphanesi ilk pakette kapalı da olsa durur. Şirket kararı gelince liste bu kanaldan açılır.
 
 Aynı akşam Android herkese açık yayının şartları konuşuldu. Bir Play Console hesabı bulunana kadar bu iş durur. Şirket hesabında paket incelemeye girer. 13 Kasım 2023’ten sonra açılmış kişisel hesapta önce 12 kişi, 14 gün kapalı teste kayıtlı kalır. Paket Android App Bundle’dır ve Android 16’yı (API 36) hedefler. Kurulum kimliği ilk yüklemede kilitlenir. Mağaza sayfası, herkese açık gizlilik metni ve incelemeci için ayrı bir deneme hesabı gerekir. iPhone yayını ayrıca konuşulacak.
+
+---
+
+## 15. Anlık durum ve rapor
+
+20 Kasım 2026. İkisi de yönetim kabuğundadır. Menüde PDKS altındadır. Görme, yöneticiler, `Yonetim` ve `idari isler` içindir. Dashboard designer sayfası değildir. Uç ofisteki MngExtensions’tadır. Sayfa kodu depodadır. Canlı arayüz imajı aynı gün yenilenmedi. Prova, ofis ağ geçidine bakan yerel arayüzdedir.
+
+### 15.1 Anlık durum
+
+Adres `/apps/pdks/anlik-durum`. Lokasyon seçili kalır. Tek lokasyon olsa da kutu durur.
+
+Dört sayı kapı panosuyla aynıdır: bugün gelen, içeride, molada, çıkan. Kişi, bugünün bütün kabul edilmiş geçişinden hesaplanır, sonra lokasyona oturtulur. İçeride ve molada olan kişi giriş yaptığı lokasyondadır. Çıkan kişi çıkış yaptığı lokasyondadır. Başka lokasyonda çıkan, ilk lokasyonda içeride sayılmaz. Bugün gelen, seçilen lokasyonda girişi olan kişidir.
+
+İçeride listesi ad ve giriş saatidir. Molada listesi ad, başlangıç ve geçen süredir. Süre sayfa saatiyle ilerler. Çıkan listesi ad, giriş ve çıkıştır. Yenileme, kapıdaki geçiş damgası değişince olur. Aralık yoktur.
+
+### 15.2 Rapor
+
+Adres `/apps/pdks/rapor`. Liste `Abt Calisan` grubudur. Aralık Bugün, Bu hafta, Bu ay veya serbest seçilir. Varsayılan bu aydır. En fazla doksan üç gündür. Bugünden sonrası satıra yazılmaz. Lokasyon varsayılanı Tümü’dür. Gün, girişin yapıldığı lokasyona yazılır. Çıkış başka yerde olsa da gün bölünmez.
+
+Tablo kişi satırı ve gün gruplarıdır. Grup başlığı `20 Kasım` biçimindedir. Altında beş sütun durur: Giriş, Çıkış, Mola sayısı, Mola süresi, Çalışma. Aralık özeti, geç geldi, erken çıktı ve geç çıktı sayaçları bu sürümde yoktur.
+
+Renk saatin kendisindedir. Geç giriş amberdir. Zamanında yeşildir. Beklenen saatten önceki giriş normal yazılır. Erken çıkış kırmızıdır. Geç çıkış temanın ana rengidir. Sınıf, satırda duran değerdir. Satırda sınıf yoksa kapının saati kullanılır. Kapı saati lokasyon saatini ezer. İkisi de boşsa `ayar` satırı geçerlidir.
+
+Mola sayısı, o gün kapanan molalardır. Süre onların toplamıdır. Açık mola sayıya girmez. Çalışma, ilk girişten son çıkışa kadar olan zamandan mola süreleri düşülerek bulunur. Çıkışı olmayan gün **Sürüyor** yazar. Gelmeyen gün **Gelmedi** yazar. Grafik ve dışa aktarma yoktur.

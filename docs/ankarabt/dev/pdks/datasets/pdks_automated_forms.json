@@ -1,0 +1,233 @@
+[
+  {
+    "formName": "Lokasyonlar",
+    "formCode": "pdks-lokasyonlar-form",
+    "description": "Kapıların bağlı olduğu yer. Saat boşsa kurumun ayar satırı geçerlidir.",
+    "datasetName": "pdks_lokasyonlar",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": false,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/pdks-lokasyonlar-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "locationKey",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "locationKey", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "title", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        {
+          "fieldName": "ayar",
+          "visible": true,
+          "order": 3,
+          "sortable": false,
+          "filterable": false,
+          "displayField": "tekil"
+        },
+        { "fieldName": "active", "visible": true, "order": 4, "sortable": true, "filterable": true },
+        { "fieldName": "dashboardSlug", "visible": true, "order": 5, "sortable": false, "filterable": false }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["locationKey", "title", "ayar", "dashboardSlug", "active"],
+      "readonlyFields": [],
+      "readonlyOnEditFields": ["locationKey"],
+      "fieldOrder": ["locationKey", "title", "ayar", "dashboardSlug", "active"],
+      "groupOrder": ["Yer", "Saat", "Pano"],
+      "relationFieldConfig": {
+        "ayar": { "idField": "__dataId", "displayField": "tekil" }
+      },
+      "fieldLayout": {
+        "locationKey": {
+          "columnSpan": 6,
+          "group": "Yer",
+          "hint": "Küçük harf, rakam ve kısa çizgi. Kayıt açıldıktan sonra değişmez. Örnek: merkez."
+        },
+        "title": {
+          "columnSpan": 6,
+          "group": "Yer",
+          "hint": "Ekranda görünen ad. Örnek: Merkez."
+        },
+        "ayar": {
+          "columnSpan": 12,
+          "group": "Saat",
+          "hint": "Bu lokasyonun varsayılan saati. Boşsa tekil değeri ayar olan satır geçerlidir. Kapı kendi saatini seçerse o geçerlidir."
+        },
+        "dashboardSlug": {
+          "columnSpan": 12,
+          "group": "Pano",
+          "hint": "Bu lokasyondaki kapıların alt bandı. Örnek: kapi-is-ozeti. Boşsa bant yer tutucu kalır."
+        },
+        "active": {
+          "columnSpan": 6,
+          "group": "Yer",
+          "hint": "Kapalı lokasyonun kapıları ekran bağlama listesinde görünmez."
+        }
+      }
+    }
+  },
+  {
+    "formName": "Kapılar",
+    "formCode": "pdks-kapilar-form",
+    "description": "Jeton bu formda üretilmez. Monitörde Bu ekranı bağla o kapıya jeton yazar.",
+    "datasetName": "pdks_kapilar",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": false,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/pdks-kapilar-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "doorKey",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "doorKey", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "title", "visible": true, "order": 2, "sortable": true, "filterable": true },
+        {
+          "fieldName": "lokasyon",
+          "visible": true,
+          "order": 3,
+          "sortable": false,
+          "filterable": false,
+          "displayField": "title"
+        },
+        { "fieldName": "directionMode", "visible": true, "order": 4, "sortable": true, "filterable": true },
+        {
+          "fieldName": "ayar",
+          "visible": true,
+          "order": 5,
+          "sortable": false,
+          "filterable": false,
+          "displayField": "tekil"
+        },
+        { "fieldName": "active", "visible": true, "order": 6, "sortable": true, "filterable": true }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["doorKey", "title", "lokasyon", "directionMode", "ayar", "active"],
+      "readonlyFields": [],
+      "readonlyOnEditFields": ["doorKey"],
+      "fieldOrder": ["doorKey", "title", "lokasyon", "directionMode", "ayar", "active"],
+      "groupOrder": ["Kapı", "Saat"],
+      "relationFieldConfig": {
+        "lokasyon": { "idField": "__dataId", "displayField": "title" },
+        "ayar": { "idField": "__dataId", "displayField": "tekil" }
+      },
+      "fieldLayout": {
+        "doorKey": {
+          "columnSpan": 6,
+          "group": "Kapı",
+          "hint": "Küçük harf, rakam ve kısa çizgi. Kayıt açıldıktan sonra değişmez. Örnek: merkez-giris."
+        },
+        "title": {
+          "columnSpan": 6,
+          "group": "Kapı",
+          "hint": "Monitörde görünen ad. Örnek: Merkez Giriş."
+        },
+        "lokasyon": {
+          "columnSpan": 6,
+          "group": "Kapı",
+          "hint": "Bu kapının yeri. Geçiş satırı bu anahtarı yazıldığı anda kopyalar."
+        },
+        "directionMode": {
+          "columnSpan": 6,
+          "group": "Kapı",
+          "hint": "Son olaya göre giriş ve çıkışı sırayla yazar. Yalnız giriş veya yalnız çıkış seçilirse son olay kuralı uygulanmaz."
+        },
+        "ayar": {
+          "columnSpan": 12,
+          "group": "Saat",
+          "hint": "Doluysa lokasyonun saatini ezer. Boşsa lokasyonun saati, o da boşsa tekil değeri ayar olan satır geçerlidir."
+        },
+        "active": {
+          "columnSpan": 6,
+          "group": "Kapı",
+          "hint": "Pasif kapı kod üretmez ve ekrana bağlanamaz. Jeton silinmez."
+        }
+      }
+    }
+  },
+  {
+    "formName": "Saatler",
+    "formCode": "pdks-ayarlar-form",
+    "description": "Beklenen giriş ve çıkış. İlk satırın tekil değeri ayar olsun. Saat bir an değildir.",
+    "datasetName": "pdks_ayarlar",
+    "isActive": true,
+    "sideMenuConfig": {
+      "enabled": false,
+      "routeType": "form",
+      "routePath": "/apps/automated-forms/view/pdks-ayarlar-form"
+    },
+    "listConfig": {
+      "enableSearch": true,
+      "defaultSortBy": "tekil",
+      "defaultSortOrder": "asc",
+      "listView": { "mode": "default" },
+      "columns": [
+        { "fieldName": "tekil", "visible": true, "order": 1, "sortable": true, "filterable": true },
+        { "fieldName": "girisSaati", "visible": true, "order": 2, "sortable": true, "filterable": false },
+        { "fieldName": "cikisSaati", "visible": true, "order": 3, "sortable": true, "filterable": false },
+        { "fieldName": "toleransDakika", "visible": true, "order": 4, "sortable": true, "filterable": false },
+        { "fieldName": "panoYenilemeSaniye", "visible": true, "order": 5, "sortable": true, "filterable": false }
+      ]
+    },
+    "formConfig": {
+      "visibleFields": ["tekil", "girisSaati", "cikisSaati", "toleransDakika", "panoYenilemeSaniye", "karsilamaGiris", "karsilamaZamaninda", "karsilamaGec", "karsilamaCikis"],
+      "readonlyFields": [],
+      "readonlyOnEditFields": ["tekil"],
+      "fieldOrder": ["tekil", "girisSaati", "cikisSaati", "toleransDakika", "panoYenilemeSaniye", "karsilamaGiris", "karsilamaZamaninda", "karsilamaGec", "karsilamaCikis"],
+      "groupOrder": ["Saat", "Pano", "Karşılama"],
+      "fieldLayout": {
+        "tekil": {
+          "columnSpan": 6,
+          "group": "Saat",
+          "hint": "İlk kayıt ayar olsun. Şube veya cuma ayrı saat isterse yeni satır açın ve tekil değerini cuma gibi seçin. Kayıt açıldıktan sonra değişmez."
+        },
+        "girisSaati": {
+          "columnSpan": 6,
+          "group": "Saat",
+          "hint": "Europe/Istanbul günündeki saat. SS:dd. Örnek: 08:30."
+        },
+        "cikisSaati": {
+          "columnSpan": 6,
+          "group": "Saat",
+          "hint": "Aynı biçimde. Örnek: 17:30."
+        },
+        "toleransDakika": {
+          "columnSpan": 6,
+          "group": "Saat",
+          "hint": "Zamanında sayılan ek dakika. Sıfırsa zamanında olan yalnız tam o dakikadır."
+        },
+        "panoYenilemeSaniye": {
+          "columnSpan": 6,
+          "group": "Pano",
+          "hint": "Kapı vitrini bu kadar saniyede bir yenilenir. 15 ile 600 arası. Boşsa 60 saniye."
+        },
+        "karsilamaGiris": {
+          "columnSpan": 12,
+          "group": "Karşılama",
+          "hint": "Erken ve sıradan girişte pencere bu cümleyi gösterir. Boşsa İyi çalışmalar."
+        },
+        "karsilamaZamaninda": {
+          "columnSpan": 12,
+          "group": "Karşılama",
+          "hint": "Giriş, beklenen saat ile toleransın sonu arasındaysa bu cümle gelir."
+        },
+        "karsilamaGec": {
+          "columnSpan": 12,
+          "group": "Karşılama",
+          "hint": "Toleranstan sonra gelen girişte bu cümle gelir."
+        },
+        "karsilamaCikis": {
+          "columnSpan": 12,
+          "group": "Karşılama",
+          "hint": "Çıkışta saat bakılmaz. Boşsa Güle güle."
+        }
+      }
+    }
+  }
+]

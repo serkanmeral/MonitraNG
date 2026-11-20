@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Core/">
+    <Project Path="Core/MngExtensions.Application/MngExtensions.Application.csproj" />
+    <Project Path="Core/MngExtensions.Domain/MngExtensions.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/MngExtensions.Infrastructure/MngExtensions.Infrastructure.csproj" />
+    <Project Path="Infrastructure/MngExtensions.Persistence/MngExtensions.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/Presentation/">
+    <Project Path="Presentation/MngExtensions.Api/MngExtensions.Api.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/MngExtensions.Tests/MngExtensions.Tests.csproj" />
+  </Folder>
+</Solution>

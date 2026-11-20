@@ -8,7 +8,7 @@
  */
 export default defineNuxtRouteMiddleware(async (to) => {
   // Auth / hata sayfaları ve ana sayfa — menü izni kontrolü yok
-  if (to.path === '/' || to.path === '/welcome') {
+  if (to.path === '/' || to.path === '/welcome' || to.path === '/gecis' || to.path === '/kapi' || to.path.startsWith('/kapi/')) {
     return;
   }
   const publicRoutes = ['/auth/login', '/auth/register', '/unauthorized', '/error'];
